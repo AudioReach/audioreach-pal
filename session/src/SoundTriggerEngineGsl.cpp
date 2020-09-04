@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -61,7 +61,7 @@ ST_DBG_DECLARE(static int dsp_output_cnt = 0);
 std::map<st_module_type_t,std::vector<std::shared_ptr<SoundTriggerEngineGsl>>>
                  SoundTriggerEngineGsl::eng_;
 std::map<Stream*, std::shared_ptr<SoundTriggerEngineGsl>>
-                 SoundTriggerEngineGsl::str_eng_map_;
+                SoundTriggerEngineGsl::str_eng_map_;
 std::mutex SoundTriggerEngineGsl::eng_create_mutex_;
 int32_t SoundTriggerEngineGsl::engine_count_ = 0;
 std::condition_variable cvEOS;
@@ -172,7 +172,12 @@ int32_t SoundTriggerEngineGsl::StartBuffering(Stream *s) {
     sleep_ms = (input_buf_size * input_buf_num) *
         BITS_PER_BYTE * MS_PER_SEC / (sample_rate_ * bit_width_ * channels_);
 
+#if defined(LINUX_ENABLED)
+    memset(&buf, 0, sizeof(struct pal_buffer));
+#else
     std::memset(&buf, 0, sizeof(struct pal_buffer));
+#endif
+
     buf.size = input_buf_size * input_buf_num;
     buf.buffer = (uint8_t *)calloc(1, buf.size);
     if (!buf.buffer) {

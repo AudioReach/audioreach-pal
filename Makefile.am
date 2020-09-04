@@ -13,7 +13,7 @@ h_sources = ./stream/inc/Stream.h \
             ./device/inc/Device.h \
             ./device/inc/Speaker.h \
             ./device/inc/Bluetooth.h \
-            ./plugins/codecs/bt_plugin_intf.h \
+            ./plugins/codecs/bt_intf.h \
             ./device/inc/Headphone.h \
             ./device/inc/USBAudio.h \
             ./device/inc/SpeakerMic.h \

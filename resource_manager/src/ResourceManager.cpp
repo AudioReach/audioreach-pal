@@ -1016,12 +1016,14 @@ ResourceManager::ResourceManager()
      for (int i = 0; i < max_nt_sessions; i++)
           listAllNonTunnelSessionIds.push_back(maxDeviceIdInUse + i);
 
+#ifndef LINUX_ENABLED
     // Get AGM service handle
     ret = agm_register_service_crash_callback(&agmServiceCrashHandler,
                                                (uint64_t)this);
     if (ret) {
         PAL_ERR(LOG_TAG, "AGM service not up%d", ret);
     }
+#endif
 
     auto encodeMap = std::make_shared<std::unordered_map<uint32_t, bool>>();
     auto decodeMap = std::make_shared<std::unordered_map<uint32_t, bool>>();

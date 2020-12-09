@@ -116,7 +116,6 @@ h_sources = ${top_srcdir}/stream/inc/Stream.h \
             ${top_srcdir}/PalAudioRoute.h \
             ${top_srcdir}/PalCommon.h \
             ${top_srcdir}/utils/inc/PalRingBuffer.h \
-            ${top_srcdir}/utils/inc/SoundTriggerUtils.h \
             ${top_srcdir}/utils/inc/SoundTriggerPlatformInfo.h \
             ${top_srcdir}/utils/inc/ChargerListener.h \
             ${top_srcdir}/context_manager/inc/ContextManager.h
@@ -172,7 +171,6 @@ pal_sources = ${top_srcdir}/stream/src/Stream.cpp \
               ${top_srcdir}/resource_manager/src/SndCardMonitor.cpp \
               ${top_srcdir}/Pal.cpp \
               ${top_srcdir}/utils/src/PalRingBuffer.cpp \
-              ${top_srcdir}/utils/src/SoundTriggerUtils.cpp \
               ${top_srcdir}/utils/src/SoundTriggerPlatformInfo.cpp \
               ${top_srcdir}/context_manager/src/ContextManager.cpp \
               ${top_srcdir}/stream/src/StreamNonTunnel.cpp \

@@ -109,6 +109,11 @@ h_sources = ${top_srcdir}/stream/inc/Stream.h \
             ${top_srcdir}/session/inc/SoundTriggerEngine.h \
             ${top_srcdir}/session/inc/SoundTriggerEngineGsl.h \
             ${top_srcdir}/session/inc/SoundTriggerEngineCapi.h \
+            ${WORKSPACE}/audio/mm-audio-headers/capiv2_api/capi_v2.h \
+            ${WORKSPACE}/audio/mm-audio-headers/capiv2_api/capi_v2_events.h \
+            ${WORKSPACE}/audio/mm-audio-headers/capiv2_api/capi_v2_extn.h \
+            ${WORKSPACE}/audio/mm-audio-headers/capiv2_api/capi_v2_properties.h \
+            ${WORKSPACE}/audio/mm-audio-headers/capiv2_api/capi_v2_types.h \
             ${top_srcdir}/resource_manager/inc/ResourceManager.h \
             ${top_srcdir}/resource_manager/inc/SndCardMonitor.h \
             ${top_srcdir}/PalDefs.h \

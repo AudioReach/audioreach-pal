@@ -40,7 +40,11 @@
 #include "PalAudioRoute.h"
 #include "PalDefs.h"
 #include "ResourceManager.h"
+#ifdef FEATURE_IPQ_OPENWRT
+#include <audio.h>
+#else
 #include <system/audio.h>
+#endif
 #include <media_fmt_api_basic.h>
 
 #ifndef ARRAY_SIZE

@@ -41,6 +41,11 @@
 #include <thread>
 #include <mutex>
 #include <string>
+#ifdef FEATURE_IPQ_OPENWRT
+#include "audio_route.h"
+#else
+#include "audio_route/audio_route.h"
+#endif
 #include <tinyalsa/asoundlib.h>
 #include <array>
 #include <map>
@@ -53,7 +58,6 @@
 #include <vui_dmgr_audio_intf.h>
 #include <audio_feature_stats_intf.h>
 #include <amdb_api.h>
-#include "audio_route/audio_route.h"
 #include "PalCommon.h"
 #include "PalDefs.h"
 #include "ChargerListener.h"

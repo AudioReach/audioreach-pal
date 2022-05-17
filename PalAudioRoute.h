@@ -62,7 +62,11 @@
 #ifndef AUDIO_HW
 #define AUDIO_HW
 
+#ifdef FEATURE_IPQ_OPENWRT
+#include "audio_route.h"
+#else
 #include "audio_route/audio_route.h"
+#endif
 
 static std::mutex audio_route_mutex;
 

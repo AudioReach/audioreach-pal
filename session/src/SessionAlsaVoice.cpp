@@ -76,6 +76,11 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <agm/agm_api.h>
 #include "audio_route/audio_route.h"
 #include <cutils/properties.h>
+#ifdef FEATURE_IPQ_OPENWRT
+#include "audio_route.h"
+#else
+#include "audio_route/audio_route.h"
+#endif
 
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)
 #define MAX_VOL_INDEX 5

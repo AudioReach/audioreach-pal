@@ -38,7 +38,7 @@
 #include "SoundTriggerEngineGsl.h"
 
 #include <cutils/trace.h>
-
+#include <cstring>
 #include "Session.h"
 #include "Stream.h"
 #include "StreamSoundTrigger.h"

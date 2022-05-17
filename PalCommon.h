@@ -37,11 +37,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#ifdef FEATURE_IPQ_OPENWRT
-#include <audio_utils/log.h>
-#else
+
 #include <log/log.h>
-#endif
 
 #define PAL_LOG_ERR             (0x1) /**< error message, represents code bugs that should be debugged and fixed.*/
 #define PAL_LOG_INFO            (0x2) /**< info message, additional info to support debug */

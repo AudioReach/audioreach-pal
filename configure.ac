@@ -1,16 +1,17 @@
 #                                               -*- Autoconf -*-
-# configure.ac -- Autoconf script for qap
+# configure.ac -- Autoconf script for pal
 #
 
 # Process this file with autoconf to produce a configure script
 
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
-# Initialize the audio-ms12-noship package version 1.0.0
+# Initialize the pal package version 1.0.0
 AC_INIT([pal],1.0.1)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
+# Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX

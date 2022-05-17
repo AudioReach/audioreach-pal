@@ -67,6 +67,7 @@
 #include <chrono>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <cstring>
 
 #include "Session.h"
 #include "SessionAlsaPcm.h"

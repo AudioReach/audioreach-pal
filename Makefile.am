@@ -157,9 +157,6 @@ AM_CPPFLAGS += @AGM_CFLAGS@
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @MMHEADERS_CFLAGS@
 AM_CPPFLAGS += -Wno-sign-compare -Wno-unused-result
-AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-AM_CPPFLAGS += -DSND_AUDIOCODEC_ALAC=0x00000020 -DSND_AUDIOCODEC_APE=0x00000021
-AM_CPPFLAGS += -DCONFIG_GSL
 
 pal_sources = ${top_srcdir}/stream/src/Stream.cpp \
               ${top_srcdir}/stream/src/StreamCompress.cpp \
@@ -215,6 +212,8 @@ pal_sources = ${top_srcdir}/stream/src/Stream.cpp \
 acl_sources = ${top_srcdir}/utils/src/ChargerListener.cpp
 
 endif
+AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
+AM_CPPFLAGS += -DCONFIG_GSL
 
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/pal

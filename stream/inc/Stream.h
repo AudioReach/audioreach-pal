@@ -98,6 +98,10 @@ typedef enum {
 
 #define BUF_SIZE_PLAYBACK 1024
 #define BUF_SIZE_CAPTURE 960
+#define AUDIO_CAPTURE_PERIOD_DURATION_MSEC 20
+#define DEEP_BUFFER_OUTPUT_PERIOD_DURATION 40
+#define PCM_OFFLOAD_OUTPUT_PERIOD_DURATION 80
+#define COMPRESS_OFFLOAD_FRAGMENT_SIZE (32 * 1024)
 #define NO_OF_BUF 4
 #define MUTE_TAG 0
 #define UNMUTE_TAG 1
@@ -275,6 +279,7 @@ public:
     int32_t getBufInfo(size_t *in_buf_size, size_t *in_buf_count,
                        size_t *out_buf_size, size_t *out_buf_count);
     int32_t getMaxMetadataSz(size_t *in_max_metadata_sz, size_t *out_max_metadata_sz);
+    int32_t getBufSize(size_t *in_buf_size, size_t *out_buf_size);
     int32_t getVolumeData(struct pal_volume_data *vData);
     void setGainLevel(int level) { mGainLevel = level; };
     int getGainLevel() { return mGainLevel; };

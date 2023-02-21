@@ -872,6 +872,27 @@ int32_t pal_stream_set_buffer_size (pal_stream_handle_t *stream_handle,
     return status;
 }
 
+int32_t pal_stream_get_buffer_size(pal_stream_handle_t *stream_handle,
+                                   size_t *in_buf_size, size_t *out_buf_size)
+{
+    Stream *s = NULL;
+    int status;
+    if (!stream_handle) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid input parameters status %d", status);
+        return status;
+    }
+    PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+    s =  reinterpret_cast<Stream *>(stream_handle);
+    status = s->getBufSize(in_buf_size, out_buf_size);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "pal_stream_get_buffer_size failed with status %d", status);
+        return status;
+    }
+    PAL_DBG(LOG_TAG, "Exit. status %d", status);
+    return status;
+}
+
 int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle,
                           struct pal_session_time *stime)
 {
@@ -1374,12 +1395,6 @@ int32_t pal_gef_rw_param_acdb(uint32_t param_id __unused, void *param_payload,
     }
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
-}
-
-int32_t pal_stream_get_buffer_size(pal_stream_handle_t *stream_handle,
-                                   size_t *in_buffer, size_t *out_buffer){
-    PAL_ERR(LOG_TAG, "error: API pal_stream_get_buffer_size not implemented");
-    return -ENOSYS;
 }
 
 int32_t pal_stream_get_device(pal_stream_handle_t *stream_handle,

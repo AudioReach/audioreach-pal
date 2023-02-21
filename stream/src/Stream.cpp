@@ -824,6 +824,79 @@ int32_t Stream::getBufInfo(size_t *in_buf_size, size_t *in_buf_count,
     return status;
 }
 
+int32_t Stream::getBufSize(size_t *in_buf_size, size_t *out_buf_size)
+{
+    int32_t status = 0;
+    struct pal_stream_attributes *sattr = NULL;
+    sattr = (struct pal_stream_attributes *)calloc(1, sizeof(struct pal_stream_attributes));
+    if (!sattr) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "stream attribute malloc failed %s, status %d", strerror(errno), status);
+        goto exit;
+    }
+
+    if (!in_buf_size)
+        PAL_DBG(LOG_TAG, "Invalid In Buffer size");
+
+    if (!out_buf_size)
+        PAL_DBG(LOG_TAG, "Invalid Out Buffer size");
+
+    status = getStreamAttributes(sattr);
+    if (sattr->direction == PAL_AUDIO_OUTPUT) {
+        if(!out_buf_size) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid output buffer size status %d", status);
+            goto exit;
+        }
+        switch (sattr->type) {
+            case PAL_STREAM_DEEP_BUFFER:
+            case PAL_STREAM_PCM_OFFLOAD:
+                *out_buf_size = ((sattr->out_media_config.bit_width) / 8) *
+                                (sattr->out_media_config.sample_rate) *
+                                (sattr->out_media_config.ch_info.channels);
+
+                *out_buf_size = *out_buf_size / 1000;
+                *out_buf_size = *out_buf_size * DEEP_BUFFER_OUTPUT_PERIOD_DURATION;
+                break;
+            case PAL_STREAM_COMPRESSED:
+                *out_buf_size = COMPRESS_OFFLOAD_FRAGMENT_SIZE;
+                break;
+            default:
+                PAL_ERR(LOG_TAG, "unsupported stream type 0x%x", sattr->type);
+                break;
+        }
+        PAL_DBG(LOG_TAG, "out_buf_size %zu", *out_buf_size);
+    } else if (sattr->direction == PAL_AUDIO_INPUT) {
+        if(!in_buf_size) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid input buffer size status %d", status);
+            goto exit;
+        }
+
+        switch (sattr->type) {
+            case PAL_STREAM_DEEP_BUFFER:
+            case PAL_STREAM_PCM_OFFLOAD:
+                *in_buf_size = ((sattr->out_media_config.bit_width) / 8) *
+                                (sattr->out_media_config.sample_rate) *
+                                (sattr->out_media_config.ch_info.channels);
+
+                *in_buf_size = *in_buf_size / 1000;
+                *in_buf_size = *in_buf_size * AUDIO_CAPTURE_PERIOD_DURATION_MSEC;
+                break;
+            case PAL_STREAM_COMPRESSED:
+                *in_buf_size = COMPRESS_OFFLOAD_FRAGMENT_SIZE;
+                break;
+            default:
+                PAL_ERR(LOG_TAG, "unsupported stream type 0x%x", sattr->type);
+                break;
+        }
+        PAL_DBG(LOG_TAG, "in_buf_size %zu", *in_buf_size);
+    }
+
+exit:
+    return status;
+}
+
 bool Stream::isStreamAudioOutFmtSupported(pal_audio_fmt_t format)
 {
     switch (format) {

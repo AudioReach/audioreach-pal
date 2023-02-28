@@ -456,8 +456,14 @@ int SessionAlsaCompress::getSndCodecId(pal_audio_fmt_t fmt)
             id = SND_AUDIOCODEC_MP3;
             break;
         case PAL_AUDIO_FMT_AMR_NB:
+            id = SND_AUDIOCODEC_AMR;
+            break;
         case PAL_AUDIO_FMT_AMR_WB:
+            id = SND_AUDIOCODEC_AMRWB;
+            break;
         case PAL_AUDIO_FMT_AMR_WB_PLUS:
+            id = SND_AUDIOCODEC_AMRWBPLUS;
+            break;
         case PAL_AUDIO_FMT_QCELP:
         case PAL_AUDIO_FMT_EVRC:
         case PAL_AUDIO_FMT_G711:

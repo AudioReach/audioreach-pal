@@ -25,6 +25,12 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following
+ * license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 /*
@@ -108,6 +114,7 @@ SessionAlsaVoice::SessionAlsaVoice(std::shared_ptr<ResourceManager> Rm)
    if (max_vol_index == -1){
       max_vol_index = MAX_VOL_INDEX;
    }
+   mState = SESSION_IDLE;
 }
 
 SessionAlsaVoice::~SessionAlsaVoice()
@@ -179,6 +186,12 @@ int32_t SessionAlsaVoice::getFrontEndId(uint32_t ldir)
         break;
     }
     return device;
+}
+
+bool SessionAlsaVoice::isActive()
+{
+    PAL_VERBOSE(LOG_TAG, "state = %d", mState);
+    return mState == SESSION_STARTED;
 }
 
 uint32_t SessionAlsaVoice::getMIID(const char *backendName, uint32_t tagId, uint32_t *miid)
@@ -917,68 +930,70 @@ int SessionAlsaVoice::start(Stream * s)
         goto exit;
     }
 
-    s->getBufInfo(&in_buf_size,&in_buf_count,&out_buf_size,&out_buf_count);
-    memset(&config, 0, sizeof(config));
+    if (mState == SESSION_IDLE) {
+        s->getBufInfo(&in_buf_size,&in_buf_count,&out_buf_size,&out_buf_count);
+        memset(&config, 0, sizeof(config));
 
-    config.rate = sAttr.out_media_config.sample_rate;
-    if (sAttr.out_media_config.bit_width == 32)
-        config.format = PCM_FORMAT_S32_LE;
-    else if (sAttr.out_media_config.bit_width == 24)
-        config.format = PCM_FORMAT_S24_3LE;
-    else if (sAttr.out_media_config.bit_width == 16)
-        config.format = PCM_FORMAT_S16_LE;
-    config.channels = sAttr.out_media_config.ch_info.channels;
-    config.period_size = out_buf_size;
-    config.period_count = out_buf_count;
-    config.start_threshold = 0;
-    config.stop_threshold = 0;
-    config.silence_threshold = 0;
+        config.rate = sAttr.out_media_config.sample_rate;
+        if (sAttr.out_media_config.bit_width == 32)
+            config.format = PCM_FORMAT_S32_LE;
+        else if (sAttr.out_media_config.bit_width == 24)
+            config.format = PCM_FORMAT_S24_3LE;
+        else if (sAttr.out_media_config.bit_width == 16)
+            config.format = PCM_FORMAT_S16_LE;
+        config.channels = sAttr.out_media_config.ch_info.channels;
+        config.period_size = out_buf_size;
+        config.period_count = out_buf_count;
+        config.start_threshold = 0;
+        config.stop_threshold = 0;
+        config.silence_threshold = 0;
 
-    /*setup external ec if needed*/
-    status = getRXDevice(s, rxDevice);
-    if (status) {
-        PAL_ERR(LOG_TAG, "failed, could not find associated RX device");
-        goto exit;
+        /*setup external ec if needed*/
+        status = getRXDevice(s, rxDevice);
+        if (status) {
+            PAL_ERR(LOG_TAG, "failed, could not find associated RX device");
+            goto exit;
+        }
+        setExtECRef(s, rxDevice, true);
+
+        pcmRx = pcm_open(rm->getVirtualSndCard(), pcmDevRxIds.at(0), PCM_OUT, &config);
+        if (!pcmRx) {
+            PAL_ERR(LOG_TAG, "Exit pcm-rx open failed");
+            status = -EINVAL;
+            goto err_pcm_open;
+        }
+
+        if (!pcm_is_ready(pcmRx)) {
+            PAL_ERR(LOG_TAG, "Exit pcm-rx open not ready");
+            status = -EINVAL;
+            goto err_pcm_open;
+        }
+
+        config.rate = sAttr.in_media_config.sample_rate;
+        if (sAttr.in_media_config.bit_width == 32)
+            config.format = PCM_FORMAT_S32_LE;
+        else if (sAttr.in_media_config.bit_width == 24)
+            config.format = PCM_FORMAT_S24_3LE;
+        else if (sAttr.in_media_config.bit_width == 16)
+            config.format = PCM_FORMAT_S16_LE;
+        config.channels = sAttr.in_media_config.ch_info.channels;
+        config.period_size = in_buf_size;
+        config.period_count = in_buf_count;
+
+        pcmTx = pcm_open(rm->getVirtualSndCard(), pcmDevTxIds.at(0), PCM_IN, &config);
+        if (!pcmTx) {
+            PAL_ERR(LOG_TAG, "Exit pcm-tx open failed");
+            status = -EINVAL;
+            goto err_pcm_open;
+        }
+
+        if (!pcm_is_ready(pcmTx)) {
+            PAL_ERR(LOG_TAG, "Exit pcm-tx open not ready");
+            status = -EINVAL;
+            goto err_pcm_open;
+        }
     }
-    setExtECRef(s, rxDevice, true);
-
-    pcmRx = pcm_open(rm->getVirtualSndCard(), pcmDevRxIds.at(0), PCM_OUT, &config);
-    if (!pcmRx) {
-        PAL_ERR(LOG_TAG, "Exit pcm-rx open failed");
-        status = -EINVAL;
-        goto err_pcm_open;
-    }
-
-    if (!pcm_is_ready(pcmRx)) {
-        PAL_ERR(LOG_TAG, "Exit pcm-rx open not ready");
-        status = -EINVAL;
-        goto err_pcm_open;
-    }
-
-    config.rate = sAttr.in_media_config.sample_rate;
-    if (sAttr.in_media_config.bit_width == 32)
-        config.format = PCM_FORMAT_S32_LE;
-    else if (sAttr.in_media_config.bit_width == 24)
-        config.format = PCM_FORMAT_S24_3LE;
-    else if (sAttr.in_media_config.bit_width == 16)
-        config.format = PCM_FORMAT_S16_LE;
-    config.channels = sAttr.in_media_config.ch_info.channels;
-    config.period_size = in_buf_size;
-    config.period_count = in_buf_count;
-
-    pcmTx = pcm_open(rm->getVirtualSndCard(), pcmDevTxIds.at(0), PCM_IN, &config);
-    if (!pcmTx) {
-        PAL_ERR(LOG_TAG, "Exit pcm-tx open failed");
-        status = -EINVAL;
-        goto err_pcm_open;
-    }
-
-    if (!pcm_is_ready(pcmTx)) {
-        PAL_ERR(LOG_TAG, "Exit pcm-tx open not ready");
-        status = -EINVAL;
-        goto err_pcm_open;
-    }
-
+    mState = SESSION_OPENED;
     status = SessionAlsaVoice::setConfig(s, MODULE, VSID, RX_HOSTLESS);
     if (status) {
         PAL_ERR(LOG_TAG, "setConfig failed %d", status);
@@ -1137,6 +1152,8 @@ err_pcm_open:
         retries = 0;
      }
 
+    mState = SESSION_STARTED;
+
 exit:
     freeCustomPayload();
     if (payload)
@@ -1175,14 +1192,14 @@ int SessionAlsaVoice::stop(Stream * s)
     setPopSuppressorMute(s);
     usleep(POP_SUPPRESSOR_RAMP_DELAY);
 
-    if (pcmRx) {
+    if (pcmRx && isActive()) {
         status = pcm_stop(pcmRx);
         if (status) {
             PAL_ERR(LOG_TAG, "pcm_stop - rx failed %d", status);
         }
     }
 
-    if (pcmTx) {
+    if (pcmTx && isActive()) {
         status = pcm_stop(pcmTx);
         if (status) {
             PAL_ERR(LOG_TAG, "pcm_stop - tx failed %d", status);
@@ -1199,6 +1216,8 @@ int SessionAlsaVoice::stop(Stream * s)
 
     rm->voteSleepMonitor(s, false);
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    mState = SESSION_STOPPED;
+
     return status;
 }
 
@@ -1266,6 +1285,7 @@ exit:
         pcmTx = NULL;
     }
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    mState = SESSION_IDLE;
     return status;
 }
 int SessionAlsaVoice::setParameters(Stream *s, int tagId, uint32_t param_id __unused, void *payload)

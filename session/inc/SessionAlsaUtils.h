@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
  *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
@@ -41,6 +43,12 @@
 #include <tinyalsa/asoundlib.h>
 #include <sound/asound.h>
 
+#define PADDING_8BYTE_ALIGN(x) ((((x) + 7) & 7) ^ 7)
+#define MAX_UTIL_PAYLOAD_SIZE ( \
+           sizeof(struct apm_module_param_data_t) + \
+           sizeof(struct param_id_spr_session_time_t) + \
+           PADDING_8BYTE_ALIGN(sizeof(struct apm_module_param_data_t) + \
+           sizeof(struct param_id_spr_session_time_t)))
 
 class Stream;
 class Session;

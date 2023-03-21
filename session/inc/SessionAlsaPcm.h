@@ -75,6 +75,12 @@
 
 #define PARAM_ID_DETECTION_ENGINE_CONFIG_VOICE_WAKEUP 0x08001049
 #define PARAM_ID_VOICE_WAKEUP_BUFFERING_CONFIG 0x08001044
+#define PADDING_8BYTE_ALIGN(x) ((((x) + 7) & 7) ^ 7)
+#define MAX_PCM_PAYLOAD_SIZE ( \
+           sizeof(struct apm_module_param_data_t) + \
+           sizeof(struct ffv_doa_tracking_monitor_t) + \
+           PADDING_8BYTE_ALIGN(sizeof(struct apm_module_param_data_t) + \
+           sizeof(struct ffv_doa_tracking_monitor_t)))
 
 class Stream;
 class Session;

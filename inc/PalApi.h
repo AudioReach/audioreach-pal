@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 /* Changes from Qualcomm Innovation Center are provided under the following license:
  *
@@ -336,13 +341,12 @@ ssize_t pal_stream_write(pal_stream_handle_t *stream_handle, struct pal_buffer *
   *
   * \param[in] stream_handle - Valid stream handle obtained
   *       from pal_stream_open
-  * \param[in] no_of_devices - no of audio devices that the
-  *       stream should be initially started with.
-  * \param[in] pal_device - an array of pal_device. The size of
-  *       the array is based on the no_of_devices the stream is
-  *       associated.
+  * \param[in] no_of_devices - no of audio devices allocated  
+  *       for below pal_device array.
+  * \param[in] pal_device - Pointer to an array of pal_device. The size of
+  *       the array is sent via the above no_of_devices param.
   *
-  * \return 0 on success, error code otherwise
+  * \return number of devices on success, error code otherwise.
   */
 int32_t pal_stream_get_device(pal_stream_handle_t *stream_handle,
                             uint32_t no_of_devices, struct pal_device *devices);

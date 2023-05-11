@@ -189,6 +189,8 @@ protected:
     std::vector <std::shared_ptr<Device>> mPalDevices; // pal devices set from client, which may differ from mDevices
     Session* session;
     struct pal_stream_attributes* mStreamAttr;
+    bool deviceMuteStateRx = false;
+    bool deviceMuteStateTx = false;
     int mGainLevel;
     int mOrientation = 0;
     std::mutex mStreamMutex;
@@ -236,6 +238,8 @@ public:
     virtual int32_t setVolume(struct pal_volume_data *volume) = 0;
     virtual int32_t mute(bool state) = 0;
     virtual int32_t mute_l(bool state) = 0;
+    virtual int32_t getDeviceMute(pal_stream_direction_t dir, bool *state) {return 0;};
+    virtual int32_t setDeviceMute(pal_stream_direction_t dir, bool state) {return 0;};
     virtual int32_t pause() = 0;
     virtual int32_t pause_l() = 0;
     virtual int32_t resume() = 0;

@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef STREAMPCM_H_
@@ -53,6 +58,8 @@ public:
    int32_t setVolume( struct pal_volume_data *volume) override;
    int32_t mute(bool state) override;
    int32_t mute_l(bool state) override;
+   int32_t getDeviceMute(pal_stream_direction_t dir, bool *state) override;
+   int32_t setDeviceMute(pal_stream_direction_t dir, bool state) override;
    int32_t pause() override;
    int32_t pause_l() override;
    int32_t resume() override;

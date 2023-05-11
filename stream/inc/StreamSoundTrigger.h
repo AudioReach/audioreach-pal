@@ -131,6 +131,8 @@ public:
     int32_t setVolume(struct pal_volume_data * volume __unused) { return 0; }
     int32_t mute(bool state __unused) override { return 0; }
     int32_t mute_l(bool state __unused) override { return 0; }
+    int32_t getDeviceMute(pal_stream_direction_t dir __unused, bool *state __unused) override {return 0;}
+    int32_t setDeviceMute(pal_stream_direction_t dir __unused, bool state __unused) override {return 0;}
     int32_t pause() override { return 0; }
     int32_t pause_l() override { return 0; }
     int32_t resume() override { return 0; }

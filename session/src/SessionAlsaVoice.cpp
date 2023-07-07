@@ -324,6 +324,18 @@ int SessionAlsaVoice::open(Stream * s)
 
     rm->getBackEndNames(associatedDevices, rxAifBackEnds, txAifBackEnds);
 
+    if (txAifBackEnds.empty()) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "no TX backend specified for this stream\n");
+        goto exit;
+    }
+
+    if (rxAifBackEnds.empty()) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "no RX backend specified for this stream\n");
+        goto exit;
+    }
+
     status = rm->getVirtualAudioMixer(&mixer);
     if (status) {
         PAL_ERR(LOG_TAG,"mixer error");

@@ -1304,7 +1304,8 @@ int SessionAlsaCompress::start(Stream * s)
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
     PluginPayload ppld;
-
+    char name[128] = {0};
+    
     PAL_DBG(LOG_TAG, "Enter");
 
     memset(&dAttr, 0, sizeof(struct pal_device));
@@ -1350,10 +1351,9 @@ int SessionAlsaCompress::start(Stream * s)
             compress_config.fragment_size = out_buf_size;
             compress_config.fragments = out_buf_count;
             compress_config.codec = &codec;
+            snprintf(name, 128,"agm:%d,%d", rm->getVirtualSndCard(), compressDevIds.at(0));
             // compress_open
-            compress =
-                compress_open(rm->getVirtualSndCard(), compressDevIds.at(0),
-                              COMPRESS_IN, &compress_config);
+            compress = compress_open_by_name(name, COMPRESS_IN, &compress_config);
             if (!compress) {
                 PAL_ERR(LOG_TAG, "compress open failed");
                 status = -EINVAL;
@@ -1400,9 +1400,8 @@ int SessionAlsaCompress::start(Stream * s)
             compress_config.codec = &codec;
             // compress_open for capture
             //can use PAL_STREAM_FLAG_FRAME_BY_FRAME
-            compress =
-                compress_open(rm->getVirtualSndCard(), compressDevIds.at(0),
-                              COMPRESS_OUT, &compress_config);
+            snprintf(name, 128,"agm:%d,%d", rm->getVirtualSndCard(), compressDevIds.at(0));
+                compress = compress_open_by_name(name, COMPRESS_OUT, &compress_config);
             if (!compress) {
                 PAL_ERR(LOG_TAG, "compress open failed");
                 status = -EINVAL;

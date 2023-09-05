@@ -310,14 +310,15 @@ int32_t  StreamPCM::close()
         if (0 != status)
             PAL_ERR(LOG_TAG, "stream stop failed. status %d",  status);
         mStreamMutex.lock();
-    } else if (currentState == STREAM_INIT) {
-        /* Special handling for aaudio usecase on A2DP/BLE.
+    } else if (currentState == STREAM_INIT || currentState == STREAM_STOPPED) {
+        /* Special handling for aaudio usecase on A2DP/BLE/Speaker.
          * A2DP/BLE device starts even when stream is still in STREAM_INIT state,
-         * hence stop A2DP/BLE device to match device start&stop count.
+         * hence stop A2DP/BLE/Speaker device to match device start&stop count.
          */
         for (int32_t i=0; i < mDevices.size(); i++) {
             if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) && isMMap) {
+                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
+                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
                 status = mDevices[i]->stop();
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "BT A2DP/BLE device stop failed with status %d", status);
@@ -429,7 +430,9 @@ int32_t StreamPCM::start()
             }
 
             for (int32_t i=0; i < mDevices.size(); i++) {
-                if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId()) && isMMap) {
+                if ((rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())
+                   || (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) 
+                    && isMMap) {
                     PAL_DBG(LOG_TAG, "skip BT device start as it's done already");
                     status = 0;
                     continue;
@@ -700,6 +703,12 @@ int32_t StreamPCM::stop()
             PAL_VERBOSE(LOG_TAG, "session stop successful");
 
             for (int32_t i=0; i < mDevices.size(); i++) {
+                if ((rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())||
+                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
+                    PAL_DBG(LOG_TAG, "skip BT A2DP/BLE/Speaker device stop, to be done in close/disconnect");
+                    status = 0;
+                    continue;
+                }
                 status = mDevices[i]->stop();
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "Rx device stop failed with status %d", status);
@@ -707,7 +716,6 @@ int32_t StreamPCM::stop()
                     goto exit;
                 }
             }
-            isMMap = false;
             rm->unlockGraph();
             PAL_VERBOSE(LOG_TAG, "devices stop successful");
             break;
@@ -1758,7 +1766,8 @@ int32_t StreamPCM::createMmapBuffer(int32_t min_size_frames,
     if (currentState == STREAM_INIT) {
         rm->lockGraph();
         for (int32_t i=0; i < mDevices.size(); i++) {
-            if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())) {
+            if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId()) ||
+                (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) {
                 PAL_DBG(LOG_TAG, "start BT devices as to populate the full GKVs");
                 status = mDevices[i]->start();
                 btDevStarted = !status;

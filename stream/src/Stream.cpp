@@ -1268,6 +1268,19 @@ int32_t Stream::handleBTDeviceNotReady(bool& a2dpSuspend)
                 goto exit;
             }
 
+            /* Special handling for aaudio usecase on Speaker
+             * Speaker device start needs to be called before graph_open
+             * to start VI feedback graph and send SP payload to AGM.
+             */
+            if (dev->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER && isMMap) {
+                status = dev->start();
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "Speaker device start failed with status %d", status);
+                    dev->close();
+                    mDevices.pop_back();
+                    goto exit;
+                }
+            }
             status = session->connectSessionDevice(this, mStreamAttr->type, dev);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "connectSessionDevice failed:%d", status);
@@ -1333,9 +1346,10 @@ int32_t Stream::disconnectStreamDevice_l(Stream* streamHandle, pal_device_id_t d
              */
 
             if ((currentState != STREAM_INIT && currentState != STREAM_STOPPED) ||
-                (currentState == STREAM_INIT &&
+                ((currentState == STREAM_INIT || currentState == STREAM_STOPPED) &&
                 ((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) &&
+                (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
+                (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) &&
                  isMMap)) {
                 status = mDevices[i]->stop();
                 if (0 != status) {
@@ -1449,9 +1463,9 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
         goto dev_close;
     }
 
-    /* Special handling for aaudio usecase on A2DP/BLE.
-     * For mmap usecase, if device switch happens to A2DP/BLE device
-     * before stream_start then start A2DP/BLE dev. since it won't be
+    /* Special handling for aaudio usecase on A2DP/BLE/Speaker.
+     * For mmap usecase, if device switch happens to A2DP/BLE/Speaker device
+     * before stream_start then start A2DP/BLE/speaker dev. since it won't be
      * started again as a part of pal_stream_start().
      *
      * Currently device switch to BT is not supported for stopped mmap stream.
@@ -1459,9 +1473,10 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
     // TODO: add support for device switch to BT for stopped streams
     rm->lockGraph();
     if ((currentState != STREAM_INIT && currentState != STREAM_STOPPED) ||
-        (currentState == STREAM_INIT &&
+        ((currentState == STREAM_INIT || currentState == STREAM_STOPPED) &&
         ((dev->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-        (dev->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) &&
+        (dev->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
+        (dev->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) &&
         isMMap)) {
         status = dev->start();
         if (0 != status) {

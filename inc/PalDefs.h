@@ -1287,6 +1287,7 @@ typedef struct pal_param_bta2dp {
     uint32_t latency;
     pal_device_id_t   dev_id;
     bool     is_suspend_setparam;
+    bool     is_in_call;
 } pal_param_bta2dp_t;
 
 /* Payload For ID: PAL_PARAM_ID_LATENCY_MODE

@@ -11172,7 +11172,8 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                 goto exit_no_unlock;
             }
 
-            if (!isDeviceAvailable(param_bt_a2dp->dev_id))
+            if ((!isDeviceAvailable(param_bt_a2dp->dev_id)) ||
+                 (param_bt_a2dp->is_suspend_setparam && param_bt_a2dp->is_in_call))
                 skip_switch = true;
 
             if (ResourceManager::isDummyDevEnabled) {
@@ -11487,7 +11488,8 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                 goto exit_no_unlock;
             }
 
-            if(!isDeviceAvailable(param_bt_a2dp->dev_id))
+            if((!isDeviceAvailable(param_bt_a2dp->dev_id)) ||
+               (param_bt_a2dp->is_suspend_setparam && param_bt_a2dp->is_in_call))
                 skip_switch = true;
 
             if (ResourceManager::isDummyDevEnabled) {

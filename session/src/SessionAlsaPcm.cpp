@@ -363,6 +363,10 @@ int SessionAlsaPcm::open(Stream * s)
                 }
             }
             else {
+                if (txAifBackEnds.empty() || rxAifBackEnds.empty()){
+                    PAL_ERR(LOG_TAG, "tx and rx backends are not specified correctly for this stream\n");
+                    return -EINVAL;
+                }
                 status = SessionAlsaUtils::open(s, rm, pcmDevRxIds, pcmDevTxIds,
                         rxAifBackEnds, txAifBackEnds);
                 if (status) {

@@ -221,7 +221,7 @@ library_includedir = $(includedir)/pal
 lib_LTLIBRARIES     = libpal.la
 libpal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT
-libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar_osal -lexpat -ltinycompress -lagm
+libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar_osal -lexpat -ltinycompress -lagmclientwrapper
 libpal_la_LIBADD   += -lar_gsl -lacdbdata
 else
 libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar_osal -lexpat -ltinycompress

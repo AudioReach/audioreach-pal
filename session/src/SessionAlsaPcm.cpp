@@ -301,6 +301,14 @@ int SessionAlsaPcm::open(Stream * s)
             pcmDevRxIds = rm->allocateFrontEndIds(sAttr, RX_HOSTLESS);
             pcmDevTxIds = rm->allocateFrontEndIds(sAttr, TX_HOSTLESS);
             if (!pcmDevRxIds.size() || !pcmDevTxIds.size()) {
+                if (pcmDevRxIds.size()) {
+                    PAL_ERR(LOG_TAG, "freeFrontEndIds Rx called as failed");
+                    rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
+                }
+                if (pcmDevTxIds.size()) {
+                    PAL_ERR(LOG_TAG, "freeFrontEndIds Tx called as failed");
+                    rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+                }
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
                 status = -EINVAL;
                 goto exit;

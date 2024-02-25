@@ -3593,7 +3593,7 @@ int ResourceManager::registerMixerEventCallback(const std::vector<int> &DevIds,
 void ResourceManager::mixerEventWaitThreadLoop(
     std::shared_ptr<ResourceManager> rm) {
     int ret = 0;
-    struct ctl_event mixer_event = {0, {.data8 = {0}}};
+    struct mixer_ctl_event mixer_event = {0, {.data = {0}}};
     struct mixer *mixer = nullptr;
 
     ret = rm->getVirtualAudioMixer(&mixer);
@@ -3614,11 +3614,11 @@ void ResourceManager::mixerEventWaitThreadLoop(
         } else if (ret > 0) {
             ret = mixer_read_event(mixer, &mixer_event);
             if (ret >= 0) {
-                if (strstr((char *)mixer_event.data.elem.id.name, (char *)"event")) {
+                if (strstr((char *)mixer_event.data.element.id.name, (char *)"event")) {
                     PAL_INFO(LOG_TAG, "Event Received %s",
-                             mixer_event.data.elem.id.name);
+                             mixer_event.data.element.id.name);
                     ret = rm->handleMixerEvent(mixer,
-                        (char *)mixer_event.data.elem.id.name);
+                        (char *)mixer_event.data.element.id.name);
                 } else
                     PAL_VERBOSE(LOG_TAG, "Unwanted event, Skipping");
             } else {

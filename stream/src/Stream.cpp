@@ -1320,6 +1320,17 @@ int32_t Stream::disconnectStreamDevice_l(Stream* streamHandle, pal_device_id_t d
             if (currentState != STREAM_STOPPED) {
                 rm->deregisterDevice(mDevices[i], this);
             }
+
+            if(mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER &&
+                     ResourceManager::isSpeakerProtectionEnabled) {
+               status = mDevices[i]->stop();
+               if (0 != status) {
+                   PAL_ERR(LOG_TAG, "device stop failed with status %d", status);
+                   rm->unlockGraph();
+                   goto exit;
+               }
+            }
+
             rm->lockGraph();
             status = session->disconnectSessionDevice(streamHandle, mStreamAttr->type, mDevices[i]);
             if (0 != status) {

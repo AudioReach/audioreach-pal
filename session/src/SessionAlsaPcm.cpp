@@ -373,10 +373,12 @@ int SessionAlsaPcm::open(Stream * s)
             else {
                 if (txAifBackEnds.empty() || rxAifBackEnds.empty()){
                     PAL_ERR(LOG_TAG, "tx and rx backends are not specified correctly for this stream\n");
-                    return -EINVAL;
+                    status = -EINVAL;
                 }
-                status = SessionAlsaUtils::open(s, rm, pcmDevRxIds, pcmDevTxIds,
-                        rxAifBackEnds, txAifBackEnds);
+                if (0 == status) {
+                    status = SessionAlsaUtils::open(s, rm, pcmDevRxIds, pcmDevTxIds,
+                             rxAifBackEnds, txAifBackEnds);
+                }
                 if (status) {
                     PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
                     rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);

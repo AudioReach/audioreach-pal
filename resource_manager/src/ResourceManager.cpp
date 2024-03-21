@@ -10994,7 +10994,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
         break;
         case PAL_PARAM_ID_BT_A2DP_RECONFIG:
         {
-            std::shared_ptr<Device> dev = nullptr;
+            std::shared_ptr<BtA2dp> a2dp_dev = nullptr;
             std::vector <Stream *> activeA2dpStreams;
             struct pal_device dattr;
             pal_param_bta2dp_t *current_param_bt_a2dp = nullptr;
@@ -11004,22 +11004,29 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
 
             if (isDeviceAvailable(PAL_DEVICE_OUT_BLUETOOTH_A2DP)) {
                 dattr.id = PAL_DEVICE_OUT_BLUETOOTH_A2DP;
-                dev = Device::getInstance(&dattr, rm);
-                if (!dev) {
+                a2dp_dev = std::dynamic_pointer_cast<BtA2dp>
+                                (BtA2dp::getInstance(&dattr, rm));
+                if (!a2dp_dev) {
                     PAL_ERR(LOG_TAG, "Device getInstance failed");
                     status = -ENODEV;
                     goto exit;
                 }
 
-                getActiveStream_l(activeA2dpStreams, dev);
+                if (a2dp_dev->checkDeviceStatus() == A2DP_STATE_DISCONNECTED) {
+                    PAL_ERR(LOG_TAG, "failed to open A2dp source, skip a2dp reconfig.");
+                    status = -ENODEV;
+                    goto exit;
+                }
+
+                getActiveStream_l(activeA2dpStreams, a2dp_dev);
                 if (activeA2dpStreams.size() == 0) {
                     PAL_DBG(LOG_TAG, "no active a2dp stream available, skip a2dp reconfig.");
                     status = 0;
                     goto exit;
                 }
 
-                dev->setDeviceParameter(param_id, param_payload);
-                dev->getDeviceParameter(param_id, (void **)&current_param_bt_a2dp);
+                a2dp_dev->setDeviceParameter(param_id, param_payload);
+                a2dp_dev->getDeviceParameter(param_id, (void **)&current_param_bt_a2dp);
                 if ((current_param_bt_a2dp->reconfig == true) &&
                     (current_param_bt_a2dp->a2dp_suspended == false)) {
                     mResourceManagerMutex.unlock();
@@ -11040,7 +11047,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                     mResourceManagerMutex.lock();
 
                     param_bt_a2dp.reconfig = false;
-                    dev->setDeviceParameter(param_id, &param_bt_a2dp);
+                    a2dp_dev->setDeviceParameter(param_id, &param_bt_a2dp);
                 }
             }
         }

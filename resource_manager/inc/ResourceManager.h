@@ -656,8 +656,6 @@ public:
     static bool mixerClosed;
     enum card_status_t cardState;
     bool ssrStarted = false;
-    /* Variable to cache a2dp suspended state for a2dp device */
-    static bool a2dp_suspended;
     /* Variable to store whether Speaker protection is enabled or not */
     static bool isSpeakerProtectionEnabled;
     static bool isHandsetProtectionEnabled;

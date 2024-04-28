@@ -167,6 +167,7 @@ public:
    static int mixerWriteDatapathParams(struct mixer *mixer, int device,
                                         void *payload, int size);
    static int flush(std::shared_ptr<ResourceManager> rm, uint32_t id);
+   static int getScoDevCount(void);
 
 };
 

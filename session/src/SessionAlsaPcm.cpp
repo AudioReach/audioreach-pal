@@ -2227,6 +2227,7 @@ int SessionAlsaPcm::close(Stream * s)
     std::vector<int> pcmId;
     struct disable_lpm_info lpm_info;
     bool isStreamAvail = false;
+    int devCount = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
     if (!frontEndIdAllocated) {
@@ -2289,7 +2290,11 @@ int SessionAlsaPcm::close(Stream * s)
                 beDevId = dev->getSndDeviceId();
                 rm->getBackendName(beDevId, backendname);
                 PAL_DBG(LOG_TAG, "backendname %s", backendname.c_str());
-                if (dev->getDeviceCount() > 1) {
+                devCount = dev->getDeviceCount();
+                // Do not clear device metadata for A2DP device if SCO device is active
+                if ((devCount == 1) && rm->isBtA2dpDevice((pal_device_id_t) beDevId))
+                    devCount += SessionAlsaUtils::getScoDevCount();
+                if (devCount > 1) {
                     PAL_DBG(LOG_TAG, "Rx dev still active");
                     freeDeviceMetadata.push_back(std::make_pair(backendname, 0));
                 } else {

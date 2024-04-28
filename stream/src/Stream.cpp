@@ -1751,9 +1751,7 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
             return 0;
         }
         devReadyStatus = rm->isDeviceReady(newDevices[i].id);
-        if ((newDevices[i].id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-            (newDevices[i].id == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
-            (newDevices[i].id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST)) {
+        if (rm->isBtA2dpDevice(newDevices[i].id)) {
             isNewDeviceA2dp = true;
             newBtDevId = newDevices[i].id;
             isBtReady = devReadyStatus;

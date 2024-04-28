@@ -361,6 +361,22 @@ struct mixer_ctl *SessionAlsaUtils::getBeMixerControl(struct mixer *am, std::str
     return mixer_get_ctl_by_name(am, cntrlName.str().data());
 }
 
+int SessionAlsaUtils::getScoDevCount(void)
+{
+    std::shared_ptr<Device> dev = nullptr;
+    struct pal_device scoDAttr = {};
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    scoDAttr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
+    dev = Device::getInstance(&scoDAttr, rm);
+    if (dev == 0) {
+        PAL_ERR(LOG_TAG, "device_id[%d] Instance query failed", scoDAttr.id );
+        return 0;
+    }
+
+    return dev->getDeviceCount();
+}
+
 int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManager> rmHandle,
     const std::vector<int> &DevIds, const std::vector<std::pair<int32_t, std::string>> &BackEnds)
 {
@@ -2181,20 +2197,8 @@ int SessionAlsaUtils::disconnectSessionDevice(Stream* streamHandle, pal_stream_t
     devCount = dev->getDeviceCount();
 
     // Do not clear device metadata for A2DP device if SCO device is active
-    if ((devCount == 1) && rm->isBtDevice(dAttr.id) && !rm->isBtScoDevice(dAttr.id)) {
-        dev = nullptr;
-        struct pal_device scoDAttr = {};
-        scoDAttr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
-
-        dev = Device::getInstance(&scoDAttr, rm);
-        if (dev == 0) {
-            PAL_ERR(LOG_TAG, "device_id[%d] Instance query failed", dAttr.id );
-            status = -EINVAL;
-            goto freeMetaData;
-        }
-
-        devCount += dev->getDeviceCount();
-    }
+    if ((devCount == 1) && rm->isBtA2dpDevice(dAttr.id))
+        devCount += getScoDevCount();
 
     if (devCount > 1) {
         PAL_INFO(LOG_TAG, "No need to free device metadata since active streams present on device");

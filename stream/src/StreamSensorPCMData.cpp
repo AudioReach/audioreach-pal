@@ -194,7 +194,9 @@ int32_t StreamSensorPCMData::start()
             goto exit;
         }
 
+        rm->voteSleepMonitor(this, true);
         status = device->open();
+        rm->voteSleepMonitor(this, false);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Error: device [%d] open failed with status %d",
                     device->getSndDeviceId(), status);
@@ -721,7 +723,9 @@ int32_t StreamSensorPCMData::ConnectDevice_l(pal_device_id_t device_id)
         goto connect_err;
     }
 
+    rm->voteSleepMonitor(this, true);
     status = device->open();
+    rm->voteSleepMonitor(this, false);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Error:%d device %d open failed", status,
                 device->getSndDeviceId());

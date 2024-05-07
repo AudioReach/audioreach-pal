@@ -1176,7 +1176,9 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
             dev->setSndName(cap_prof->GetSndName());
 
             if (!acd_stream_.device_opened_) {
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, true);
                 status = dev->open();
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, false);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "Error:%d Device open failed", status);
                     break;
@@ -1279,7 +1281,9 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
                 goto connect_err;
             }
             if (!acd_stream_.device_opened_) {
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, true);
                 status = dev->open();
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, false);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "Error:%d device %d open failed",
                         status, dev->getSndDeviceId());
@@ -1538,7 +1542,9 @@ int32_t StreamACD::ACDActive::ProcessEvent(
                 break;
             }
             if (!acd_stream_.device_opened_) {
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, true);
                 status = dev->open();
+                acd_stream_.rm->voteSleepMonitor(&acd_stream_, false);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "Error:%d device %d open failed", status,
                         dev->getSndDeviceId());

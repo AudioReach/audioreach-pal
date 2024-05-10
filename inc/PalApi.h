@@ -564,6 +564,14 @@ int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
 int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
     char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size);
 
+/**
+  * \brief registers a callback function to get notification for audio events.
+  *
+  * \param[in] cb_event - Callback function to be called
+  *
+  * \return 0 on success, error code otherwise
+  */
+int32_t pal_register_for_events(pal_audio_event_callback cb_event);
 
 /**
   * \brief Get pal parameters for generic/custom param

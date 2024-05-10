@@ -174,6 +174,47 @@ exit:
     return;
 }
 
+int32_t pal_register_for_events(pal_audio_event_callback cb_event) {
+
+    std::shared_ptr<ResourceManager> rm = NULL;
+    Stream *stream = NULL;
+    pal_callback_config_t config = {};
+    std::vector <Stream *> streams;
+    struct pal_stream_attributes sAttr;
+    std::vector <std::shared_ptr<Device>> palDevices;
+
+    PAL_DBG(LOG_TAG, "Enter. register callback events");
+    rm = ResourceManager::getInstance();
+    if (!rm) {
+        PAL_ERR(LOG_TAG,"Resource manager instance unavailable");
+        return -EINVAL;
+    }
+    rm->callback_event = cb_event;
+    if (cb_event == NULL) {
+        return 0;
+    }
+    if (rm->getActiveStream(streams, NULL) == 0) {
+        for (int i = 0; i < streams.size(); i++) {
+            stream = static_cast<Stream *>(streams[i]);
+            stream->getPalDevices(palDevices);
+            stream->getStreamAttributes(&sAttr);
+            config.streamAttributes = sAttr;
+            if(!palDevices.empty()) {
+                config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+                int currentDeviceNumber = 0;
+                for (auto &dev : palDevices) {
+                    config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+                    currentDeviceNumber++;
+                }
+            }
+            rm->callback_event(&config, PAL_NOTIFY_START, true);
+            if (config.currentDevices)
+                free(config.currentDevices);
+        }
+    }
+    PAL_DBG(LOG_TAG, "Exit");
+    return 0;
+}
 
 int32_t pal_stream_open(struct pal_stream_attributes *attributes,
                         uint32_t no_of_devices, struct pal_device *devices,
@@ -312,7 +353,9 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     ATRACE_CALL();
     Stream *s = NULL;
     struct pal_stream_attributes sAttr = {};
+    std::vector <std::shared_ptr<Device>> palDevices;
     std::shared_ptr<ResourceManager> rm = NULL;
+    pal_callback_config_t config = {};
     int status;
     if (!stream_handle) {
         status = -EINVAL;
@@ -352,6 +395,7 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     rm->unlockActiveStream();
 
     s->getStreamAttributes(&sAttr);
+    s->getPalDevices(palDevices);
     if (sAttr.type == PAL_STREAM_VOICE_UI)
         rm->handleDeferredSwitch();
 
@@ -366,6 +410,25 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
         goto exit;
     }
 
+    if (rm->callback_event != NULL) {
+        config.streamAttributes = sAttr;
+        int32_t currentDeviceNumber = 0;
+        if(!palDevices.empty()) {
+            config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+        }
+        if (!config.currentDevices) {
+            PAL_ERR(LOG_TAG, "Memory alloc failed");
+            goto exit;
+        }
+        for (auto &dev : palDevices) {
+            config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+            currentDeviceNumber++;
+        }
+        config.noOfCurrentDevices = currentDeviceNumber;
+        rm->callback_event(&config, PAL_NOTIFY_START, false);
+        if (config.currentDevices)
+            free(config.currentDevices);
+    }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
     kpiEnqueue(__func__, false);
@@ -376,7 +439,10 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
 {
     ATRACE_CALL();
     Stream *s = NULL;
+    struct pal_stream_attributes sAttr = {};
     std::shared_ptr<ResourceManager> rm = NULL;
+    std::vector <std::shared_ptr<Device>> palDevices;
+    pal_callback_config_t config = {};
     int status;
 
     if (!stream_handle) {
@@ -409,6 +475,8 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
         goto exit;
     }
     rm->unlockActiveStream();
+    s->getStreamAttributes(&sAttr);
+    s->getPalDevices(palDevices);
     s->setCachedState(STREAM_STOPPED);
     status = s->stop();
 
@@ -421,6 +489,24 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
         goto exit;
     }
 
+    if (rm->callback_event != NULL) {
+        int32_t currentDeviceNumber = 0;
+        if(!palDevices.empty())
+            config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+        if (!config.currentDevices) {
+            PAL_ERR(LOG_TAG, "Memory alloc failed");
+            goto exit;
+        }
+        for (auto &dev : palDevices) {
+            config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+            currentDeviceNumber++;
+        }
+        config.noOfCurrentDevices = currentDeviceNumber;
+        config.streamAttributes = sAttr;
+        rm->callback_event(&config, PAL_NOTIFY_STOP, false);
+        if (config.currentDevices)
+            free(config.currentDevices);
+    }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
     kpiEnqueue(__func__, false);
@@ -982,6 +1068,7 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
     struct pal_device_info devinfo = {};
     struct pal_device *pDevices = NULL;
     struct pal_device curPalDevAttr;
+    pal_callback_config_t config = {};
     std::vector <std::shared_ptr<Device>> aDevices, palDevices;
 
     if (!stream_handle) {
@@ -1146,6 +1233,39 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
     if (0 != status) {
         PAL_ERR(LOG_TAG, "failed with status %d", status);
         goto exit;
+    } else {
+        if (rm->callback_event != NULL) {
+            config.streamAttributes = sattr;
+            int32_t prevDeviceNumber = 0;
+            config.prevDevices = (pal_device_id_t *) calloc(aDevices.size(), sizeof(pal_device_id_t));
+            if (!config.prevDevices) {
+                PAL_ERR(LOG_TAG, "Memory alloc failed");
+                goto exit;
+            }
+            if(!aDevices.empty()){
+                for (auto &dev : aDevices) {
+                    config.prevDevices[prevDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+                    prevDeviceNumber++;
+                }
+            }
+            config.noOfPrevDevices = prevDeviceNumber;
+            config.currentDevices = (pal_device_id_t *) calloc(no_of_devices, sizeof(pal_device_id_t));
+            if (!config.currentDevices) {
+                PAL_ERR(LOG_TAG, "Memory alloc failed");
+                if (config.prevDevices)
+                    free(config.prevDevices);
+                goto exit;
+            }
+            for (int currentDeviceNumber = 0; currentDeviceNumber < no_of_devices; currentDeviceNumber++) {
+                config.currentDevices[currentDeviceNumber] = devices[currentDeviceNumber].id;
+            }
+            config.noOfCurrentDevices = no_of_devices;
+            rm->callback_event(&config, PAL_NOTIFY_DEVICESWITCH, false);
+            if (config.prevDevices)
+                free(config.prevDevices);
+            if (config.currentDevices)
+                free(config.currentDevices);
+        }
     }
 
 exit:

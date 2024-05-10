@@ -690,6 +690,7 @@ protected:
 public:
     ~ResourceManager();
     uint64_t cookie;
+    static pal_audio_event_callback callback_event;
     pal_global_callback globalCb = NULL;
 #ifdef SOC_PERIPHERAL_PROT
     static int deregPeripheralCb(void *cntxt);

@@ -92,6 +92,18 @@ typedef enum {
     LE_AUDIO_BROADCAST_HARDWARE_OFFLOAD_ENCODING_DATAPATH,
 }tSESSION_TYPE;
 
+typedef enum {
+    CTRL_ACK_SUCCESS,
+    CTRL_ACK_UNSUPPORTED,
+    CTRL_ACK_FAILURE,
+    CTRL_ACK_PENDING,
+    CTRL_ACK_INCALL_FAILURE,
+    CTRL_ACK_DISCONNECT_IN_PROGRESS,
+    CTRL_SKT_DISCONNECTED,
+    CTRL_ACK_UNKNOWN,
+    CTRL_ACK_RECONFIGURATION,
+};
+
 typedef void (*bt_audio_pre_init_t)(void);
 typedef int (*audio_source_open_api_t)(tSESSION_TYPE session_type);
 typedef int (*audio_source_close_api_t)(tSESSION_TYPE session_type);
@@ -176,7 +188,6 @@ protected:
     void startAbr();
     void stopAbr();
     int32_t configureSlimbusClockSrc(void);
-
 public:
     int getCodecConfig(struct pal_media_config *config) override;
     virtual ~Bluetooth();

@@ -1786,8 +1786,16 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
             currentState = STREAM_STOPPED;
             PAL_INFO(LOG_TAG, "Notify abort event to client");
             mStreamMutex.unlock();
+            /*
+             * When handling concurrency, active stream mutex is locked,
+             * and when we notify abort event we may observe deadlock if
+             * client is also trying to operate other VA sessions. Hence
+             * unlock active stream mutex until event is notified.
+             */
+            rm->unlockActiveStream();
             callback_((pal_stream_handle_t *)this, 0, (uint32_t *)&phrase_rec_event->common,
                        event_size, cookie_);
+            rm->lockActiveStream();
             mStreamMutex.lock();
         }
         free(phrase_rec_event);

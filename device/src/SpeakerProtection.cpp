@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -1285,22 +1285,23 @@ void SpeakerProtection::updateCpsCustomPayload(int miid)
     PayloadBuilder* builder = new PayloadBuilder();
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
+    int num_ch = vi_device.channels;
     lpass_swr_hw_reg_cfg_t *cpsRegCfg = NULL;
-    pkd_reg_addr_t pkedRegAddr[numberOfChannels];
+    pkd_reg_addr_t pkedRegAddr[num_ch];
     cps_reg_wr_values_t *cps_thrsh_values;
     param_id_cps_lpass_swr_thresholds_cfg_t *cps_thrsh_cfg;
     int dev_num;
     int val, ret = 0;
 
-    memset(&pkedRegAddr, 0, sizeof(pkd_reg_addr_t) * numberOfChannels);
+    memset(&pkedRegAddr, 0, sizeof(pkd_reg_addr_t) * num_ch);
     // Payload for ParamID : PARAM_ID_CPS_LPASS_HW_INTF_CFG
     cpsRegCfg = (lpass_swr_hw_reg_cfg_t *) calloc(1, sizeof(lpass_swr_hw_reg_cfg_t)
-                       + sizeof(pkd_reg_addr_t) * numberOfChannels);
+                       + sizeof(pkd_reg_addr_t) * num_ch);
     if (cpsRegCfg == NULL) {
         PAL_ERR(LOG_TAG,"Unable to allocate Memory for CPS config\n");
         goto exit;
     }
-    cpsRegCfg->num_spkr = numberOfChannels;
+    cpsRegCfg->num_spkr = num_ch;
     cpsRegCfg->lpass_wr_cmd_reg_phy_addr = LPASS_WR_CMD_REG_PHY_ADDR;
     cpsRegCfg->lpass_rd_cmd_reg_phy_addr = LPASS_RD_CMD_REG_PHY_ADDR;
     cpsRegCfg->lpass_rd_fifo_reg_phy_addr = LPASS_RD_FIFO_REG_PHY_ADDR;
@@ -1308,18 +1309,18 @@ void SpeakerProtection::updateCpsCustomPayload(int miid)
     // Payload for ParamID : PARAM_ID_CPS_LPASS_SWR_THRESHOLDS_CFG
     cps_thrsh_cfg = (param_id_cps_lpass_swr_thresholds_cfg_t*) calloc(1,
                        sizeof(param_id_cps_lpass_swr_thresholds_cfg_t)
-                       + (sizeof(cps_reg_wr_values_t) * numberOfChannels));
+                       + (sizeof(cps_reg_wr_values_t) * num_ch));
     if (cps_thrsh_cfg == NULL) {
         PAL_ERR(LOG_TAG,"Unable to allocate Memory for CPS SWR Threshold config\n");
         goto exit;
     }
-    cps_thrsh_cfg->num_spkr = numberOfChannels;
+    cps_thrsh_cfg->num_spkr = num_ch;
     cps_thrsh_cfg->vbatt_lower_threshold_1 = CPS_WSA_VBATT_LOWER_THRESHOLD_1;
     cps_thrsh_cfg->vbatt_lower_threshold_2 = CPS_WSA_VBATT_LOWER_THRESHOLD_2;
     cps_thrsh_values = (cps_reg_wr_values_t *)((uint8_t*)cps_thrsh_cfg
                          + sizeof(param_id_cps_lpass_swr_thresholds_cfg_t));
 
-    for (int i = 0; i < numberOfChannels; i++) {
+    for (int i = 0; i < num_ch; i++) {
         switch (i)
         {
             case 0 :
@@ -1369,7 +1370,7 @@ void SpeakerProtection::updateCpsCustomPayload(int miid)
         cps_thrsh_values++;
     }
     memcpy(cpsRegCfg->pkd_reg_addr, pkedRegAddr, sizeof(pkd_reg_addr_t) *
-                    numberOfChannels);
+                    num_ch);
 
     // Payload builder for ParamID : PARAM_ID_CPS_LPASS_HW_INTF_CFG
     payloadSize = 0;

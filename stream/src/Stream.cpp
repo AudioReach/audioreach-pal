@@ -1298,11 +1298,11 @@ int32_t Stream::disconnectStreamDevice_l(Stream* streamHandle, pal_device_id_t d
 {
     int32_t status = 0;
 
-    if (currentState == STREAM_IDLE) {
+    if (currentState == STREAM_IDLE || PAL_CARD_STATUS_DOWN(rm->cardState)) {
         for (int i = 0; i < mDevices.size(); i++) {
             if (dev_id == mDevices[i]->getSndDeviceId()) {
                 mDevices.erase(mDevices.begin() + i);
-                PAL_DBG(LOG_TAG, "stream is in IDLE state, erase device: %d", dev_id);
+                PAL_DBG(LOG_TAG, "stream is in IDLE state or SSR coming, erase device: %d", dev_id);
                 break;
             }
         }
@@ -1393,8 +1393,8 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
 
     dev->setDeviceAttributes(*dattr);
 
-    if (currentState == STREAM_IDLE) {
-        PAL_DBG(LOG_TAG, "stream is in IDLE state, insert %d to mDevices", dev->getSndDeviceId());
+    if (currentState == STREAM_IDLE || PAL_CARD_STATUS_DOWN(rm->cardState)) {
+        PAL_DBG(LOG_TAG, "stream is in IDLE state or SSR coming, insert %d to mDevices", dev->getSndDeviceId());
         mDevices.push_back(dev);
         status = 0;
         goto exit;
@@ -1625,13 +1625,6 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
         mStreamMutex.unlock();
         rm->unlockActiveStream();
         return -EINVAL;
-    }
-
-    if (PAL_CARD_STATUS_DOWN(rm->cardState)) {
-        PAL_ERR(LOG_TAG, "Sound card offline/standby");
-        mStreamMutex.unlock();
-        rm->unlockActiveStream();
-        return 0;
     }
 
     streamHandle->getStreamAttributes(&strAttr);

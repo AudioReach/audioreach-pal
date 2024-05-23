@@ -8168,11 +8168,6 @@ int32_t ResourceManager::streamDevSwitch(std::vector <std::tuple<Stream *, uint3
 
     PAL_INFO(LOG_TAG, "Enter");
 
-    if (PAL_CARD_STATUS_DOWN(cardState)) {
-        PAL_ERR(LOG_TAG, "Sound card is offline/standby");
-        status = -EINVAL;
-        goto exit_no_unlock;
-    }
     mActiveStreamMutex.lock();
 
     SortAndUnique(streamDevDisconnectList);

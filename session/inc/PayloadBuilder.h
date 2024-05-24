@@ -107,6 +107,7 @@ typedef enum {
     VSID_SEL,
     VUI_MODULE_TYPE_SEL,
     ACD_MODULE_TYPE_SEL,
+    ASR_MODULE_TYPE_SEL,
     STREAM_TYPE_SEL,
     CODECFORMAT_SEL,
     ABR_ENABLED_SEL,
@@ -125,6 +126,7 @@ const std::map<std::string, selector_type_t> selectorstypeLUT {
     {std::string{ "VSID" },                  VSID_SEL},
     {std::string{ "VUIModuleType" },         VUI_MODULE_TYPE_SEL},
     {std::string{ "ACDModuleType" },         ACD_MODULE_TYPE_SEL},
+    {std::string{ "ASRModuleType" },         ASR_MODULE_TYPE_SEL},
     {std::string{ "StreamType" },            STREAM_TYPE_SEL},
     {std::string{ "DevicePPType" },          DEVICEPP_TYPE_SEL},
     {std::string{ "CodecFormat" },           CODECFORMAT_SEL},
@@ -222,10 +224,10 @@ public:
                             const std::set <std::pair<int, int>> &acdbGKVSet,
                             uint32_t moduleInstanceId,
                             uint32_t sampleRate);
-    int payloadSVAConfig(uint8_t **payload, size_t *size,
-                        uint8_t *config, size_t config_size,
-                        uint32_t miid, uint32_t param_id);
-    void payloadDOAInfo(uint8_t **payload, size_t *size, uint32_t moduleId);
+    int payloadConfig(uint8_t **payload, size_t *size, uint8_t *config,
+                      size_t config_size, uint32_t miid, uint32_t param_id);
+    void payloadGetParam(Stream* s, uint8_t **payload, size_t *size, uint32_t moduleId,
+                         uint32_t param_id, size_t config_size);
     void payloadQuery(uint8_t **payload, size_t *size, uint32_t moduleId,
                             uint32_t paramId, uint32_t querySize);
     template <typename T>

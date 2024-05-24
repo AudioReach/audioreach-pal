@@ -75,6 +75,7 @@ LOCAL_SRC_FILES := \
     stream/src/StreamSensorPCMData.cpp\
     stream/src/StreamHaptics.cpp \
     stream/src/StreamSensorRenderer.cpp \
+    stream/src/StreamASR.cpp \
     device/src/Headphone.cpp \
     device/src/USBAudio.cpp \
     device/src/Device.cpp \
@@ -107,6 +108,7 @@ LOCAL_SRC_FILES := \
     session/src/SoundTriggerEngineCapi.cpp \
     session/src/SoundTriggerEngineGsl.cpp \
     session/src/ContextDetectionEngine.cpp \
+    session/src/ASREngine.cpp \
     context_manager/src/ContextManager.cpp \
     session/src/ACDEngine.cpp \
     resource_manager/src/ResourceManager.cpp \
@@ -114,6 +116,7 @@ LOCAL_SRC_FILES := \
     utils/src/SoundTriggerPlatformInfo.cpp \
     utils/src/ACDPlatformInfo.cpp \
     utils/src/VoiceUIPlatformInfo.cpp \
+    utils/src/ASRPlatformInfo.cpp \
     utils/src/PalRingBuffer.cpp \
     utils/src/SignalHandler.cpp \
     utils/src/AudioHapticsInterface.cpp \

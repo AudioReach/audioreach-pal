@@ -27,7 +27,6 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -40,6 +39,7 @@
 #include "StreamCompress.h"
 #include "StreamSoundTrigger.h"
 #include "StreamACD.h"
+#include "StreamASR.h"
 #include "StreamContextProxy.h"
 #include "StreamUltraSound.h"
 #include "StreamSensorPCMData.h"
@@ -241,6 +241,14 @@ stream_create:
                     break;
                 case PAL_STREAM_ACD:
                     stream = new StreamACD(sAttr,
+                                           palDevsAttr,
+                                           noOfDevices,
+                                           modifiers,
+                                           noOfModifiers,
+                                           rm);
+                    break;
+                case PAL_STREAM_ASR:
+                    stream = new StreamASR(sAttr,
                                            palDevsAttr,
                                            noOfDevices,
                                            modifiers,
@@ -2233,6 +2241,7 @@ std::shared_ptr<Device> Stream::GetPalDevice(Stream *streamHandle, pal_device_id
     std::shared_ptr<Device> device = nullptr;
     StreamSoundTrigger *st_st = nullptr;
     StreamACD *st_acd = nullptr;
+    StreamASR *st_asr = nullptr;
     StreamSensorPCMData *st_sns_pcm_data = nullptr;
     struct pal_device dev;
 
@@ -2254,6 +2263,9 @@ std::shared_ptr<Device> Stream::GetPalDevice(Stream *streamHandle, pal_device_id
     } else if (mStreamAttr->type == PAL_STREAM_ACD) {
         st_acd = dynamic_cast<StreamACD*>(streamHandle);
         cap_prof = st_acd->GetCurrentCaptureProfile();
+    } else if (mStreamAttr->type == PAL_STREAM_ASR) {
+        st_asr = dynamic_cast<StreamASR*>(streamHandle);
+        cap_prof = st_asr->GetCurrentCaptureProfile();
     } else {
         st_sns_pcm_data = dynamic_cast<StreamSensorPCMData*>(streamHandle);
         cap_prof = st_sns_pcm_data->GetCurrentCaptureProfile();

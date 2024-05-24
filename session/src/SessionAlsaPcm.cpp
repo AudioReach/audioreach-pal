@@ -52,6 +52,7 @@
 #include "ResourceManager.h"
 #include "detection_cmn_api.h"
 #include "acd_api.h"
+#include "asr_module_calibration_api.h"
 #include "hw_intf_cmn_api.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -105,6 +106,8 @@ bool SessionAlsaPcm::silenceEventRegistered = false;
 #define SESSION_ALSA_MMAP_PERIOD_COUNT_MIN 64
 #define SESSION_ALSA_MMAP_PERIOD_COUNT_MAX 2048
 #define SESSION_ALSA_MMAP_PERIOD_COUNT_DEFAULT (SESSION_ALSA_MMAP_PERIOD_COUNT_MAX)
+/* Param ID definitions */
+#define PARAM_ID_FFV_DOA_TRACKING_MONITOR 0x080010A4
 
 SessionAlsaPcm::SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm)
 {
@@ -151,7 +154,8 @@ int SessionAlsaPcm::prepare(Stream * s)
     // explicitly set ckv for VoiceUI/ACD/SPCM
     if (sAttr.type == PAL_STREAM_VOICE_UI ||
         sAttr.type == PAL_STREAM_ACD ||
-        sAttr.type == PAL_STREAM_SENSOR_PCM_DATA) {
+        sAttr.type == PAL_STREAM_SENSOR_PCM_DATA ||
+        sAttr.type == PAL_STREAM_ASR) {
         status = s->getAssociatedDevices(associatedDevices);
         if (status != 0) {
             PAL_ERR(LOG_TAG, "getAssociatedDevices Failed");
@@ -241,7 +245,8 @@ int SessionAlsaPcm::open(Stream * s)
     }
     if (sAttr.type != PAL_STREAM_LOOPBACK) {
         if (sAttr.direction == PAL_AUDIO_INPUT) {
-            if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
+            if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_SENSOR_PCM_DATA ||
+                sAttr.type == PAL_STREAM_ASR)
                 ldir = TX_HOSTLESS;
 
             pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
@@ -394,6 +399,7 @@ int SessionAlsaPcm::open(Stream * s)
 
     if (sAttr.type == PAL_STREAM_VOICE_UI ||
         sAttr.type == PAL_STREAM_ACD ||
+        sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
        (sAttr.type == PAL_STREAM_HAPTICS &&
@@ -402,6 +408,7 @@ int SessionAlsaPcm::open(Stream * s)
             case PAL_STREAM_VOICE_UI:
             case PAL_STREAM_CONTEXT_PROXY:
             case PAL_STREAM_ACD:
+            case PAL_STREAM_ASR:
             case PAL_STREAM_HAPTICS:
                 pcmId = pcmDevIds;
                 break;
@@ -767,7 +774,8 @@ int SessionAlsaPcm::setConfig(Stream * s, configType type, int tag)
             ckv.clear();
             if (sAttr.type == PAL_STREAM_VOICE_UI ||
                 sAttr.type == PAL_STREAM_ACD ||
-                sAttr.type == PAL_STREAM_SENSOR_PCM_DATA) {
+                sAttr.type == PAL_STREAM_SENSOR_PCM_DATA ||
+                sAttr.type == PAL_STREAM_ASR) {
                 status = builder->populateDevicePPCkv(s, ckv);
             } else {
                 status = builder->populateCalKeyVector(s, ckv, tag);
@@ -1018,6 +1026,7 @@ int SessionAlsaPcm::start(Stream * s)
     int payload_size = 0;
     struct agm_event_reg_cfg event_cfg = {};
     struct agm_event_reg_cfg *acd_event_cfg = nullptr;
+    struct agm_event_reg_cfg *asr_event_cfg = nullptr;
     int tagId = 0;
     int DeviceId;
     struct disable_lpm_info lpm_info = {};
@@ -1209,14 +1218,14 @@ int SessionAlsaPcm::start(Stream * s)
         SessionAlsaUtils::registerMixerEvent(mixer, DeviceId,
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
-    } else if(sAttr.type == PAL_STREAM_ACD) {
+    } else if (sAttr.type == PAL_STREAM_ACD) {
         PAL_DBG(LOG_TAG, "register ACD models");
         SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
                                             customPayload, customPayloadSize);
         freeCustomPayload();
-    } else if(sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
+    } else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
         status = register_asps_event(1);
-    } else if(sAttr.type == PAL_STREAM_HAPTICS &&
+    } else if (sAttr.type == PAL_STREAM_HAPTICS &&
               sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
         payload_size = sizeof(struct agm_event_reg_cfg);
 
@@ -1228,6 +1237,22 @@ int SessionAlsaPcm::start(Stream * s)
                 rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, (void *)&event_cfg,
                 payload_size);
 
+    } else if (sAttr.type == PAL_STREAM_ASR) {
+        payload_size = sizeof(struct agm_event_reg_cfg) + eventPayloadSize;
+        asr_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+        memset(&event_cfg, 0, sizeof(event_cfg));
+        asr_event_cfg->event_config_payload_size = eventPayloadSize;
+        asr_event_cfg->is_register = 1;
+        asr_event_cfg->event_id = eventId;
+        asr_event_cfg->module_instance_id = asrMiid;
+        memcpy(asr_event_cfg->event_config_payload, eventPayload, eventPayloadSize);
+        if (pcmDevIds.size() == 0) {
+            PAL_ERR(LOG_TAG, "frontendIDs is not available.");
+            status = -EINVAL;
+            goto exit;
+        }
+        SessionAlsaUtils::registerMixerEvent(mixer, pcmDevIds.at(0),
+            (void *)asr_event_cfg, payload_size);
     }
 
     switch (sAttr.direction) {
@@ -1239,6 +1264,7 @@ int SessionAlsaPcm::start(Stream * s)
             }
             if ((sAttr.type != PAL_STREAM_VOICE_UI) &&
                 (sAttr.type != PAL_STREAM_ACD) &&
+                (sAttr.type != PAL_STREAM_ASR) &&
                 (sAttr.type != PAL_STREAM_CONTEXT_PROXY) &&
                 (sAttr.type != PAL_STREAM_SENSOR_PCM_DATA) &&
                 (sAttr.type != PAL_STREAM_ULTRA_LOW_LATENCY) &&
@@ -1465,7 +1491,8 @@ set_mixer:
                     if (status)
                         PAL_ERR(LOG_TAG, "Failed to set incall record params status = %d", status);
                 }
-            } else if (sAttr.type == PAL_STREAM_VOICE_UI) {
+            } else if (sAttr.type == PAL_STREAM_VOICE_UI ||
+                       sAttr.type == PAL_STREAM_ASR) {
                 SessionAlsaUtils::setMixerParameter(mixer,
                     pcmDevIds.at(0), customPayload, customPayloadSize);
                 freeCustomPayload();
@@ -2390,7 +2417,7 @@ int SessionAlsaPcm::stop(Stream * s)
         SessionAlsaUtils::registerMixerEvent(mixer, DeviceId,
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
-    } else if (sAttr.type == PAL_STREAM_ACD) {
+    } else if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_ASR) {
         if (eventPayload == NULL) {
             PAL_INFO(LOG_TAG, "eventPayload is NULL");
             goto exit;
@@ -2401,6 +2428,8 @@ int SessionAlsaPcm::stop(Stream * s)
         event_cfg.event_id = eventId;
         event_cfg.event_config_payload_size = 0;
         event_cfg.is_register = 0;
+        tagId = sAttr.type == PAL_STREAM_ACD ? CONTEXT_DETECTION_ENGINE :
+                                               TAG_MODULE_ASR;
         if (!txAifBackEnds.empty()) {
             if (!pcmDevIds.size()) {
                 PAL_ERR(LOG_TAG, "pcmDevIds not found.");
@@ -2408,7 +2437,7 @@ int SessionAlsaPcm::stop(Stream * s)
                 goto exit;
             }
             SessionAlsaUtils::registerMixerEvent(mixer, pcmDevIds.at(0),
-                    txAifBackEnds[0].second.data(), CONTEXT_DETECTION_ENGINE, (void *)&event_cfg,
+                    txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                     payload_size);
         }
     } else if(sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
@@ -2493,6 +2522,7 @@ int SessionAlsaPcm::close(Stream * s)
                 PAL_ERR(LOG_TAG, "pcm_close failed %d", status);
             }
             if (sAttr.type == PAL_STREAM_ACD ||
+                sAttr.type == PAL_STREAM_ASR ||
                 sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
                 ldir = TX_HOSTLESS;
 
@@ -2630,6 +2660,7 @@ int SessionAlsaPcm::close(Stream * s)
 
     if (sAttr.type == PAL_STREAM_VOICE_UI ||
         sAttr.type == PAL_STREAM_ACD ||
+        sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
         (sAttr.type == PAL_STREAM_HAPTICS &&
@@ -2637,6 +2668,7 @@ int SessionAlsaPcm::close(Stream * s)
         switch (sAttr.type) {
             case PAL_STREAM_VOICE_UI:
             case PAL_STREAM_ACD:
+            case PAL_STREAM_ASR:
             case PAL_STREAM_CONTEXT_PROXY:
             case PAL_STREAM_HAPTICS:
                 pcmId = pcmDevIds;
@@ -3085,10 +3117,20 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
         case PAL_PARAM_ID_WAKEUP_ENGINE_RESET:
         case PAL_PARAM_ID_WAKEUP_ENGINE_PER_MODEL_RESET:
         case PAL_PARAM_ID_WAKEUP_CUSTOM_CONFIG:
+        case PAL_PARAM_ID_ASR_CONFIG:
+        case PAL_PARAM_ID_ASR_OUTPUT:
+        case PAL_PARAM_ID_ASR_FORCE_OUTPUT:
+        case PAL_PARAM_ID_ASR_SET_PARAM:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;
-            svaMiid = header->module_instance_id;
+            if (param_id == PAL_PARAM_ID_ASR_CONFIG ||
+                param_id == PAL_PARAM_ID_ASR_OUTPUT ||
+                param_id == PAL_PARAM_ID_ASR_FORCE_OUTPUT ||
+                param_id == PAL_PARAM_ID_ASR_SET_PARAM)
+                asrMiid = header->module_instance_id;
+            else
+                svaMiid = header->module_instance_id;
             paramData = (uint8_t *)payload;
             paramSize = PAL_ALIGN_8BYTE(header->param_size +
                 sizeof(struct apm_module_param_data_t));
@@ -3739,7 +3781,7 @@ exit:
     return status;
 }
 
-int SessionAlsaPcm::getParameters(Stream *s __unused, int tagId, uint32_t param_id, void **payload)
+int SessionAlsaPcm::getParameters(Stream *s, int tagId, uint32_t param_id, void **payload)
 {
     int status = 0;
     uint8_t *ptr = NULL;
@@ -3753,7 +3795,7 @@ int SessionAlsaPcm::getParameters(Stream *s __unused, int tagId, uint32_t param_
     const char *stream = "PCM";
     struct mixer_ctl *ctl;
     std::ostringstream CntrlName;
-    PAL_DBG(LOG_TAG, "Enter.");
+    PAL_INFO(LOG_TAG, "Enter, param id 0x%x, tag id : 0x%x", param_id, tagId);
 
     if (pcmDevIds.size() > 0) {
         device = pcmDevIds.at(0);
@@ -3795,7 +3837,8 @@ int SessionAlsaPcm::getParameters(Stream *s __unused, int tagId, uint32_t param_
         case PAL_PARAM_ID_DIRECTION_OF_ARRIVAL:
         {
             configSize = sizeof(struct ffv_doa_tracking_monitor_t);
-            builder->payloadDOAInfo(&payloadData, &payloadSize, miid);
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                                    PARAM_ID_FFV_DOA_TRACKING_MONITOR, configSize);
             break;
         }
         case PAL_PARAM_ID_WAKEUP_MODULE_VERSION:
@@ -3813,6 +3856,14 @@ int SessionAlsaPcm::getParameters(Stream *s __unused, int tagId, uint32_t param_
             configSize = sizeof(struct amdb_param_id_module_version_info_t) +
                          sizeof(struct amdb_module_version_info_payload_t);
             builder->payloadAFSInfo(&payloadData, &payloadSize, miid);
+            break;
+        }
+        case PAL_PARAM_ID_ASR_OUTPUT:
+        {
+            configSize = sizeof(param_id_asr_output_t) +
+                          (s->GetNumEvents() * sizeof(asr_output_status_t));
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_ASR_OUTPUT, configSize);
             break;
         }
         default:
@@ -3859,7 +3910,7 @@ int SessionAlsaPcm::getParameters(Stream *s __unused, int tagId, uint32_t param_
 
 exit:
     freeCustomPayload(&payloadData, &payloadSize);
-    PAL_DBG(LOG_TAG, "Exit. status %d", status);
+    PAL_INFO(LOG_TAG, "Exit. status %d", status);
     return status;
 }
 

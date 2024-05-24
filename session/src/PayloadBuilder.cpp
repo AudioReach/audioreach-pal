@@ -28,36 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *
- *   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: PayloadBuilder"
@@ -80,6 +51,7 @@
 #include "mspp_module_calibration_api.h"
 #include "tsm_module_api.h"
 #include "USBAudio.h"
+#include "asr_module_calibration_api.h"
 
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
 #define USECASE_XML_FILE "/etc/usecaseKvManager.xml"
@@ -1823,29 +1795,30 @@ int PayloadBuilder::payloadCustomParam(uint8_t **alsaPayload, size_t *size,
     return 0;
 }
 
-int PayloadBuilder::payloadSVAConfig(uint8_t **payload, size_t *size,
-            uint8_t *config, size_t config_size,
-            uint32_t miid, uint32_t param_id) {
+int PayloadBuilder::payloadConfig(uint8_t **payload, size_t *size,
+                                     uint8_t *config, size_t config_size,
+                                     uint32_t miid, uint32_t param_id) {
     struct apm_module_param_data_t* header = nullptr;
     uint8_t* payloadInfo = nullptr;
     size_t payloadSize = 0;
 
     payloadSize = PAL_ALIGN_8BYTE(
-        sizeof(struct apm_module_param_data_t) + config_size);
+                  sizeof(struct apm_module_param_data_t) + config_size);
     payloadInfo = (uint8_t *)calloc(1, payloadSize);
     if (!payloadInfo) {
         PAL_ERR(LOG_TAG, "failed to allocate memory.");
         return -ENOMEM;
     }
 
-    header = (struct apm_module_param_data_t*)payloadInfo;
+    header = (struct apm_module_param_data_t *)payloadInfo;
     header->module_instance_id = miid;
     header->param_id = param_id;
     header->error_code = 0x0;
     header->param_size = config_size;
-    if (config_size)
+    if (config_size) {
         ar_mem_cpy(payloadInfo + sizeof(struct apm_module_param_data_t),
             config_size, config, config_size);
+    }
     *size = payloadSize;
     *payload = payloadInfo;
 
@@ -1930,14 +1903,17 @@ int PayloadBuilder::payloadDualMono(uint8_t **payloadInfo)
     return 0;
 }
 
-void PayloadBuilder::payloadDOAInfo(uint8_t **payload, size_t *size, uint32_t moduleId)
+void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size, uint32_t moduleId,
+                                     uint32_t param_id, size_t config_size)
 {
+    PAL_DBG(LOG_TAG, "param id : 0x%x, moduleID 0x%x", param_id, moduleId);
+
     struct apm_module_param_data_t* header;
+    struct param_id_asr_output_t* asrOutputParam = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
 
-    payloadSize = sizeof(struct apm_module_param_data_t) +
-                  sizeof(struct ffv_doa_tracking_monitor_t);
+    payloadSize = sizeof(struct apm_module_param_data_t) + config_size;
     padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
 
     payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
@@ -1947,9 +1923,17 @@ void PayloadBuilder::payloadDOAInfo(uint8_t **payload, size_t *size, uint32_t mo
     }
     header = (struct apm_module_param_data_t*)payloadInfo;
     header->module_instance_id = moduleId;
-    header->param_id = PARAM_ID_FFV_DOA_TRACKING_MONITOR;
+    header->param_id = param_id;
     header->error_code = 0x0;
     header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+
+    if (param_id == PARAM_ID_ASR_OUTPUT) {
+        asrOutputParam = (struct param_id_asr_output_t *)
+                         (payloadInfo + (sizeof(struct apm_module_param_data_t)));
+        asrOutputParam->output_token = s->GetOutputToken();
+        asrOutputParam->num_outputs = s->GetNumEvents();
+        asrOutputParam->payload_size =  s->GetPayloadSize();
+    }
 
     *size = payloadSize + padBytes;
     *payload = payloadInfo;
@@ -3354,6 +3338,7 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
 
         switch (sattr->type) {
             case PAL_STREAM_VOICE_UI:
+            case PAL_STREAM_ASR:
                 PAL_INFO(LOG_TAG,"channels %d, id %d\n",dAttr.config.ch_info.channels, dAttr.id);
                 /* Push Channels CKV for FFNS or FFECNS channel based calibration */
                 keyVector.push_back(std::make_pair(CHANNELS,

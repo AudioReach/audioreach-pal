@@ -26,14 +26,14 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #include "ACDPlatformInfo.h"
 #include "VoiceUIPlatformInfo.h"
+#include "ASRPlatformInfo.h"
 #include "SoundTriggerPlatformInfo.h"
 #include "PalCommon.h"
 
@@ -295,6 +295,12 @@ void SoundTriggerPlatformInfo::HandleStartTag(const char* tag, const char** attr
         return;
     }
 
+    if (!strcmp(tag, "asr_platform_info")) {
+        curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
+                          ASRPlatformInfo::GetInstance());
+        return;
+    }
+
     if (!strcmp(tag, "capture_profile")) {
         if (attribs[0] && !strcmp(attribs[0], "name")) {
             curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
@@ -367,7 +373,8 @@ void SoundTriggerPlatformInfo::HandleEndTag(struct xml_userdata *data, const cha
             PAL_ERR(LOG_TAG, "Failed to insert to map");
         curr_child_ = nullptr;
     } else if (!strcmp(tag, "acd_platform_info") ||
-               !strcmp(tag, "vui_platform_info")) {
+               !strcmp(tag, "vui_platform_info") ||
+               !strcmp(tag, "asr_platform_info")) {
         curr_child_ = nullptr;
     }
 

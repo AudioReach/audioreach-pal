@@ -1879,7 +1879,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(Stream *s, st_param_id_type_
         return status;
     }
 
-    status = builder_->payloadSVAConfig(&payload, &payload_size,
+    status = builder_->payloadConfig(&payload, &payload_size,
         (uint8_t *)intf_param.data, intf_param.size, detection_miid, param_id);
     if (status || !payload) {
         PAL_ERR(LOG_TAG, "Failed to construct SVA payload, status = %d",

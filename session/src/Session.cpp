@@ -1218,7 +1218,7 @@ exit:
     return status;
 }
 
-int32_t Session::setInitialVolume() {
+void Session::setInitialVolume() {
     int32_t status = 0;
     struct volume_set_param_info vol_set_param_info = {};
     uint16_t volSize = 0;
@@ -1229,7 +1229,7 @@ int32_t Session::setInitialVolume() {
     Session *session = NULL;
     bool forceSetParameters = false;
 
-    PAL_DBG(LOG_TAG, "Enter status: %d", status);
+    PAL_DBG(LOG_TAG, "Enter");
 
     if (!streamHandle) {
         PAL_ERR(LOG_TAG, "streamHandle is invalid");
@@ -1306,7 +1306,6 @@ int32_t Session::setInitialVolume() {
 
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    return status;
 }
 
 #if 0

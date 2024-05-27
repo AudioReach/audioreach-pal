@@ -2022,10 +2022,7 @@ pcm_start:
                     goto exit;
                 }
             }
-            status = setInitialVolume();
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "setVolume failed");
-            }
+            setInitialVolume();
             memset(&lpm_info, 0, sizeof(struct disable_lpm_info));
             rm->getDisableLpmInfo(&lpm_info);
             isStreamAvail = (find(lpm_info.streams_.begin(),
@@ -2162,7 +2159,7 @@ pcm_start:
            break;
     }
     if (sAttr.direction != PAL_AUDIO_OUTPUT) {
-        status = setInitialVolume();
+        setInitialVolume();
     }
     mState = SESSION_STARTED;
 

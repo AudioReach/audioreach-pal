@@ -1773,8 +1773,6 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
     bool lock_status = false;
     vui_intf_param_t param {};
 
-    PostDelayedStop();
-
     if (detection == PAL_RECOGNITION_STATUS_ABORT) {
         phrase_rec_event = (struct pal_st_phrase_recognition_event*)calloc(1,
             sizeof(struct pal_st_phrase_recognition_event));
@@ -1802,6 +1800,8 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
         }
         free(phrase_rec_event);
         goto exit;
+    } else {
+        PostDelayedStop();
     }
 
     if (sm_cfg_->IsDetPropSupported(ST_PARAM_KEY_KEYWORD_BUFFER)) {

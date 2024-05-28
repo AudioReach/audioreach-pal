@@ -429,9 +429,8 @@ int32_t StreamPCM::start()
             }
 
             for (int32_t i=0; i < mDevices.size(); i++) {
-                if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) && isMMap) {
-                    PAL_DBG(LOG_TAG, "skip BT A2DP/BLE device start as it's done already");
+                if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId()) && isMMap) {
+                    PAL_DBG(LOG_TAG, "skip BT device start as it's done already");
                     status = 0;
                     continue;
                 }

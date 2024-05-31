@@ -556,6 +556,7 @@ bool ResourceManager::isUPDVirtualPortEnabled = false;
 bool ResourceManager::isCPEnabled = false;
 bool ResourceManager::isDummyDevEnabled = false;
 bool ResourceManager::isProxyRecordActive = false;
+bool ResourceManager::isSilenceDetectionEnabled = false;
 int ResourceManager::max_voice_vol = -1;     /* Variable to store max volume index for voice call */
 bool ResourceManager::isSignalHandlerEnabled = false;
 static int haptics_priority;
@@ -13101,7 +13102,10 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
             std::string snddevname(data->data_buf);
             deviceInfo[size].sndDevName = snddevname;
             updateSndName(deviceInfo[size].deviceId, snddevname);
-        } else if (!strcmp(tag_name, "speaker_protection_enabled")) {
+        } else if (!strcmp(tag_name, "silence_detection_enabled")) {
+            if (atoi(data->data_buf))
+                isSilenceDetectionEnabled = true;
+        }else if (!strcmp(tag_name, "speaker_protection_enabled")) {
             if (atoi(data->data_buf))
                 isSpeakerProtectionEnabled = true;
         } else if (!strcmp(tag_name, "handset_protection_enabled")) {

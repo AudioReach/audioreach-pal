@@ -700,6 +700,8 @@ public:
     static bool isHapticsthroughWSA;
     /* Variable to store max volume index for voice call */
     static int max_voice_vol;
+    /* Variable to store if Silence Detection is enabled */
+    static bool isSilenceDetectionEnabled;
     /*variable to store MSPP linear gain*/
     pal_param_mspp_linear_gain_t linear_gain;
 #ifdef SOC_PERIPHERAL_PROT

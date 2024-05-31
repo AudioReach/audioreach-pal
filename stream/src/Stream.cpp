@@ -110,7 +110,8 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
         goto stream_create;
     }
 
-    if (sAttr->type == PAL_STREAM_VOICE_CALL_MUSIC)
+    if ((sAttr->type == PAL_STREAM_VOICE_CALL_MUSIC) ||
+        (sAttr->type == PAL_STREAM_VOICE_CALL_RECORD))
         goto stream_create;
 
     if (sAttr->type == PAL_STREAM_SENSOR_PCM_DATA) {

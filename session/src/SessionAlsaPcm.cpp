@@ -2572,11 +2572,27 @@ int SessionAlsaPcm::close(Stream * s)
                     freeDeviceMetadata.push_back(std::make_pair(backendname, 1));
                 }
             }
-            status = SessionAlsaUtils::close(s, rm, pcmDevRxIds, pcmDevTxIds,
-                    rxAifBackEnds, txAifBackEnds, freeDeviceMetadata);
-            if (status) {
-                PAL_ERR(LOG_TAG, "session alsa close failed with %d", status);
+            if (sAttr.info.opt_stream_info.loopback_type ==
+                    PAL_STREAM_LOOPBACK_CAPTURE_ONLY) {
+                status = SessionAlsaUtils::close(s, rm, pcmDevTxIds, txAifBackEnds, freeDeviceMetadata);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "session alsa close failed with %d", status);
+                }
             }
+            else if (sAttr.info.opt_stream_info.loopback_type ==
+                       PAL_STREAM_LOOPBACK_PLAYBACK_ONLY) {
+                status = SessionAlsaUtils::close(s, rm, pcmDevRxIds, rxAifBackEnds, freeDeviceMetadata);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "session alsa close failed with %d", status);
+                }
+            }
+            else {
+                status = SessionAlsaUtils::close(s, rm, pcmDevRxIds, pcmDevTxIds,
+                        rxAifBackEnds, txAifBackEnds, freeDeviceMetadata);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "session alsa close failed with %d", status);
+                }
+           }
             if (pcmRx)
                 status = pcm_close(pcmRx);
             if (status) {

@@ -42,6 +42,8 @@
 #include "PalRingBuffer.h"
 #include "SoundTriggerEngine.h"
 #include "VoiceUIPlatformInfo.h"
+#include "detection_cmn_api.h"
+#include "mma_api.h"
 
 enum {
     ENGINE_IDLE  = 0x0,
@@ -173,6 +175,7 @@ public:
     int32_t setECRef(std::shared_ptr<Device> dev, bool is_enable) override;
     int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable) override;
     bool ConfigSupportLPI() override;
+    uint32_t getCallbackEventId() override;
     void TransitTo(int32_t state_id);
 
     friend class PalRingBufferReader;

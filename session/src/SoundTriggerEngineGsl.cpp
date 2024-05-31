@@ -1572,7 +1572,8 @@ void SoundTriggerEngineGsl::HandleSessionCallBack(uint64_t hdl, uint32_t event_i
 
     // Possible that AGM_EVENT_EOS_RENDERED could be sent during spf stop.
     // Check and handle only required detection event.
-    if (event_id != EVENT_ID_DETECTION_ENGINE_GENERIC_INFO) {
+    if (event_id != EVENT_ID_DETECTION_ENGINE_GENERIC_INFO &&
+        event_id != EVENT_ID_MMA_DETECTION_EVENT) {
         if (event_id == EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER) {
             PAL_DBG(LOG_TAG,
             "Received event for EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER");

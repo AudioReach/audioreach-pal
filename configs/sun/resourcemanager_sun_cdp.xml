@@ -128,6 +128,7 @@
             <samplerate>48000</samplerate>
             <snd_device_name>handset-mic</snd_device_name>
             <ec_enable>0</ec_enable>
+            <silence_detection_enabled>1</silence_detection_enabled>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
             </usecase>
@@ -254,6 +255,7 @@
             <samplerate>48000</samplerate>
             <channels>1</channels>
             <ec_enable>0</ec_enable>
+            <silence_detection_enabled>1</silence_detection_enabled>
             <snd_device_name>speaker-mic</snd_device_name>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>

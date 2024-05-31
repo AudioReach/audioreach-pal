@@ -301,6 +301,7 @@ public:
     virtual int32_t HandleConcurrentStream(bool active) { return 0; }
     virtual int32_t DisconnectDevice(pal_device_id_t device_id) { return 0; }
     virtual int32_t ConnectDevice(pal_device_id_t device_id) { return 0; }
+    virtual uint32_t getCallbackEventId() { return 0; }
     static void handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id, void *data,
                                                            uint32_t event_size);
     static void handleStreamException(struct pal_stream_attributes *attributes,

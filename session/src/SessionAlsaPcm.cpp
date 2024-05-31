@@ -52,6 +52,49 @@
 #include "ResourceManager.h"
 #include "detection_cmn_api.h"
 #include "acd_api.h"
+#include "hw_intf_cmn_api.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/klog.h>        /* Definition of SYSLOG_* constants */
+#include <time.h>
+
+#ifndef DUMP_OUT_PATH
+#define DUMP_OUT_PATH "/data/vendor/audio/"
+#endif //DUMP_OUT_PATH
+
+#define MAX_DUMP_FILENAME_SIZE 255
+#define REGDUMP_OUT_SIZE 256*1024
+#define SYSLOG_ACTION_READ_ALL 3
+#define SYSLOG_ACTION_SIZE_BUFFER 10
+#define TIMESTAMP_FORMAT_STRING "_%Y_%m_%d_%H_%M_%S"
+
+#define BOLERO_PROC_INTF    "/proc/lpass_cdc_reginfo/lpass_cdc_regdump"
+#define WCD939X_PROC_INTF   "/proc/wcd939x_reginfo/wcd939x_regdump"
+#define WSA884X_1_PROC_INTF "/proc/wsa884x_reginfo_1/wsa884x_regdump"
+#define WSA884X_2_PROC_INTF "/proc/wsa884x_reginfo_2/wsa884x_regdump"
+#define WSA883X_1_PROC_INTF "/proc/wsa883x_reginfo_1/wsa883x_regdump"
+#define WSA883X_2_PROC_INTF "/proc/wsa883x_reginfo_2/wsa883x_regdump"
+#define WSA_SWR_PROC_INTF  "/proc/wsa_swr_ctrl/swr_mstr_ctrl_regdump"
+#define WSA2_SWR_PROC_INTF "/proc/wsa2_swr_ctrl/swr_mstr_ctrl_regdump"
+#define VA_SWR_PROC_INTF   "/proc/va_swr_ctrl/swr_mstr_ctrl_regdump"
+#define RX_SWR_PROC_INTF   "/proc/rx_swr_ctrl/swr_mstr_ctrl_regdump"
+
+#define KMSG_FILE     "kernel_log"
+#define SILENCE_EVENT_INFO DUMP_OUT_PATH "silence_event_info"
+#define BOLERO_REGDUMP_OUT_FILE          "lpass_cdc_regdump"
+#define WCD939X_REGDUMP_OUT_FILE         "wcd939x_regdump"
+#define VA_SWR_REGDUMP_OUT_FILE          "va_swr_regdump"
+
+#define KMSG_OUT_FILE              DUMP_OUT_PATH KMSG_FILE TIMESTAMP_FORMAT_STRING
+#define SILENCE_EVENT_INFO         DUMP_OUT_PATH "silence_event_info" TIMESTAMP_FORMAT_STRING
+#define BOLERO_REGDUMP_OUT_PATH    DUMP_OUT_PATH BOLERO_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
+#define WCD939X_REGDUMP_OUT_PATH   DUMP_OUT_PATH WCD939X_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
+#define VA_SWR_REGDUM_OUT_PATH     DUMP_OUT_PATH VA_SWR_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
+
+/* Forward Declaration for Silence Detection Callback */
+void handleSilenceDetectionCb(uint64_t hdl __unused,
+                uint32_t event_id, void *event_data, uint32_t event_size);
 
 std::mutex SessionAlsaPcm::pcmLpmRefCntMtx;
 int SessionAlsaPcm::pcmLpmRefCnt = 0;
@@ -1515,6 +1558,94 @@ set_mixer:
                 }
             }
 
+            status = s->getAssociatedDevices(associatedDevices);
+            if (0 != status) {
+                    PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                goto exit;
+            }
+            for (int i = 0; i < associatedDevices.size();i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                if (0 != status) {
+                       PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                       goto exit;
+                }
+            }
+
+            /* Silence Detection Configuration */
+            if ((ResourceManager::isSilenceDetectionEnabled) &&
+                            (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
+            /*
+             *
+             * 1. Register to listen at AGM level for Silence Detection Even
+             * 2. Register a Callback to receive events from DSP
+             * 3. Get MIID of HW_ENDPOINT_TX
+             * 4. Configure PARAM_ID_SILECENCE_DETECTION payload
+             *
+             **/
+                PAL_INFO(LOG_TAG, "Registering For Silence Detection Events \n");
+
+                struct apm_module_param_data_t* header = NULL;
+                param_id_silence_detection_t *silence_detection_cfg = NULL;
+                size_t pad_bytes;
+
+                event_cfg.event_id = EVENT_ID_SILENCE_DETECTION;
+                event_cfg.event_config_payload_size = 0;
+                event_cfg.is_register = 1;
+
+                status  = SessionAlsaUtils::registerMixerEvent(mixer, pcmDevIds.at(0),
+                                txAifBackEnds[0].second.data(), DEVICE_HW_ENDPOINT_TX, (void *)&event_cfg,
+                                 sizeof(struct agm_event_reg_cfg));
+                if (status) {
+                   PAL_ERR(LOG_TAG, "Failed Registering for SILENCE DETECTION EVENT\n");
+                   goto exit;
+                }
+                PAL_INFO(LOG_TAG, "Registered for Silence Detection Event\n");
+
+                status = rm->registerMixerEventCallback(pcmDevIds, handleSilenceDetectionCb, (uint64_t)this, true);
+                if (status != 0) {
+                  PAL_ERR(LOG_TAG, "Failed to register DSP cb for silence detection Event");
+                  goto exit;
+                }
+                PAL_INFO(LOG_TAG, "Registered CB for Silence Detection\n");
+
+                 status =  SessionAlsaUtils::getModuleInstanceId(mixer,
+                                 pcmDevIds.at(0), txAifBackEnds[0].second.data(), DEVICE_HW_ENDPOINT_TX, &miid);
+                 if (status != 0) {
+                   PAL_ERR(LOG_TAG, "Error retriving MIID for HW_ENDPOINT_TX\n");
+                   goto exit;
+                 }
+
+                payloadSize = sizeof(struct apm_module_param_data_t)+sizeof(param_id_silence_detection_t);
+                pad_bytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+                payload = (uint8_t *)calloc(1, payloadSize+pad_bytes);
+                if (!payload){
+                    PAL_ERR(LOG_TAG, "payload info calloc failed \n");
+                    goto exit;
+                }
+
+                header = (struct apm_module_param_data_t  *)payload;
+                header->module_instance_id = miid;
+                header->param_id =  PARAM_ID_SILENCE_DETECTION;
+                header->error_code = 0x0;
+                header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+
+                silence_detection_cfg = (param_id_silence_detection_t *)(payload +
+                                sizeof(struct apm_module_param_data_t));
+                silence_detection_cfg->enable_detection = 1;
+                silence_detection_cfg->detection_duration_ms = 3000;
+
+                PAL_INFO(LOG_TAG, "Sending Silence Detection Custom Payload\n");
+                status = updateCustomPayload (payload, (payloadSize+pad_bytes));
+                free(payload);
+
+                if (status !=0 ) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload failed for SILENCE DETECTION \n");
+                    goto exit;
+                }
+
+            }
+
             if (ResourceManager::isLpiLoggingEnabled()) {
                 struct audio_route *audioRoute;
 
@@ -2046,6 +2177,8 @@ int SessionAlsaPcm::stop(Stream * s)
 {
     int status = 0;
     struct pal_stream_attributes sAttr = {};
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    struct pal_device dAttr = {};
     struct agm_event_reg_cfg event_cfg;
     int payload_size = 0;
     int tagId;
@@ -2072,6 +2205,42 @@ int SessionAlsaPcm::stop(Stream * s)
                 status = rm->getAudioRoute(&audioRoute);
                 if (!status)
                     audio_route_reset_and_update_path(audioRoute, "lpi-pcm-logging");
+            }
+
+
+            if (ResourceManager::isSilenceDetectionEnabled) {
+
+                status = s->getAssociatedDevices(associatedDevices);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                    goto exit;
+                }
+
+                for (int i = 0; i < associatedDevices.size();i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                        goto exit;
+                    }
+                }
+                if (dAttr.id != PAL_DEVICE_IN_HANDSET_MIC && dAttr.id != PAL_DEVICE_IN_SPEAKER_MIC) {
+                    status = 0;
+                    break;
+                }
+
+                PAL_INFO(LOG_TAG, "De-registering For Silence Detection Events\n");
+                event_cfg.event_id = EVENT_ID_SILENCE_DETECTION;
+                event_cfg.event_config_payload_size = 0;
+                event_cfg.is_register = 0;
+                status  = SessionAlsaUtils::registerMixerEvent(mixer, pcmDevIds.at(0),
+                             txAifBackEnds[0].second.data(), DEVICE_HW_ENDPOINT_TX,
+                             (void *)&event_cfg, sizeof(struct agm_event_reg_cfg));
+                if (status)
+                    PAL_ERR(LOG_TAG, "Unable to deregister SILENCE DETECTION EVENT\n");
+
+               status = rm->registerMixerEventCallback(pcmDevIds, handleSilenceDetectionCb, (uint64_t)this, false);
+               if (status != 0)
+                    PAL_ERR(LOG_TAG, "Failed to deregister  silence detection Callback to rm");
             }
         break;
         case PAL_AUDIO_OUTPUT:
@@ -4203,5 +4372,186 @@ int SessionAlsaPcm::notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
     }
 
     return 0;
+}
+
+int dump_kernel_log(char *kmsg_out_file)
+{
+    int kmsg_fd = 0, log_out_size = 0;
+    ssize_t kernel_buf_size = 0;
+    char *kernel_buf = NULL;
+
+    kernel_buf_size = klogctl(SYSLOG_ACTION_SIZE_BUFFER, NULL, 0);
+    PAL_INFO(LOG_TAG, "%s::kernel_buf_size :: %zd", __func__, kernel_buf_size);
+
+    kernel_buf = (char *)malloc(kernel_buf_size);
+    if (!kernel_buf) {
+        PAL_ERR(LOG_TAG, "%s:: error allocating memory", __func__);
+        return -ENOMEM;
+    }
+
+    kmsg_fd = open(kmsg_out_file, O_CREAT|O_RDWR, S_IRWXU|S_IRWXG|S_IRWXO);
+    if (kmsg_fd < 0){
+        PAL_ERR(LOG_TAG, "%s::Error opening kernel msg out file", __func__);
+        free(kernel_buf);
+        return kmsg_fd;
+    }
+
+    klogctl(SYSLOG_ACTION_READ_ALL, kernel_buf, kernel_buf_size);
+    log_out_size = write(kmsg_fd, kernel_buf, kernel_buf_size);
+    if (log_out_size < 0) {
+       PAL_ERR(LOG_TAG, "%s: %s  Unable to write.\n", __func__, kmsg_out_file);
+       goto close_kmsg_fd;
+    }
+    PAL_INFO(LOG_TAG, "%s: Writing %s log, %d bytes\n",__func__,
+                    kmsg_out_file, log_out_size);
+
+close_kmsg_fd:
+    close(kmsg_fd);
+    free(kernel_buf);
+    return log_out_size;
+}
+
+int dump_registers(char *in_file_path, char *regdump_out_file)
+{
+    char *reg_dump = NULL;
+    int infile_fd = 0,  regdump_wr_fd = 0;
+    int read_out_size = 0, regdump_size = 0;
+    size_t sysfs_page_size = sysconf(_SC_PAGESIZE);
+
+    reg_dump = (char *)malloc(REGDUMP_OUT_SIZE);
+    if (!reg_dump) {
+        PAL_ERR(LOG_TAG, "%s:: error allocating memory", __func__);
+        return -ENOMEM;
+    }
+
+    infile_fd = open(in_file_path, O_RDONLY);
+    if (infile_fd < 0) {
+       PAL_ERR(LOG_TAG, "%s: %s  not found.\n", __func__, in_file_path);
+       read_out_size = -1;
+       goto free_buf;
+    }
+
+    PAL_INFO(LOG_TAG, "Reading %s regdump interface \n", in_file_path);
+    read_out_size = read(infile_fd, reg_dump, REGDUMP_OUT_SIZE);
+    if (read_out_size < 0) {
+       PAL_ERR(LOG_TAG, "%s: %s  Unable to Read.\n", __func__, in_file_path);
+       read_out_size  = -1;
+       goto close_infile;
+    }
+    PAL_INFO(LOG_TAG, "Regdump ReadOut Buffer Size = %d", read_out_size);
+
+    regdump_wr_fd = open(regdump_out_file, O_CREAT|O_RDWR, S_IRWXU|S_IRWXG|S_IRWXO);
+    if (regdump_wr_fd < 0) {
+       PAL_ERR(LOG_TAG, "%s: %s  Unable to Open for writing.\n", __func__, regdump_out_file);
+       read_out_size = -1;
+       goto close_infile;
+    }
+    regdump_size =  write(regdump_wr_fd, reg_dump, read_out_size);
+    if (regdump_size < 0) {
+       PAL_ERR(LOG_TAG, "%s: %s  Unable to write.\n", __func__, regdump_out_file);
+       read_out_size = -1;
+       goto close_regdump_file;
+    }
+    PAL_INFO(LOG_TAG, "Bolero Regmap Dump Size %ld and file %s", regdump_size, regdump_out_file);
+
+close_regdump_file:
+    close(regdump_wr_fd);
+close_infile:
+    close(infile_fd);
+free_buf:
+    free(reg_dump);
+    return read_out_size;
+}
+
+int dump_silence_event_status(char *out_file, uint32_t channel_group, uint32_t status_ch_mask)
+{
+    char event_data_buf[255];
+    int pos = 0,  write_out_bytes = 0, fd = 0;
+
+    pos = snprintf(event_data_buf, 255, "channel_group :: %u \n",
+                        channel_group);
+    pos += snprintf(event_data_buf+pos, 255-pos, "Channel_Status :: %u \n",
+                        status_ch_mask);
+
+    fd = open(out_file, O_CREAT|O_RDWR, S_IRWXU|S_IRWXG|S_IRWXO);
+    if (fd < 0) {
+        PAL_ERR(LOG_TAG,
+                "%s::Error Opening silence data status file\n", __func__);
+        return -EINVAL;
+    }
+
+    write_out_bytes = write(fd, event_data_buf, pos);
+    if (write_out_bytes < 1)
+       PAL_ERR(LOG_TAG, "%s::failed writing silence event status",__func__);
+
+    return write_out_bytes;
+}
+
+/*
+ *Callback from DSP for SILENCE Detection
+ */
+void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *event_data, uint32_t event_size)
+{
+    char out_file_name[MAX_DUMP_FILENAME_SIZE];
+    uint32_t channel_group = 0 , status_ch_mask = 0;
+    event_cfg_silence_detection_t *silence_event = nullptr;
+    struct tm *timenow;
+    time_t now = time(NULL);
+    timenow = gmtime(&now);
+    PAL_INFO(LOG_TAG, "Silence Detection event raised\n");
+
+    switch (event_id) {
+
+    case EVENT_ID_SILENCE_DETECTION:
+        PAL_INFO(LOG_TAG, "EVENT_ID_SILENCE_DETECTION received from DSP\n");
+
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        SILENCE_EVENT_INFO, timenow);
+
+        silence_event = (event_cfg_silence_detection_t *)event_data;
+        channel_group = silence_event->num_32_channel_group;
+#if defined(__H2XML__)
+        status_ch_mask = silence_event->detections[0].status_ch_mask;
+#endif
+        dump_silence_event_status(out_file_name, channel_group, status_ch_mask);
+
+
+        /*
+         * Read BOLERO/CDC Registers
+         **/
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        BOLERO_REGDUMP_OUT_PATH, timenow);
+        dump_registers(BOLERO_PROC_INTF, out_file_name);
+
+        /*
+         * Read SWR VA Macro Registers
+         **/
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        VA_SWR_REGDUM_OUT_PATH, timenow);
+        dump_registers(VA_SWR_PROC_INTF, out_file_name);
+
+        /*
+         * Read WCD939X  Registers
+         **/
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        WCD939X_REGDUMP_OUT_PATH, timenow);
+        dump_registers(WCD939X_PROC_INTF, out_file_name);
+
+        /*
+         * kernel msg (/dev/kmsg) read
+         **/
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        KMSG_OUT_FILE, timenow);
+        dump_kernel_log(out_file_name);
+
+        break;
+
+    default:
+
+        break;
+
+    }
+
+    return;
 }
 

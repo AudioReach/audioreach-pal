@@ -1108,14 +1108,10 @@ ResourceManager::~ResourceManager()
     listAllPcmExtEcTxFrontEnds.clear();
     usb_vendor_uuid_list.clear();
     devInfo.clear();
-    deviceInfo.clear();
     txEcInfo.clear();
 
     STInstancesLists.clear();
-    listAllBackEndIds.clear();
-    sndDeviceNameLUT.clear();
     devicePcmId.clear();
-    deviceLinkName.clear();
     PCMDataInstances.clear();
 
     if (admLibHdl) {
@@ -6918,6 +6914,10 @@ void ResourceManager::deinit()
         socPerithread.join();
     }
 #endif
+    deviceInfo.clear();
+    listAllBackEndIds.clear();
+    sndDeviceNameLUT.clear();
+    deviceLinkName.clear();
     rm = nullptr;
 }
 

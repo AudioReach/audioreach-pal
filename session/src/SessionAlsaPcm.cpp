@@ -1183,7 +1183,7 @@ int SessionAlsaPcm::start(Stream * s)
         memset(&event_cfg, 0, sizeof(event_cfg));
         event_cfg.event_config_payload_size = 0;
         event_cfg.is_register = 1;
-        event_cfg.event_id = EVENT_ID_DETECTION_ENGINE_GENERIC_INFO;
+        event_cfg.event_id = s->getCallbackEventId();
         event_cfg.module_instance_id = svaMiid;
         if (pcmDevIds.size() == 0) {
             PAL_ERR(LOG_TAG, "frontendIDs is not available.");
@@ -2381,7 +2381,7 @@ int SessionAlsaPcm::stop(Stream * s)
         memset(&event_cfg, 0, sizeof(event_cfg));
         event_cfg.event_config_payload_size = 0;
         event_cfg.is_register = 0;
-        event_cfg.event_id = EVENT_ID_DETECTION_ENGINE_GENERIC_INFO;
+        event_cfg.event_id = s->getCallbackEventId();
         event_cfg.module_instance_id = svaMiid;
         if (!pcmDevIds.size()) {
             PAL_ERR(LOG_TAG, "pcmDevIds not found.");

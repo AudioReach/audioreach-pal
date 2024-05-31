@@ -1839,6 +1839,33 @@
                     </first_stage_module_params>
                 </sound_model_info>
             </stream_config>
+            <!-- Multi Modal Activation-->
+            <stream_config>
+                <name>QC_MMA</name>
+                <param vendor_uuid="018f8585-3890-7419-b0f3-e5b6ec961d9c" />
+                <!-- Profile specific data which the algorithm can support -->
+                <param capture_keyword="2000" /> <!-- Default history buffer length -->
+                <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->
+                <param pre_roll_duration="500" /> <!-- Default preroll duration -->
+                <param sample_rate="16000" />
+                <param bit_width="16" />
+                <!-- Module output channels -->
+                <param out_channels="1" />
+                <operating_modes>
+                    <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
+                    <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                    <high_performance_and_charging capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                </operating_modes>
+                <sound_model_info>
+                    <first_stage_module_params>
+                        <param module_type="MMA" />
+                        <param load_sound_model_ids="0xC0000008, 0x08001AC6" />
+                        <param wakeup_config_ids="0xC0000008, 0x08001AC7" />
+                        <param buffering_config_ids="0xC0000008, 0x08001ACF" />
+                        <param engine_reset_ids="0xC0000008, 0x08001AD0" />
+                    </first_stage_module_params>
+                </sound_model_info>
+            </stream_config>
         </vui_platform_info>
     </sound_trigger_platform_info>
 </resource_manager_info>

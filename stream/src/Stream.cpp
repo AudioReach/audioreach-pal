@@ -1738,7 +1738,7 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
         if ((newDevices[i].id == PAL_DEVICE_NONE) &&
             ((isCurrentDeviceProxyOut) || (isCurrentDeviceDpOut) ||
              ((isCurDeviceA2dp || isCurDeviceSco) && (!rm->isDeviceReady(curBtDevId))))) {
-            newDevices[i].id = PAL_DEVICE_OUT_SPEAKER;
+            newDevices[i].id = PAL_DEVICE_OUT_DUMMY;
 
             if (rm->getDeviceConfig(&newDevices[i], mStreamAttr)) {
                 continue;

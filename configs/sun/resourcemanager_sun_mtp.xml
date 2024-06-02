@@ -52,6 +52,7 @@
         <param key="upd_virtual_port" value ="false" />
         <param key="haptics_priority" value ="touch_haptics" />
         <param key="haptics_through_wsa" value ="false" />
+        <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_volume>
         <use_volume_set_param>0</use_volume_set_param>

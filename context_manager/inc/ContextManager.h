@@ -39,7 +39,6 @@
 #include <condition_variable>
 #include <PalApi.h>
 #include <PalCommon.h>
-#include "kvh2xml.h"
 #include "ACDPlatformInfo.h"
 #include "SoundTriggerPlatformInfo.h"
 

@@ -69,6 +69,7 @@
 #include <dlfcn.h>
 #include <agm/agm_api.h>
 #include <sound/asound.h>
+#include "PalAudioRoute.h"
 
 #define MAX_CHANNEL_SUPPORTED 2
 #define DEFAULT_OUTPUT_SAMPLING_RATE 48000
@@ -676,14 +677,14 @@ bool Device::compareStreamDevAttr(const struct pal_device *inDevAttr,
         insert = true;
         goto exit;
     } else if (!inDevInfo->samplerate_overwrite && !curDevInfo->samplerate_overwrite) {
-        if ((inDevAttr->config.sample_rate % SAMPLINGRATE_44K == 0) &&
-            (curDevAttr->config.sample_rate % SAMPLINGRATE_44K != 0)) {
+        if ((inDevAttr->config.sample_rate % 44100 == 0) &&
+            (curDevAttr->config.sample_rate % 44100 != 0)) {
             PAL_DBG(LOG_TAG, "incoming sample rate is 44.1K");
             insert = true;
             goto exit;
         } else if (inDevAttr->config.sample_rate > curDevAttr->config.sample_rate) {
-            if (curDevAttr->config.sample_rate % SAMPLINGRATE_44K == 0 &&
-                inDevAttr->config.sample_rate % SAMPLINGRATE_48K == 0) {
+            if (curDevAttr->config.sample_rate % 44100 == 0 &&
+                inDevAttr->config.sample_rate % 48000 == 0) {
                 PAL_DBG(LOG_TAG, "current stream is running at 44.1KHz");
                 insert = false;
             } else {

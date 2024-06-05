@@ -53,6 +53,7 @@
 #include "VoiceUIPlatformInfo.h"
 #include "STUtils.h"
 #include "PluginManager.h"
+#include "mem_logger.h"
 
 #include "PerfLock.h"
 
@@ -3486,7 +3487,6 @@ int deregisterstream(T s, std::list<T> &streams)
 
 int ResourceManager::deregisterStream(Stream *s)
 {
-    struct pal_state_queue que;
     int ret = 0;
     pal_stream_type_t type;
     PAL_DBG(LOG_TAG, "Enter. stream %pK", s);

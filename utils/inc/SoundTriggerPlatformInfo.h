@@ -42,7 +42,6 @@
 #include <memory>
 #include <string>
 #include "PalDefs.h"
-#include "kvh2xml.h"
 #include "SoundTriggerUtils.h"
 
 #define MAX_MODULE_CHANNELS 4

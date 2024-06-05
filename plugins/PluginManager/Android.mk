@@ -16,6 +16,8 @@ else
     LOCAL_SRC_FILES := \
         src/PluginManager.cpp
 endif
+
+LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
 LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
@@ -24,7 +26,9 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \
-    libarpal_internalheaders
+    libarpal_internalheaders \
+    libarvui_intf_headers \
+    liblisten_headers \
 
 #used for static compilation
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
@@ -42,6 +46,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libacdb_headers \
         libagm_headers \
         libaudioroute \
+        libagm_headers \
         libarpal_internalheaders \
         libarmemlog_headers \
         libstream_acd_headers \
@@ -81,7 +86,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libdev_speaker_headers \
         libdev_speakermic_headers \
         libdev_ultrasound_headers \
-        libdev_usb_headers
+        libdev_usb_headers \
 
     ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
     LOCAL_SHARED_LIBRARIES += libqti-tinyalsa libqti-tinycompress

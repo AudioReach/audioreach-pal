@@ -51,6 +51,7 @@
 #include "mem_logger.h"
 #include "PerfLock.h"
 #include "PluginManager.h"
+#include "MemLogBuilder.h"
 class Stream;
 
 /**

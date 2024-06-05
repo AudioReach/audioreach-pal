@@ -39,9 +39,26 @@
 #include "Device.h"
 #include <unistd.h>
 #include "ResourceManager.h"
+#include "MemLogBuilder.h"
 
 #define COMPRESS_OFFLOAD_FRAGMENT_SIZE (32 * 1024)
 #define COMPRESS_OFFLOAD_NUM_FRAGMENTS 4
+#define ORIENTATION_270 3 /*need to figure out how to remove*/
+
+#define CHANNELS_1 1
+#define CHANNELS_2 2
+#define CHANNELS_3 3
+#define CHANNELS_4 4
+#define CHANNELS_5 5
+#define CHANNELS_5_1 6
+#define CHANNELS_6 6
+#define CHANNELS_7 7
+#define CHANNELS_8 8
+
+#define BITWIDTH_16 16
+#define BITWIDTH_24 24
+#define BITWIDTH_32 32
+
 
 extern "C" Stream* CreateCompressStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,

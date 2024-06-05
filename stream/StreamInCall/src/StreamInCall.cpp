@@ -39,6 +39,31 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
+#include "MemLogBuilder.h"
+
+#define CHANNELS_1 1
+#define CHANNELS_2 2
+#define CHANNELS_3 3
+#define CHANNELS_4 4
+#define CHANNELS_5 5
+#define CHANNELS_5_1 6
+#define CHANNELS_6 6
+#define CHANNELS_7 7
+#define CHANNELS_8 8
+
+#define BITWIDTH_16 16
+#define BITWIDTH_24 24
+#define BITWIDTH_32 32
+
+#define SAMPLINGRATE_8K 8000
+#define SAMPLINGRATE_16K 16000
+#define SAMPLINGRATE_22K 22050
+#define SAMPLINGRATE_32K 32000
+#define SAMPLINGRATE_44K 44100
+#define SAMPLINGRATE_48K 48000
+#define SAMPLINGRATE_96K 96000
+#define SAMPLINGRATE_192K 192000
+#define SAMPLINGRATE_384K 384000
 
 extern "C" Stream* CreateInCallStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,

@@ -38,6 +38,7 @@
 #include <asps/asps_acm_api.h>
 #include <asps/asps_us_rendering_usecase_api.h>
 #include "apm_api.h"
+#include "kvh2xml.h"
 
 #define LOG_TAG "PAL: ContextManager"
 #define TAG_MODULE_DEFAULT_SIZE 1024

@@ -39,6 +39,7 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include "kvh2xml.h"
+#include "MemLogBuilder.h"
 
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                    const uint32_t no_of_devices, const struct modifier_kv *modifiers,

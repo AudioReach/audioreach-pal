@@ -72,7 +72,6 @@
 #include <string.h>
 #include "PalCommon.h"
 #include "Device.h"
-#include "PalAudioRoute.h"
 #include "PluginManager.h"
 
 #define DEVICE_NAME_MAX_SIZE 128
@@ -178,11 +177,5 @@ public:
 
     static std::shared_ptr<PluginManager> pm;
 };
-
-typedef void (*DeviceCreate)(struct pal_device *device,
-                                const std::shared_ptr<ResourceManager> rm,
-                                pal_device_id_t id, bool createDevice,
-                                std::shared_ptr<Device> *dev);
-
 
 #endif //DEVICE_H

@@ -42,6 +42,7 @@
 #include "ACDPlatformInfo.h"
 #include "SoundTriggerUtils.h"
 #include "ContextDetectionEngine.h"
+#include "MemLogBuilder.h"
 
 class ContextDetectionEngine;
 

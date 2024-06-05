@@ -46,6 +46,7 @@
 #include "kvh2xml.h"
 #include "VoiceUIInterface.h"
 #include "VUIInterfaceProxy.h"
+#include "MemLogBuilder.h"
 
 // TODO: find another way to print debug logs by default
 #define ST_DBG_LOGS

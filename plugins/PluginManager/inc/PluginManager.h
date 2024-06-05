@@ -10,14 +10,7 @@
 #include <vector>
 #include <mutex>
 #include <expat.h>
-
-typedef enum {
-    PAL_PLUGIN_MANAGER_STREAM,
-    PAL_PLUGIN_MANAGER_SESSION,
-    PAL_PLUGIN_MANAGER_DEVICE,
-    PAL_PLUGIN_MANAGER_CONFIG,
-    PAL_PLUGIN_MANAGER_EFFECTS
-} pal_plugin_manager_t;
+#include "PluginManagerIntf.h"
 
 typedef struct {
     void* handle;
@@ -36,6 +29,7 @@ class PluginManager
         static std::vector<pm_item_t> registeredStreams;
         static std::vector<pm_item_t> registeredSessions;
         static std::vector<pm_item_t> registeredDevices;
+        static std::vector<pm_item_t> registeredControls;
         void deinitStreamPlugins();
         void deinitSessionPlugins();
         void deinitDevicePlugins();
@@ -49,6 +43,7 @@ class PluginManager
 
     public:
         static std::shared_ptr<PluginManager> getInstance();
+        int32_t getVersion(){return PLUGIN_MANAGER_VERSION;};
         int32_t openPlugin(pal_plugin_manager_t pluginType, std::string keyName, void* &plugin);
         int32_t closePlugin(pal_plugin_manager_t pluginType, std::string keyName);
         ~PluginManager();

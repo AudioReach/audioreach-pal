@@ -39,6 +39,7 @@
 #include "Device.h"
 #include "mem_logger.h"
 #include "PluginManager.h"
+#include "MemLogBuilder.h"
 
 std::shared_ptr<ResourceManager> Stream::rm = nullptr;
 std::shared_ptr<PluginManager> Stream::pm = nullptr;

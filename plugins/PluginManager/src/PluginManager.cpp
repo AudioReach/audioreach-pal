@@ -18,6 +18,7 @@ std::mutex PluginManager::mPluginManagerMutex;
 std::vector<pm_item_t> PluginManager::registeredStreams = {};
 std::vector<pm_item_t> PluginManager::registeredSessions = {};
 std::vector<pm_item_t> PluginManager::registeredDevices = {};
+std::vector<pm_item_t> PluginManager::registeredControls = {};
 
 #define XML_PATH_MAX_LENGTH 100
 #define PLUGIN_MANAGER_FILENAME "plugin_manager.xml"
@@ -31,7 +32,7 @@ static const std::map<std::string, pal_plugin_manager_t> PmNameToType
     { "session", PAL_PLUGIN_MANAGER_SESSION},
     { "device",  PAL_PLUGIN_MANAGER_DEVICE},
     { "config",  PAL_PLUGIN_MANAGER_CONFIG},
-    { "effects", PAL_PLUGIN_MANAGER_EFFECTS}
+    { "control",  PAL_PLUGIN_MANAGER_CONTROL},
 };
 
 struct xml_userdata {
@@ -80,6 +81,9 @@ int32_t PluginManager::getRegisteredPluginList(pal_plugin_manager_t type, std::v
             break;
         case PAL_PLUGIN_MANAGER_DEVICE:
             *pluginList = &registeredDevices;
+            break;
+        case PAL_PLUGIN_MANAGER_CONTROL:
+            *pluginList = &registeredControls;
             break;
         default:
             PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);
@@ -163,7 +167,7 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
         }
     }
     if (!plugin) {
-        PAL_ERR(LOG_TAG, "cannot find a registered plugin for stream type %s",
+        PAL_ERR(LOG_TAG, "cannot find a registered plugin for key type %s",
                 keyName.c_str());
         status = -EINVAL;
     }

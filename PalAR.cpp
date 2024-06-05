@@ -37,6 +37,7 @@
 #include "ResourceManager.h"
 #include "PalAR.h"
 #include "mem_logger.h"
+#include "MemLogBuilder.h"
 
 int32_t pal_stream_get_tags_with_module_info(pal_stream_handle_t *stream_handle,
                            size_t *size, uint8_t *payload)

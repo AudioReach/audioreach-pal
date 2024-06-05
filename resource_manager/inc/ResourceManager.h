@@ -62,7 +62,6 @@
 #include "ContextManager.h"
 #include "SoundTriggerPlatformInfo.h"
 #include "SignalHandler.h"
-#include "MemLogBuilder.h"
 #include "Session.h"
 
 typedef enum {

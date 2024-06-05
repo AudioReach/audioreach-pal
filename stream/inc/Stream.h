@@ -100,15 +100,6 @@ class Device;
 class ResourceManager;
 class PluginManager;
 class Session;
-class Stream;
-
-typedef Stream* (*StreamCreate)(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
-                const uint32_t no_of_devices,
-                const struct modifier_kv *modifiers, const uint32_t no_of_modifiers,
-                const std::shared_ptr<ResourceManager> rm);
-
-typedef Stream* (*StreamACDBCreate)(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
-                               uint32_t instance_id, const std::shared_ptr<ResourceManager> rm);
 
 class Stream
 {

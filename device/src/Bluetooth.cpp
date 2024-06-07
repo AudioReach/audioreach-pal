@@ -2452,6 +2452,11 @@ int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
     return 0;
 }
 
+bool BtSco::isScoNbWbActive()
+{
+    return codecFormat == CODEC_TYPE_INVALID;
+}
+
 void BtSco::convertCodecInfo(audio_lc3_codec_cfg_t &lc3CodecInfo,
                              btsco_lc3_cfg_t &lc3Cfg)
 {

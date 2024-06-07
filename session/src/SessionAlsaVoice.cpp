@@ -364,6 +364,12 @@ int SessionAlsaVoice::setSessionParameters(Stream *s, int dir)
             PAL_ERR(LOG_TAG,"setTaggedSlotMask failed:%d", status);
             goto exit;
         }
+
+        status = populateRatPayload(s);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG,"populateRatPayload failed:%d", status);
+            goto exit;
+        }
     } else {
         if (pcmDevTxIds.size()) {
             pcmId = pcmDevTxIds.at(0);
@@ -605,6 +611,56 @@ int SessionAlsaVoice::populateVSIDLoopbackPayload(Stream* s){
             return status;
         }
     }
+exit:
+    return status;
+}
+
+int SessionAlsaVoice::populateRatPayload(Stream *s)
+{
+    int status = 0;
+    int devId = 0;
+    int idx = 0;
+    uint32_t miid = 0;
+    uint8_t* ratPayload = NULL;
+    size_t ratPayloadSize = 0;
+    struct pal_device dAttr;
+    struct pal_media_config config;
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+
+    if(!s){
+        PAL_ERR(LOG_TAG, "invalid stream pointer")
+        status = -EINVAL;
+        goto exit;
+    }
+
+    status = s->getAssociatedDevices(associatedDevices);
+    if ((0 != status) || (associatedDevices.size() == 0)) {
+        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
+        goto exit;
+    }
+    for (idx = 0; idx < associatedDevices.size(); idx++) {
+        devId = associatedDevices[idx]->getSndDeviceId();
+        if (rm->isOutputDevId(devId)) {
+            break;
+        }
+    }
+    if (associatedDevices[idx]->isScoNbWbActive()) {
+        status = getMIID(rxAifBackEnds[0].second.c_str(), RAT_RENDER, &miid);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG,"getModuleInstanceId failed for RAT_RENDER: %X status: %d",
+                RAT_RENDER, status);
+            goto exit;
+        }
+        associatedDevices[idx]->getDeviceAttributes(&dAttr);
+        builder->payloadRATConfig(&ratPayload, &ratPayloadSize, miid, &dAttr.config);
+        if (ratPayload && ratPayloadSize) {
+            status = updateCustomPayload(ratPayload, ratPayloadSize);
+            freeCustomPayload(&ratPayload, &ratPayloadSize);
+            if (status != 0)
+                PAL_ERR(LOG_TAG,"updateCustomPayload for RAT_RENDER %XFailed\n", RAT_RENDER);
+        }
+    }
+
 exit:
     return status;
 }
@@ -959,6 +1015,13 @@ int SessionAlsaVoice::start(Stream * s)
             *(palPayload->payload) = ttyMode;
             setParameters(s, TTY_MODE, PAL_PARAM_ID_TTY_MODE, palPayload);
         }
+    }
+
+    /* configuring RAT_RENDER, updating custom payload if it is a NB/WB SCO usecase*/
+    status = populateRatPayload(s);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG,"Exit Configuring RAT_RENDER failed with status %d", status);
+        goto err_pcm_open;
     }
 
     /* configuring Rx MFC's, updating custom payload and send mixer controls at once*/
@@ -1996,7 +2059,7 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
 
     if (rxAifBackEnds.size() > 0) {
         setTaggedSlotMask(streamHandle);
-        status =  SessionAlsaUtils::connectSessionDevice(this, streamHandle,
+        status = SessionAlsaUtils::connectSessionDevice(this, streamHandle,
                                                          streamType, rm,
                                                          dAttr, pcmDevRxIds,
                                                          rxAifBackEnds);

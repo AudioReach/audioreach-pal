@@ -87,10 +87,13 @@
 #include "ExtEC.h"
 #include "ECRefDevice.h"
 #include "DummyDev.h"
+#include <dlfcn.h>
 
 #define MAX_CHANNEL_SUPPORTED 2
 #define DEFAULT_OUTPUT_SAMPLING_RATE 48000
 #define DEFAULT_OUTPUT_CHANNEL 2
+
+typedef void (*write_qmp_mode)(const char *hdr_custom_key);
 
 std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
                                                  std::shared_ptr<ResourceManager> Rm)
@@ -299,6 +302,24 @@ std::shared_ptr<Device> Device::getObject(pal_device_id_t dev_id)
     }
 }
 
+int32_t Device::initHdrRoutine(const char *hdr_custom_key)
+{
+    void *handle = NULL;
+    handle = dlopen("vendor/lib64/libqmp.so", RTLD_NOW);
+    if (!handle) {
+        PAL_ERR(LOG_TAG, "Failed to open libqmp.so");
+    }
+
+   write_qmp_mode write = reinterpret_cast<write_qmp_mode>(dlsym(handle, "write_qmp_mode"));
+   if (!write) {
+       dlclose(handle);
+       return -1;
+   }
+   write(hdr_custom_key);
+   dlclose(handle);
+   return 0;
+}
+
 Device::Device(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
 {
     rm = Rm;
@@ -495,6 +516,13 @@ int Device::open()
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to obtain the device name from ResourceManager status %d", status);
             goto exit;
+        }
+
+        if (ResourceManager::isQmpEnabled) {
+            if (strstr(this->deviceAttr.custom_config.custom_key, "unprocessed-hdr-mic")){
+                if (Device::initHdrRoutine(this->deviceAttr.custom_config.custom_key))
+                    PAL_ERR(LOG_TAG, "Failed to set QMP hdr config");
+            }
         }
         enableDevice(audioRoute, mSndDeviceName);
     }

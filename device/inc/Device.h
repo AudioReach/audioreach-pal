@@ -153,6 +153,7 @@ public:
                                 Stream* streamHandle);
     void removeStreamDeviceAttr(Stream* streamHandle);
     int getTopPriorityDeviceAttr(struct pal_device *deviceAttr, uint32_t *streamPrio);
+    static int32_t initHdrRoutine(const char *hdr_custom_key);
 };
 
 

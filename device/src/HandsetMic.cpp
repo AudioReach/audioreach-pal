@@ -116,3 +116,4 @@ int32_t HandsetMic::isBitWidthSupported(uint32_t bitWidth)
     }
     return rc;
 }
+

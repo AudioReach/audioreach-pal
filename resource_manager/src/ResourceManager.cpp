@@ -533,6 +533,7 @@ int ResourceManager::wake_lock_fd = -1;
 int ResourceManager::wake_unlock_fd = -1;
 uint32_t ResourceManager::wake_lock_cnt = 0;
 static int max_session_num;
+bool ResourceManager::isQmpEnabled = false;
 bool ResourceManager::isSpeakerProtectionEnabled = false;
 bool ResourceManager::isHandsetProtectionEnabled = false;
 bool ResourceManager::isHapticsProtectionEnabled = false;
@@ -13188,7 +13189,10 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
         } else if (!strcmp(tag_name, "silence_detection_enabled")) {
             if (atoi(data->data_buf))
                 isSilenceDetectionEnabled = true;
-        }else if (!strcmp(tag_name, "speaker_protection_enabled")) {
+        } else if (!strcmp(tag_name, "qmp_enable")) {
+            if (atoi(data->data_buf))
+                isQmpEnabled = true;
+        } else if (!strcmp(tag_name, "speaker_protection_enabled")) {
             if (atoi(data->data_buf))
                 isSpeakerProtectionEnabled = true;
         } else if (!strcmp(tag_name, "handset_protection_enabled")) {

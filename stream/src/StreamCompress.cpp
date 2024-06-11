@@ -1127,6 +1127,7 @@ int32_t StreamCompress::resume()
 
 int32_t StreamCompress::drain(pal_drain_type_t type)
 {
+    std::lock_guard<std::mutex> lck(mStreamMutex);
     if (PAL_CARD_STATUS_DOWN(rm->cardState)) {
         PAL_ERR(LOG_TAG, "Sound card offline/standby or session is null");
         return -EINVAL;

@@ -51,7 +51,7 @@
         <param key="upd_duty_cycle_enable" value="false" />
         <param key="upd_virtual_port" value ="false" />
         <param key="haptics_priority" value ="touch_haptics" />
-        <param key="haptics_through_wsa" value ="false" />
+        <param key="haptics_through_wsa" value ="true" />
         <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_volume>
@@ -1049,7 +1049,7 @@
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>0</haptics_protection_enabled>
+            <haptics_protection_enabled>1</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">

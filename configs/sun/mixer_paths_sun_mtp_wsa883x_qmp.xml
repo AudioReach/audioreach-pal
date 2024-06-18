@@ -1364,12 +1364,12 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC" />
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX DEC4 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX1" value="SWR_MIC5" />
-        <ctl name="TX SMIC MUX2" value="SWR_MIC5" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC4" />
-        <ctl name="TX SMIC MUX4" value="SWR_MIC4" />
-        <path name="qmp2-rsvd1" />
-        <path name="qmp1-rsvd1" />
+        <ctl name="TX SMIC MUX1" value="SWR_MIC4" />
+        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
+        <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC5" />
+        <path name="qmp2-normal" />
+        <path name="qmp1-normal" />
     </path>
 
     <path name="handset-dual-dmic-quad-dec-reverse">
@@ -1382,15 +1382,15 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC" />
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX DEC4 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX1" value="SWR_MIC4" />
-        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
-        <ctl name="TX SMIC MUX4" value="SWR_MIC5" />
-        <path name="qmp2-rsvd1" />
-        <path name="qmp1-rsvd1" />
+        <ctl name="TX SMIC MUX1" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX2" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX3" value="SWR_MIC4" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC4" />
+        <path name="qmp2-normal" />
+        <path name="qmp1-normal" />
     </path>
 
-    <path name="unprocessed-rsvd1-mic-landscape">
+    <path name="unprocessed-hdr-mic-landscape">
         <path name="handset-dual-dmic-quad-dec" />
         <ctl name="TX_DEC1 Volume" value="84" />
         <ctl name="TX_DEC2 Volume" value="84" />
@@ -1398,7 +1398,7 @@
         <ctl name="TX_DEC4 Volume" value="84" />
     </path>
 
-    <path name="unprocessed-rsvd1-mic-inverted-landscape">
+    <path name="unprocessed-hdr-mic-inverted-landscape">
         <path name="handset-dual-dmic-quad-dec-reverse" />
         <ctl name="TX_DEC1 Volume" value="84" />
         <ctl name="TX_DEC2 Volume" value="84" />
@@ -1420,10 +1420,10 @@
         <ctl name="TX SMIC MUX2" value="SWR_MIC5" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
         <ctl name="TX SMIC MUX4" value="SWR_MIC5" />
-        <path name="qmp2-rsvd1" />
+        <path name="qmp2-normal" />
     </path>
 
-    <path name="unprocessed-rsvd1-mic-portrait">
+    <path name="unprocessed-hdr-mic-portrait">
         <path name="handset-single-dmic-quad-dec" />
         <ctl name="TX_DEC1 Volume" value="84" />
         <ctl name="TX_DEC2 Volume" value="84" />
@@ -1431,7 +1431,7 @@
         <ctl name="TX_DEC4 Volume" value="84" />
     </path>
 
-    <path name="unprocessed-rsvd1-mic-inverted-portrait">
+    <path name="unprocessed-hdr-mic-inverted-portrait">
         <path name="handset-single-dmic-quad-dec" />
         <ctl name="TX_DEC1 Volume" value="84" />
         <ctl name="TX_DEC2 Volume" value="84" />

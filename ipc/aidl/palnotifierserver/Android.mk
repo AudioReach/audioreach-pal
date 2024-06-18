@@ -29,7 +29,7 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libar-pal \
     vendor.qti.hardware.pal-V1-ndk \
-    vendor.qti.hardware.paleventnotifier-V1-ndk
+    vendor.qti.hardware.paleventnotifier-V2-ndk
 
 LOCAL_HEADER_LIBRARIES := \
     libspf-headers

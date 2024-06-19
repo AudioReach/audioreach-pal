@@ -7948,6 +7948,7 @@ int ResourceManager::restoreDeviceConfigForUPD(
     uint32_t devId;
     Stream *s;
     struct pal_stream_attributes sAttr;
+    std::vector<std::shared_ptr<Device>> palDevices;
 
     if (rm->IsDedicatedBEForUPDEnabled() || rm->IsVirtualPortForUPDEnabled()) {
         PAL_DBG(LOG_TAG, "This UPD config requires no restoration");
@@ -7993,14 +7994,21 @@ int ResourceManager::restoreDeviceConfigForUPD(
     if (ret)
         goto exit_on_error;
 
-    if (sAttr.type != PAL_STREAM_ULTRASOUND) {
+    if (sAttr.type != PAL_STREAM_ULTRASOUND &&
+        sAttr.type != PAL_STREAM_SENSOR_PCM_RENDERER) {
         PAL_DBG(LOG_TAG, "Not a UPD stream. No UPD backend to update");
         return ret;
     }
 
     memset(&dAttr, 0, sizeof(struct pal_device));
 
-    dAttr.id = PAL_DEVICE_OUT_HANDSET;
+    s->getPalDevices(palDevices);
+    if (palDevices.size() == 0) {
+        PAL_ERR(LOG_TAG, "Stream doesn't have pal device attached");
+        ret = -EINVAL;
+        goto exit_on_error;
+    }
+    dAttr.id = (pal_device_id_t)palDevices[0]->getSndDeviceId();
 
     ret = rm->getDeviceConfig(&dAttr, &sAttr);
     if (ret) {
@@ -8008,7 +8016,8 @@ int ResourceManager::restoreDeviceConfigForUPD(
         goto exit_on_error;
     }
 
-    if (devId == PAL_DEVICE_OUT_HANDSET) {
+    if (sAttr.type == PAL_STREAM_ULTRASOUND &&
+        devId == PAL_DEVICE_OUT_HANDSET) {
         hs_dev = Device::getObject(PAL_DEVICE_OUT_HANDSET);
         if (hs_dev)
             hs_dev->getDeviceAttributes(&curDevAttr);
@@ -8029,11 +8038,11 @@ int ResourceManager::restoreDeviceConfigForUPD(
      *
      * If the current device is handset, the device is configured to limit it's
      * compatibility to UPD stream only.
+     * For sensor renderer stream, always restore from handset/speaker to upd
+     * dedicated device attribute for NLPI to LPI switch.
      */
-    PAL_DBG(LOG_TAG, "Skipping UPD stream switch to new device. %s",
-            (devId == PAL_DEVICE_OUT_SPEAKER) ?
-            "Restoring UPD from Speaker to Handset device." :
-            "Restoring UPD updating device config for Handset device.");
+    PAL_DBG(LOG_TAG, "Restoring UPD stream device from cur dev:%d to new dev: %d",
+                     devId, dAttr.id );
 
     streamDevDisconnect.push_back(streamsSkippingSwitch[0]);
     StreamDevConnect.push_back({s, &dAttr});

@@ -5486,6 +5486,15 @@ void ResourceManager::GetConcurrencyInfo(pal_stream_type_t st_type,
             PAL_DBG(LOG_TAG, "pause on audio capture concurrency");
             *conc_en = false;
         }
+    } else if (in_type == PAL_STREAM_LOOPBACK){
+        *tx_conc = true;
+        *rx_conc = true;
+        if (!audio_capture_conc_enable) {
+            PAL_DBG(LOG_TAG, "pause on LOOPBACK concurrency");
+            *conc_en = false;
+        }
+    } else if (in_type == PAL_STREAM_ULTRASOUND){
+        *rx_conc = true;
     }
 
     PAL_INFO(LOG_TAG, "stream type %d Tx conc %d, Rx conc %d, concurrency%s allowed",

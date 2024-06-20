@@ -2613,8 +2613,10 @@ int BtSco::start()
     } else if (isSwbLc3Enabled) {
         codecFormat = CODEC_TYPE_LC3;
         codecInfo = (void *)&lc3CodecInfo;
-    } else
+    } else {
         codecFormat = CODEC_TYPE_INVALID;
+        isAbrEnabled = false;
+    }
 
     updateDeviceMetadata();
     if ((codecFormat == CODEC_TYPE_APTX_AD_SPEECH) ||

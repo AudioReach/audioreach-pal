@@ -922,6 +922,9 @@
     <path name="bt-ble-mic">
     </path>
 
+    <path name="dummy-dev">
+    </path>
+
     <path name="va-mic-mono">
         <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
         <ctl name="VA DEC0 MUX" value="SWR_MIC" />

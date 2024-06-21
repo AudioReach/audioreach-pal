@@ -1015,6 +1015,9 @@
     <path name="capture-fm">
     </path>
 
+    <path name="dummy-dev">
+    </path>
+
     <!-- The below mixer-control setup for ext_ec_ref_tx is for CODEC_DMA internal testing purpose only, needs to be empty if TDM/MI2S -->
     <path name="ext_ec_ref_tx">
         <ctl name="WSA RX_MIX EC0_MUX" value="RX_MIX_TX0" />

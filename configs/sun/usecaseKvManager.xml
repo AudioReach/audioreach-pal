@@ -895,6 +895,18 @@
                 <graph_kv key="0xA3000000" value="0xA300000D"/>
             </keys_and_values>
         </device>
+        <device id="PAL_DEVICE_OUT_DUMMY">
+            <keys_and_values>
+                <!-- DEVICERX - DUMMY_RX -->
+                <graph_kv key="0xA2000000" value="0xA200000C"/>
+            </keys_and_values>
+        </device>
+        <device id="PAL_DEVICE_IN_DUMMY">
+            <keys_and_values>
+                <!-- DEVICETX - DUMMY_TX -->
+                <graph_kv key="0xA3000000" value="0xA300000F"/>
+            </keys_and_values>
+        </device>
     </devices>
     <devicepps>
         <!-- OUT Speaker DevicePPs -->

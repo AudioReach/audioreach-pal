@@ -119,7 +119,7 @@ public:
     /*Virtual functions*/
     virtual int registerCallBack(session_callback cb __unused, uint64_t cookie __unused) {return 0;};
     virtual int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) {return -EINVAL; };
-    virtual int32_t getFrontEndId(uint32_t ldir) {return -EINVAL;}
+    virtual int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir) const {return -EINVAL;}
     virtual int getEffectParameters(Stream *s, effect_pal_payload_t *effectPayload){return -EINVAL;}; /*need to move */
     virtual int setEffectParameters(Stream *s, effect_pal_payload_t *effectPayload){return -EINVAL;}; /*need to move */
     virtual int rwACDBParameters(void *payload, uint32_t sampleRate, bool isParamWrite){return -EINVAL;}; /*look into */
@@ -133,8 +133,6 @@ public:
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
-    virtual int32_t reconfigureSession(Stream *s, struct pal_media_config config,
-                                       pal_stream_direction_t dir){return -EINVAL;};
     virtual int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
                                       uint8_t *payload __unused) {return -EINVAL;}; //Revert this later
 };

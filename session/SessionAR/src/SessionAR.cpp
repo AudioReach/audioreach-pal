@@ -63,7 +63,6 @@ void SessionAR::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
                                         void *data __unused,
                                         uint32_t event_size __unused)
 {
-
     PAL_DBG(LOG_TAG,"Event id %x ", event_id);
 
     if (event_id == EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE) {
@@ -793,6 +792,10 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
     pal_param_payload *param_payload = NULL;
     pal_device_mute_t *deviceMutePayload = nullptr;
     struct pal_stream_attributes sAttr = {};
+    struct pal_device dAttr = {};
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
 
     PAL_DBG(LOG_TAG, "set parameter %u", param_id);
     status = s->getStreamAttributes(&sAttr);
@@ -817,35 +820,31 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
         }
         case PAL_PARAM_ID_DEVICE_ROTATION:
         {
-
-            /* To avoid pop while switching channels, it is required to mute
-               the playback first and then swap the channel and unmute */
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = this->setConfig(s, MODULE, MUTE_TAG);
-                } else {
-                    setConfigStatus = this->setConfig(s, MODULE, DEVICEPP_MUTE);
+            try {
+                pm = PluginManager::getInstance();
+                if(!pm) {
+                    PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+                    goto exit;
                 }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Mute failed");
-            }
-            //mStreamMutex.unlock(); NEED TO FIGURE OUT A WAY TO UNLOCK DURING SLEEP
-            usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
-            // mStreamMutex.lock();
-            status = this->setParamWithTag(s, MUTE_TAG,
-                                            PAL_PARAM_ID_DEVICE_ROTATION,
-                                            payload);
-            // mStreamMutex.unlock();
-            usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
-            // mStreamMutex.lock();
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = this->setConfig(s, MODULE, UNMUTE_TAG);
+                status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+                if (plugin && !status) {
+                    pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+                    SetParamPluginPayload ppld;
+                    ppld.paramId = param_id;
+                    ppld.session = this;
+                    ppld.builder = reinterpret_cast<void*>(builder);
+                    ppld.payload = payload;
+        //call setparam plugin
+                    status = pluginConfig(s, PAL_PLUGIN_CONFIG_SETPARAM, reinterpret_cast<void*>(&ppld), sizeof(ppld));
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "PLUGIN_CONFIG_SETPARAM failed");
+                        goto exit;
+                    }
                 } else {
-                    setConfigStatus = this->setConfig(s, MODULE, DEVICEPP_UNMUTE);
+                    PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
                 }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
+            } catch (const std::exception& e) {
+                throw std::runtime_error(e.what());
             }
             break;
         }
@@ -979,6 +978,7 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
             break;
     }
+exit:
     PAL_DBG(LOG_TAG, "set parameter status %d", status);
     return status;
 }

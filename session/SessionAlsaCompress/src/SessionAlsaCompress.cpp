@@ -46,6 +46,7 @@
 #include <chrono>
 #include <fstream>
 #include <agm/agm_api.h>
+#include "PluginManager.h"
 
 #define CHS_2 2
 #define AACObjHE_PS 29
@@ -634,88 +635,6 @@ bool SessionAlsaCompress::isCodecConfigNeeded(
     PAL_DBG(LOG_TAG, "format %x, need to send codec config %d", audio_fmt,
                       ret);
     return ret;
-}
-
-int SessionAlsaCompress::setCustomFormatParam(pal_audio_fmt_t audio_fmt)
-{
-    int32_t status = 0;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-    uint32_t miid;
-    struct pal_stream_attributes sAttr = {};
-    struct media_format_t *media_fmt_hdr = nullptr;
-    struct agm_buff buffer = {0, 0, 0, NULL, 0, NULL, {0, 0, 0}};
-
-    if (audio_fmt == PAL_AUDIO_FMT_VORBIS) {
-        payload_media_fmt_vorbis_t* media_fmt_vorbis = NULL;
-        // set config for vorbis, as it cannot be upstreamed.
-        if (!compressDevIds.size()) {
-            PAL_ERR(LOG_TAG, "No compressDevIds found");
-            status = -EINVAL;
-            return status;
-        }
-        status = SessionAlsaUtils::getModuleInstanceId(mixer,
-                    compressDevIds.at(0), rxAifBackEnds[0].second.data(),
-                    STREAM_INPUT_MEDIA_FORMAT, &miid);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
-            return status;
-        }
-        media_fmt_hdr = (struct media_format_t *)
-                            malloc(sizeof(struct media_format_t)
-                                + sizeof(struct pal_snd_dec_vorbis));
-        if (!media_fmt_hdr) {
-            PAL_ERR(LOG_TAG, "failed to allocate memory");
-            return -ENOMEM;
-        }
-        media_fmt_hdr->data_format = DATA_FORMAT_RAW_COMPRESSED ;
-        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_VORBIS;
-        media_fmt_hdr->payload_size = sizeof(struct pal_snd_dec_vorbis);
-        media_fmt_vorbis = (payload_media_fmt_vorbis_t*)(((uint8_t*)media_fmt_hdr) +
-            sizeof(struct media_format_t));
-
-        ar_mem_cpy(media_fmt_vorbis,
-                            sizeof(struct pal_snd_dec_vorbis),
-                            &codec.format,
-                            sizeof(struct pal_snd_dec_vorbis));
-        if (sendNextTrackParams) {
-            PAL_DBG(LOG_TAG, "sending next track param on datapath");
-            buffer.timestamp = 0x0;
-            buffer.flags = AGM_BUFF_FLAG_MEDIA_FORMAT;
-            buffer.size = sizeof(struct media_format_t) +
-                          sizeof(struct pal_snd_dec_vorbis);
-            buffer.addr = (uint8_t *)media_fmt_hdr;
-            payload = (uint8_t *)&buffer;
-            payloadSize = sizeof(struct agm_buff);
-            status = SessionAlsaUtils::mixerWriteDatapathParams(mixer,
-                        compressDevIds.at(0), payload, payloadSize);
-            free(media_fmt_hdr);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "mixerWriteWithMetadata failed %d", status);
-                return status;
-            }
-            sendNextTrackParams = false;
-        } else {
-            status = builder->payloadCustomParam(&payload, &payloadSize,
-                                        (uint32_t *)media_fmt_hdr,
-                                        sizeof(struct media_format_t) +
-                                        sizeof(struct pal_snd_dec_vorbis),
-                                        miid, PARAM_ID_MEDIA_FORMAT);
-            free(media_fmt_hdr);
-            if (status) {
-                PAL_ERR(LOG_TAG, "payloadCustomParam failed status = %d", status);
-                return status;
-            }
-            status = SessionAlsaUtils::setMixerParameter(mixer,
-                            compressDevIds.at(0), payload, payloadSize);
-            builder->freeCustomPayload(&payload, &payloadSize);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                return status;
-            }
-        }
-    }
-    return status;
 }
 
 void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
@@ -1375,68 +1294,16 @@ exit:
     return status;
 }
 
-int SessionAlsaCompress::configureEarlyEOSDelay(void)
-{
-    int32_t status = 0;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-    uint32_t miid;
-
-    PAL_DBG(LOG_TAG, "Enter");
-    status = SessionAlsaUtils::getModuleInstanceId(mixer,
-                    compressDevIds.at(0), rxAifBackEnds[0].second.data(),
-                    MODULE_GAPLESS, &miid);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
-        return status;
-    }
-    param_id_gapless_early_eos_delay_t  *early_eos_delay = nullptr;
-    early_eos_delay = (struct param_id_gapless_early_eos_delay_t *)
-                            malloc(sizeof(struct param_id_gapless_early_eos_delay_t));
-    if (!early_eos_delay) {
-        PAL_ERR(LOG_TAG, "failed to allocate memory");
-        return -ENOMEM;
-    }
-    early_eos_delay->early_eos_delay_ms = EARLY_EOS_DELAY_MS;
-
-    status = builder->payloadCustomParam(&payload, &payloadSize,
-                                        (uint32_t *)early_eos_delay,
-                                        sizeof(struct param_id_gapless_early_eos_delay_t),
-                                        miid, PARAM_ID_EARLY_EOS_DELAY);
-    free(early_eos_delay);
-    if (status) {
-        PAL_ERR(LOG_TAG, "payloadCustomParam failed status = %d", status);
-        return status;
-    }
-    if (payloadSize) {
-        status = builder->updateCustomPayload(payload, payloadSize);
-        builder->freeCustomPayload(&payload, &payloadSize);
-        if(0 != status) {
-            PAL_ERR(LOG_TAG, "%s: updateCustomPayload Failed\n", __func__);
-            return status;
-        }
-    }
-    return status;
-}
-
 int SessionAlsaCompress::start(Stream * s)
 {
     struct compr_config compress_config = {};
     struct pal_stream_attributes sAttr = {};
     int32_t status = 0;
     size_t in_buf_size, in_buf_count, out_buf_size, out_buf_count;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
     struct pal_device dAttr = {};
-    struct volume_set_param_info vol_set_param_info = {};
-    bool isStreamAvail = false;
-    uint16_t volSize = 0;
-    uint8_t *volPayload = nullptr;
-    uint32_t miid;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-    struct sessionToPayloadParam streamData = {};
-    pal_param_mspp_linear_gain_t mLinearGain = rm->getLinearGain();
-    memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
+    PluginPayload ppld;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -1446,9 +1313,26 @@ int SessionAlsaCompress::start(Stream * s)
     getSndCodecParam(codec, sAttr);
     s->getBufInfo(&in_buf_size, &in_buf_count, &out_buf_size,
                           &out_buf_count);
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm) {
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
 
     switch (sAttr.direction) {
         case PAL_AUDIO_OUTPUT:
+        {
             if (!compressDevIds.size()) {
                 PAL_ERR(LOG_TAG, "frontendIDs are not available");
                 status = -EINVAL;
@@ -1493,146 +1377,18 @@ int SessionAlsaCompress::start(Stream * s)
             /** set non blocking mode for writes */
             compress_nonblock(compress, !!ioMode);
 
-            status = s->getAssociatedDevices(associatedDevices);
+            ppld.builder = reinterpret_cast<void*>(builder);
+            ppld.payload = reinterpret_cast<void*>(&audio_fmt);
+            //previous logic in config plugin
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
             if (0 != status) {
-                PAL_ERR(LOG_TAG, "getAssociatedDevices Failed \n");
+                PAL_ERR(LOG_TAG, "pluginConfig failed");
                 goto exit;
-            }
-            rm->getBackEndNames(associatedDevices, rxAifBackEnds, txAifBackEnds);
-            if (rxAifBackEnds.empty() && txAifBackEnds.empty()) {
-                PAL_ERR(LOG_TAG, "no backend specified for this stream");
-                goto exit;
-
-            }
-
-            status = SessionAlsaUtils::getModuleInstanceId(mixer, (compressDevIds.at(0)),
-                     rxAifBackEnds[0].second.data(), STREAM_SPR, &spr_miid);
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", STREAM_SPR, status);
-                goto exit;;
-            }
-            setCustomFormatParam(audio_fmt);
-            for (int i = 0; i < associatedDevices.size();i++) {
-                status = associatedDevices[i]->getDeviceAttributes(&dAttr);
-                if(0 != status) {
-                    PAL_ERR(LOG_TAG, "getAssociatedDevices Failed \n");
-                    goto exit;
-                }
-                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, compressDevIds,
-                            rxAifBackEnds[i].second.data());
-                if (status != 0) {
-                    PAL_ERR(LOG_TAG, "configure MFC failed");
-                    goto exit;
-                }
-
-                if (isGaplessFmt) {
-                    status = configureEarlyEOSDelay();
-                }
-                builder->getCustomPayload(&payload, &payloadSize);
-                if (payload) {
-                    status = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                             payload, payloadSize);
-                    builder->freeCustomPayload();
-                    if (status != 0) {
-                        PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                        goto exit;
-                    }
-                }
-
-                if (!status && isMixerEventCbRegd && !isPauseRegistrationDone) {
-                    // Register for callback for Soft Pause
-                    size_t payload_size = 0;
-                    struct agm_event_reg_cfg event_cfg;
-                    payload_size = sizeof(struct agm_event_reg_cfg);
-                    memset(&event_cfg, 0, sizeof(event_cfg));
-                    event_cfg.event_id = EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE;
-                    event_cfg.event_config_payload_size = 0;
-                    event_cfg.is_register = 1;
-                    status = SessionAlsaUtils::registerMixerEvent(mixer,
-                                    compressDevIds.at(0), rxAifBackEnds[0].second.data(),
-                                    TAG_PAUSE, (void *)&event_cfg, payload_size);
-                    if (status == 0) {
-                        isPauseRegistrationDone = true;
-                    } else {
-                        // Not a fatal error
-                        PAL_ERR(LOG_TAG, "Pause callback registration failed");
-                        status = 0;
-                    }
-                }
-                if ((rm->IsChargeConcurrencyEnabled()) &&
-                    (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
-                    status = NotifyChargerConcurrency(rm, true);
-                    if (0 == status) {
-                        status = EnableChargerConcurrency(rm, s);
-                        //Handle failure case of ICL config
-                        if (0 != status) {
-                            PAL_DBG(LOG_TAG, "Failed to set ICL Config status %d", status);
-                            status = NotifyChargerConcurrency(rm, false);
-                        }
-                    }
-                    status = 0;
-                }
-
-                if (PAL_DEVICE_OUT_SPEAKER == dAttr.id && !strcmp(dAttr.custom_config.custom_key, "mspp")) {
-
-                    uint8_t* payload = NULL;
-                    size_t payloadSize = 0;
-                    uint32_t miid;
-                    int32_t volStatus;
-                    volStatus = SessionAlsaUtils::getModuleInstanceId(mixer, compressDevIds.at(0),
-                                                                    rxAifBackEnds[0].second.data(), TAG_MODULE_MSPP, &miid);
-                    if (volStatus != 0) {
-                        PAL_ERR(LOG_TAG,"get MSPP ModuleInstanceId failed");
-                        break;
-                    }
-
-                    builder->payloadMSPPConfig(&payload, &payloadSize, miid, mLinearGain.gain);
-                    if (payloadSize && payload) {
-                        volStatus = builder->updateCustomPayload(payload, payloadSize);
-                        builder->freeCustomPayload(&payload, &payloadSize);
-                        if (0 != volStatus) {
-                            PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
-                            break;
-                        }
-                    }
-                    builder->getCustomPayload(&payload, &payloadSize);
-                    volStatus = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                                 payload, payloadSize);
-                    builder->freeCustomPayload();
-                    if (volStatus != 0) {
-                        PAL_ERR(LOG_TAG,"setMixerParameter failed for MSPP module");
-                        break;
-                    }
-
-                    //to set soft pause delay for MSPP use case.
-                    status = SessionAlsaUtils::getModuleInstanceId(mixer, compressDevIds.at(0),
-                                                                    rxAifBackEnds[0].second.data(), TAG_PAUSE, &miid);
-                    if (status != 0) {
-                        PAL_ERR(LOG_TAG,"get Soft Pause ModuleInstanceId failed");
-                        break;
-                    }
-
-                    builder->payloadSoftPauseConfig(&payload, &payloadSize, miid, MSPP_SOFT_PAUSE_DELAY);
-                    if (payloadSize && payload) {
-                        status = builder->updateCustomPayload(payload, payloadSize);
-                        builder->freeCustomPayload(&payload, &payloadSize);
-                        if (0 != status) {
-                            PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
-                            break;
-                        }
-                    }
-                    builder->getCustomPayload(&payload, &payloadSize);
-                    status = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                                 payload, payloadSize);
-                    builder->freeCustomPayload();
-                    if (status != 0) {
-                        PAL_ERR(LOG_TAG,"setMixerParameter failed for soft Pause module");
-                        break;
-                    }
-                }
             }
             break;
+        }
         case PAL_AUDIO_INPUT:
+        {
             if (!compressDevIds.size()) {
                 PAL_ERR(LOG_TAG, "frontendIDs are not available");
                 status = -EINVAL;
@@ -1660,88 +1416,13 @@ int SessionAlsaCompress::start(Stream * s)
                 goto exit;
             }
             PAL_VERBOSE(LOG_TAG, "capture: compress is ready");
-            status = s->getAssociatedDevices(associatedDevices);
+            //previous logic in config plugin
+            ppld.builder = reinterpret_cast<void*>(builder);
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
             if (0 != status) {
-                PAL_ERR(LOG_TAG, "getAssociatedDevices Failed \n");
+                PAL_ERR(LOG_TAG, "pluginConfig failed");
                 goto exit;
             }
-            rm->getBackEndNames(associatedDevices, rxAifBackEnds,
-                                txAifBackEnds);
-            if (rxAifBackEnds.empty() && txAifBackEnds.empty()) {
-                PAL_ERR(LOG_TAG, "no backend specified for this stream");
-                goto exit;
-            }
-            status = SessionAlsaUtils::getModuleInstanceId(mixer, compressDevIds.at(0),
-                                                                txAifBackEnds[0].second.data(),
-                                                                TAG_STREAM_MFC_SR, &miid);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
-                goto exit;
-            }
-            PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s\n", miid,
-                    compressDevIds.at(0), txAifBackEnds[0].second.data());
-
-            streamData.bitWidth = sAttr.in_media_config.bit_width;
-            streamData.sampleRate = sAttr.in_media_config.sample_rate;
-            streamData.numChannel = sAttr.in_media_config.ch_info.channels;
-            streamData.ch_info = nullptr;
-            builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
-            if (payloadSize && payload) {
-                status = builder->updateCustomPayload(payload, payloadSize);
-                builder->freeCustomPayload(&payload, &payloadSize);
-                if (0 != status) {
-                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
-                    goto exit;
-                }
-            }
-            builder->getCustomPayload(&payload, &payloadSize);
-            if (payload) {
-                status = SessionAlsaUtils::setMixerParameter(
-                    mixer, compressDevIds.at(0), payload,
-                    payloadSize);
-                builder->freeCustomPayload();
-                if (status != 0) {
-                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                    goto exit;
-                }
-            }
-
-           for (int i = 0; i < associatedDevices.size();i++) {
-               status = associatedDevices[i]->getDeviceAttributes(&dAttr);
-               if (0 != status) {
-                   PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
-                   goto exit;
-               }
-           }
-
-           //Setting the device orientation during stream open for HDR record.
-           if ((dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)
-                   && strstr(dAttr.custom_config.custom_key, "unprocessed-hdr-mic")) {
-               s->setOrientation(HDRConfigKeyToDevOrientation(dAttr.custom_config.custom_key));
-               PAL_DBG(LOG_TAG,"HDR record set device orientation %d", s->getOrientation());
-               if (setConfig(s, MODULE, ORIENTATION_TAG) != 0) {
-                   PAL_DBG(LOG_TAG,"HDR record setting device orientation failed");
-               }
-            }
-            if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY) {
-                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, compressDevIds,
-                txAifBackEnds[0].second.data());
-                if(status != 0) {
-                    PAL_ERR(LOG_TAG, "configure MFC failed");
-                }
-            }
-            builder->getCustomPayload(&payload, &payloadSize);
-            if (payload) {
-                status = SessionAlsaUtils::setMixerParameter(
-                    mixer, compressDevIds.at(0), payload,
-                    payloadSize);
-                builder->freeCustomPayload();
-                if (status != 0) {
-                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                    goto exit;
-                }
-            }
-
             if (!capture_started) {
                 status = compress_start(compress);
                 if (status) {
@@ -1752,6 +1433,7 @@ int SessionAlsaCompress::start(Stream * s)
             }
 
             break;
+        }
         default:
             break;
     }
@@ -1765,13 +1447,10 @@ int SessionAlsaCompress::start(Stream * s)
                 PAL_ERR(LOG_TAG,"Setting device orientation failed");
             }
         } else {
-            pal_param_device_rotation_t rotation;
-            rotation.rotation_type = rm->getOrientation() == ORIENTATION_270 ?
-                                    PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-            status = SessionAlsaUtils::handleDeviceRotation(rm, s, rotation.rotation_type, compressDevIds.at(0), mixer,
-                                                            builder, rxAifBackEnds);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG,"handleDeviceRotation failed\n");
+            //call device rotation logic in plugin
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(this), 0);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "PLUGIN_CONFIG_SETPARAM failed");
                 goto exit;
             }
         }
@@ -1787,7 +1466,9 @@ int SessionAlsaCompress::stop(Stream * s __unused)
 {
     int32_t status = 0;
     size_t payload_size = 0;
-    struct agm_event_reg_cfg event_cfg;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
+    // struct agm_event_reg_cfg event_cfg;
     struct pal_stream_attributes sAttr = {};
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -1804,34 +1485,6 @@ int SessionAlsaCompress::stop(Stream * s __unused)
                 status = compress_stop(compress);
                 playback_started = false;
             }
-            // Deregister for callback for Soft Pause
-            if (isPauseRegistrationDone) {
-                payload_size = sizeof(struct agm_event_reg_cfg);
-                memset(&event_cfg, 0, sizeof(event_cfg));
-                event_cfg.event_id = EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE;
-                event_cfg.event_config_payload_size = 0;
-                event_cfg.is_register = 0;
-                if (!compressDevIds.size()) {
-                    PAL_ERR(LOG_TAG, "frontendIDs are not available");
-                    status = -EINVAL;
-                    goto exit;
-                }
-                if (!rxAifBackEnds.size()) {
-                    PAL_ERR(LOG_TAG, "rxAifBackEnds are not available");
-                    status = -EINVAL;
-                    goto exit;
-                }
-                status = SessionAlsaUtils::registerMixerEvent(mixer, compressDevIds.at(0),
-                            rxAifBackEnds[0].second.data(), TAG_PAUSE, (void *)&event_cfg,
-                            payload_size);
-                if (status == 0 || rm->getSoundCardState() == CARD_STATUS_OFFLINE) {
-                    isPauseRegistrationDone = false;
-                } else {
-                    // Not a fatal error
-                    PAL_ERR(LOG_TAG, "Pause callback deregistration failed\n");
-                    status = 0;
-                }
-            }
             break;
         case PAL_AUDIO_INPUT:
             if (compress) {
@@ -1847,6 +1500,23 @@ int SessionAlsaCompress::stop(Stream * s __unused)
             break;
         case PAL_AUDIO_INPUT_OUTPUT:
             break;
+    }
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
     }
 exit:
     rm->voteSleepMonitor(s, false);
@@ -2094,14 +1764,16 @@ struct mixer_ctl* SessionAlsaCompress::getFEMixerCtl(const char *controlName, in
     return ctl;
 }
 
-int32_t SessionAlsaCompress::getFrontEndId(uint32_t ldir __unused)
+int32_t SessionAlsaCompress::getFrontEndIds(std::vector<int>& devices, uint32_t ldir __unused) const
 {
-    int32_t device = -EINVAL;
+    int32_t status = 0;
 
     if (compressDevIds.size())
-        device = compressDevIds.at(0);
+        devices = compressDevIds;
+    else
+        status = -EINVAL;
 
-    return device;
+    return status;
 }
 
 uint32_t SessionAlsaCompress::getMIID(const char *backendName, uint32_t tagId, uint32_t *miid)
@@ -2136,27 +1808,33 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
     struct compr_gapless_mdata mdata;
     struct pal_compr_gapless_mdata *gaplessMdata = NULL;
     struct pal_stream_attributes sAttr = {};
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
 
-    s->getStreamAttributes(&sAttr);
+    PAL_DBG(LOG_TAG, "Enter. param id: %d", param_id);
+    status = streamHandle->getStreamAttributes(&sAttr);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+        goto exit;
+    }
 
-    PAL_DBG(LOG_TAG, "Enter");
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm) {
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    } catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
 
     switch (param_id) {
-        case PAL_PARAM_ID_DEVICE_ROTATION:
-        {
-            if (compressDevIds.size()) {
-                device = compressDevIds.at(0);
-            } else {
-                PAL_ERR(LOG_TAG, "No compressDevIds found");
-                status = -EINVAL;
-                goto exit;
-            }
-            pal_param_device_rotation_t *rotation =
-                                     (pal_param_device_rotation_t *)payload;
-            status = SessionAlsaUtils::handleDeviceRotation(rm,s, rotation->rotation_type, device, mixer,
-                                          builder, rxAifBackEnds);
-        }
-        break;
         case PAL_PARAM_ID_BT_A2DP_TWS_CONFIG:
         {
             if (compressDevIds.size()) {
@@ -2229,7 +1907,16 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
             } else if (compress && (audio_fmt == PAL_AUDIO_FMT_VORBIS)) {
                 PAL_DBG(LOG_TAG, "Setting params for second clip for gapless");
                 sendNextTrackParams = true;
-                status = setCustomFormatParam(audio_fmt);
+                SetParamPluginPayload ppld;
+                ppld.paramId = param_id;
+                ppld.session = this;
+                ppld.builder = reinterpret_cast<void*>(builder);
+                ppld.payload = reinterpret_cast<void*>(&audio_fmt);
+                status = pluginConfig(s, PAL_PLUGIN_CONFIG_SETPARAM, reinterpret_cast<void*>(&ppld), sizeof(SetParamPluginPayload));
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "pluginConfig failed");
+                    goto exit;
+                }
             }
         break;
         case PAL_PARAM_ID_GAPLESS_MDATA:
@@ -2269,7 +1956,6 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
             }
             pal_param_payload *param_payload = (pal_param_payload *)payload;
             pal_volume_data *vdata = (struct pal_volume_data *)param_payload->payload;
-            status = streamHandle->getStreamAttributes(&sAttr);
             if (sAttr.direction == PAL_AUDIO_OUTPUT) {
                 device = compressDevIds.at(0);
                 status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
@@ -2504,11 +2190,21 @@ int SessionAlsaCompress::getParamWithTag(Stream *s __unused, int tagId __unused,
 int SessionAlsaCompress::getTimestamp(struct pal_session_time *stime)
 {
     int status = 0;
+    uint32_t spr_miid = 0;
+
+    status = SessionAlsaUtils::getModuleInstanceId(mixer, (compressDevIds.at(0)),
+                     rxAifBackEnds[0].second.data(), STREAM_SPR, &spr_miid);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", STREAM_SPR, status);
+        return status;
+    }
+
     status = SessionAlsaUtils::getTimestamp(mixer, compressDevIds, spr_miid, stime);
     if (0 != status) {
        PAL_ERR(LOG_TAG, "getTimestamp failed status = %d", status);
        return status;
     }
+
     return status;
 }
 

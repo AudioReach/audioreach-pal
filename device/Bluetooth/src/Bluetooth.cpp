@@ -449,8 +449,8 @@ int32_t Bluetooth::getPCMId()
     Session *session = NULL;
     std::shared_ptr<Device> dev = nullptr;
     std::vector<Stream*> activestreams;
-    int32_t pcmId = -EINVAL;
-    int status = 0;
+    std::vector<int> pcmIds;
+    int32_t status = -EINVAL;
 
     dev = Device::getInstance(&deviceAttr, rm);
     if (dev == nullptr) {
@@ -464,9 +464,9 @@ int32_t Bluetooth::getPCMId()
     }
     stream = static_cast<Stream *>(activestreams[0]);
     stream->getAssociatedSession(&session);
-    pcmId = session->getFrontEndId((codecType == ENC) ? RX_HOSTLESS : TX_HOSTLESS);
+    status = session->getFrontEndIds(pcmIds, (codecType == ENC) ? RX_HOSTLESS : TX_HOSTLESS);
 done:
-    return pcmId;
+    return status == 0 ? pcmIds.at(0) : status;
 }
 
 int Bluetooth::configureGraphModules()

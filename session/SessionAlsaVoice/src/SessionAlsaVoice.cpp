@@ -25,12 +25,6 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Changes from Qualcomm Innovation Center are provided under the following
- * license:
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 /*
@@ -67,7 +61,6 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #define NUM_OF_CAL_KEYS 3
 #define MAX_RETRY 1
-#define POP_SUPPRESSOR_RAMP_DELAY (1*1000)
 
 static uint32_t retries = 0;
 
@@ -143,22 +136,28 @@ struct mixer_ctl* SessionAlsaVoice::getFEMixerCtl(const char *controlName, int *
     return ctl;
 }
 
-int32_t SessionAlsaVoice::getFrontEndId(uint32_t ldir)
+int32_t SessionAlsaVoice::getFrontEndIds(std::vector<int>& devices, uint32_t ldir) const
 {
-    int device = -EINVAL;
+    int32_t status = 0;
     switch(ldir) {
-    case RX_HOSTLESS:
-        if (pcmDevRxIds.size())
-            device = pcmDevRxIds.at(0);
-        break;
-    case TX_HOSTLESS:
-        if (pcmDevTxIds.size())
-            device = pcmDevTxIds.at(0);
-        break;
-    default:
-        break;
+        case RX_HOSTLESS:
+            if (pcmDevRxIds.size()) {
+                devices = pcmDevRxIds;
+                goto exit;
+            }
+            break;
+        case TX_HOSTLESS:
+            if (pcmDevTxIds.size()) {
+                devices = pcmDevTxIds;
+                goto exit;
+            }
+            break;
+        default:
+            break;
     }
-    return device;
+    status = -EINVAL;
+exit:
+    return status;
 }
 
 bool SessionAlsaVoice::isActive()
@@ -335,133 +334,6 @@ exit:
     return status;
 }
 
-int SessionAlsaVoice::reconfigureSession(Stream *s, pal_media_config config,
-                                         pal_stream_direction_t dir)
-{
-    int status = 0;
-    int pcmId = 0;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-
-    if (!dir)
-        return -EINVAL;
-
-    if (dir == PAL_AUDIO_OUTPUT) {
-        if (pcmDevRxIds.size()) {
-            pcmId = pcmDevRxIds.at(0);
-        } else {
-            PAL_ERR(LOG_TAG, "pcmDevRxIds is not available.");
-            status = -EINVAL;
-            goto exit;
-        }
-        status = build_rx_mfc_payload(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"populating Rx mfc payload failed :%d", status);
-            goto exit;
-        }
-
-        // populate_vsid_payload, appends to the existing payload
-        status = populate_vsid_payload(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"populating vsid payload for RX Failed:%d", status);
-            goto exit;
-        }
-
-        // set tagged slot mask
-        status = setTaggedSlotMask(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"setTaggedSlotMask failed:%d", status);
-            goto exit;
-        }
-
-        status = populateRatPayload(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"populateRatPayload failed:%d", status);
-            goto exit;
-        }
-    } else {
-        if (pcmDevTxIds.size()) {
-            pcmId = pcmDevTxIds.at(0);
-        } else {
-            PAL_ERR(LOG_TAG, "pcmDevTxIds is not available.");
-            status = -EINVAL;
-            goto exit;
-        }
-        status = populate_vsid_payload(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"populating vsid payload for TX Failed:%d", status);
-            goto exit;
-        }
-        status = populate_ch_info_payload(s);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"populating channel info for TX Failed..skipping:%d", status);
-        }
-    }
-
-    builder->getCustomPayload(&payload, &payloadSize);
-    status = SessionAlsaUtils::setMixerParameter(mixer, pcmId,
-            payload, payloadSize);
-
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"setMixerParameter failed:%d for dir:%s",
-                status, (dir == RX_HOSTLESS)?"RX":"TX");
-        goto exit;
-    }
-
-exit:
-    builder->freeCustomPayload();
-    return status;
-}
-
-int SessionAlsaVoice::populate_vsid_payload(Stream *s __unused)
-{
-    int status = 0;
-    apm_module_param_data_t* header;
-    uint8_t* vsidPayload = NULL;
-    size_t vsidpayloadSize = 0, padBytes = 0;
-    uint8_t *vsid_pl = NULL;
-    vcpm_param_vsid_payload_t vsid_payload;
-
-
-    vsidpayloadSize = sizeof(struct apm_module_param_data_t)+
-                  sizeof(vcpm_param_vsid_payload_t);
-    padBytes = PAL_PADDING_8BYTE_ALIGN(vsidpayloadSize);
-
-    vsidPayload = (uint8_t *) calloc(1, vsidpayloadSize + padBytes);
-    if (!vsidPayload) {
-        PAL_ERR(LOG_TAG, "vsid payload allocation failed %s", strerror(errno));
-        return -EINVAL;
-    }
-
-    header = (apm_module_param_data_t*)vsidPayload;
-    header->module_instance_id = VCPM_MODULE_INSTANCE_ID;
-    header->param_id = VCPM_PARAM_ID_VSID;
-    header->error_code = 0x0;
-    header->param_size = vsidpayloadSize - sizeof(struct apm_module_param_data_t);
-
-    vsid_payload.vsid = vsid;
-    vsid_pl = (uint8_t*)vsidPayload + sizeof(apm_module_param_data_t);
-    ar_mem_cpy(vsid_pl,  sizeof(vcpm_param_vsid_payload_t),
-                     &vsid_payload,  sizeof(vcpm_param_vsid_payload_t));
-    vsidpayloadSize += padBytes;
-
-    if (vsidPayload && vsidpayloadSize) {
-        status = builder->updateCustomPayload(vsidPayload, vsidpayloadSize);
-        builder->freeCustomPayload(&vsidPayload, &vsidpayloadSize);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"updateCustomPayload for vsid payload Failed %d\n", status);
-            return status;
-        }
-    }
-
-    /* call loopback delay playload if in loopback mode*/
-    if ((vsid == VOICELBMMODE1 || vsid == VOICELBMMODE2)) {
-        populateVSIDLoopbackPayload(s);
-    }
-
-    return status;
-}
-
 int SessionAlsaVoice::getDeviceChannelInfo(Stream *s, uint16_t *channels)
 {
     int status = 0;
@@ -518,402 +390,18 @@ exit:
     return status;
 }
 
-int SessionAlsaVoice::populate_ch_info_payload(Stream *s)
-{
-    int status = 0;
-    apm_module_param_data_t* header;
-    uint8_t* ch_infoPayload = NULL;
-    size_t ch_info_payloadSize = 0, padBytes = 0;
-    uint8_t *ch_info_pl;
-    vcpm_param_id_tx_dev_pp_channel_info_t ch_info_payload;
-    uint16_t channels = 0;
-
-    status = getDeviceChannelInfo(s, &channels);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"device get channel info failed");
-        return status;
-    }
-
-    ch_info_payloadSize = sizeof(struct apm_module_param_data_t)+
-                  sizeof(vcpm_param_id_tx_dev_pp_channel_info_t);
-    padBytes = PAL_PADDING_8BYTE_ALIGN(ch_info_payloadSize);
-
-    ch_infoPayload = (uint8_t *) calloc(1, (ch_info_payloadSize + padBytes));
-
-    if (!ch_infoPayload) {
-        PAL_ERR(LOG_TAG, "channel info payload allocation failed %s",
-            strerror(errno));
-        return -ENOMEM;
-    }
-    header = (apm_module_param_data_t*)ch_infoPayload;
-    header->module_instance_id = VCPM_MODULE_INSTANCE_ID;
-    header->param_id = VCPM_PARAM_ID_TX_DEV_PP_CHANNEL_INFO;
-    header->error_code = 0x0;
-    header->param_size = ch_info_payloadSize - sizeof(struct apm_module_param_data_t);
-
-    ch_info_payload.vsid = vsid;
-    ch_info_payload.num_channels = channels;
-    PAL_DBG(LOG_TAG, "vsid %d num_channels %d", ch_info_payload.vsid,
-                ch_info_payload.num_channels);
-    ch_info_pl = (uint8_t*)ch_infoPayload + sizeof(apm_module_param_data_t);
-    ar_mem_cpy(ch_info_pl,  sizeof(vcpm_param_id_tx_dev_pp_channel_info_t),
-                     &ch_info_payload,  sizeof(vcpm_param_id_tx_dev_pp_channel_info_t));
-    ch_info_payloadSize += padBytes;
-
-    if (ch_infoPayload && ch_info_payloadSize) {
-        status = builder->updateCustomPayload(ch_infoPayload, ch_info_payloadSize);
-        builder->freeCustomPayload(&ch_infoPayload, &ch_info_payloadSize);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"updateCustomPayload for channel info payload Failed %d\n",
-                status);
-            return status;
-        }
-    }
-    return status;
-}
-
-int SessionAlsaVoice::populateVSIDLoopbackPayload(Stream* s){
-    int status = 0;
-    struct vsid_info vsidInfo;
-    apm_module_param_data_t* header;
-    uint8_t* loopbackPayload = NULL;
-    size_t loopbackPayloadSize = 0, padBytes = 0;
-    uint8_t *loopback_pl;
-    vcpm_param_id_voc_pkt_loopback_delay_t vsid_loopback_payload;
-
-    rm->getVsidInfo(&vsidInfo);
-
-    PAL_DBG(LOG_TAG, "loopback delay is %d", vsidInfo.loopback_delay);
-
-    if (vsidInfo.loopback_delay == 0) {
-        goto exit;
-    }
-
-    loopbackPayloadSize = sizeof(struct apm_module_param_data_t)+
-                  sizeof(vcpm_param_id_voc_pkt_loopback_delay_t);
-    padBytes = PAL_PADDING_8BYTE_ALIGN(loopbackPayloadSize);
-
-    loopbackPayload = (uint8_t *) calloc(1, loopbackPayloadSize + padBytes);
-    if (!loopbackPayload) {
-        PAL_ERR(LOG_TAG, "loopback payload allocation failed %s",
-            strerror(errno));
-        return -EINVAL;
-    }
-    header = (apm_module_param_data_t*)loopbackPayload;
-    header->module_instance_id = VCPM_MODULE_INSTANCE_ID;
-    header->param_id = VCPM_PARAM_ID_VOC_PKT_LOOPBACK_DELAY;
-    header->error_code = 0x0;
-    header->param_size = loopbackPayloadSize - sizeof(struct apm_module_param_data_t);
-
-    vsid_loopback_payload.vsid = vsid;
-    vsid_loopback_payload.delay_ms = vsidInfo.loopback_delay;
-    loopback_pl = (uint8_t*)loopbackPayload + sizeof(apm_module_param_data_t);
-    ar_mem_cpy(loopback_pl,  sizeof(vcpm_param_id_voc_pkt_loopback_delay_t),
-                     &vsid_loopback_payload,  sizeof(vcpm_param_id_voc_pkt_loopback_delay_t));
-
-    loopbackPayloadSize += padBytes;
-
-    if (loopbackPayload && loopbackPayloadSize) {
-        status = builder->updateCustomPayload(loopbackPayload, loopbackPayloadSize);
-        builder->freeCustomPayload(&loopbackPayload, &loopbackPayloadSize);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"updateCustomPayload for loopback payload Failed %d\n", status);
-            return status;
-        }
-    }
-exit:
-    return status;
-}
-
-int SessionAlsaVoice::populateRatPayload(Stream *s)
-{
-    int status = 0;
-    int devId = 0;
-    int idx = 0;
-    uint32_t miid = 0;
-    uint8_t* ratPayload = NULL;
-    size_t ratPayloadSize = 0;
-    struct pal_device dAttr;
-    struct pal_media_config config;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
-
-    if(!s){
-        PAL_ERR(LOG_TAG, "invalid stream pointer")
-        status = -EINVAL;
-        goto exit;
-    }
-
-    status = s->getAssociatedDevices(associatedDevices);
-    if ((0 != status) || (associatedDevices.size() == 0)) {
-        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
-        goto exit;
-    }
-    for (idx = 0; idx < associatedDevices.size(); idx++) {
-        devId = associatedDevices[idx]->getSndDeviceId();
-        if (rm->isOutputDevId(devId)) {
-            break;
-        }
-    }
-    if (associatedDevices[idx]->isScoNbWbActive()) {
-        status = getMIID(rxAifBackEnds[0].second.c_str(), RAT_RENDER, &miid);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"getModuleInstanceId failed for RAT_RENDER: %X status: %d",
-                RAT_RENDER, status);
-            goto exit;
-        }
-        associatedDevices[idx]->getDeviceAttributes(&dAttr);
-        builder->payloadRATConfig(&ratPayload, &ratPayloadSize, miid, &dAttr.config);
-        if (ratPayload && ratPayloadSize) {
-            status = builder->updateCustomPayload(ratPayload, ratPayloadSize);
-            builder->freeCustomPayload(&ratPayload, &ratPayloadSize);
-            if (status != 0)
-                PAL_ERR(LOG_TAG,"updateCustomPayload for RAT_RENDER %XFailed\n", RAT_RENDER);
-        }
-    }
-
-exit:
-    return status;
-}
-
-int SessionAlsaVoice::build_rx_mfc_payload(Stream *s) {
-    int status = 0;
-    std::vector<uint32_t> rx_mfc_tags{PER_STREAM_PER_DEVICE_MFC, TAG_DEVICE_PP_MFC, TAG_MFC_SIDETONE};
-
-    for (uint32_t rx_mfc_tag : rx_mfc_tags) {
-        status = populate_rx_mfc_payload(s, rx_mfc_tag);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"populating Rx mfc: %X payload failed :%d",
-                    rx_mfc_tag, status);
-            if (rx_mfc_tag == TAG_DEVICE_PP_MFC)
-                goto exit;
-        }
-    }
-    status = 0;
-
-exit:
-    return status;
-}
-
-int SessionAlsaVoice::populate_rx_mfc_payload(Stream *s, uint32_t rx_mfc_tag)
-{
-    int status = 0;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
-    struct sessionToPayloadParam deviceData;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-    uint32_t miid = 0;
-
-    status = s->getAssociatedDevices(associatedDevices);
-    if ((0 != status) || (associatedDevices.size() == 0)) {
-        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
-        goto exit;
-    }
-
-    rm->getBackEndNames(associatedDevices, rxAifBackEnds, txAifBackEnds);
-    if (rxAifBackEnds.empty() && txAifBackEnds.empty()) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "no backend specified for this stream");
-        return status;
-    }
-    if (!pcmDevRxIds.size()) {
-        PAL_ERR(LOG_TAG, "No pcmDevRxIds found");
-        status = -EINVAL;
-        goto exit;
-    }
-    // For MIID of the MFC in the sidetone graph
-    if (rx_mfc_tag == TAG_MFC_SIDETONE) {
-        status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevTxIds.at(0), txAifBackEnds[0].second.c_str(), rx_mfc_tag, &miid);
-    }
-    else {
-        status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevRxIds.at(0), rxAifBackEnds[0].second.c_str(), rx_mfc_tag, &miid);
-    }
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"getModuleInstanceId failed for Rx mfc: %X status: %d",
-            rx_mfc_tag, status);
-        return status;
-    }
-
-    status = getDeviceData(s, &deviceData);
-    if(status){
-        PAL_ERR(LOG_TAG,"failed to get deviceData")
-        goto exit;
-    }
-    builder->payloadMFCConfig(&payload, &payloadSize, miid, &deviceData);
-    if (payload && payloadSize) {
-        status = builder->updateCustomPayload(payload, payloadSize);
-        builder->freeCustomPayload(&payload, &payloadSize);
-        if (status != 0)
-            PAL_ERR(LOG_TAG,"updateCustomPayload for Rx mfc %XFailed\n", rx_mfc_tag);
-    }
-
-exit:
-    return status;
-}
-
-int SessionAlsaVoice::populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsDevice) {
-    uint32_t miid = 0;
-    int32_t status = 0;
-    uint8_t* alsaParamData = NULL;
-    size_t alsaPayloadSize = 0;
-    std::string backendname;
-
-    rm->getBackendName(CrsDevice->getSndDeviceId(), backendname);
-    status = getMIID(backendname.c_str(), TAG_DEVICE_PP_MFC, &miid);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG, "Unable to get MIID");
-        return status;
-    }
-
-    builder->payloadCRSMFCMixerCoeff((uint8_t **)&alsaParamData, &alsaPayloadSize, miid);
-    if (alsaPayloadSize) {
-        status = builder->updateCustomPayload(alsaParamData, alsaPayloadSize);
-        builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
-            return status;
-        }
-    }
-    builder->getCustomPayload(&alsaParamData, &alsaPayloadSize);
-    status = SessionAlsaUtils::setMixerParameter(mixer,
-                                                 pcmDevRxIds.at(0),
-                                                 alsaParamData,
-                                                 alsaPayloadSize);
-    builder->freeCustomPayload();
-    if (status != 0) {
-        PAL_ERR(LOG_TAG, "setMixerParameter failed");
-        return status;
-    }
-
-    return status;
-}
-
-int SessionAlsaVoice::getDeviceData(Stream *s, struct sessionToPayloadParam *deviceData)
-{
-    int status = 0;
-    int dev_id = 0;
-    struct pal_device dAttr;
-    int idx = 0;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
-    std::shared_ptr<group_dev_config_t> groupDevConfig;
-
-    if(!s){
-        PAL_ERR(LOG_TAG, "invalid stream pointer")
-        status = -EINVAL;
-        goto exit;
-    }
-    if(!deviceData){
-        PAL_ERR(LOG_TAG, "invalid deviceData pointer")
-        status = -EINVAL;
-        goto exit;
-    }
-
-    memset(&dAttr, 0, sizeof(struct pal_device));
-    status = s->getAssociatedDevices(associatedDevices);
-    if ((0 != status) || (associatedDevices.size() == 0)) {
-        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
-        goto exit;
-    }
-    for (idx = 0; idx < associatedDevices.size(); idx++) {
-        dev_id = associatedDevices[idx]->getSndDeviceId();
-        if (rm->isOutputDevId(dev_id)) {
-            status = associatedDevices[idx]->getDeviceAttributes(&dAttr);
-            break;
-        }
-    }
-    if (dAttr.id == 0) {
-        PAL_ERR(LOG_TAG, "Failed to get device attributes");
-        status = -EINVAL;
-        goto exit;
-    }
-
-    if (dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_SCO || dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_BLE)
-    {
-        struct pal_media_config codecConfig;
-        status = associatedDevices[idx]->getCodecConfig(&codecConfig);
-        if(0 != status) {
-           PAL_ERR(LOG_TAG,"getCodecConfig Failed \n");
-            goto exit;
-        }
-        deviceData->bitWidth = codecConfig.bit_width;
-        deviceData->sampleRate = codecConfig.sample_rate;
-        deviceData->numChannel = codecConfig.ch_info.channels;
-        deviceData->ch_info = nullptr;
-        PAL_DBG(LOG_TAG,"set devicePPMFC to match codec configuration for device %d\n", dAttr.id);
-    } else {
-        // update device pp configuration if virtual port is enabled
-        groupDevConfig = rm->getActiveGroupDevConfig();
-        if (groupDevConfig && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
-             dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
-            if (groupDevConfig->devpp_mfc_cfg.sample_rate)
-                dAttr.config.sample_rate = groupDevConfig->devpp_mfc_cfg.sample_rate;
-            if (groupDevConfig->devpp_mfc_cfg.channels)
-                dAttr.config.ch_info.channels = groupDevConfig->devpp_mfc_cfg.channels;
-        }
-        deviceData->bitWidth = dAttr.config.bit_width;
-        deviceData->sampleRate = dAttr.config.sample_rate;
-        deviceData->numChannel = dAttr.config.ch_info.channels;
-        deviceData->ch_info = nullptr;
-    }
-exit:
-    return status;
-}
-
-
-int SessionAlsaVoice::setTaggedSlotMask(Stream * s)
-{
-    int status = 0;
-    struct pal_device dAttr;
-    struct pal_stream_attributes sAttr;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
-    int dev_id = 0;
-    int idx = 0;
-
-    status = s->getStreamAttributes(&sAttr);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"stream get attributes failed");
-        return status;
-    }
-
-    memset(&dAttr, 0, sizeof(struct pal_device));
-    status = s->getAssociatedDevices(associatedDevices);
-    if ((0 != status) || (associatedDevices.size() == 0)) {
-        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
-        return status;
-    }
-
-    for (idx = 0; idx < associatedDevices.size(); idx++) {
-        dev_id = associatedDevices[idx]->getSndDeviceId();
-        if (rm->isOutputDevId(dev_id)) {
-            status = associatedDevices[idx]->getDeviceAttributes(&dAttr);
-            break;
-        }
-    }
-    if (dAttr.id == 0) {
-        PAL_ERR(LOG_TAG, "Failed to get device attributes");
-        status = -EINVAL;
-        return status;
-    }
-
-    if ((rm->IsDeviceMuxConfigEnabled() || rm->IsVirtualPortForUPDEnabled()) &&
-        (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
-         SessionAlsaUtils::setSlotMask(rm, sAttr, dAttr, pcmDevRxIds);
-    }
-
-    return status;
-}
-
 int SessionAlsaVoice::start(Stream * s)
 {
+    int32_t status = 0;
     struct pcm_config config;
     struct pal_stream_attributes sAttr;
-    int32_t status = 0;
     std::shared_ptr<Device> rxDevice = nullptr;
     pal_param_payload *palPayload = NULL;
     int txDevId = PAL_DEVICE_NONE;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
     struct pal_volume_data *volume = NULL;
     bool isTxStarted = false, isRxStarted = false;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
 
     PAL_DBG(LOG_TAG,"Enter");
 
@@ -992,14 +480,7 @@ int SessionAlsaVoice::start(Stream * s)
             goto err_pcm_open;
         }
     }
-    mState = SESSION_OPENED;
-    status = SessionAlsaVoice::setConfig(s, MODULE, VSID, RX_HOSTLESS);
-    if (status) {
-        PAL_ERR(LOG_TAG, "setConfig failed %d", status);
-        goto err_pcm_open;
-    }
 
-    SessionAlsaVoice::setConfig(s, MODULE, CHANNEL_INFO, TX_HOSTLESS);
     volume = (struct pal_volume_data *)malloc(sizeof(uint32_t) +
                                                 (sizeof(struct pal_channel_vol_kv)));
     if (!volume) {
@@ -1036,33 +517,26 @@ int SessionAlsaVoice::start(Stream * s)
         }
     }
 
-    /* configuring RAT_RENDER, updating custom payload if it is a NB/WB SCO usecase*/
-    status = populateRatPayload(s);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"Exit Configuring RAT_RENDER failed with status %d", status);
-        goto err_pcm_open;
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+            uint32_t vsidCopy = vsid;
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&vsidCopy), sizeof(vsidCopy));
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    } catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
     }
 
-    /* configuring Rx MFC's, updating custom payload and send mixer controls at once*/
-    status = build_rx_mfc_payload(s);
-
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"Exit Configuring Rx mfc failed with status %d", status);
-        goto err_pcm_open;
-    }
-    builder->getCustomPayload(&payload, &payloadSize);
-    status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevRxIds.at(0),
-                                                 payload, payloadSize);
-    builder->freeCustomPayload();
     if (status != 0) {
         PAL_ERR(LOG_TAG,"setMixerParameter failed");
-        goto err_pcm_open;
-    }
-
-    /* set slot_mask as TKV to configure MUX module */
-    status = setTaggedSlotMask(s);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"setTaggedSlotMask failed");
         goto err_pcm_open;
     }
 
@@ -1101,11 +575,16 @@ int SessionAlsaVoice::start(Stream * s)
     }
     isTxStarted = true;
 
-    if (rm->IsCRSCallEnabled()) {
-        status = populate_rx_mfc_coeff_payload(rxDevice);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"populating Rx mfc coeff payload failed :%d", status);
-        }
+    if (plugin) {
+        pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+        ReconfigPluginPayload ppld;
+        ppld.session = this;
+        ppld.builder = reinterpret_cast<void*>(builder);
+        ppld.payload = reinterpret_cast<void*>(&rxDevice);
+        ppld.pcmDevIds = pcmDevRxIds;
+        status = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+    } else {
+        PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
     }
 
     /*set sidetone*/
@@ -1174,6 +653,9 @@ int SessionAlsaVoice::stop(Stream * s)
     int status = 0;
     int txDevId = PAL_DEVICE_NONE;
     std::shared_ptr<Device> rxDevice = nullptr;
+    pal_stream_attributes sAttr = {};
+    PluginConfig pluginConfig = nullptr;
+    void* plugin = nullptr;
 
     PAL_DBG(LOG_TAG,"Enter");
     /*disable sidetone*/
@@ -1188,9 +670,35 @@ int SessionAlsaVoice::stop(Stream * s)
             }
         }
     }
-    /*config mute on pop suppressor*/
-    setPopSuppressorMute(s);
-    usleep(POP_SUPPRESSOR_RAMP_DELAY);
+    status = s->getStreamAttributes(&sAttr);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG,"stream get attributes failed");
+        return status;
+    }
+
+    /**config mute on pop suppressor now in config plugin.
+     * more AR module-specific logics shall be moved to plugin
+     * if ever being added. However, necessary getter/setter of
+     * private variables need to be created; and subroutine orders
+     * need to be carefully considered.
+     */
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+            status = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
 
     if (pcmRx && isActive()) {
         status = pcm_stop(pcmRx);
@@ -1214,8 +722,10 @@ int SessionAlsaVoice::stop(Stream * s)
         setExtECRef(s, rxDevice, false);
     }
 
+exit:
     rm->voteSleepMonitor(s, false);
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    ssr_trigger_enable = false;
     mState = SESSION_STOPPED;
 
     return status;
@@ -1536,26 +1046,6 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
                 status = -EINVAL;
             }
             break;
-
-        case VSID:
-            status = payloadSetVSID(s);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "failed to get payload status %d", status);
-                goto exit;
-            }
-            builder->getCustomPayload(&customPayload, &customPayloadSize);
-            PAL_DBG(LOG_TAG, "customPayload: %d customPayloadSize: %d", customPayload, customPayloadSize);
-            status = SessionAlsaVoice::setVoiceMixerParameter(s, mixer,
-                                                              customPayload,
-                                                              customPayloadSize,
-                                                              dir);
-            if (status) {
-                PAL_ERR(LOG_TAG, "Failed to set voice params status = %d",
-                        status);
-                goto exit;
-            }
-            break;
-
         case CHANNEL_INFO:
             status = payloadSetChannelInfo(s, &paramData, &paramSize);
             status = SessionAlsaVoice::setVoiceMixerParameter(s, mixer,
@@ -1667,53 +1157,6 @@ int SessionAlsaVoice::payloadTaged(Stream * s, configType type, int tag,
     }
 
 exit:
-    return status;
-}
-
-int SessionAlsaVoice::payloadSetVSID(Stream* s){
-    int status = 0;
-    apm_module_param_data_t* header;
-    uint8_t* payloadInfo = NULL;
-    size_t payloadSize = 0, padBytes = 0;
-    uint8_t *vsid_pl;
-    vcpm_param_vsid_payload_t vsid_payload;
-
-    payloadSize = sizeof(struct apm_module_param_data_t)+
-                  sizeof(vcpm_param_vsid_payload_t);
-    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
-
-    payloadInfo = (uint8_t *) calloc(1, payloadSize + padBytes);
-    if (!payloadInfo) {
-        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-        return -EINVAL;
-    }
-    header = (apm_module_param_data_t*)payloadInfo;
-    header->module_instance_id = VCPM_MODULE_INSTANCE_ID;
-    header->param_id = VCPM_PARAM_ID_VSID;
-    header->error_code = 0x0;
-    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
-
-    vsid_payload.vsid = vsid;
-    vsid_pl = (uint8_t*)payloadInfo + sizeof(apm_module_param_data_t);
-    ar_mem_cpy(vsid_pl,  sizeof(vcpm_param_vsid_payload_t),
-                     &vsid_payload,  sizeof(vcpm_param_vsid_payload_t));
-    payloadSize += padBytes;
-
-    if (payloadInfo && payloadSize) {
-        status = builder->updateCustomPayload(payloadInfo, payloadSize);
-        builder->freeCustomPayload(&payloadInfo, &payloadSize);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
-            return status;
-        }
-    }
-
-    /* call loopback delay playload if in loopback mode*/
-    if ((vsid == VOICELBMMODE1 || vsid == VOICELBMMODE2)) {
-        populateVSIDLoopbackPayload(s);
-    }
-
-
     return status;
 }
 
@@ -1971,17 +1414,37 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
     struct pal_device dAttr;
     int status = 0;
     int txDevId = PAL_DEVICE_NONE;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
 
+    PAL_DBG(LOG_TAG,"Enter");
     deviceList.push_back(deviceToDisconnect);
     rm->getBackEndNames(deviceList, rxAifBackEnds,txAifBackEnds);
 
     deviceToDisconnect->getDeviceAttributes(&dAttr);
 
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            return -EINVAL;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(streamType), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(streamType).c_str());
+        }
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
+
     if (rxAifBackEnds.size() > 0) {
         /*config mute on pop suppressor*/
         if (streamHandle->getCurState() != STREAM_INIT) {
-            setPopSuppressorMute(streamHandle);
-            usleep(POP_SUPPRESSOR_RAMP_DELAY);
+            //pop suppressor call now in plugin config.
+            pluginConfig(streamHandle, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
         }
 
         /*if HW sidetone is enable disable it */
@@ -2076,18 +1539,50 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
                                            std::shared_ptr<Device> deviceToConnect)
 {
     std::vector<std::shared_ptr<Device>> deviceList;
-    std::vector<std::string> aifBackEndsToConnect;
     std::shared_ptr<Device> rxDevice = nullptr;
     struct pal_device dAttr;
+    struct pal_stream_attributes sAttr;
     int status = 0;
     int txDevId = PAL_DEVICE_NONE;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
+    ReconfigPluginPayload ppld = {};
 
     deviceList.push_back(deviceToConnect);
     rm->getBackEndNames(deviceList, rxAifBackEnds, txAifBackEnds);
     deviceToConnect->getDeviceAttributes(&dAttr);
 
+    status = streamHandle->getStreamAttributes(&sAttr);
+
+    if (status) {
+        PAL_ERR(LOG_TAG, "could not get stream attributes\n");
+        goto exit;
+    }
+
+    /* *This plugin is for post reconfig processing logic in SessionAlsaVoice.
+     *  Now it's only being used for CRS populate rx mfc coeff payload usecase.
+     *  It can be reorganized if more post-reconfig logics are added.
+     * */
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto exit;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !status) {
+            pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+            ppld.pcmDevIds = pcmDevRxIds;
+            ppld.session = this;
+            ppld.builder = reinterpret_cast<void*>(builder);
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
+        }
+    } catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
+
     if (rxAifBackEnds.size() > 0) {
-        setTaggedSlotMask(streamHandle);
         status = SessionAlsaUtils::connectSessionDevice(this, streamHandle,
                                                          streamType, rm,
                                                          dAttr, pcmDevRxIds,
@@ -2116,14 +1611,14 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
                }
            }
         }
+        //if CRSCall enabled, populate rx mfc coeff payload, in plugin.
         if (rm->IsCRSCallEnabled()) {
-            status = populate_rx_mfc_coeff_payload(deviceToConnect);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG,"populating Rx mfc coeff payload failed :%d", status);
-            }
+            ppld.payload = reinterpret_cast<void*>(&deviceToConnect);
+            status = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
+                                    reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
         }
     } else if (txAifBackEnds.size() > 0) {
-        status =  SessionAlsaUtils::connectSessionDevice(this, streamHandle,
+        status = SessionAlsaUtils::connectSessionDevice(this, streamHandle,
                                                          streamType, rm,
                                                          dAttr, pcmDevTxIds,
                                                          txAifBackEnds);
@@ -2148,13 +1643,15 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
                PAL_ERR(LOG_TAG,"enabling sidetone failed");
            }
         }
+        //if CRSCall enabled, populate rx mfc coeff payload, in plugin.
         if (rm->IsCRSCallEnabled()) {
-            status = populate_rx_mfc_coeff_payload(rxDevice);
-            if (status != 0) {
-                PAL_ERR(LOG_TAG,"populating Rx mfc coeff payload failed :%d", status);
-            }
+            ppld.payload = reinterpret_cast<void*>(&rxDevice);
+            status = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
+                                    reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
         }
     }
+exit:
+    PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
 }
 
@@ -2188,13 +1685,12 @@ int SessionAlsaVoice::setVoiceMixerParameter(Stream * s, struct mixer *mixer,
     if (!ctl) {
         PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", mixer_str);
         free(mixer_str);
-        return ENOENT;
+        return -ENOENT;
     }
-
 
     ret = mixer_ctl_set_array(ctl, payload, size);
 
-    PAL_VERBOSE(LOG_TAG, "ret = %d, cnt = %d\n", ret, size);
+    PAL_DBG(LOG_TAG, "exit, ret = %d, cnt = %d\n", ret, size);
     free(mixer_str);
     return ret;
 }
@@ -2218,7 +1714,6 @@ char* SessionAlsaVoice::getMixerVoiceStream(Stream *s, int dir){
             stream = (char*)"VOICEMMODE2p";
         }
     }
-
     return stream;
 }
 
@@ -2312,57 +1807,3 @@ int SessionAlsaVoice::getRXDevice(Stream *s, std::shared_ptr<Device> &rx_dev)
     }
     return status;
 }
-
-int SessionAlsaVoice::setPopSuppressorMute(Stream *s)
-{
-    int status = 0;
-    std::vector<std::shared_ptr<Device>> associatedDevices;
-    uint8_t* payload = NULL;
-    size_t payloadSize = 0;
-    uint32_t miid = 0;
-
-    if (!rxAifBackEnds.size()) {
-        PAL_ERR(LOG_TAG, "No RX backends found");
-        status = -EINVAL;
-        goto exit;
-    }
-
-    if (!pcmDevRxIds.size()) {
-        PAL_ERR(LOG_TAG, "No pcmDevRxIds found");
-        status = -EINVAL;
-        goto exit;
-    }
-
-    status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevRxIds.at(0),
-                                                   rxAifBackEnds[0].second.c_str(),
-                                                   DEVICE_POP_SUPPRESSOR, &miid);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"getModuleInstanceId failed for Rx pop suppressor: 0x%x status: %d",
-            DEVICE_POP_SUPPRESSOR, status);
-        goto exit;
-    }
-
-    if (!builder) {
-        PAL_ERR(LOG_TAG,"failed: builder instance not found")
-        status = -EINVAL;
-        goto exit;
-    }
-
-    status = builder->payloadPopSuppressorConfig((uint8_t**)&payload, &payloadSize, miid, true);
-    if (status) {
-        PAL_ERR(LOG_TAG,"pop suppressor payload creation failed: status: %d",
-                status);
-        goto exit;
-    }
-
-    status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevRxIds.at(0),
-                                                 payload, payloadSize);
-    if (status) {
-        PAL_ERR(LOG_TAG,"setMixerParameter failed");
-    }
-exit:
-    if (payload)
-        free(payload);
-    return status;
-}
-

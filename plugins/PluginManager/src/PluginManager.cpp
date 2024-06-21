@@ -19,6 +19,7 @@ std::vector<pm_item_t> PluginManager::registeredStreams = {};
 std::vector<pm_item_t> PluginManager::registeredSessions = {};
 std::vector<pm_item_t> PluginManager::registeredDevices = {};
 std::vector<pm_item_t> PluginManager::registeredControls = {};
+std::vector<pm_item_t> PluginManager::registeredConfigs = {};
 
 #define XML_PATH_MAX_LENGTH 100
 #define PLUGIN_MANAGER_FILENAME "plugin_manager.xml"
@@ -84,6 +85,9 @@ int32_t PluginManager::getRegisteredPluginList(pal_plugin_manager_t type, std::v
             break;
         case PAL_PLUGIN_MANAGER_CONTROL:
             *pluginList = &registeredControls;
+            break;
+        case PAL_PLUGIN_MANAGER_CONFIG:
+            *pluginList = &registeredConfigs;
             break;
         default:
             PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);
@@ -219,8 +223,11 @@ int32_t  PluginManager::closePlugin(pal_plugin_manager_t type, std::string keyNa
 
 
 // Callback function for handling start elements
-void PluginManager::startElement(void* userData, const char* name, const char** attrs) {
-    if (strcmp(name, "stream") == 0 || strcmp(name, "session") == 0 || strcmp(name, "device") == 0) {
+void PluginManager::startElement(void* userData, const char* name, const char** attrs)
+{
+    if (strcmp(name, "stream") == 0 || strcmp(name, "session") == 0
+            || strcmp(name, "device") == 0 || strcmp(name, "config") == 0)
+    {
         pm_item_t item;
         // std::string stream;
         PAL_DBG(LOG_TAG, "enter");

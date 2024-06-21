@@ -115,7 +115,7 @@ public:
     int disconnectSessionDevice(Stream* streamHandle, pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToDisconnect) override;
     bool isActive();
-    int32_t getFrontEndId(uint32_t ldir) override;
+    int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir = RX_HOSTLESS) const override;
     uint32_t getMIID(const char *backendName, uint32_t tagId, uint32_t *miid) override;
     struct mixer_ctl* getFEMixerCtl(const char *controlName, int *device, pal_stream_direction_t dir) override;
     int createMmapBuffer(Stream *s, int32_t min_size_frames,
@@ -131,14 +131,18 @@ public:
     void requestAdmFocus(Stream *s, long ns);
     void releaseAdmFocus(Stream *s);
     void setEventPayload(uint32_t event_id, void *payload, size_t payload_size);
-    int register_asps_event(uint32_t reg);
     int getTagsWithModuleInfo(Stream *s, size_t *size __unused, uint8_t *payload);
     void retryOpenWithoutEC(Stream *s, unsigned int pcm_flags, struct pcm_config *config);
-    int reconfigureModule(uint32_t tagID, const char* BE, struct sessionToPayloadParam *data);
     int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
             us_tone_renderer_ep_media_format_status_t event);
-    int32_t reconfigureSession(Stream *s, struct pal_media_config config,
-                               pal_stream_direction_t dir) override;
+    uint32_t getsvaMiid() { return svaMiid; };
+    uint32_t getAsrMiid() { return asrMiid; };
+    int getEventPayload(void* evtPld, size_t* size);
+    bool getRegisterForEvents() { return RegisterForEvents; };
+    void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
+    int getEventId() { return eventId; };
+    bool IsSilenceEventRegistered() { return silenceEventRegistered; };
+    void setSilenceEventRegistered(bool newState) { silenceEventRegistered = newState; };
 };
 
 #endif //SESSION_ALSAPCM_H

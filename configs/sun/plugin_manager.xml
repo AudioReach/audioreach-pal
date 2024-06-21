@@ -123,4 +123,33 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <device name="PAL_DEVICE_IN_EXT_EC_REF" lib="libdev_ext_ec.so" entryFunction="CreateExtEcDevice"/>
         <device name="PAL_DEVICE_IN_ECHO_REF" lib="libdev_ec_ref.so" entryFunction="CreateECRefDevice"/>
     </devices>
+    <configs>
+        <!--pcm_config-->
+        <config name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_LOW_LATENCY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SPATIAL_AUDIO" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_GENERIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOIP_TX" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOIP_RX" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_LOOPBACK" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_RAW" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_UI" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ACD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_HAPTICS" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ULTRASOUND" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SENSOR_PCM_DATA" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_COMMON_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <!--voice_config-->
+        <config name="PAL_STREAM_VOICE_CALL" lib="libsession_voice_config.so" entryFunction="voicePluginConfig"/>
+        <!--compress_config-->
+        <config name="PAL_STREAM_COMPRESSED" lib="libsession_compress_config.so" entryFunction="compressPluginConfig"/>
+    </configs>
 </plugin_manager_info>

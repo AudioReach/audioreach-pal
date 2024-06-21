@@ -94,7 +94,6 @@ class SessionAlsaCompress : public SessionAR
 private:
 
     struct compress *compress;
-    uint32_t spr_miid = 0;
     struct snd_codec codec;
     //  unsigned int compressDevId;
     std::vector<int> compressDevIds;
@@ -109,7 +108,6 @@ private:
     std::mutex cv_mutex_; /* mutex used in conjunction with above cv */
     void getSndCodecParam(struct snd_codec &codec, struct pal_stream_attributes &sAttr);
     int getSndCodecId(pal_audio_fmt_t fmt);
-    int setCustomFormatParam(pal_audio_fmt_t audio_fmt);
     bool playback_started;
     bool capture_started;
     bool playback_paused;
@@ -126,7 +124,6 @@ private:
     bool isGaplessFormat(pal_audio_fmt_t fmt);
     bool isCodecConfigNeeded(pal_audio_fmt_t audio_fmt,
                              pal_stream_direction_t stream_direction);
-    int configureEarlyEOSDelay(void);
     void updateCodecOptions(pal_param_payload *param_payload,
                             pal_stream_direction_t stream_direction);
     int command = OFFLOAD_CMD_EXIT;
@@ -159,9 +156,14 @@ public:
         std::shared_ptr<Device> deviceToConnect) override;
     int disconnectSessionDevice(Stream* streamHandle, pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToDisconnect) override;
-    int32_t getFrontEndId(uint32_t ldir) override;
+    int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir = RX_HOSTLESS) const override;
     uint32_t getMIID(const char *backendName, uint32_t tagId, uint32_t *miid) override;
     struct mixer_ctl* getFEMixerCtl(const char *controlName, int *device, pal_stream_direction_t dir __unused) override;
+    bool getIsMixerEventCbRegd() { return isMixerEventCbRegd; };
+    bool getIsGaplessFmt() { return isGaplessFmt; };
+    bool getSendNextTrackParams() { return sendNextTrackParams; };
+    void setSendNextTrackParams(bool newState) { sendNextTrackParams = newState; };
+    snd_codec& getSndCodec() { return codec; };
 };
 
 #endif //SESSION_ALSACOMPRESS_H

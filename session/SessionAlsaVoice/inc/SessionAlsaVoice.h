@@ -25,16 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Changes from Qualcomm Innovation Center are provided under the following
- * license:
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 /*
-Changes from Qualcomm Innovation Center are provided under the following license:
+Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 */
@@ -90,8 +84,8 @@ public:
     int setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id,
                       void *payload) override;
     int setSessionParameters(Stream *s, int dir);
-    int32_t reconfigureSession(Stream *s, struct pal_media_config config,
-                               pal_stream_direction_t dir) override;
+    int setVoiceMixerParameter(Stream * s, struct mixer *mixer, void *payload,
+                          int size, int dir);
     int start(Stream * s) override;
     int stop(Stream * s) override;
     int close(Stream * s) override;
@@ -104,36 +98,25 @@ public:
                              pal_stream_type_t streamType,
                              std::shared_ptr<Device> deviceToConnect);
     bool isActive();
-    int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override {return 0;};
-    int32_t getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override {return 0;};
+    int getDeviceChannelInfo(Stream *s, uint16_t *channels); //made public to adapt to config plugin
+    uint32_t getMIID(const char *backendName, uint32_t tagId, uint32_t *miid) override;
+    int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override { return 0; };
+    int32_t getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override { return 0; };
+    uint32_t getVSID() { return vsid; };
+    int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir) const override;
 private:
     int payloadCalKeys(Stream * s, uint8_t **payload, size_t *size);
     int payloadTaged(Stream * s, configType type, int tag, int device, int dir);
-    int payloadSetVSID(Stream* s);
     int payloadSetChannelInfo(Stream * s, uint8_t **payload, size_t *size);
     int payloadSetTTYMode(uint8_t **payload, size_t *size, uint32_t mode);
-    int setVoiceMixerParameter(Stream * s, struct mixer *mixer, void *payload,
-                          int size, int dir);
     char* getMixerVoiceStream(Stream *s, int dir);
-    int32_t getFrontEndId(uint32_t ldir) override;
-    uint32_t getMIID(const char *backendName, uint32_t tagId, uint32_t *miid) override;
     struct mixer_ctl* getFEMixerCtl(const char *controlName, int *device, pal_stream_direction_t dir) override;
     int setSidetone(int deviceId, Stream * s, bool enable);
     int setHWSidetone(Stream * s, bool enable);
     int getTXDeviceId(Stream *s, int *id);
-    int populate_rx_mfc_payload(Stream *s, uint32_t rx_mfc_tag);
     int populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsDevice);
-    int populate_vsid_payload(Stream *s);
-    int populate_ch_info_payload(Stream *s);
-    int populateVSIDLoopbackPayload(Stream* s);
-    int getDeviceChannelInfo(Stream *s, uint16_t *channels);
-    int build_rx_mfc_payload(Stream *s);
-    int populateRatPayload(Stream *s);
-    int setTaggedSlotMask(Stream * s);
-    int setPopSuppressorMute(Stream *s);
     int setExtECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable);
     int getRXDevice(Stream *s, std::shared_ptr<Device> &rx_dev);
-    int getDeviceData(Stream *s, struct sessionToPayloadParam *deviceData);
 };
 
 #endif //SESSION_ALSAVOICE_H

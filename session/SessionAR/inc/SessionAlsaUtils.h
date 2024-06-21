@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
@@ -29,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *  Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ *  Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *  SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -111,7 +109,6 @@ private:
     static size_t customPayloadSize;
     static int32_t resumeInCallMusic();
     static int32_t pauseInCallMusic();
-    static int32_t reconfigureInCallMusicStream(struct pal_media_config config);
 
 public:
     ~SessionAlsaUtils();
@@ -189,14 +186,6 @@ public:
    static int mixerWriteDatapathParams(struct mixer *mixer, int device,
                                         void *payload, int size);
    static int flush(std::shared_ptr<ResourceManager> rm, uint32_t id);
-   static int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
-                    struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf);
-   static int setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
-                    struct pal_device &dAttr, const std::vector<int> &pcmDevIds);
-   static int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm,
-                    Stream *s, pal_speaker_rotation_type rotation_type,
-                    int device, struct mixer *mixer, PayloadBuilder* builder,
-                    std::vector<std::pair<int32_t, std::string>> rxAifBackEnds);
    static int getScoDevCount(void);
 
 };

@@ -1058,10 +1058,6 @@ ResourceManager::ResourceManager()
         IsLPISupported(PAL_STREAM_ACD) ||
         IsLPISupported(PAL_STREAM_SENSOR_PCM_DATA);
 
-    if (IsLowLatencyBargeinSupported(PAL_STREAM_VOICE_UI)) {
-        vui_deferred_switch_thread_ = std::thread(
-            ResourceManager::voiceUIDeferredSwitchLoop, this);
-    }
 
 #ifdef SOC_PERIPHERAL_PROT
     socPerithread = std::thread(loadSocPeripheralLib);
@@ -2030,6 +2026,10 @@ int ResourceManager::init()
     struct pal_device dattr;
 
     mixerEventTread = std::thread(mixerEventWaitThreadLoop, rm);
+    if (rm && rm->IsLowLatencyBargeinSupported(PAL_STREAM_VOICE_UI)) {
+        vui_deferred_switch_thread_ = std::thread(
+            ResourceManager::voiceUIDeferredSwitchLoop, rm);
+    }
 
     //Initialize audio_charger_listener
     if (rm && isChargeConcurrencyEnabled)
@@ -5639,7 +5639,7 @@ bool ResourceManager::checkAndUpdateDeferSwitchState(bool stream_active)
     return false;
 }
 
-void ResourceManager::voiceUIDeferredSwitchLoop(ResourceManager* rm)
+void ResourceManager::voiceUIDeferredSwitchLoop(std::shared_ptr<ResourceManager> rm)
 {
     PAL_INFO(LOG_TAG, "Enter");
     std::unique_lock<std::mutex> lck(rm->vui_switch_mutex_);

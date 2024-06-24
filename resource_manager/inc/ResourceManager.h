@@ -632,7 +632,7 @@ protected:
     static std::mutex vui_switch_mutex_;
     static bool vui_switch_thread_exit_;
     static int deferred_switch_cnt_;
-    static void voiceUIDeferredSwitchLoop(ResourceManager* rm);
+    static void voiceUIDeferredSwitchLoop(std::shared_ptr<ResourceManager> rm);
     std::shared_ptr<CaptureProfile> SoundTriggerCaptureProfile;
     std::shared_ptr<CaptureProfile> TXMacroCaptureProfile;
     ResourceManager();

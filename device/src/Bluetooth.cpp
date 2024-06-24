@@ -1190,6 +1190,7 @@ BtA2dp::BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
             isA2dpOffloadSupported);
     param_bt_a2dp.reconfig_supported = isA2dpOffloadSupported;
     param_bt_a2dp.latency = 0;
+    codecLatency = 0;
     a2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
 
     if (isA2dpOffloadSupported) {
@@ -1701,6 +1702,7 @@ int BtA2dp::stopPlayback()
         a2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
         codecInfo = NULL;
         param_bt_a2dp.latency = 0;
+        codecLatency = 0;
 
         /* Reset isTwsMonoModeOn and isLC3MonoModeOn during stop */
         if (!param_bt_a2dp.a2dp_suspended) {

@@ -14216,7 +14216,9 @@ void ResourceManager::WbSpeechConfig(pal_device_id_t devId,
         status = dev->setDeviceParameter(param_id, param_payload);
         if (status)
             PAL_ERR(LOG_TAG, "set device param %d, status: ", param_id, status);
-        // check and force device switch.
+        // check and force device switch if SCO is connected.
+        if (!dev->isDeviceReady())
+            return;
         newDevAttr.id = devId;
         mActiveStreamMutex.lock();
         getActiveStream_l(activeScoStreams, dev);

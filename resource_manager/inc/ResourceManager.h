@@ -880,6 +880,10 @@ public:
     void getBackEndNames( const std::vector<std::shared_ptr<Device>> &deviceList,
                           std::vector<std::pair<int32_t, std::string>> &rxBackEndNames,
                           std::vector<std::pair<int32_t, std::string>> &txBackEndNames) const;
+    void handleA2dpBleConcurrency(std::shared_ptr<Device> *inDev,
+            struct pal_device *inDevAttr, struct pal_device &dummyDevAttr,
+            std::vector <std::tuple<Stream *, uint32_t>> &streamDevDisconnect,
+            std::vector <std::tuple<Stream *, struct pal_device *>> &streamDevConnect);
     bool updateDeviceConfig(std::shared_ptr<Device> *inDev,
              struct pal_device *inDevAttr, const pal_stream_attributes* inStrAttr);
     int findActiveStreamsNotInDisconnectList(

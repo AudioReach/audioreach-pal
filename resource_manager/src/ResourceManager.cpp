@@ -8291,6 +8291,53 @@ exit_no_unlock:
     return status;
 }
 
+void ResourceManager::handleA2dpBleConcurrency(std::shared_ptr<Device> *inDev,
+        struct pal_device *inDevAttr, struct pal_device &dummyDevAttr,
+        std::vector <std::tuple<Stream *, uint32_t>> &streamDevDisconnect,
+        std::vector <std::tuple<Stream *, struct pal_device *>> &streamDevConnect)
+{
+    struct pal_device devAttr = {};
+    std::shared_ptr<Device> dev = nullptr;
+    std::vector <Stream *> streams;
+    std::vector <Stream *>::iterator sIter;
+
+    if (inDevAttr->id == PAL_DEVICE_IN_BLUETOOTH_BLE) {
+        devAttr.id = PAL_DEVICE_OUT_BLUETOOTH_A2DP;
+        dev = Device::getInstance(&devAttr, rm);
+        if (!dev) {
+            PAL_ERR(LOG_TAG, "getting a2dp/ble device instance failed");
+            return;
+        }
+        getActiveStream_l(streams, dev);
+        if (streams.size() == 0) {
+            return;
+        }
+        dummyDevAttr.id = PAL_DEVICE_OUT_DUMMY;
+        if (getDeviceConfig(&dummyDevAttr, NULL)) {
+            PAL_ERR(LOG_TAG, "getDeviceConfig failed for out_dummy device");
+            return;
+        }
+        for (sIter = streams.begin(); sIter != streams.end(); sIter++) {
+            streamDevDisconnect.push_back({(*sIter), PAL_DEVICE_OUT_BLUETOOTH_A2DP});
+            streamDevConnect.push_back({(*sIter), &dummyDevAttr});
+        }
+    } else if (inDevAttr->id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) {
+        devAttr.id = PAL_DEVICE_IN_BLUETOOTH_BLE;
+        dev = Device::getInstance(&devAttr, rm);
+        getActiveStream_l(streams, dev);
+        if (streams.size() > 0) {
+            inDevAttr->id = PAL_DEVICE_OUT_DUMMY;
+            if (getDeviceConfig(inDevAttr, NULL)) {
+                PAL_ERR(LOG_TAG, "getDeviceConfig failed for out_dummy device");
+                inDevAttr->id = PAL_DEVICE_OUT_BLUETOOTH_A2DP;
+                return;
+            }
+            *inDev = Device::getInstance(inDevAttr , rm);
+        }
+    }
+}
+
+
 /* when returning from this function, the device config will be updated with
  * the device config of the highest priority stream
  * TBD: manage re-routing of existing lower priority streams if incoming
@@ -8307,6 +8354,7 @@ bool ResourceManager::updateDeviceConfig(std::shared_ptr<Device> *inDev,
     std::string ck;
     bool VoiceorVoip_call_active = false;
     struct pal_device_info inDeviceInfo;
+    struct pal_device dummyDevAttr = {};
     std::vector <Stream *> streamsToSwitch;
     std::vector <Stream*>::iterator sIter;
     struct pal_device streamDevAttr;
@@ -8342,6 +8390,10 @@ bool ResourceManager::updateDeviceConfig(std::shared_ptr<Device> *inDev,
         streamDevConnect.push_back({(*sIter), &streamDevAttr});
     }
     streamsToSwitch.clear();
+
+    /* handle IN_BLE and A2DP concurrency */
+    handleA2dpBleConcurrency(inDev, inDevAttr, dummyDevAttr,
+                             streamDevDisconnect, streamDevConnect);
 
     // check if device has virtual port enabled, update the active group devcie config
     // if streams has same virtual backend, it will be handled in shared backend case

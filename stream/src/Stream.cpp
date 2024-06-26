@@ -1801,6 +1801,9 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
         std::shared_ptr<Device> dev = nullptr;
         bool devReadyStatus = false;
         pal_param_bta2dp_t* param_bt_a2dp = nullptr;
+        std::vector<Stream*> bleRecordStream;
+        struct pal_device inBleDattr = {};
+
         /*
          * When A2DP, Out Proxy and DP device is disconnected the
          * music playback is paused and the policy manager sends routing=0
@@ -1831,6 +1834,17 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
             mStreamMutex.unlock();
             rm->unlockActiveStream();
             return 0;
+        }
+
+        if (newDevices[i].id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) {
+            inBleDattr.id = PAL_DEVICE_IN_BLUETOOTH_BLE;
+            dev = Device::getInstance(&inBleDattr, rm);
+            if (dev) {
+                rm->getActiveStream_l(bleRecordStream, dev);
+                if (bleRecordStream.size() > 0)
+                    newDevices[i].id = PAL_DEVICE_OUT_DUMMY;
+                dev = nullptr;
+            }
         }
         devReadyStatus = rm->isDeviceReady(newDevices[i].id);
         if (rm->isBtA2dpDevice(newDevices[i].id)) {

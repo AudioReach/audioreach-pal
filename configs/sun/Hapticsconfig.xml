@@ -37,15 +37,15 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>0</wave_design_mode>
-            <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>0</f0_tracking_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
             <repetition_count>1</repetition_count>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_period_ms>500</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
@@ -59,15 +59,15 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>1</wave_design_mode>
-            <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>0</f0_tracking_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
             <repetition_count>2</repetition_count>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_period_ms>150</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
@@ -83,22 +83,22 @@
         <Hapticseffect effect="2">
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
-            <wave_design_mode>2</wave_design_mode>
+            <wave_design_mode>4</wave_design_mode>
             <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
             <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_count>1</repetition_count>
-            <repetition_period_ms>150</repetition_period_ms>
+            <repetition_period_ms>500</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
-            <mid_pulse_intensity>55</mid_pulse_intensity>
+            <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>90</high_pulse_intensity>
-            <pulse_width_ms>40</pulse_width_ms>
+            <pulse_width_ms>300</pulse_width_ms>
             <pulse_sharpness>0</pulse_sharpness>
         </Hapticseffect>
         <!-- THUD -->
@@ -106,15 +106,15 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>1</wave_design_mode>
-            <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>0</f0_tracking_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
             <repetition_count>1</repetition_count>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_period_ms>250</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
@@ -131,15 +131,15 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>1</wave_design_mode>
-            <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>0</f0_tracking_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
             <repetition_count>1</repetition_count>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_period_ms>250</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
@@ -156,21 +156,21 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>1</wave_design_mode>
-            <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>0</f0_tracking_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
             <repetition_count>1</repetition_count>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_period_ms>250</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
             <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>90</high_pulse_intensity>
-            <pulse_width_ms>100</pulse_width_ms>
+            <pulse_width_ms>0</pulse_width_ms>
             <pulse_sharpness>0</pulse_sharpness>
             <num_pwl>4</num_pwl>
             <pwl_time>0,10,25,35</pwl_time>
@@ -183,12 +183,12 @@
             <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
             <f0_tracking_en>1</f0_tracking_en>
-            <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
             <override_flag>7</override_flag>
             <wavegen_fstart_hz_q20>0</wavegen_fstart_hz_q20>
-            <tracked_freq_warmup_time_ms>50</tracked_freq_warmup_time_ms>
+            <tracked_freq_warmup_time_ms>0</tracked_freq_warmup_time_ms>
             <settling_time_ms>30</settling_time_ms>
-            <delay_time_ms>40</delay_time_ms>
+            <delay_time_ms>0</delay_time_ms>
             <repetition_count>1</repetition_count>
             <repetition_period_ms>120</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
@@ -196,7 +196,7 @@
             <mid_pulse_intensity>85</mid_pulse_intensity>
             <high_pulse_intensity>90</high_pulse_intensity>
             <pulse_width_ms>0</pulse_width_ms>
-            <pulse_sharpness>50</pulse_sharpness>
+            <pulse_sharpness>0</pulse_sharpness>
      </oneshot_effect>
      <ringtone_effect>
             <num_channels>1</num_channels>

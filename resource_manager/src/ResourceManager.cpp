@@ -11660,7 +11660,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             }
         }
         break;
-        case PAL_PARAM_ID_ST_RESOURCES_AVAILABLE:
+        case PAL_PARAM_ID_RESOURCES_AVAILABLE:
         {
             pal_param_resources_available_t *resources_avail =
                 (pal_param_resources_available_t *)param_payload;

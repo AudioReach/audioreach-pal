@@ -401,6 +401,7 @@ typedef enum {
     PAL_STREAM_SPATIAL_AUDIO = 27,        /**< Spatial audio playback */
     PAL_STREAM_COMMON_PROXY = 28,         /**< AFS's WakeUp Algo library detection */
     PAL_STREAM_SENSOR_PCM_RENDERER = 29,  /**< Sensor Pcm Rendering Stream */
+    PAL_STREAM_ASR = 30,                  /**< ASR Stream */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -639,6 +640,7 @@ const std::map<std::string, uint32_t> usecaseIdLUT {
     {std::string{ "PAL_STREAM_NON_TUNNEL" },               PAL_STREAM_NON_TUNNEL},
     {std::string{ "PAL_STREAM_HAPTICS" },                  PAL_STREAM_HAPTICS},
     {std::string{ "PAL_STREAM_ACD" },                      PAL_STREAM_ACD},
+    {std::string{ "PAL_STREAM_ASR" },                      PAL_STREAM_ASR},
     {std::string{ "PAL_STREAM_ULTRASOUND" },               PAL_STREAM_ULTRASOUND},
     {std::string{ "PAL_STREAM_SENSOR_PCM_DATA" },          PAL_STREAM_SENSOR_PCM_DATA},
     {std::string{ "PAL_STREAM_SPATIAL_AUDIO" },            PAL_STREAM_SPATIAL_AUDIO},
@@ -673,6 +675,7 @@ const std::map<uint32_t, std::string> streamNameLUT {
     {PAL_STREAM_HAPTICS,            std::string{ "PAL_STREAM_HAPTICS" } },
     {PAL_STREAM_CONTEXT_PROXY,      std::string{ "PAL_STREAM_CONTEXT_PROXY" } },
     {PAL_STREAM_ACD,                std::string{ "PAL_STREAM_ACD" } },
+    {PAL_STREAM_ASR,                std::string{ "PAL_STREAM_ASR" } },
     {PAL_STREAM_ULTRASOUND,         std::string{ "PAL_STREAM_ULTRASOUND" } },
     {PAL_STREAM_SENSOR_PCM_DATA,    std::string{ "PAL_STREAM_SENSOR_PCM_DATA" } },
     {PAL_STREAM_SPATIAL_AUDIO,      std::string{ "PAL_STREAM_SPATIAL_AUDIO" } },
@@ -1031,8 +1034,14 @@ typedef enum {
     PAL_PARAM_ID_TIMESTRETCH_PARAMS = 72,
     PAL_PARAM_ID_LATENCY_MODE = 73,
     PAL_PARAM_ID_ST_CAPTURE_INFO = 74,
-    PAL_PARAM_ID_ST_RESOURCES_AVAILABLE = 75,
+    PAL_PARAM_ID_RESOURCES_AVAILABLE = 75,
     PAL_PARAM_ID_PROXY_RECORD_SESSION = 76,
+    PAL_PARAM_ID_ASR_MODEL = 77,
+    PAL_PARAM_ID_ASR_CONFIG = 78,
+    PAL_PARAM_ID_ASR_CUSTOM = 79,
+    PAL_PARAM_ID_ASR_FORCE_OUTPUT = 80,
+    PAL_PARAM_ID_ASR_OUTPUT = 81,
+    PAL_PARAM_ID_ASR_SET_PARAM = 82,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1552,6 +1561,69 @@ struct ffv_doa_tracking_monitor_t
 struct __attribute__((__packed__)) version_arch_payload {
     unsigned int version;
     char arch[64];
+};
+
+typedef enum {
+    PAL_ASR_EVENT_STATUS_SUCCESS = 0,
+    PAL_ASR_EVENT_STATUS_ABORTED = 1,
+} pal_asr_event_status_t;
+
+typedef enum {
+    PAL_ASR_STATUS_SUCCESS = 0,
+    PAL_ASR_STATUS_INVALID = -1,
+    PAL_ASR_STATUS_RESOURCE_CONTENTION = -2,
+    PAL_ASR_STATUS_OPERATION_NOT_SUPPORTED = -3,
+    PAL_ASR_STATUS_FAILURE = -4,
+} pal_asr_status_t;
+
+/*  Payload for ID : PAL_PARAM_ID_ASR_MODEL.
+ *  Description: To be used to pass ASR model.
+ */
+struct pal_asr_model {
+    struct st_uuid vendor_uuid;  /**< Unique vendor ID. Identifies the engine the model was build for */
+    int32_t fd;                  /**< ASR model */
+    uint32_t size;               /**< ASR model size */
+};
+
+/* Payload for ID : PAL_PARAM_ID_ASR_CONFIG.
+ * Description: To be used to pass ASR input configuration.
+ */
+struct pal_asr_config {
+    int32_t input_language_code;            /**< input language code */
+    int32_t output_language_code;           /**< output language code */
+    bool enable_language_detection;         /**< language detection switch enable/disable flag */
+    bool enable_translation;                /**< translation switch enable/disable flag */
+    bool enable_continuous_mode;            /**< continuous mode enable/disable flag */
+    bool enable_partial_transcription;      /**< partial transcription switch enable/disable flag */
+    uint32_t threshold;                     /**< Confidence threshold for ASR transcription */
+    uint32_t timeout_duration;              /**< ASR processing timeout, in milliseconds, if silence is not detected
+                                                 after the speech processing is started*/
+    uint32_t silence_detection_duration;    /**< "No speech" duration needed before determining speech has ended (in ms) */
+
+    bool outputBufferMode;                  /**< Buffer mode enable/disable */
+    uint32_t data_size;                     /**< Additional Engine specific custom data size */
+    uint8_t data[];                         /**< custom data offset from the start of this structure */
+};
+
+#define MAX_TRANSCRIPTION_CHAR_SIZE 1024
+#define MAX_JSON_CHAR_SIZE 4096
+struct pal_asr_engine_event {
+    bool is_final;                          /**< Final transcription after end of speech is detected. */
+    uint32_t confidence;                    /**< Confidence for the entire transcription */
+    uint32_t text_size;                     /**< Size of text to sent to the client */
+    char text[MAX_TRANSCRIPTION_CHAR_SIZE]; /**< Text to be sent to the client */
+    uint32_t json_size;                     /**< size of JSON output, to be sent to client */
+    char result_json[MAX_JSON_CHAR_SIZE];   /**< JSON result */
+    uint32_t data_size;                     /**< event payload size */
+    uint8_t data[];                         /**< event payload offset from the start of this structure */
+};
+
+/* Payload to be used for callback for ASR event through pal_stream_callback
+ */
+struct pal_asr_event {
+    pal_asr_event_status_t status;
+    uint32_t num_events;
+    struct pal_asr_engine_event event[];
 };
 
 struct pal_compr_gapless_mdata {

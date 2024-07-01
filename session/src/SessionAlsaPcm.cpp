@@ -239,10 +239,6 @@ int SessionAlsaPcm::open(Stream * s)
             if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
                 ldir = TX_HOSTLESS;
 
-            if (txAifBackEnds.empty()) {
-                PAL_ERR(LOG_TAG, "no TX backend specified for this stream\n");
-                return -EINVAL;
-            }
             pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
             if (pcmDevIds.size() == 0) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
@@ -257,10 +253,6 @@ int SessionAlsaPcm::open(Stream * s)
             }
             if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER) {
                 ldir = RX_HOSTLESS;
-            }
-            if (rxAifBackEnds.empty()) {
-                PAL_ERR(LOG_TAG, "no RX backend specified for this stream\n");
-                return -EINVAL;
             }
             pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
             if (pcmDevIds.size() == 0) {

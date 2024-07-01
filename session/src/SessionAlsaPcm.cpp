@@ -98,6 +98,7 @@ void handleSilenceDetectionCb(uint64_t hdl __unused,
 
 std::mutex SessionAlsaPcm::pcmLpmRefCntMtx;
 int SessionAlsaPcm::pcmLpmRefCnt = 0;
+bool SessionAlsaPcm::silenceEventRegistered = false;
 
 #define SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE (48000)
 #define SESSION_ALSA_MMAP_PERIOD_SIZE (SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE/1000)
@@ -1572,7 +1573,7 @@ set_mixer:
             }
 
             /* Silence Detection Configuration */
-            if ((ResourceManager::isSilenceDetectionEnabled) &&
+            if ((ResourceManager::isSilenceDetectionEnabled) && (!silenceEventRegistered) &&
                             (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
             /*
              *
@@ -1636,13 +1637,21 @@ set_mixer:
                 silence_detection_cfg->detection_duration_ms = 3000;
 
                 PAL_INFO(LOG_TAG, "Sending Silence Detection Custom Payload\n");
-                status = updateCustomPayload (payload, (payloadSize+pad_bytes));
-                free(payload);
-
-                if (status !=0 ) {
+                status = updateCustomPayload(payload, (payloadSize+pad_bytes));
+                freeCustomPayload(&payload, &payloadSize);
+                if (status !=0) {
                     PAL_ERR(LOG_TAG, "updateCustomPayload failed for SILENCE DETECTION \n");
                     goto exit;
                 }
+                status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
+                                customPayload, customPayloadSize);
+                freeCustomPayload();
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG, "setMixerParameter failed for Silence Detection Parameter");
+                    goto exit;
+                }
+                /* disable temporarily Silence Detection to prevent multiple registration */
+                silenceEventRegistered = true;
 
             }
 
@@ -1662,6 +1671,7 @@ set_mixer:
                 if (status) {
                     status = errno;
                     PAL_ERR(LOG_TAG, "pcm_start failed %d", status);
+                    silenceEventRegistered = false;
                     goto exit;
                 }
             }
@@ -2205,7 +2215,7 @@ int SessionAlsaPcm::stop(Stream * s)
             }
 
 
-            if (ResourceManager::isSilenceDetectionEnabled) {
+            if (ResourceManager::isSilenceDetectionEnabled && silenceEventRegistered) {
 
                 status = s->getAssociatedDevices(associatedDevices);
                 if (0 != status) {
@@ -2236,8 +2246,12 @@ int SessionAlsaPcm::stop(Stream * s)
                     PAL_ERR(LOG_TAG, "Unable to deregister SILENCE DETECTION EVENT\n");
 
                status = rm->registerMixerEventCallback(pcmDevIds, handleSilenceDetectionCb, (uint64_t)this, false);
-               if (status != 0)
+               if (status != 0) {
                     PAL_ERR(LOG_TAG, "Failed to deregister  silence detection Callback to rm");
+               }
+               /* re-enable Silence Detection to allow registrations */
+               silenceEventRegistered = false;
+
             }
         break;
         case PAL_AUDIO_OUTPUT:
@@ -4511,9 +4525,7 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
 
         silence_event = (event_cfg_silence_detection_t *)event_data;
         channel_group = silence_event->num_32_channel_group;
-#if defined(__H2XML__)
         status_ch_mask = silence_event->detections[0].status_ch_mask;
-#endif
         dump_silence_event_status(out_file_name, channel_group, status_ch_mask);
 
 

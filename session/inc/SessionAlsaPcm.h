@@ -105,6 +105,7 @@ private:
     static std::mutex pcmLpmRefCntMtx;
     static int pcmLpmRefCnt;
     int32_t configureInCallRxMFC();
+    static bool silenceEventRegistered;
 public:
 
     SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm);

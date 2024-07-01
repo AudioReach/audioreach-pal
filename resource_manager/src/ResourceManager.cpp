@@ -10961,9 +10961,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             if (!isDeviceAvailable(dattr.id)) {
                 dattr.id = PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
                 if (!isDeviceAvailable(dattr.id)) {
-                    PAL_ERR(LOG_TAG, "SCO output and input devices are all unavailable");
-                    status = -ENODEV;
-                    goto exit;
+                    PAL_INFO(LOG_TAG, "SCO output and input devices are all unavailable");
                 }
             }
 
@@ -10996,14 +10994,12 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             scoDev.push_back(PAL_DEVICE_OUT_BLUETOOTH_SCO);
             scoDev.push_back(PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET);
             struct pal_device dattr;
+            mResourceManagerMutex.unlock();
             for (auto devId: scoDev) {
                 dattr.id = devId;
-                if (!isDeviceAvailable(dattr.id))
-                    continue;
-                mResourceManagerMutex.unlock();
                 WbSpeechConfig(dattr.id, param_id, param_payload);
-                mResourceManagerMutex.lock();
             }
+            mResourceManagerMutex.lock();
         }
         break;
         case PAL_PARAM_ID_BT_SCO_NREC:
@@ -11012,25 +11008,11 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             struct pal_device dattr;
 
             dattr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
-            if (!isDeviceAvailable(dattr.id)) {
-                status = getDeviceConfig(&dattr, NULL);
-                if (status) {
-                    PAL_ERR(LOG_TAG, "get device config failed %d", status);
-                    goto exit;
-                }
-            }
             dev = Device::getInstance(&dattr, rm);
             if (dev)
                 status = dev->setDeviceParameter(param_id, param_payload);
 
             dattr.id = PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
-            if (!isDeviceAvailable(dattr.id)) {
-                status = getDeviceConfig(&dattr, NULL);
-                if (status) {
-                    PAL_ERR(LOG_TAG, "get device config failed %d", status);
-                    goto exit;
-                }
-            }
             dev = Device::getInstance(&dattr, rm);
             if (dev)
                 status = dev->setDeviceParameter(param_id, param_payload);

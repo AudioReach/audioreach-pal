@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -383,7 +383,7 @@ int USB::getDefaultConfig(pal_param_device_capability_t capability)
             iter != usb_card_config_list_.end();
             iter++) {
         if ((*iter)->isConfigCached(capability.addr)) {
-            PAL_ERR(LOG_TAG, "usb device is found.");
+            PAL_DBG(LOG_TAG, "usb device is found.");
             // for capture, check if profile is supported or not
             if (capability.is_playback == false) {
                 memset(capability.config, 0, sizeof(struct dynamic_media_config));
@@ -418,7 +418,7 @@ int USB::selectBestConfig(struct pal_device *dattr,
     for (iter = usb_card_config_list_.begin();
             iter != usb_card_config_list_.end(); iter++) {
         if ((*iter)->isConfigCached(dattr->address)) {
-            PAL_ERR(LOG_TAG, "usb device is found.");
+            PAL_DBG(LOG_TAG, "usb device is found.");
             status = (*iter)->readBestConfig(&dattr->config, sattr, is_playback,
                                    devinfo, rm->isUHQAEnabled);
             break;
@@ -454,7 +454,7 @@ void USBCardConfig::setEndian(int endian){
     endian_ = endian;
 }
 
-void USBCardConfig::usb_info_dump(char* read_buf, int type) {
+void USBCardConfig::dumpCapabilities(char* read_buf, int type) {
     char* start = nullptr;
     const char s[2] = "\n";
     char* token;
@@ -465,7 +465,10 @@ void USBCardConfig::usb_info_dump(char* read_buf, int type) {
     start = strstr(read_buf, direction);
     token = strtok_r(start, s, &tmp);
     while (token != nullptr) {
-        PAL_DBG(LOG_TAG, "  %s", token);
+        if (!strcmp(token, CAPTURE_PROFILE_STR) && (type == USB_PLAYBACK)) {
+            break;
+        }
+        PAL_INFO(LOG_TAG, " %s", token);
         token = strtok_r(nullptr, s, &tmp);
     }
 }
@@ -495,7 +498,7 @@ int USBCardConfig::getCapability(usb_usecase_type_t type,
     bool check = false;
 
     memset(path, 0, sizeof(path));
-    PAL_INFO(LOG_TAG, "for %s", (type == USB_PLAYBACK) ?
+    PAL_DBG(LOG_TAG, "for %s", (type == USB_PLAYBACK) ?
           PLAYBACK_PROFILE_STR : CAPTURE_PROFILE_STR);
 
     ret = snprintf(path, sizeof(path), "/proc/asound/card%u/stream0",
@@ -650,7 +653,7 @@ int USBCardConfig::getCapability(usb_usecase_type_t type,
         format_list_map.insert( std::pair<int, std::shared_ptr<USBDeviceConfig>>(usb_device_info->getBitWidth(),usb_device_info));
     }
 
-     usb_info_dump(read_buf, type);
+     dumpCapabilities(read_buf, type);
 
 done:
     if (fd)
@@ -819,7 +822,7 @@ void USBCardConfig::readSupportedChannelMask(bool is_playback, uint32_t *channel
              /* otherwise indexed */
              : audio_channel_mask_for_index_assignment_from_count(channels);
     }
-    PAL_DBG(LOG_TAG, "%s supported ch %d, channel mask: %08x ",
+    PAL_INFO(LOG_TAG, "%s supported ch %d, channel mask: %08x ",
             is_playback ? "P" : "C", channels, channel[0]);
 }
 
@@ -1059,7 +1062,7 @@ int USBDeviceConfig::getBestRate(int requested_rate, int candidate_rate, unsigne
             candidate_rate = *best_rate;
         }
     }
-    PAL_DBG(LOG_TAG, "requested_rate %d, best_rate %u", requested_rate, *best_rate);
+    PAL_INFO(LOG_TAG, "requested_rate %d, best_rate %u", requested_rate, *best_rate);
 
     return -EINVAL;
 }
@@ -1215,7 +1218,7 @@ bool USBCardConfig::getJackConnectionStatus(int usb_card, const char* suffix)
     struct mixer_ctl* ctrl = NULL;
     struct mixer* usb_card_mixer = mixer_open(usb_card);
     if (usb_card_mixer == NULL) {
-        PAL_ERR(LOG_TAG, "Invalid mixer");
+        PAL_ERR(LOG_TAG, "Invalid mixer card %d type %s", usb_card, suffix);
         return true;
     }
     while ((ctrl = mixer_get_ctl(usb_card_mixer, i++)) != NULL) {
@@ -1227,7 +1230,7 @@ bool USBCardConfig::getJackConnectionStatus(int usb_card, const char* suffix)
         }
     }
     if (!ctrl) {
-        PAL_ERR(LOG_TAG, "Invalid mixer control");
+        PAL_DBG(LOG_TAG, "Invalid mixer control");
         mixer_close(usb_card_mixer);
         return true;
     }

@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -137,7 +137,7 @@ protected:
     std::multimap<uint32_t, std::shared_ptr<USBDeviceConfig>> format_list_map;
     std::vector <std::shared_ptr<USBDeviceConfig>> usb_device_config_list_;
     unsigned int usb_supported_sample_rates_mask_[2] = {0};
-    void usb_info_dump(char* read_buf, int type);
+    void dumpCapabilities(char* read_buf, int type);
 public:
     USBCardConfig(struct pal_usb_device_address address);
     bool isConfigCached(struct pal_usb_device_address addr);

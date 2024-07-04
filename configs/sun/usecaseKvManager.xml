@@ -904,7 +904,7 @@
         <device id="PAL_DEVICE_IN_DUMMY">
             <keys_and_values>
                 <!-- DEVICETX - DUMMY_TX -->
-                <graph_kv key="0xA3000000" value="0xA300000F"/>
+                <graph_kv key="0xA3000000" value="0xA3000010"/>
             </keys_and_values>
         </device>
     </devices>

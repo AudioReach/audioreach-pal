@@ -122,10 +122,17 @@ ASREngine::~ASREngine()
     smCfg = nullptr;
     asrInfo = nullptr;
     session = nullptr;
-    exitThread = true;
+    streamHandle = nullptr;
 
-    if(eventThreadHandler.joinable())
+    {
+        std::unique_lock<std::mutex> lck(mutexEngine);
+        exitThread = true;
+        cv.notify_one();
+    }
+
+    if(eventThreadHandler.joinable()) {
         eventThreadHandler.join();
+    }
 
     PAL_INFO(LOG_TAG, "Exit");
 }
@@ -458,13 +465,15 @@ void ASREngine::EventProcessingThread(ASREngine *engine)
             PAL_DBG(LOG_TAG, "waiting on cond");
             engine->cv.wait(lck);
             PAL_DBG(LOG_TAG, "done waiting on cond");
-        }
 
-        if (engine->exitThread) {
-            PAL_VERBOSE(LOG_TAG, "Exit thread");
-            break;
+            if (engine->exitThread) {
+                PAL_VERBOSE(LOG_TAG, "Exit thread");
+                break;
+            }
         }
-        engine->ParseEventAndNotifyStream();
+        //Adding this condition, as destructor can also notify this thread without any event
+        if (!engine->eventQ.empty())
+            engine->ParseEventAndNotifyStream();
     }
 
     PAL_DBG(LOG_TAG, "Exit");

@@ -65,6 +65,7 @@ StreamASR::StreamASR(struct pal_stream_attributes *sattr,
     cookie = 0;
     curState = nullptr;
     prevState = nullptr;
+    engine = nullptr;
     stateToRestore = ASR_STATE_NONE;
 
     mVolumeData = (struct pal_volume_data *)malloc(sizeof(struct pal_volume_data)
@@ -138,7 +139,16 @@ exit:
 StreamASR::~StreamASR()
 {
     PAL_INFO(LOG_TAG, "Enter.");
+
+    if (asrIdle)
+        delete asrIdle;
+    if (asrActive)
+        delete asrActive;
+    if (asrSsr)
+        delete asrSsr;
+
     asrStates.clear();
+    engine = nullptr;
 
     rm->resetStreamInstanceID(this, mInstanceID);
 
@@ -170,6 +180,11 @@ int32_t StreamASR::close()
 
     if (palRecConfig) {
         free(palRecConfig);
+    }
+
+    if (engine) {
+        engine->releaseEngine();
+        engine = nullptr;
     }
 
     palStateEnqueue(this, PAL_STATE_CLOSED, status);

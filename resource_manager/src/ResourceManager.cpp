@@ -9762,9 +9762,11 @@ int32_t ResourceManager::a2dpCaptureSuspendToDummy(pal_device_id_t dev_id)
             if (!((*sIter)->a2dpMuted) && !((*sIter)->mute_l(true))) {
                 (*sIter)->a2dpMuted = true;
             }
-            (*sIter)->unlockStreamMutex();
+            (*sIter)->suspendedDevIds.clear();
+            (*sIter)->suspendedDevIds.push_back(a2dpDattr.id);
             streamDevDisconnect.push_back({*sIter, a2dpDattr.id});
             streamDevConnect.push_back({*sIter, &switchDevDattr});
+            (*sIter)->unlockStreamMutex();
         }
     }
     mActiveStreamMutex.unlock();
@@ -9834,15 +9836,21 @@ int32_t ResourceManager::a2dpCaptureResumeFromDummy(pal_device_id_t dev_id)
     // check all active streams associated with in_dummy device.
     // Istore into stream vector for device switch.
     for (sIter = activeStreams.begin(); sIter != activeStreams.end(); sIter++) {
-        restoredStreams.push_back((*sIter));
-        streamDevDisconnect.push_back({(*sIter), activeDattr.id });
-        streamDevConnect.push_back({(*sIter), &a2dpDattr });
+        if (std::find((*sIter)->suspendedDevIds.begin(), (*sIter)->suspendedDevIds.end(),
+                    a2dpDattr.id) != (*sIter)->suspendedDevIds.end()) {
+            restoredStreams.push_back((*sIter));
+            streamDevDisconnect.push_back({(*sIter), activeDattr.id });
+            streamDevConnect.push_back({(*sIter), &a2dpDattr });
+        }
     }
 
     // retry all orphan streams which failed to restore previously.
     for (sIter = orphanStreams.begin(); sIter != orphanStreams.end(); sIter++) {
-        restoredStreams.push_back((*sIter));
-        streamDevConnect.push_back({(*sIter), &a2dpDattr });
+        if (std::find((*sIter)->suspendedDevIds.begin(), (*sIter)->suspendedDevIds.end(),
+                    a2dpDattr.id) != (*sIter)->suspendedDevIds.end()) {
+            restoredStreams.push_back((*sIter));
+            streamDevConnect.push_back({(*sIter), &a2dpDattr });
+        }
     }
 
     // retry all streams which failed to switch to desired device previously.
@@ -9881,6 +9889,7 @@ int32_t ResourceManager::a2dpCaptureResumeFromDummy(pal_device_id_t dev_id)
     for (sIter = restoredStreams.begin(); sIter != restoredStreams.end(); sIter++) {
         if (((*sIter) != NULL) && isStreamActive(*sIter, mActiveStreams)) {
             (*sIter)->lockStreamMutex();
+            (*sIter)->suspendedDevIds.clear();
             (*sIter)->removePalDevice(*sIter, activeDattr.id);
             (*sIter)->addPalDevice(*sIter, &a2dpDattr);
             if ((*sIter)->a2dpMuted) {

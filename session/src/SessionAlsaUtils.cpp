@@ -2405,7 +2405,8 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
             }
         }
         if (sAttr.direction == PAL_AUDIO_INPUT) {
-            if (strstr(dAttr.custom_config.custom_key , "unprocessed-hdr-mic")) {
+            if (strstr(dAttr.custom_config.custom_key , "unprocessed-hdr-mic") &&
+                (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
                 status = sess->setConfig(streamHandle, MODULE,  ORIENTATION_TAG);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "setting HDR record orientation config failed with status %d", status);

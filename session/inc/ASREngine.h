@@ -78,6 +78,7 @@ public:
     uint32_t GetNumOutput() { return numOutput; }
     uint32_t GetOutputToken() { return outputToken; }
     uint32_t GetPayloadSize() { return payloadSize; }
+    void releaseEngine() { eng = nullptr; }
 private:
     static void EventProcessingThread(ASREngine *engine);
     static void HandleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,

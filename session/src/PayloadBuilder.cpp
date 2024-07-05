@@ -4661,8 +4661,12 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     hpconf->channel_mask = data->ch_mask;
                     PAL_DBG(LOG_TAG, "Haptics Effect, channel_mask %d", hpconf->channel_mask);
                     for (int ch = 0;ch < hpconf->num_channels; ch++) {
+                        //For Precanned Mode, append effect ID detail as well
                         hpwaveConf[ch].wave_design_mode =
                                       (uint32_t)HConfig->wave_design_mode;
+                        if (hpwaveConf[ch].wave_design_mode == 0x4) {
+                            hpwaveConf[ch].wave_design_mode |= (data->effect_id << 16);
+                        }
                         PAL_DBG(LOG_TAG, "Haptics Effect, desgn mode %d",
                                                  hpwaveConf[ch].wave_design_mode);
                         hpwaveConf[ch].auto_overdrive_brake_en =

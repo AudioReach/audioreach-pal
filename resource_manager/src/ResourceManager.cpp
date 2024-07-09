@@ -5548,7 +5548,9 @@ void ResourceManager::HandleStreamPauseResume(pal_stream_type_t st_type, bool ac
 
 void ResourceManager::forceSwitchSoundTriggerStreams(bool active) {
 
-    mActiveStreamMutex.lock();
+    if (!PAL_CARD_STATUS_DOWN(cardState))
+        std::lock_guard<std::mutex> lock(mActiveStreamMutex);
+
     std::vector<pal_stream_type_t> st_streams;
 
     if (active_streams_st.size())
@@ -5563,8 +5565,6 @@ void ResourceManager::forceSwitchSoundTriggerStreams(bool active) {
     } else {
         handleConcurrentStreamSwitch(st_streams);
     }
-
-    mActiveStreamMutex.unlock();
 }
 
 /* This function should be called with mActiveStreamMutex lock acquired */

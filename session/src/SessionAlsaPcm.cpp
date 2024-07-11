@@ -166,9 +166,14 @@ int SessionAlsaPcm::prepare(Stream * s)
                     PAL_DBG(LOG_TAG, "Set device ckv");
                     status = setConfig(s, CALIBRATION, HW_EP_TX);
                     if (status != 0) {
-                        PAL_ERR(LOG_TAG,
-                            "Failed to set devicepp ckv, status %d", status);
-                        goto exit;
+                        if (status == -EALREADY) {
+                            PAL_ERR(LOG_TAG, "Calibration already set, ignore");
+                            status = 0;
+                        } else {
+                            PAL_ERR(LOG_TAG,
+                               "Failed to set devicepp ckv, status %d", status);
+                            goto exit;
+                        }
                     }
                 }
                 vaMicChannels = channels;

@@ -1212,7 +1212,12 @@ int32_t  StreamPCM::setParameters(uint32_t param_id, void *payload)
             if (NULL != session) {
                 /* To avoid pop while switching channels, it is required to mute
                    the playback first and then swap the channel and unmute */
-                setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_MUTE);
+                if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
+                    mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                    setConfigStatus = session->setConfig(this, MODULE, MUTE_TAG);
+                } else {
+                    setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_MUTE);
+                }
                 if (setConfigStatus) {
                     PAL_INFO(LOG_TAG, "DevicePP Mute failed");
                 }
@@ -1225,7 +1230,12 @@ int32_t  StreamPCM::setParameters(uint32_t param_id, void *payload)
                 mStreamMutex.unlock();
                 usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
                 mStreamMutex.lock();
-                setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_UNMUTE);
+                if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
+                    mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                    setConfigStatus = session->setConfig(this, MODULE, UNMUTE_TAG);
+                } else {
+                    setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_UNMUTE);
+                }
                 if (setConfigStatus) {
                     PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
                 }

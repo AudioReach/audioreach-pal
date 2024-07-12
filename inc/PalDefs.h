@@ -333,6 +333,7 @@ typedef enum {
     PAL_STREAM_COMMON_PROXY = 28,         /**< AFS's WakeUp Algo library detection */
     PAL_STREAM_SENSOR_PCM_RENDERER = 29,  /**< Sensor Pcm Rendering Stream */
     PAL_STREAM_ASR = 30,                  /**< ASR Stream */
+    PAL_STREAM_HPCM = 31,                 /**< hpcm usecase */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -497,11 +498,23 @@ struct pal_incall_music_info {
     bool local_playback;
 };
 
+typedef enum {
+    PAL_HPCM_RX_PLAYBACK = 0,
+    PAL_HPCM_RX_CAPTURE = 1,
+    PAL_HPCM_TX_PLAYBACK = 2,
+    PAL_HPCM_TX_CAPTURE = 3,
+} pal_hpcm_stream_type_t;
+
+struct pal_hpcm_stream_info {
+    pal_hpcm_stream_type_t hpcm_stream_type;
+};
+
 typedef union {
     struct pal_stream_info opt_stream_info; /* optional */
     struct pal_voice_record_info voice_rec_info; /* mandatory */
     struct pal_voice_call_info voice_call_info; /* manatory for voice call*/
     struct pal_incall_music_info incall_music_info;
+    struct pal_hpcm_stream_info hpcm_stream_info;
 } pal_stream_info_t;
 
 /** Media configuraiton */

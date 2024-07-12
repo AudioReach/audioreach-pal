@@ -778,6 +778,7 @@ typedef enum {
     PAL_PARAM_ID_VENDOR_UUID = 84,
     PAL_PARAM_ID_IS_DEVICE_CONNECTED = 85,
     PAL_PARAM_ID_DTMF_DETECTION_CFG = 86,
+    PAL_PARAM_ID_DTMF_GEN_TONE_CFG = 87,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1050,6 +1051,17 @@ typedef struct pal_bt_tws_payload_s {
 typedef struct pal_param_dtmf_detection_cfg {
     uint16_t enable;
     pal_stream_direction_t dir;
+} pal_param_dtmf_detection_cfg_t;
+
+/* Payload For ID: PAL_PARAM_ID_DTMF_GEN_TONE_CFG
+ * Description   : DTMF Generator module parameters
+ */
+typedef struct pal_param_dtmf_gen_tone_cfg {
+    pal_stream_direction_t dir;
+    uint16_t high_freq;
+    uint16_t low_freq;
+    uint16_t gain;
+    int32_t  duration_ms;
 } pal_param_dtmf_gen_tone_cfg_t;
 
 /* Payload For Custom Config

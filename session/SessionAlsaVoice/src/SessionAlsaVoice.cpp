@@ -1928,13 +1928,13 @@ int SessionAlsaVoice::setHWSidetone(Stream * s, bool enable){
             case PAL_DEVICE_IN_HANDSET_MIC:
                 if(enable) {
                     if (rxDevice->getSndDeviceId() == PAL_DEVICE_OUT_WIRED_HEADPHONE)
-                        audio_route_apply_and_update_path(audioRoute, "sidetone-heaphone-handset-mic");
+                        audio_route_apply_and_update_path(audioRoute, "sidetone-headphone-handset-mic");
                     else
                         audio_route_apply_and_update_path(audioRoute, "sidetone-handset");
                     sideTone_cnt++;
                 } else {
                     if (rxDevice->getSndDeviceId() == PAL_DEVICE_OUT_WIRED_HEADPHONE)
-                        audio_route_reset_and_update_path(audioRoute, "sidetone-heaphone-handset-mic");
+                        audio_route_reset_and_update_path(audioRoute, "sidetone-headphone-handset-mic");
                     else
                         audio_route_reset_and_update_path(audioRoute, "sidetone-handset");
                     sideTone_cnt--;

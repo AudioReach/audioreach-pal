@@ -447,6 +447,7 @@ typedef enum {
     PAL_STREAM_CBK_EVENT_PARTIAL_DRAIN_READY, /* partial drain completed */
     PAL_STREAM_CBK_EVENT_READ_DONE, /* stream hit some error, let AF take action */
     PAL_STREAM_CBK_EVENT_ERROR, /* stream hit some error, let AF take action */
+    PAL_STREAM_CBK_EVENT_DTMF_DETECTION, /* DTMF got detected in the stream */
 } pal_stream_callback_event_t;
 
 /* type of global callback events. */
@@ -776,6 +777,7 @@ typedef enum {
     PAL_PARAM_ID_ORIENTATION = 83, /**For PAL Refactor*/
     PAL_PARAM_ID_VENDOR_UUID = 84,
     PAL_PARAM_ID_IS_DEVICE_CONNECTED = 85,
+    PAL_PARAM_ID_DTMF_DETECTION_CFG = 86,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1041,6 +1043,14 @@ typedef struct pal_bt_tws_payload_s {
     bool isTwsMonoModeOn;
     uint32_t codecFormat;
 } pal_bt_tws_payload;
+
+/* Payload For ID: PAL_PARAM_ID_DTMF_DETECTION_CFG
+ * Description   : DTMF Detection module parameters
+ */
+typedef struct pal_param_dtmf_detection_cfg {
+    uint16_t enable;
+    pal_stream_direction_t dir;
+} pal_param_dtmf_gen_tone_cfg_t;
 
 /* Payload For Custom Config
  * Description : Used by PAL client to customize
@@ -1368,6 +1378,15 @@ struct pal_event_read_write_done_payload {
     uint32_t status; /**< data buffer status as defined in ar_osal_error.h */
     uint32_t md_status; /**< meta-data status as defined in ar_osal_error.h */
     struct pal_buffer buff; /**< buffer that was passed to pal_stream_read/pal_stream_write */
+};
+
+/**
+ * Event payload passed to client with PAL_STREAM_CBK_EVENT_DTMF_DETECTION events
+  */
+struct pal_event_dtmf_detect_data {
+    pal_stream_direction_t dir;
+    uint32_t dtmf_high_freq;
+    uint32_t dtmf_low_freq;
 };
 
 /** @brief Callback function prototype to be given for

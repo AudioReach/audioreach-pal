@@ -950,8 +950,8 @@ int32_t Stream::handleBTDeviceNotReadyToDummy(bool& a2dpSuspend)
 
         PAL_INFO(LOG_TAG, "BT A2DP/BLE output device is not ready");
 
-        suspendedDevIds.clear();
-        suspendedDevIds.push_back(dattr.id);
+        suspendedOutDevIds.clear();
+        suspendedOutDevIds.push_back(dattr.id);
 
         for (auto iter = mDevices.begin(); iter != mDevices.end();) {
             sndDevId = (*iter)->getSndDeviceId();
@@ -1028,7 +1028,7 @@ int32_t Stream::handleBTDeviceNotReadyToDummy(bool& a2dpSuspend)
             mDevices.push_back(switchDev);
             addPalDevice(this, &switchDevDattr);
         } else {
-            suspendedDevIds.push_back(switchDevDattr.id);
+            suspendedOutDevIds.push_back(switchDevDattr.id);
         }
     }
 
@@ -1132,9 +1132,9 @@ int32_t Stream::handleBTDeviceNotReady(bool& a2dpSuspend)
              * list so that a2dp/ble will be restored during a2dpResume without removing speaker
              * from stream
              */
-            suspendedDevIds.clear();
-            suspendedDevIds.push_back(PAL_DEVICE_OUT_SPEAKER);
-            suspendedDevIds.push_back(dattr.id);
+            suspendedOutDevIds.clear();
+            suspendedOutDevIds.push_back(PAL_DEVICE_OUT_SPEAKER);
+            suspendedOutDevIds.push_back(dattr.id);
 
             for (auto iter = mDevices.begin(); iter != mDevices.end();) {
                 if ((*iter)->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER) {
@@ -1163,10 +1163,10 @@ int32_t Stream::handleBTDeviceNotReady(bool& a2dpSuspend)
             // For non-combo device, mute the stream and route to speaker or handset
             PAL_INFO(LOG_TAG, "BT A2DP/BLE output device is not ready");
 
-            // Mark the suspendedDevIds state early - As a2dpResume may happen during this time.
+            // Mark the suspendedOutDevIds state early - As a2dpResume may happen during this time.
             a2dpSuspend = true;
-            suspendedDevIds.clear();
-            suspendedDevIds.push_back(dattr.id);
+            suspendedOutDevIds.clear();
+            suspendedOutDevIds.push_back(dattr.id);
 
             rm->lockGraph();
             for (int i = 0; i < mDevices.size(); i++) {
@@ -1770,8 +1770,13 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
                  * However it is still possible a2dp routing called as part of a2dp restore
                  */
                 PAL_ERR(LOG_TAG, "A2DP profile is not ready, ignoring routing request");
-                suspendedDevIds.clear();
-                suspendedDevIds.push_back(newDevices[i].id);
+                if (rm->isOutputDevId(newBtDevId)) {
+                    suspendedOutDevIds.clear();
+                    suspendedOutDevIds.push_back(newDevices[i].id);
+                } else if (rm->isInputDevId(newBtDevId)) {
+                    suspendedInDevIds.clear();
+                    suspendedInDevIds.push_back(newDevices[i].id);
+                }
             }
         }
         if (devReadyStatus) {
@@ -2051,15 +2056,15 @@ done:
         }
     }
     if ((numDev > 1) && isNewDeviceA2dp && !isBtReady) {
-        suspendedDevIds.clear();
-        suspendedDevIds.push_back(newBtDevId);
-        if (rm->IsDummyDevEnabled()) {
-            suspendedDevIds.push_back(PAL_DEVICE_OUT_DUMMY);
+        suspendedOutDevIds.clear();
+        suspendedOutDevIds.push_back(newBtDevId);
+        if (ResourceManager::isDummyDevEnabled) {
+            suspendedOutDevIds.push_back(PAL_DEVICE_OUT_DUMMY);
         } else {
-            suspendedDevIds.push_back(PAL_DEVICE_OUT_SPEAKER);
+            suspendedOutDevIds.push_back(PAL_DEVICE_OUT_SPEAKER);
         }
     } else {
-        suspendedDevIds.clear();
+        suspendedOutDevIds.clear();
     }
     mStreamMutex.unlock();
     return status;

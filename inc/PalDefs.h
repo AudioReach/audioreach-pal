@@ -510,8 +510,15 @@ typedef enum {
     PAL_TTY_FULL = 3,
 } pal_tty_t;
 
+typedef enum {
+    INCALL_MUSIC_UPLINK = 1,
+    INCALL_MUSIC_DOWNLINK,
+} pal_incall_music_direction;
+
 struct pal_incall_music_info {
     bool local_playback;
+    pal_incall_music_direction music_dir;         /** use direction enum to indicate incall music content direction.
+                                                      Applicable for compressed streams only */
 };
 
 typedef enum {

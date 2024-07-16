@@ -629,6 +629,7 @@ void HotwordInterface::DeregisterModel(void *s) {
             }
         }
         sm_info_map_[s]->model_list.clear();
+        sm_info_map_[s]->model_list.shrink_to_fit();
         free(sm_info_map_[s]);
         sm_info_map_.erase(iter);
     } else {

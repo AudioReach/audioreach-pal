@@ -1092,7 +1092,6 @@ public:
     bool isValidDeviceSwitchForStream(Stream *s, pal_device_id_t newDeviceId);
     void RegisterSTCaptureHandle(pal_param_st_capture_info_t stCaptureInfo, bool start);
     static void setProxyRecordActive(bool isActive);
-    void WbSpeechConfig(pal_device_id_t devId, uint32_t param_id, void *param_payload);
     void setVIRecordState(bool isStarted);
     void setCRSCallEnabled(bool isEnabled);
     void setCurrentGroupDevConfig(std::shared_ptr<group_dev_config_t> activeDevConfig,

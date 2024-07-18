@@ -1639,7 +1639,8 @@ set_mixer:
                         PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
                         goto exit;
                     }
-                    if (dAttr.config.ch_info.channels > 1) {
+                    if (dAttr.id == PAL_DEVICE_IN_ULTRASOUND_MIC &&
+                        dAttr.config.ch_info.channels > 1) {
                         builder->payloadDAMPortConfig(&payload, &payloadSize, miid,
                                                       dAttr.config.ch_info.channels);
                         if (payloadSize && payload) {

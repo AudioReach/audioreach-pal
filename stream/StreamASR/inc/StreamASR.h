@@ -385,6 +385,7 @@ class StreamASR : public Stream {
 
     static void EventNotificationThread(StreamASR *stream);
     void AddState(ASRState* state);
+    bool UseLpiCaptureProfile();
     int32_t GetPreviousStateId();
     int32_t ProcessInternalEvent(std::shared_ptr<ASREventConfig> evCfg);
     int32_t SetRecognitionConfig(struct pal_asr_config *config);

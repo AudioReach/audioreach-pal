@@ -401,6 +401,14 @@ pal_device_id_t StreamASR::GetAvailCaptureDevice()
         return PAL_DEVICE_IN_HANDSET_VA_MIC;
 }
 
+bool StreamASR::UseLpiCaptureProfile() {
+
+    if (outputConfig->output_mode == BUFFERED)
+        return true;
+
+    return false;
+}
+
 std::shared_ptr<CaptureProfile> StreamASR::GetCurrentCaptureProfile()
 {
     std::shared_ptr<CaptureProfile> capProf = nullptr;
@@ -410,7 +418,7 @@ std::shared_ptr<CaptureProfile> StreamASR::GetCurrentCaptureProfile()
     if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
         inputMode = ST_INPUT_MODE_HEADSET;
 
-    if (recConfig->enable_partial_transcription)
+    if (!UseLpiCaptureProfile())
         rm->setForceNLPI(true);
 
     if (rm->getLPIUsage())
@@ -576,7 +584,7 @@ int32_t StreamASR::SetupDetectionEngine()
     }
 
     if (rm->getLPIUsage() &&
-       recConfig->enable_partial_transcription) {
+        !UseLpiCaptureProfile()) {
         mStreamMutex.unlock();
         rm->setForceNLPI(true);
         rm->forceSwitchSoundTriggerStreams(true);
@@ -696,7 +704,7 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
         recConfig->threshold, recConfig->timeout_duration,
         recConfig->vad_hangover_duration, recConfig->enable_partial_transcription);
 
-    PAL_DBG(LOG_TAG, "Recieved output buffer mode : %d, sending output mode : %d",
+    PAL_INFO(LOG_TAG, "Recieved output buffer mode : %d, sending output mode : %d",
         asrRecCfg->outputBufferMode, outputConfig->output_mode);
 
     palRecConfig = (struct pal_asr_config *)calloc(1, sizeof(struct pal_asr_config));
@@ -938,7 +946,7 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             asrStream.deviceOpened = false;
 
             if (rm->getLPIUsage() &&
-                asrStream.recConfig->enable_partial_transcription) {
+                !asrStream.UseLpiCaptureProfile()) {
                 asrStream.mStreamMutex.unlock();
                 rm->forceSwitchSoundTriggerStreams(false);
                 asrStream.mStreamMutex.lock();

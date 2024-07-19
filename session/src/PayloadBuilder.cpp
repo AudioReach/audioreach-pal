@@ -4951,6 +4951,10 @@ std::unique_ptr<uint8_t[]> PayloadBuilder::getPayloadEncoderBitrate(
     }
 
     auto header = (apm_module_param_data_t *)((uint8_t*)payload.get());
+    if (!header) {
+        return nullptr;
+    }
+
     header->module_instance_id = encoderMIID;
     header->param_id = PARAM_ID_ENC_BITRATE;
     header->error_code = 0x0;

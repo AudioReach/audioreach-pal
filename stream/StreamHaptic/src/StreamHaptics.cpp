@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -337,4 +337,133 @@ void StreamHaptics::HandleCallBack(uint64_t hdl, uint32_t event_id,
         StreamHAPTICS->HandleEvent(event_id, data, event_size);
     }
     PAL_DBG(LOG_TAG, "Exit");
+}
+
+int32_t StreamHaptics::ssrDownHandler()
+{
+    int32_t status = 0;
+
+    mStreamMutex.lock();
+
+    if (false == isStreamSSRDownFeasibile()) {
+        mStreamMutex.unlock();
+        goto skip_down_handling;
+    }
+
+    /* Updating cached state here only if it's STREAM_IDLE,
+     * Otherwise we can assume it is updated by hal thread
+     * already.
+     */
+    if (cachedState == STREAM_IDLE)
+        cachedState = currentState;
+    PAL_DBG(LOG_TAG, "Enter. session handle - %pK cached State %d",
+            session, cachedState);
+
+    if (currentState == STREAM_INIT || currentState == STREAM_STOPPED) {
+        mStreamMutex.unlock();
+        status = close();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream close failed. status %d", status);
+            goto exit;
+        }
+    } else if (currentState == STREAM_STARTED || currentState == STREAM_PAUSED) {
+        mStreamMutex.unlock();
+        rm->unlockActiveStream();
+        status = stop();
+        rm->lockActiveStream();
+        if (0 != status)
+            PAL_ERR(LOG_TAG, "stream stop failed. status %d",  status);
+        status = close();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream close failed. status %d", status);
+            goto exit;
+        }
+    } else {
+        PAL_ERR(LOG_TAG, "stream state is %d, nothing to handle", currentState);
+        mStreamMutex.unlock();
+        goto exit;
+    }
+
+exit :
+    currentState = STREAM_IDLE;
+skip_down_handling :
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    return status;
+}
+
+int32_t StreamHaptics::ssrUpHandler()
+{
+    int32_t status = 0;
+
+    if (mStreamAttr->info.opt_stream_info.haptics_type != PAL_STREAM_HAPTICS_RINGTONE)
+        goto skip_up_handling;
+
+    mStreamMutex.lock();
+    PAL_DBG(LOG_TAG, "Enter. session handle - %pK state %d",
+            session, cachedState);
+
+    if (skipSSRHandling) {
+        skipSSRHandling = false;
+        mStreamMutex.unlock();
+        goto skip_up_handling;
+    }
+
+    if (cachedState == STREAM_INIT) {
+        mStreamMutex.unlock();
+        status = open();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream open failed. status %d", status);
+            goto exit;
+        }
+    } else if (cachedState == STREAM_STARTED) {
+        mStreamMutex.unlock();
+        status = open();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream open failed. status %d", status);
+            goto exit;
+        }
+        rm->unlockActiveStream();
+        status = start();
+        rm->lockActiveStream();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream start failed. status %d", status);
+            goto exit;
+        }
+        /* For scenario when we get SSR down while handling SSR up,
+         * status will be 0, so we need to have this additonal check
+         * to keep the cached state as STREAM_STARTED.
+         */
+        if (currentState != STREAM_STARTED) {
+            goto exit;
+        }
+    } else if (cachedState == STREAM_PAUSED) {
+        mStreamMutex.unlock();
+        status = open();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream open failed. status %d", status);
+            goto exit;
+        }
+        rm->unlockActiveStream();
+        status = start();
+        rm->lockActiveStream();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "stream start failed. status %d", status);
+            goto exit;
+        }
+        if (currentState != STREAM_STARTED)
+            goto exit;
+        status = pause();
+        if (0 != status) {
+           PAL_ERR(LOG_TAG, "stream set pause failed. status %d", status);
+            goto exit;
+        }
+    } else {
+        mStreamMutex.unlock();
+        PAL_ERR(LOG_TAG, "stream not in correct state to handle %d", cachedState);
+    }
+exit :
+    cachedState = STREAM_IDLE;
+skip_up_handling :
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    return status;
 }

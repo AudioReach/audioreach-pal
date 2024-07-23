@@ -106,6 +106,9 @@ class StreamASR : public Stream {
     int32_t pause_l() override { return 0; }
     int32_t resume() override { return 0; }
     int32_t resume_l() override { return 0; }
+    int32_t drain(pal_drain_type_t type __unused) override { return 0; };
+    int32_t suspend() { return 0; };
+    int32_t flush() { return 0; };
 
     int32_t read(struct pal_buffer *buf __unused) {return 0; }
     int32_t write(struct pal_buffer *buf __unused) { return 0; }

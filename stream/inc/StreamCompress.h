@@ -56,9 +56,9 @@ public:
     int32_t pause_l() override;
     int32_t resume() override;
     int32_t resume_l() override;
-    int32_t drain(pal_drain_type_t type);
-    int32_t flush();
-    int32_t setStreamAttributes(struct pal_stream_attributes *sattr) override;
+    int32_t drain(pal_drain_type_t type) override;
+    int32_t flush() override;
+    int32_t suspend() override { return 0; };
     int32_t setVolume( struct pal_volume_data *volume) override;
     int32_t mute(bool state) override;
     int32_t mute_l(bool state) override;

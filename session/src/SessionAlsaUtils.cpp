@@ -2339,7 +2339,9 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
                     pal_param_device_rotation_t rotation;
                     rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
                                             PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-                    status = sess->setParameters(streamHandle, 0, PAL_PARAM_ID_DEVICE_ROTATION, &rotation);
+                    status = handleDeviceRotation(rmHandle, streamHandle, rotation.rotation_type,
+                                                    pcmDevIds.at(0), mixerHandle, builder,
+                                                    aifBackEndsToConnect);
                     if (status != 0) {
                         PAL_ERR(LOG_TAG,"handleDeviceRotation failed");
                         status = 0; //rotaton setting failed is not fatal.
@@ -2381,7 +2383,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
         if (sAttr.direction == PAL_AUDIO_INPUT) {
             if (strstr(dAttr.custom_config.custom_key , "unprocessed-hdr-mic") &&
                 (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
-                status = sess->setConfig(streamHandle, MODULE,  ORIENTATION_TAG);
+                status = sess->setParameters(streamHandle, PAL_PARAM_ID_ORIENTATION, nullptr);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "setting HDR record orientation config failed with status %d", status);
                     goto exit;

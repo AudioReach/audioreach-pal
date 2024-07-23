@@ -572,18 +572,18 @@ int SessionAgm::write(Stream *s, struct pal_buffer *buf, int * size)
     return status;
 }
 
-int SessionAgm::setParameters(Stream *s __unused, int tagId __unused, uint32_t param_id, void *payload)
+int SessionAgm::setParamWithTag(Stream *s __unused, int tagId __unused, uint32_t param_id, void *payload)
 {
     int32_t status = 0;
     pal_param_payload *param_payload = (pal_param_payload *)payload;
 
     switch (param_id) {
-    case PAL_PARAM_ID_MODULE_CONFIG:
-        status = agm_session_set_params(sessionId, param_payload->payload, param_payload->payload_size);
-        break;
-    default:
-        PAL_INFO(LOG_TAG, "Unsupported param id %u", param_id);
-        break;
+        case PAL_PARAM_ID_MODULE_CONFIG:
+            status = agm_session_set_params(sessionId, param_payload->payload, param_payload->payload_size);
+            break;
+        default:
+            PAL_INFO(LOG_TAG, "Unsupported param id %u", param_id);
+            break;
     }
 
     return status;
@@ -666,7 +666,7 @@ int SessionAgm::getTagsWithModuleInfo(Stream *s __unused, size_t *size, uint8_t 
     return status;
 }
 
-int SessionAgm::getParameters(Stream *s __unused, int tagId __unused, uint32_t param_id __unused, void **payload __unused)
+int SessionAgm::getParamWithTag(Stream *s __unused, int tagId __unused, uint32_t param_id __unused, void **payload __unused)
 {
     return 0;
 }

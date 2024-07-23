@@ -66,8 +66,7 @@ int32_t StreamUltraSound::stop()
 
     if (currentState == STREAM_STARTED || currentState == STREAM_PAUSED) {
 
-        status = session->setParameters(this, DEVICE_POP_SUPPRESSOR,
-                                            PAL_PARAM_ID_ULTRASOUND_RAMPDOWN, NULL);
+        status = session->setParameters(this, PAL_PARAM_ID_ULTRASOUND_RAMPDOWN, NULL);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "SetParameters failed for Rampdown, status = %d", status);
         }
@@ -132,7 +131,7 @@ int32_t  StreamUltraSound::setParameters(uint32_t param_id, void *payload)
     switch (param_id) {
         case PAL_PARAM_ID_UPD_REGISTER_FOR_EVENTS:
         {
-            status = session->setParameters(NULL, 0, param_id, payload);
+            status = session->setParameters(NULL, param_id, payload);
             if (status)
                 PAL_ERR(LOG_TAG, "Error:%d, Failed to setParam for registering an event",
                 status);

@@ -38,12 +38,10 @@
 #include "ResourceManager.h"
 #include "SessionAlsaUtils.h"
 #include "SessionAgm.h"
-#include "SessionGsl.h"
 #include "SessionAlsaPcm.h"
 #include "SessionAlsaCompress.h"
 #include "SessionAlsaUtils.h"
 #include "SessionAlsaVoice.h"
-
 #include <agm/agm_api.h>
 #include "apm_api.h"
 #include <sstream>
@@ -52,6 +50,21 @@ struct pcm *SessionAR::pcmEcTx = NULL;
 std::vector<int> SessionAR::pcmDevEcTxIds = {0};
 int SessionAR::extECRefCnt = 0;
 std::mutex SessionAR::extECMutex;
+std::mutex SessionAR::pauseMutex;
+std::condition_variable SessionAR::pauseCV;
+
+void SessionAR::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
+                                        void *data __unused,
+                                        uint32_t event_size __unused)
+{
+
+    PAL_DBG(LOG_TAG,"Event id %x ", event_id);
+
+    if (event_id == EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE) {
+        PAL_DBG(LOG_TAG, "Pause done");
+        pauseCV.notify_all();
+    }
+}
 
 Session* SessionAR::makeARSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr)
 {
@@ -65,7 +78,7 @@ Session* SessionAR::makeARSession(const std::shared_ptr<ResourceManager>& rm, co
     switch (sAttr->type) {
         //create compressed if the stream type is compressed
         case PAL_STREAM_COMPRESSED:
-            s =  new SessionAlsaCompress(rm);
+            s = new SessionAlsaCompress(rm);
             break;
         case PAL_STREAM_VOICE_CALL:
             s = new SessionAlsaVoice(rm);
@@ -625,7 +638,7 @@ int32_t SessionAR::setInitialVolume() {
             * so desired volume can take effect instantly at the begining.
             */
             ramp_param.ramp_period_ms = 0;
-            status = setParameters(streamHandle, TAG_STREAM_VOLUME,
+            status = setParamWithTag(streamHandle, TAG_STREAM_VOLUME,
                                    PAL_PARAM_ID_VOLUME_CTRL_RAMP, &ramp_param);
         }
         // apply if there is any cached volume
@@ -638,14 +651,14 @@ int32_t SessionAR::setInitialVolume() {
             pal_param_payload *pld = (pal_param_payload *)volPayload;
             pld->payload_size = sizeof(struct pal_volume_data);
             memcpy(pld->payload, streamHandle->mVolumeData, volSize);
-            status = setParameters(streamHandle, TAG_STREAM_VOLUME,
+            status = setParamWithTag(streamHandle, TAG_STREAM_VOLUME,
                     PAL_PARAM_ID_VOLUME_USING_SET_PARAM, (void *)pld);
             delete[] volPayload;
         }
         if (sAttr.direction == PAL_AUDIO_OUTPUT) {
             //set ramp period back to default.
             ramp_param.ramp_period_ms = DEFAULT_RAMP_PERIOD;
-            status = setParameters(streamHandle, TAG_STREAM_VOLUME,
+            status = setParamWithTag(streamHandle, TAG_STREAM_VOLUME,
                                    PAL_PARAM_ID_VOLUME_CTRL_RAMP, &ramp_param);
         }
     } else {
@@ -782,3 +795,208 @@ int SessionAR::HDRConfigKeyToDevOrientation(const char* hdr_custom_key)
     return ORIENTATION_0;
 }
 
+int32_t SessionAR::getParameters(Stream *s __unused, uint32_t param_id, void **payload)
+{
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "get parameter %u", param_id);
+    switch (param_id) {
+        case PAL_PARAM_ID_SVA_WAKEUP_MODULE_VERSION:
+        {
+            status = this->getParamWithTag(nullptr, INVALID_TAG, param_id, payload);
+            if (status)
+                PAL_ERR(LOG_TAG, "Error:getParam failed with %d",
+                    status);
+            break;
+        }
+        case PAL_PARAM_ID_DIRECTION_OF_ARRIVAL:
+            status = this->getParamWithTag(nullptr, TAG_ECNS, param_id, payload);
+        default:
+            PAL_ERR(LOG_TAG, "Error:Unsupported param id %u", param_id);
+            status = -EINVAL;
+            break;
+    }
+
+    PAL_DBG(LOG_TAG, "get parameter status %d", status);
+    return status;
+}
+
+int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
+{
+    int32_t status = 0;
+    int32_t setConfigStatus = 0;
+    pal_param_payload *param_payload = NULL;
+    pal_device_mute_t *deviceMutePayload = nullptr;
+    struct pal_stream_attributes sAttr = {};
+
+    PAL_DBG(LOG_TAG, "set parameter %u", param_id);
+    status = s->getStreamAttributes(&sAttr);
+    switch (param_id) {
+        case PAL_PARAM_ID_VOLUME_USING_SET_PARAM:
+            status = this->setParamWithTag(s, TAG_STREAM_VOLUME, param_id, payload);
+            break;
+        case PAL_PARAM_ID_TTY_MODE:
+        {
+            param_payload = (pal_param_payload *)payload;
+            if (param_payload->payload_size > sizeof(uint32_t)) {
+                PAL_ERR(LOG_TAG, "Invalid payload size %d", param_payload->payload_size);
+                status = -EINVAL;
+                break;
+            }
+            uint32_t tty_mode = *((uint32_t *)param_payload->payload);
+            status = this->setParamWithTag(s, TTY_MODE, param_id, payload);
+            if (status)
+               PAL_ERR(LOG_TAG, "setParamWithTag for tty mode %d failed with %d",
+                       tty_mode, status);
+            break;
+        }
+        case PAL_PARAM_ID_DEVICE_ROTATION:
+        {
+
+            /* To avoid pop while switching channels, it is required to mute
+               the playback first and then swap the channel and unmute */
+            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
+                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                    setConfigStatus = this->setConfig(s, MODULE, MUTE_TAG);
+                } else {
+                    setConfigStatus = this->setConfig(s, MODULE, DEVICEPP_MUTE);
+                }
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "DevicePP Mute failed");
+            }
+            //mStreamMutex.unlock(); NEED TO FIGURE OUT A WAY TO UNLOCK DURING SLEEP
+            usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
+            // mStreamMutex.lock();
+            status = this->setParamWithTag(s, MUTE_TAG,
+                                            PAL_PARAM_ID_DEVICE_ROTATION,
+                                            payload);
+            // mStreamMutex.unlock();
+            usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
+            // mStreamMutex.lock();
+            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
+                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                    setConfigStatus = this->setConfig(s, MODULE, UNMUTE_TAG);
+                } else {
+                    setConfigStatus = this->setConfig(s, MODULE, DEVICEPP_UNMUTE);
+                }
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
+            }
+            break;
+        }
+        case PAL_PARAM_ID_VOLUME_BOOST:
+        {
+            status = this->setParamWithTag(s, VOICE_VOLUME_BOOST, param_id, payload);
+            if (status)
+               PAL_ERR(LOG_TAG, "setParamWithTag for volume boost failed with %d",
+                       status);
+            break;
+        }
+        case PAL_PARAM_ID_SLOW_TALK:
+        {
+            bool slow_talk = false;
+            param_payload = (pal_param_payload *)payload;
+            slow_talk = *((bool *)param_payload->payload);
+
+            uint32_t slow_talk_tag =
+                          slow_talk ? VOICE_SLOW_TALK_ON : VOICE_SLOW_TALK_OFF;
+            status = this->setParamWithTag(s, slow_talk_tag,
+                                         param_id, payload);
+            if (status)
+               PAL_ERR(LOG_TAG, "setParamWithTag for slow talk failed with %d",
+                       status);
+            break;
+        }
+        case PAL_PARAM_ID_DEVICE_MUTE:
+        {
+            param_payload = (pal_param_payload *)payload;
+            deviceMutePayload = (pal_device_mute_t *)(param_payload->payload);
+            status = this->setParamWithTag(s, DEVICE_MUTE,
+                                            param_id, payload);
+            if (status) {
+               PAL_ERR(LOG_TAG, "setParam for device mute failed with %d",
+                       status);
+            } else {
+               s->setDeviceMute(deviceMutePayload->dir, deviceMutePayload->mute);
+            }
+            break;
+        }
+        case PAL_PARAM_ID_VOLUME_CTRL_RAMP:
+            status = this->setParamWithTag(s, TAG_STREAM_VOLUME,
+                                        param_id,
+                                        payload);
+            break;
+        /*default send to derived session with no tag*/
+        case PAL_PARAM_ID_BT_A2DP_TWS_CONFIG:
+        case PAL_PARAM_ID_BT_A2DP_LC3_CONFIG:
+            status = this->setParamWithTag(s, BT_PLACEHOLDER_ENCODER, param_id, payload);
+            break;
+        case PAL_PARAM_ID_MSPP_LINEAR_GAIN:
+            status = this->setParamWithTag(s, TAG_MODULE_MSPP,
+                               param_id, payload);
+            break;
+        case PAL_PARAM_ID_ULTRASOUND_RAMPDOWN:
+            status = this->setParamWithTag(s, DEVICE_POP_SUPPRESSOR,
+                                param_id, NULL);
+            break;
+        case PAL_PARAM_ID_CHARGER_STATE:
+        {
+            int tag = *((int *) payload);
+            setConfigStatus = this->setConfig(s, MODULE, tag);
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "Charger state setConfig failed.");
+            }
+            break;
+        }
+        case PAL_PARAM_ID_GAIN_LVL_CAL:
+            setConfigStatus = this->setConfig(s, CALIBRATION, GAIN_LVL);
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "DevicePP MBDRC Gain setConfig failed.");
+            }
+            break;
+        case PAL_PARAM_ID_ORIENTATION:
+            setConfigStatus = this->setConfig(s, MODULE, ORIENTATION_TAG);
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "Orientation setConfig failed.");
+            }
+            break;
+        default:
+            status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
+            break;
+    }
+    PAL_DBG(LOG_TAG, "set parameter status %d", status);
+    return status;
+}
+
+//#define MUTE_TAG 0, #define UNMUTE_TAG 1
+int SessionAR::mute(Stream * s, bool state)
+{
+    int32_t status = 0;
+    status = this->setConfig(s, MODULE, state ? MUTE_TAG : UNMUTE_TAG);
+    return status;
+}
+
+int SessionAR::pause(Stream * s)
+{
+    int32_t status = 0;
+    status = this->setConfig(s, MODULE, PAUSE_TAG);
+    return status;
+}
+
+int SessionAR::resume(Stream * s)
+{
+    int32_t status = 0;
+    status = this->setConfig(s, MODULE, RESUME_TAG);
+    return status;
+}
+
+int SessionAR::setVolume(Stream *s)
+{
+    int32_t status = 0;
+    if (rm->isCRSCallEnabled) {
+        status = this->setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
+    } else {
+        status = this->setConfig(s, CALIBRATION, VOLUME_LVL);
+    }
+    return status;
+}

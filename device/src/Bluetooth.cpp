@@ -2075,7 +2075,7 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
             stream->getAssociatedSession(&session);
             param_tws.isTwsMonoModeOn = isTwsMonoModeOn;
             param_tws.codecFormat = (uint32_t)codecFormat;
-            session->setParameters(stream, BT_PLACEHOLDER_ENCODER, param_id, &param_tws);
+            session->setParameters(stream, param_id, &param_tws);
         }
         break;
     }
@@ -2098,7 +2098,7 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
             stream = static_cast<Stream *>(activestreams[0]);
             stream->getAssociatedSession(&session);
             param_lc3.isLC3MonoModeOn = isLC3MonoModeOn;
-            session->setParameters(stream, BT_PLACEHOLDER_ENCODER, param_id, &param_lc3);
+            session->setParameters(stream, param_id, &param_lc3);
         }
         break;
     }

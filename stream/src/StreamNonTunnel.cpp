@@ -37,7 +37,6 @@
 #include "Session.h"
 #include "SessionAR.h"
 #include "kvh2xml.h"
-#include "SessionGsl.h"
 #include "ResourceManager.h"
 #include <unistd.h>
 
@@ -493,7 +492,7 @@ int32_t  StreamNonTunnel::setParameters(uint32_t param_id, void *payload)
     // Stream may not know about tags, so use setParameters instead of setConfig
     switch (param_id) {
         case PAL_PARAM_ID_MODULE_CONFIG:
-            status = session->setParameters(this, 0, param_id, payload);
+            status = session->setParameters(this, param_id, payload);
             break;
         default:
             PAL_ERR(LOG_TAG, "Unsupported param id %u", param_id);

@@ -43,11 +43,33 @@
 #include <agm/agm_api.h>
 #include <sstream>
 #include <mutex>
+#include <chrono>
 #include <fstream>
 #include <agm/agm_api.h>
 
 #define CHS_2 2
 #define AACObjHE_PS 29
+
+std::condition_variable cvPause;
+
+static void handleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,
+                                  uint32_t event_size)
+{
+    Stream *s = NULL;
+    pal_stream_callback cb;
+
+    PAL_DBG(LOG_TAG,"Event id %x ", event_id);
+    if (event_id == EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE) {
+        PAL_DBG(LOG_TAG,"Pause Done");
+        cvPause.notify_all();
+    }
+    else {
+        s = reinterpret_cast<Stream *>(hdl);
+        if (s->getCallBack(&cb) == 0)
+            cb(reinterpret_cast<pal_stream_handle_t *>(s), event_id, (uint32_t *)data,
+               event_size, s->cookie);
+    }
+}
 
 void SessionAlsaCompress::updateCodecOptions(
     pal_param_payload *param_payload, pal_stream_direction_t stream_direction) {
@@ -894,7 +916,7 @@ int SessionAlsaCompress::open(Stream * s)
             PAL_ERR(LOG_TAG, "Invalid direction");
             break;
     }
-
+    registerCallBack(handleSessionCallBack, (uint64_t)s);
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;
@@ -1752,36 +1774,6 @@ exit:
     return status;
 }
 
-int SessionAlsaCompress::pause(Stream * s)
-{
-    int32_t status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter");
-
-    if (compress && playback_started) {
-        status = compress_pause(compress);
-        if (status == 0)
-            playback_paused = true;
-    }
-    PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    return status;
-}
-
-int SessionAlsaCompress::resume(Stream * s __unused)
-{
-    int32_t status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter");
-
-    if (compress && playback_paused) {
-        status = compress_resume(compress);
-        if (status == 0)
-            playback_paused = false;
-    }
-    PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    return status;
-}
-
 int SessionAlsaCompress::stop(Stream * s __unused)
 {
     int32_t status = 0;
@@ -2122,7 +2114,7 @@ uint32_t SessionAlsaCompress::getMIID(const char *backendName, uint32_t tagId, u
     return status;
 }
 
-int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t param_id, void *payload)
+int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id, void *payload)
 {
     pal_param_payload *param_payload = (pal_param_payload *)payload;
     int status = 0;
@@ -2494,7 +2486,7 @@ int SessionAlsaCompress::drain(pal_drain_type_t type)
     return 0;
 }
 
-int SessionAlsaCompress::getParameters(Stream *s __unused, int tagId __unused, uint32_t param_id __unused, void **payload __unused)
+int SessionAlsaCompress::getParamWithTag(Stream *s __unused, int tagId __unused, uint32_t param_id __unused, void **payload __unused)
 {
     return 0;
 }
@@ -2644,5 +2636,114 @@ exit:
             ecRefDevId = PAL_DEVICE_OUT_MIN;
     }
     PAL_DBG(LOG_TAG, "Exit, status: %d", status);
+    return status;
+}
+
+int SessionAlsaCompress::pause(Stream * s)
+{
+    int status = 0;
+    std::unique_lock<std::mutex> pauseLock(pauseMutex);
+    struct pal_vol_ctrl_ramp_param ramp_param;
+    struct pal_volume_data *volume = NULL;
+    uint8_t volSize = 0;
+    struct pal_volume_data *voldata = NULL;
+
+    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", this);
+
+    status = this->setConfig(s, MODULE, PAUSE_TAG);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "session setConfig for pause failed with status %d",
+                status);
+        return status;
+    }
+
+    if (this->isPauseRegistrationDone) {
+        PAL_DBG(LOG_TAG, "Waiting for Pause to complete from ADSP");
+        cvPause.wait_for(pauseLock, std::chrono::microseconds(VOLUME_RAMP_PERIOD));
+    } else {
+        PAL_DBG(LOG_TAG, "Pause event registration not done, sleeping for %d",
+                VOLUME_RAMP_PERIOD);
+        usleep(VOLUME_RAMP_PERIOD);
+    }
+    //PAL_VERBOSE(LOG_TAG,"session pause successful, state %d", s->currentState);
+
+    //caching the volume before setting it to 0
+    if (s->mVolumeData) {
+        voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
+                    (sizeof(struct pal_channel_vol_kv) *
+                    (s->mVolumeData->no_of_volpair))));
+    }
+    if (!voldata) {
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    status = s->getVolumeData(voldata);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
+        goto exit;
+    }
+    /* set ramp period to 0 to make volume be changed to 0 instantly.
+        * ramp down is already done in soft pause, ramp down twice both
+        * in volume module and pause with non-0 period, the curve of
+        * final ramp down becomes not smooth.
+        */
+    ramp_param.ramp_period_ms = 0;
+    status = this->setParamWithTag(s,
+                                   TAG_STREAM_VOLUME,
+                                   PAL_PARAM_ID_VOLUME_CTRL_RAMP,
+                                   &ramp_param);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "setParamWithTag for vol ctrl failed, status %d", status);
+        status = 0; //non-fatal
+    }
+
+    volSize = sizeof(uint32_t) + (sizeof(struct pal_channel_vol_kv) *
+                                        (voldata->no_of_volpair));
+    /* set volume to 0 to avoid the secerio of doing ramping up
+        * from higher volume to lower volume in coming resume.
+        */
+    volume = (struct pal_volume_data *)calloc(1, volSize);
+    if (!volume) {
+        PAL_ERR(LOG_TAG, "Failed to allocate mem for volume");
+        status = -ENOMEM;
+        goto exit;
+    }
+    ar_mem_cpy(volume, volSize, voldata, volSize);
+    for (int32_t i = 0; i < (voldata->no_of_volpair); i++) {
+        volume->volume_pair[i].vol = 0x0;
+    }
+    s->setVolume(volume);
+    if (s->mVolumeData) {
+        free(s->mVolumeData);
+        s->mVolumeData = NULL;
+    }
+    s->mVolumeData = (struct pal_volume_data *)calloc(1, volSize);
+    if (!s->mVolumeData) {
+        PAL_ERR(LOG_TAG, "failed to calloc for volume data");
+        status = -ENOMEM;
+        goto exit;
+    }
+    ar_mem_cpy(s->mVolumeData, volSize, voldata, volSize);
+
+    /* set ramp period to default */
+    ramp_param.ramp_period_ms = DEFAULT_RAMP_PERIOD;
+    status = this->setParamWithTag(s,
+                                   TAG_STREAM_VOLUME,
+                                   PAL_PARAM_ID_VOLUME_CTRL_RAMP,
+                                   &ramp_param);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG,"setParamWithTag for vol ctrl failed, status %d", status);
+        status = 0; //non-fatal
+    }
+exit:
+    if (volume) {
+         free(volume);
+         volume = NULL;
+    }
+    if (voldata) {
+         free(voldata);
+         voldata = NULL;
+    }
     return status;
 }

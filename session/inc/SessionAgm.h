@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -36,7 +36,7 @@
 #define SESSION_AGM_H
 
 
-#include "Session.h"
+#include "SessionAR.h"
 
 #include "ResourceManager.h"
 #include "PayloadBuilder.h"
@@ -60,7 +60,7 @@ struct agmMetaData {
         :buf(b),size(s) {}
 };
 
-class SessionAgm : public Session
+class SessionAgm : public SessionAR
 {
 private:
 
@@ -92,14 +92,10 @@ public:
     int close(Stream * s) override;
     int pause(Stream * s) override;
     int resume(Stream * s) override;
-    int readBufferInit(Stream *s __unused, size_t noOfBuf __unused,
-                       size_t bufSize __unused, int flag __unused) {return -EINVAL;}
-    int writeBufferInit(Stream *s __unused, size_t noOfBuf __unused,
-                       size_t bufSize __unused, int flag __unused) {return -EINVAL;}
     int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload);
     int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload);
-    int read(Stream *s, int tag, struct pal_buffer *buf, int * size) override;
-    int write(Stream *s, int tag, struct pal_buffer *buf, int * size, int flag) override;
+    int read(Stream *s, struct pal_buffer *buf, int * size) override;
+    int write(Stream *s, struct pal_buffer *buf, int * size) override;
     int setECRef(Stream *s __unused, std::shared_ptr<Device> rx_dev __unused, bool is_enable __unused) {return 0;};
     int registerCallBack(session_callback cb, uint64_t cookie);
     int drain(pal_drain_type_t type);

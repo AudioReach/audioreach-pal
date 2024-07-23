@@ -41,6 +41,7 @@
 #include "SessionAlsaUtils.h"
 #include "kvh2xml.h"
 #include <agm/agm_api.h>
+#include "SessionAR.h"
 
 #include<fstream>
 #include<sstream>
@@ -1435,7 +1436,7 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
         stream = static_cast<Stream *>(activeStreams[0]);
         stream->getAssociatedSession(&session);
 
-        ret = session->getMIID(backEndNameRx.c_str(), MODULE_HAPTICS_GEN, &miid);
+        ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndNameRx.c_str(), MODULE_HAPTICS_GEN, &miid);
         if (ret) {
             PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_HAPTICS_GEN, ret);
             goto err_pcm_open;
@@ -1556,7 +1557,7 @@ void HapticsDevProtection::updateHPcustomPayload()
     }
     stream = static_cast<Stream *>(activeStreams[0]);
     stream->getAssociatedSession(&session);
-    ret = session->getMIID(backEndName.c_str(), MODULE_HAPTICS_GEN, &miid);
+    ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), MODULE_HAPTICS_GEN, &miid);
     if (ret) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_HAPTICS_GEN, ret);
         goto exit;
@@ -1840,7 +1841,7 @@ void HapticsDevFeedback::updateVIcustomPayload()
     }
     stream = static_cast<Stream *>(activeStreams[0]);
     stream->getAssociatedSession(&session);
-    ret = session->getMIID(backEndName.c_str(), MODULE_HAPTICS_VI, &miid);
+    ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), MODULE_HAPTICS_VI, &miid);
     if (ret) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_HAPTICS_VI, ret);
         goto exit;

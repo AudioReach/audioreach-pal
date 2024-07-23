@@ -38,6 +38,7 @@
 
 #include "StreamCommon.h"
 #include "Session.h"
+#include "SessionAR.h"
 #include "kvh2xml.h"
 #include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
@@ -552,7 +553,7 @@ int32_t StreamCommon::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
     }
 
     if (session)
-        status = session->getTagsWithModuleInfo(this, size, payload);
+        status = dynamic_cast<SessionAR*>(session)->getTagsWithModuleInfo(this, size, payload);
     else
         PAL_ERR(LOG_TAG, "session handle is NULL");
 

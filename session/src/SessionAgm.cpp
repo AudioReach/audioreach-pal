@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -233,9 +233,6 @@ SessionAgm::SessionAgm(std::shared_ptr<ResourceManager> Rm)
 {
     rm = Rm;
     builder = new PayloadBuilder();
-
-    customPayload = NULL;
-    customPayloadSize = 0;
     agmSessHandle = 0;
     instanceId = 0;
     sessionCb = NULL;
@@ -462,7 +459,7 @@ int SessionAgm::stop(Stream * s __unused)
     return status;
 }
 
-int SessionAgm::read(Stream *s, int tag __unused, struct pal_buffer *buf, int *size )
+int SessionAgm::read(Stream *s, struct pal_buffer *buf, int *size )
 {
     uint32_t bytes_read = 0;
     int status;
@@ -526,7 +523,7 @@ int SessionAgm::fileWrite(Stream *s __unused, int tag __unused, struct pal_buffe
     return 0;
 }
 
-int SessionAgm::write(Stream *s, int tag __unused, struct pal_buffer *buf, int * size, int flag __unused)
+int SessionAgm::write(Stream *s, struct pal_buffer *buf, int * size)
 {
     size_t bytes_written = 0;
     int status;

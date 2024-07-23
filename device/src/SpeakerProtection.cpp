@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  *
@@ -70,6 +70,7 @@
 #include "SessionAlsaUtils.h"
 #include "kvh2xml.h"
 #include <agm/agm_api.h>
+#include "SessionAR.h"
 
 #include<fstream>
 #include<sstream>
@@ -1915,7 +1916,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
         stream = static_cast<Stream *>(activeStreams[0]);
         stream->getAssociatedSession(&session);
 
-        ret = session->getMIID(backEndNameRx.c_str(), MODULE_SP, &miid);
+        ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndNameRx.c_str(), MODULE_SP, &miid);
         if (ret) {
             PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_SP, ret);
             goto err_pcm_open;
@@ -2324,7 +2325,7 @@ void SpeakerProtection::updateSPcustomPayload()
     }
     stream = static_cast<Stream *>(activeStreams[0]);
     stream->getAssociatedSession(&session);
-    ret = session->getMIID(backEndName.c_str(), MODULE_SP, &miid);
+    ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), MODULE_SP, &miid);
     if (ret) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_SP, ret);
         goto exit;
@@ -2709,7 +2710,7 @@ void SpeakerFeedback::updateVIcustomPayload()
     }
     stream = static_cast<Stream *>(activeStreams[0]);
     stream->getAssociatedSession(&session);
-    ret = session->getMIID(backEndName.c_str(), MODULE_VI, &miid);
+    ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), MODULE_VI, &miid);
     if (ret) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_VI, ret);
         goto exit;

@@ -679,7 +679,7 @@ int SessionAlsaCompress::setCustomFormatParam(pal_audio_fmt_t audio_fmt)
             }
             status = SessionAlsaUtils::setMixerParameter(mixer,
                             compressDevIds.at(0), payload, payloadSize);
-            freeCustomPayload(&payload, &payloadSize);
+            builder->freeCustomPayload(&payload, &payloadSize);
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "setMixerParameter failed");
                 return status;
@@ -785,8 +785,6 @@ SessionAlsaCompress::SessionAlsaCompress(std::shared_ptr<ResourceManager> Rm)
     codec.ch_in = 2;
     codec.ch_out = codec.ch_in;
     codec.sample_rate = 48000;
-    customPayload = NULL;
-    customPayloadSize = 0;
     compress = NULL;
     sessionCb = NULL;
     this->cbCookie = 0;
@@ -796,6 +794,7 @@ SessionAlsaCompress::SessionAlsaCompress(std::shared_ptr<ResourceManager> Rm)
     capture_paused = false;
     streamHandle = NULL;
     ecRefDevId = PAL_DEVICE_OUT_MIN;
+    isMixerEventCbRegd = false;
 }
 
 SessionAlsaCompress::~SessionAlsaCompress()
@@ -1380,8 +1379,8 @@ int SessionAlsaCompress::configureEarlyEOSDelay(void)
         return status;
     }
     if (payloadSize) {
-        status = updateCustomPayload(payload, payloadSize);
-        freeCustomPayload(&payload, &payloadSize);
+        status = builder->updateCustomPayload(payload, payloadSize);
+        builder->freeCustomPayload(&payload, &payloadSize);
         if(0 != status) {
             PAL_ERR(LOG_TAG, "%s: updateCustomPayload Failed\n", __func__);
             return status;
@@ -1488,7 +1487,7 @@ int SessionAlsaCompress::start(Stream * s)
                     PAL_ERR(LOG_TAG, "getAssociatedDevices Failed \n");
                     goto exit;
                 }
-                status = configureMFC(rm, sAttr, dAttr, compressDevIds,
+                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, compressDevIds,
                             rxAifBackEnds[i].second.data());
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "configure MFC failed");
@@ -1498,11 +1497,11 @@ int SessionAlsaCompress::start(Stream * s)
                 if (isGaplessFmt) {
                     status = configureEarlyEOSDelay();
                 }
-
-                if (customPayload) {
+                builder->getCustomPayload(&payload, &payloadSize);
+                if (payload) {
                     status = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                             customPayload, customPayloadSize);
-                    freeCustomPayload();
+                                                             payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG, "setMixerParameter failed");
                         goto exit;
@@ -1531,13 +1530,13 @@ int SessionAlsaCompress::start(Stream * s)
                 }
                 if ((ResourceManager::isChargeConcurrencyEnabled) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
-                    status = Session::NotifyChargerConcurrency(rm, true);
+                    status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
-                        status = Session::EnableChargerConcurrency(rm, s);
+                        status = EnableChargerConcurrency(rm, s);
                         //Handle failure case of ICL config
                         if (0 != status) {
                             PAL_DBG(LOG_TAG, "Failed to set ICL Config status %d", status);
-                            status = Session::NotifyChargerConcurrency(rm, false);
+                            status = NotifyChargerConcurrency(rm, false);
                         }
                     }
                     status = 0;
@@ -1558,20 +1557,17 @@ int SessionAlsaCompress::start(Stream * s)
 
                     builder->payloadMSPPConfig(&payload, &payloadSize, miid, rm->linear_gain.gain);
                     if (payloadSize && payload) {
-                        volStatus = updateCustomPayload(payload, payloadSize);
-                        free(payload);
+                        volStatus = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != volStatus) {
                             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                             break;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     volStatus = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                    if (customPayload) {
-                        free(customPayload);
-                        customPayload = NULL;
-                        customPayloadSize = 0;
-                    }
+                                                                 payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (volStatus != 0) {
                         PAL_ERR(LOG_TAG,"setMixerParameter failed for MSPP module");
                         break;
@@ -1587,20 +1583,17 @@ int SessionAlsaCompress::start(Stream * s)
 
                     builder->payloadSoftPauseConfig(&payload, &payloadSize, miid, MSPP_SOFT_PAUSE_DELAY);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        free(payload);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                             break;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, compressDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                    if (customPayload) {
-                        free(customPayload);
-                        customPayload = NULL;
-                        customPayloadSize = 0;
-                    }
+                                                                 payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG,"setMixerParameter failed for soft Pause module");
                         break;
@@ -1663,19 +1656,19 @@ int SessionAlsaCompress::start(Stream * s)
             streamData.ch_info = nullptr;
             builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
             if (payloadSize && payload) {
-                status = updateCustomPayload(payload, payloadSize);
-                freeCustomPayload(&payload, &payloadSize);
+                status = builder->updateCustomPayload(payload, payloadSize);
+                builder->freeCustomPayload(&payload, &payloadSize);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                     goto exit;
                 }
             }
-
-            if (customPayload) {
+            builder->getCustomPayload(&payload, &payloadSize);
+            if (payload) {
                 status = SessionAlsaUtils::setMixerParameter(
-                    mixer, compressDevIds.at(0), customPayload,
-                    customPayloadSize);
-                freeCustomPayload();
+                    mixer, compressDevIds.at(0), payload,
+                    payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     goto exit;
@@ -1700,17 +1693,18 @@ int SessionAlsaCompress::start(Stream * s)
                }
             }
             if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY) {
-                status = configureMFC(rm, sAttr, dAttr, compressDevIds,
+                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, compressDevIds,
                 txAifBackEnds[0].second.data());
                 if(status != 0) {
                     PAL_ERR(LOG_TAG, "configure MFC failed");
                 }
             }
-            if (customPayload) {
+            builder->getCustomPayload(&payload, &payloadSize);
+            if (payload) {
                 status = SessionAlsaUtils::setMixerParameter(
-                    mixer, compressDevIds.at(0), customPayload,
-                    customPayloadSize);
-                freeCustomPayload();
+                    mixer, compressDevIds.at(0), payload,
+                    payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     goto exit;
@@ -1743,7 +1737,7 @@ int SessionAlsaCompress::start(Stream * s)
             pal_param_device_rotation_t rotation;
             rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
                                     PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-            status = handleDeviceRotation(s, rotation.rotation_type, compressDevIds.at(0), mixer,
+            status = SessionAlsaUtils::handleDeviceRotation(rm, s, rotation.rotation_type, compressDevIds.at(0), mixer,
                                           builder, rxAifBackEnds);
             if (status != 0) {
                 PAL_ERR(LOG_TAG,"handleDeviceRotation failed\n");
@@ -1942,7 +1936,7 @@ int SessionAlsaCompress::close(Stream * s)
 
             rm->freeFrontEndIds(compressDevIds, sAttr, 0);
             compress = NULL;
-            freeCustomPayload();
+            builder->freeCustomPayload();
             break;
 
         case PAL_AUDIO_INPUT:
@@ -1982,8 +1976,7 @@ int SessionAlsaCompress::close(Stream * s)
     return status;
 }
 
-int SessionAlsaCompress::read(Stream *s, int tag __unused,
-                              struct pal_buffer *buf, int *size) {
+int SessionAlsaCompress::read(Stream *s, struct pal_buffer *buf, int *size) {
     int status = 0, bytesRead = 0, offset = 0;
     struct pal_stream_attributes sAttr = {};
 
@@ -2028,7 +2021,7 @@ int SessionAlsaCompress::fileWrite(Stream *s __unused, int tag __unused, struct 
     return 0;
 }
 
-int SessionAlsaCompress::write(Stream *s __unused, int tag __unused, struct pal_buffer *buf, int * size, int flag __unused)
+int SessionAlsaCompress::write(Stream *s __unused, struct pal_buffer *buf, int * size)
 {
     int bytes_written = 0;
     int status;
@@ -2075,15 +2068,6 @@ int SessionAlsaCompress::write(Stream *s __unused, int tag __unused, struct pal_
 
     if (size)
         *size = bytes_written;
-    return 0;
-}
-
-int SessionAlsaCompress::readBufferInit(Stream *s __unused, size_t noOfBuf __unused, size_t bufSize __unused, int flag __unused)
-{
-    return 0;
-}
-int SessionAlsaCompress::writeBufferInit(Stream *s __unused, size_t noOfBuf __unused, size_t bufSize __unused, int flag __unused)
-{
     return 0;
 }
 
@@ -2167,7 +2151,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
             }
             pal_param_device_rotation_t *rotation =
                                      (pal_param_device_rotation_t *)payload;
-            status = handleDeviceRotation(s, rotation->rotation_type, device, mixer,
+            status = SessionAlsaUtils::handleDeviceRotation(rm,s, rotation->rotation_type, device, mixer,
                                           builder, rxAifBackEnds);
         }
         break;
@@ -2194,7 +2178,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                alsaParamData, alsaPayloadSize);
                 PAL_INFO(LOG_TAG, "mixer set tws config status=%d\n", status);
-                freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
             }
             return 0;
         }
@@ -2221,7 +2205,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                alsaParamData, alsaPayloadSize);
                 PAL_INFO(LOG_TAG, "mixer set lc3 config status=%d\n", status);
-                freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
             }
             return 0;
         }
@@ -2309,7 +2293,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                alsaParamData, alsaPayloadSize);
                 PAL_INFO(LOG_TAG, "mixer set volume config status=%d\n", status);
-                freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
                 alsaPayloadSize = 0;
             }
         }
@@ -2361,7 +2345,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                alsaParamData, alsaPayloadSize);
                 PAL_INFO(LOG_TAG, "mixer set vol ctrl ramp status=%d\n", status);
-                freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
             }
             break;
         }
@@ -2434,7 +2418,7 @@ int SessionAlsaCompress::setParameters(Stream *s __unused, int tagId, uint32_t p
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                alsaParamData, alsaPayloadSize);
                 PAL_INFO(LOG_TAG, "mixer set playbackRate parameters status=%d", status);
-                freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
             }
             break;
         }

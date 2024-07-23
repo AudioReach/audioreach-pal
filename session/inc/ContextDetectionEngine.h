@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -46,6 +46,7 @@
 #include "SoundTriggerUtils.h"
 #include "ACDPlatformInfo.h"
 #include "PayloadBuilder.h"
+#include "SessionAR.h"
 
 typedef enum {
     ENG_IDLE,
@@ -55,7 +56,7 @@ typedef enum {
 } eng_state_t;
 
 class Stream;
-class Session;
+class SessionAR;
 class ACDPlatformInfo;
 
 class ContextDetectionEngine
@@ -100,7 +101,7 @@ protected:
     std::shared_ptr<ACDPlatformInfo> acd_info_;
     std::shared_ptr<ACDStreamConfig> sm_cfg_;
     std::vector<Stream *> eng_streams_;
-    Session *session_;
+    SessionAR *session_;
     Stream *stream_handle_;
     PayloadBuilder *builder_;
     uint32_t sample_rate_;

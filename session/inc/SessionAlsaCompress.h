@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -36,7 +36,7 @@
 #define SESSION_ALSACOMPRESS_H
 
 
-#include "Session.h"
+#include "SessionAR.h"
 
 #include "ResourceManager.h"
 #include "PayloadBuilder.h"
@@ -87,13 +87,12 @@ struct offload_msg {
     int cmd; /**< command */
 };
 
-class SessionAlsaCompress : public Session
+class SessionAlsaCompress : public SessionAR
 {
 private:
 
     struct compress *compress;
     uint32_t spr_miid = 0;
-    PayloadBuilder* builder;
     struct snd_codec codec;
     //  unsigned int compressDevId;
     std::vector<int> compressDevIds;
@@ -101,6 +100,8 @@ private:
     std::queue<std::shared_ptr<offload_msg>> msg_queue_;
     size_t compress_cap_buf_size;
     std::vector<std::pair<std::string, int>> freeDeviceMetadata;
+    std::mutex kvMutex;
+    bool isMixerEventCbRegd;
 
     std::condition_variable cv_; /* used to wait for incoming requests */
     std::mutex cv_mutex_; /* mutex used in conjunction with above cv */
@@ -142,12 +143,10 @@ public:
     int close(Stream * s) override;
     int pause(Stream * s) override;
     int resume(Stream * s) override;
-    int readBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
-    int writeBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
     int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload);
     int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload);
-    int read(Stream *s, int tag, struct pal_buffer *buf, int * size) override;
-    int write(Stream *s, int tag, struct pal_buffer *buf, int * size, int flag) override;
+    int read(Stream *s, struct pal_buffer *buf, int * size) override;
+    int write(Stream *s, struct pal_buffer *buf, int * size) override;
     int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override;
     static void offloadThreadLoop(SessionAlsaCompress *ob);
     int registerCallBack(session_callback cb, uint64_t cookie);

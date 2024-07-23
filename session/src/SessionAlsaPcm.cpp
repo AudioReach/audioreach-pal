@@ -113,8 +113,6 @@ SessionAlsaPcm::SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm)
 {
    rm = Rm;
    builder = new PayloadBuilder();
-   customPayload = NULL;
-   customPayloadSize = 0;
    eventPayload = NULL;
    eventPayloadSize = 0;
    pcm = NULL;
@@ -124,6 +122,7 @@ SessionAlsaPcm::SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm)
    ecRefDevId = PAL_DEVICE_OUT_MIN;
    streamHandle = NULL;
    vaMicChannels = 0;
+   isMixerEventCbRegd = false;
 }
 
 SessionAlsaPcm::~SessionAlsaPcm()
@@ -999,12 +998,6 @@ void SessionAlsaPcm::requestAdmFocus(Stream *s,  long ns)
         rm->admRequestFocusFn(rm->admData, static_cast<void *>(s));
 }
 
-void SessionAlsaPcm::AdmRoutingChange(Stream *s)
-{
-    if (rm->admOnRoutingChangeFn)
-        rm->admOnRoutingChangeFn(rm->admData, static_cast<void *>(s));
-}
-
 void SessionAlsaPcm::releaseAdmFocus(Stream *s)
 {
     if (rm->admAbandonFocusFn)
@@ -1220,10 +1213,11 @@ int SessionAlsaPcm::start(Stream * s)
                 payload_size);
     } else if (sAttr.type == PAL_STREAM_ACD) {
         PAL_DBG(LOG_TAG, "register ACD models");
+        builder->getCustomPayload(&payload, &payloadSize);
         SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                            customPayload, customPayloadSize);
-        freeCustomPayload();
-    } else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
+                                             payload, payloadSize);
+        builder->freeCustomPayload();
+    } else if(sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
         status = register_asps_event(1);
     } else if (sAttr.type == PAL_STREAM_HAPTICS &&
               sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
@@ -1298,8 +1292,8 @@ int SessionAlsaPcm::start(Stream * s)
                 streamData.ch_info = nullptr;
                 builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                 if (payloadSize && payload) {
-                    status = updateCustomPayload(payload, payloadSize);
-                    freeCustomPayload(&payload, &payloadSize);
+                    status = builder->updateCustomPayload(payload, payloadSize);
+                    builder->freeCustomPayload(&payload, &payloadSize);
                     if (0 != status) {
                         PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                         goto exit;
@@ -1351,8 +1345,8 @@ int SessionAlsaPcm::start(Stream * s)
                         }
                         builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                         if (payloadSize && payload) {
-                            status = updateCustomPayload(payload, payloadSize);
-                            freeCustomPayload(&payload, &payloadSize);
+                            status = builder->updateCustomPayload(payload, payloadSize);
+                            builder->freeCustomPayload(&payload, &payloadSize);
                             if (0 != status) {
                                 PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                                 goto set_mixer;
@@ -1392,8 +1386,8 @@ int SessionAlsaPcm::start(Stream * s)
                         }
                         builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                         if (payloadSize && payload) {
-                            status = updateCustomPayload(payload, payloadSize);
-                            freeCustomPayload(&payload, &payloadSize);
+                            status = builder->updateCustomPayload(payload, payloadSize);
+                            builder->freeCustomPayload(&payload, &payloadSize);
                             if (0 != status) {
                                 PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                                 goto set_mixer;
@@ -1418,7 +1412,7 @@ configure_pspfmfc:
                     goto set_mixer;
                 }
                 if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY) {
-                    status = configureMFC(rm, sAttr, dAttr, pcmDevIds,
+                    status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, pcmDevIds,
                     txAifBackEnds[0].second.data());
                     if(status != 0) {
                          PAL_ERR(LOG_TAG, "configure MFC failed");
@@ -1426,9 +1420,10 @@ configure_pspfmfc:
                 }
 
 set_mixer:
+                builder->getCustomPayload(&payload, &payloadSize);
                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                             customPayload, customPayloadSize);
-                freeCustomPayload();
+                                                             payload, payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     goto exit;
@@ -1459,16 +1454,17 @@ set_mixer:
                     }
                     builder->payloadRATConfig(&payload, &payloadSize, miid, &codecConfig);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        freeCustomPayload(&payload, &payloadSize);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                             goto exit;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                    freeCustomPayload();
+                                                                 payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG, "setMixerParameter failed for RAT render");
                         goto exit;
@@ -1493,9 +1489,10 @@ set_mixer:
                 }
             } else if (sAttr.type == PAL_STREAM_VOICE_UI ||
                        sAttr.type == PAL_STREAM_ASR) {
+                builder->getCustomPayload(&payload, &payloadSize);
                 SessionAlsaUtils::setMixerParameter(mixer,
-                    pcmDevIds.at(0), customPayload, customPayloadSize);
-                freeCustomPayload();
+                    pcmDevIds.at(0), payload, payloadSize);
+                builder->freeCustomPayload();
             } else if (sAttr.type == PAL_STREAM_ACD) {
                 if (eventPayload) {
                     PAL_DBG(LOG_TAG, "register ACD events");
@@ -1538,16 +1535,17 @@ set_mixer:
                     streamData.ch_info = nullptr;
                     builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        freeCustomPayload(&payload, &payloadSize);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                             goto exit;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                         customPayload, customPayloadSize);
-                    freeCustomPayload();
+                                                         payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG, "setMixerParameter failed");
                         goto exit;
@@ -1577,16 +1575,17 @@ set_mixer:
                         builder->payloadDAMPortConfig(&payload, &payloadSize, miid,
                                                       dAttr.config.ch_info.channels);
                         if (payloadSize && payload) {
-                            status = updateCustomPayload(payload, payloadSize);
-                            freeCustomPayload(&payload, &payloadSize);
+                            status = builder->updateCustomPayload(payload, payloadSize);
+                            builder->freeCustomPayload(&payload, &payloadSize);
                             if (0 != status) {
                                 PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                                 goto exit;
                             }
                         }
+                        builder->getCustomPayload(&payload, &payloadSize);
                         status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                        freeCustomPayload();
+                                                                     payload, payloadSize);
+                        builder->freeCustomPayload();
                         if (status != 0) {
                             PAL_ERR(LOG_TAG, "setMixerParameter failed for RAT render");
                             goto exit;
@@ -1698,15 +1697,15 @@ set_mixer:
                 silence_detection_cfg->detection_duration_ms = 3000;
 
                 PAL_INFO(LOG_TAG, "Sending Silence Detection Custom Payload\n");
-                status = updateCustomPayload(payload, (payloadSize+pad_bytes));
-                freeCustomPayload(&payload, &payloadSize);
+                status = builder->updateCustomPayload(payload, (payloadSize+pad_bytes));
+                builder->freeCustomPayload(&payload, &payloadSize);
                 if (status !=0) {
                     PAL_ERR(LOG_TAG, "updateCustomPayload failed for SILENCE DETECTION \n");
                     goto exit;
                 }
                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                customPayload, customPayloadSize);
-                freeCustomPayload();
+                                payload, payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed for Silence Detection Parameter");
                     goto exit;
@@ -1781,17 +1780,18 @@ set_mixer:
                               miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG,(void *)hpCnfg);
 
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        freeCustomPayload(&payload, &payloadSize);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                             free(hpCnfg);
                             goto exit;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                           customPayload, customPayloadSize);
-                    freeCustomPayload();
+                                                           payload, payloadSize);
+                    builder->freeCustomPayload();
                     free(hpCnfg);
                     if (status != 0) {
                         PAL_ERR(LOG_TAG, "setMixerParameter failed for Haptics wavegen");
@@ -1817,35 +1817,21 @@ set_mixer:
                     goto exit;
                 }
 
-                status = configureMFC(rm, sAttr, dAttr, pcmDevIds,
+                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, pcmDevIds,
                             rxAifBackEnds[i].second.data());
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "configure MFC failed");
                     goto exit;
                 }
-                if (customPayload) {
-                    if (pcmDevIds.size() == 0) {
-                        PAL_ERR(LOG_TAG, "frontendIDs is not available.");
-                        status = -EINVAL;
-                        goto exit;
-                    }
-                    status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                     customPayload, customPayloadSize);
-                    freeCustomPayload();
-                    if (status != 0) {
-                        PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                        goto exit;
-                    }
-                }
                 if ((ResourceManager::isChargeConcurrencyEnabled) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
-                    status = Session::NotifyChargerConcurrency(rm, true);
+                    status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
-                        status = Session::EnableChargerConcurrency(rm, s);
+                        status = EnableChargerConcurrency(rm, s);
                         //Handle failure case of ICL config
                         if (0 != status) {
                             PAL_DBG(LOG_TAG, "Failed to set ICL Config status %d", status);
-                            status = Session::NotifyChargerConcurrency(rm, false);
+                            status = NotifyChargerConcurrency(rm, false);
                         }
                     }
                     /*
@@ -1872,24 +1858,17 @@ set_mixer:
 
                     builder->payloadMSPPConfig(&payload, &payloadSize, miid, rm->linear_gain.gain);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        free(payload);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                             goto pcm_start;
                         }
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                    if (customPayload) {
-                        free(customPayload);
-                        customPayload = NULL;
-                        customPayloadSize = 0;
-                    }
-                    if (status != 0) {
-                        PAL_ERR(LOG_TAG,"setMixerParameter failed for MSPP module");
-                        goto pcm_start;
-                    }
+                                                                 payload, payloadSize);
+                    builder->freeCustomPayload();
 
                     status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevIds.at(0),
                                             rxAifBackEnds[0].second.data(), TAG_PAUSE, &miid);
@@ -1902,20 +1881,13 @@ set_mixer:
                     builder->payloadSoftPauseConfig(&payload, &payloadSize, miid,
                                                             MSPP_SOFT_PAUSE_DELAY);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        free(payload);
-                        if (0 != status) {
-                            PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
-                            goto pcm_start;
-                        }
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                     }
+                    builder->getCustomPayload(&payload, &payloadSize);
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                                 customPayload, customPayloadSize);
-                    if (customPayload) {
-                        free(customPayload);
-                        customPayload = NULL;
-                        customPayloadSize = 0;
-                    }
+                                                                 payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG,"setMixerParameter failed for soft Pause module");
                         goto pcm_start;
@@ -1931,7 +1903,7 @@ set_mixer:
                     pal_param_device_rotation_t rotation;
                     rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
                                             PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-                    status = handleDeviceRotation(s, rotation.rotation_type, pcmDevIds.at(0),
+                    status = SessionAlsaUtils::handleDeviceRotation(rm, s, rotation.rotation_type, pcmDevIds.at(0),
                                                     mixer, builder, rxAifBackEnds);
                     if (status != 0) {
                         PAL_ERR(LOG_TAG,"handleDeviceRotation failed\n");
@@ -1992,8 +1964,8 @@ set_mixer:
                     }
                     builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        freeCustomPayload(&payload, &payloadSize);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                             status = 0;
@@ -2001,9 +1973,10 @@ set_mixer:
                         }
                     }
                 }
+                builder->getCustomPayload(&payload, &payloadSize);
                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                             customPayload, customPayloadSize);
-                freeCustomPayload();
+                                                             payload, payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     status = 0;
@@ -2045,8 +2018,8 @@ set_mixer:
                     }
                     builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
                     if (payloadSize && payload) {
-                        status = updateCustomPayload(payload, payloadSize);
-                        freeCustomPayload(&payload, &payloadSize);
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
                             status = 0;
@@ -2054,9 +2027,10 @@ set_mixer:
                         }
                     }
                 }
+                builder->getCustomPayload(&payload, &payloadSize);
                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                             customPayload, customPayloadSize);
-                freeCustomPayload();
+                                                             payload, payloadSize);
+                builder->freeCustomPayload();
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     status = 0;
@@ -2177,21 +2151,23 @@ pcm_start:
                     PAL_ERR(LOG_TAG, "get Device Attributes Failed");
                     goto exit;
                 }
-                status = configureMFC(rm, sAttr, dAttr, pcmDevRxIds,
+                status = SessionAlsaUtils::configureMFC(rm, sAttr, dAttr, pcmDevRxIds,
                             rxAifBackEnds[0].second.data());
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "configure MFC failed");
                     goto exit;
                 }
-                if (customPayload) {
+                builder->getCustomPayload(&payload, &payloadSize);
+                if (payload) {
                     if (!pcmDevRxIds.size()) {
                         PAL_ERR(LOG_TAG, "pcmDevRxIds not found.");
                         status = -EINVAL;
+                        builder->freeCustomPayload();
                         goto exit;
                     }
                     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevRxIds.at(0),
-                                                             customPayload, customPayloadSize);
-                    freeCustomPayload();
+                                                             payload, payloadSize);
+                    builder->freeCustomPayload();
                     if (status != 0) {
                         PAL_ERR(LOG_TAG, "setMixerParameter failed");
                         goto exit;
@@ -2199,13 +2175,13 @@ pcm_start:
                 }
                 if ((ResourceManager::isChargeConcurrencyEnabled) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
-                    status = Session::NotifyChargerConcurrency(rm, true);
+                    status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
-                        status = Session::EnableChargerConcurrency(rm, s);
+                        status = EnableChargerConcurrency(rm, s);
                         //Handle failure case of ICL config
                         if (0 != status) {
                             PAL_DBG(LOG_TAG, "Failed to set ICL Config status %d", status);
-                            status = Session::NotifyChargerConcurrency(rm, false);
+                            status = NotifyChargerConcurrency(rm, false);
                         }
                     }
                     status = 0;
@@ -2686,7 +2662,7 @@ int SessionAlsaPcm::close(Stream * s)
         }
     }
 
-    freeCustomPayload();
+    builder->freeCustomPayload();
     if (eventPayload) {
         free(eventPayload);
         eventPayload = NULL;
@@ -2917,7 +2893,7 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
     return status;
 }
 
-int SessionAlsaPcm::read(Stream *s, int tag __unused, struct pal_buffer *buf, int * size)
+int SessionAlsaPcm::read(Stream *s, struct pal_buffer *buf, int * size)
 {
     int status = 0, bytesRead = 0, bytesToRead = 0, offset = 0, pcmReadSize = 0;
     struct pal_stream_attributes sAttr = {};
@@ -2966,14 +2942,13 @@ int SessionAlsaPcm::read(Stream *s, int tag __unused, struct pal_buffer *buf, in
     return status;
 }
 
-int SessionAlsaPcm::write(Stream *s, int tag, struct pal_buffer *buf, int * size,
-                          int flag)
+int SessionAlsaPcm::write(Stream *s, struct pal_buffer *buf, int * size)
 {
     int status = 0;
     size_t bytesWritten = 0, bytesRemaining = 0, offset = 0, sizeWritten = 0;
     struct pal_stream_attributes sAttr = {};
 
-    PAL_VERBOSE(LOG_TAG, "Enter buf:%p tag:%d flag:%d", buf, tag, flag);
+    PAL_VERBOSE(LOG_TAG, "Enter buf:%p", buf);
 
     status = s->getStreamAttributes(&sAttr);
     if (status != 0) {
@@ -3062,17 +3037,6 @@ exit:
     return status;
 }
 
-int SessionAlsaPcm::readBufferInit(Stream * /*streamHandle*/, size_t /*noOfBuf*/, size_t /*bufSize*/,
-                                   int /*flag*/)
-{
-    return 0;
-}
-int SessionAlsaPcm::writeBufferInit(Stream * /*streamHandle*/, size_t /*noOfBuf*/, size_t /*bufSize*/,
-                                    int /*flag*/)
-{
-    return 0;
-}
-
 void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t payload_size)
 {
     eventId = event_id;
@@ -3106,7 +3070,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
         {
             pal_param_device_rotation_t *rotation =
                                          (pal_param_device_rotation_t *)payload;
-            status = handleDeviceRotation(streamHandle, rotation->rotation_type,
+            status = SessionAlsaUtils::handleDeviceRotation(rm, streamHandle, rotation->rotation_type,
                                           device, mixer, builder, rxAifBackEnds);
             goto exit;
         }
@@ -3135,22 +3099,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
             paramSize = PAL_ALIGN_8BYTE(header->param_size +
                 sizeof(struct apm_module_param_data_t));
             if (mState == SESSION_IDLE) {
-                if (!customPayloadSize) {
-                    customPayload = (uint8_t *)calloc(1, paramSize);
-                } else {
-                    customPayload = (uint8_t *)realloc(customPayload,
-                        customPayloadSize + paramSize);
-                }
-                if (!customPayload) {
-                    status = -ENOMEM;
-                    PAL_ERR(LOG_TAG, "failed to allocate memory for custom payload");
-                    goto exit;
-                }
-
-                ar_mem_cpy((uint8_t *)customPayload + customPayloadSize, paramSize,
-                    paramData, paramSize);
-                customPayloadSize += paramSize;
-                PAL_INFO(LOG_TAG, "customPayloadSize = %zu", customPayloadSize);
+                builder->updateCustomPayload(paramData, paramSize);
             } else {
                 if (pcmDevIds.size() > 0) {
                     status = SessionAlsaUtils::setMixerParameter(mixer,
@@ -3184,7 +3133,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                paramData, paramSize);
                 PAL_INFO(LOG_TAG, "mixer set tws config status=%d\n", status);
-                freeCustomPayload(&paramData, &paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
             }
             return 0;
         }
@@ -3204,7 +3153,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                paramData, paramSize);
                 PAL_INFO(LOG_TAG, "mixer set lc3 config status=%d\n", status);
-                freeCustomPayload(&paramData, &paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
             }
             return 0;
         }
@@ -3277,7 +3226,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                paramData, paramSize);
                 PAL_INFO(LOG_TAG, "mixer set volume config status=%d\n", status);
-                freeCustomPayload(&paramData, &paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
                 paramSize = 0;
             }
             return 0;
@@ -3423,7 +3372,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                paramData, paramSize);
                 PAL_INFO(LOG_TAG, "mixer set vol ctrl ramp status=%d\n", status);
-                freeCustomPayload(&paramData, &paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
             }
             return 0;
          }
@@ -3456,7 +3405,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                                                          paramData, paramSize);
                         if (status)
                            PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
-                        freeCustomPayload(&paramData, &paramSize);
+                        builder->freeCustomPayload(&paramData, &paramSize);
                     }
                     free(hpCnfg);
                 }
@@ -3482,7 +3431,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                                                      paramData, paramSize);
                     if (status)
                         PAL_ERR(LOG_TAG, "setMixerParam failed for stop haptics Wave\n");
-                    freeCustomPayload(&paramData, &paramSize);
+                    builder->freeCustomPayload(&paramData, &paramSize);
                 }
             return status;
         }
@@ -3505,7 +3454,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                                                          paramData, paramSize);
                     if (status)
                         PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
-                    freeCustomPayload(&paramData, &paramSize);
+                    builder->freeCustomPayload(&paramData, &paramSize);
                 }
             return 0;
         }
@@ -3539,7 +3488,7 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
                 status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                paramData, paramSize);
                 PAL_DBG(LOG_TAG, "GainLog - mixer set gain config status=%d\n", status);
-                freeCustomPayload(&paramData, &paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
             }
             return 0;
         }
@@ -3909,8 +3858,8 @@ int SessionAlsaPcm::getParameters(Stream *s, int tagId, uint32_t param_id, void 
 
 
 exit:
-    freeCustomPayload(&payloadData, &payloadSize);
-    PAL_INFO(LOG_TAG, "Exit. status %d", status);
+    builder->freeCustomPayload(&payloadData, &payloadSize);
+    PAL_DBG(LOG_TAG, "Exit. status %d", status);
     return status;
 }
 
@@ -4443,17 +4392,18 @@ int SessionAlsaPcm::reconfigureModule(uint32_t tagID, const char* BE, struct ses
     PAL_DBG(LOG_TAG, "miid : %x id = %d\n", miid, pcmDevIds.at(0));
     builder->payloadMFCConfig(&payload, &payloadSize, miid, data);
     if (payloadSize && payload) {
-        status = updateCustomPayload(payload, payloadSize);
-        freeCustomPayload(&payload, &payloadSize);
+        status = builder->updateCustomPayload(payload, payloadSize);
+        builder->freeCustomPayload(&payload, &payloadSize);
         if (0 != status) {
             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
             status = -EINVAL;
             goto exit;
         }
     }
+    builder->getCustomPayload(&payload, &payloadSize);
     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                                customPayload, customPayloadSize);
-    freeCustomPayload();
+                                                payload, payloadSize);
+    builder->freeCustomPayload();
     if (status) {
         PAL_ERR(LOG_TAG, "setMixerParameter failed");
         goto exit;

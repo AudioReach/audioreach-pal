@@ -979,7 +979,7 @@ int32_t  StreamPCM::read(struct pal_buffer* buf)
     }
 
     if (currentState == STREAM_STARTED) {
-        status = session->read(this, SHMEM_ENDPOINT, buf, &size);
+        status = session->read(this, buf, &size);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session read is failed with status %d", status);
             if (errno == -ENETRESET &&
@@ -1052,7 +1052,7 @@ int32_t StreamPCM::write(struct pal_buffer* buf)
     // we should allow writes to go through in Start/Pause state as well.
     if ((currentState == STREAM_STARTED) ||
         (currentState == STREAM_PAUSED) ) {
-        status = session->write(this, SHMEM_ENDPOINT, buf, &size, 0);
+        status = session->write(this, buf, &size);
         mStreamMutex.unlock();
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session write is failed with status %d", status);

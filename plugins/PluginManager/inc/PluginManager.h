@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
+#ifndef PLUGIN_MANAGER_H
+#define PLUGIN_MANAGER_H
+
+#include <string>
+#include <vector>
+#include <mutex>
+#include <expat.h>
+
+typedef enum {
+    PAL_PLUGIN_MANAGER_STREAM,
+    PAL_PLUGIN_MANAGER_SESSION,
+    PAL_PLUGIN_MANAGER_DEVICE,
+    PAL_PLUGIN_MANAGER_CONFIG,
+    PAL_PLUGIN_MANAGER_EFFECTS
+} pal_plugin_manager_t;
+
+typedef struct {
+    void* handle;
+    std::string libName;
+    std::vector<std::string> keyNames;
+    std::string entryFunction;
+    void* plugin;
+    uint32_t refCount;
+} pm_item_t;
+
+struct xml_userdata {
+    char data_buf[1024];
+    size_t offs;
+    XML_Parser parser;
+};
+
+class PluginManager
+{
+    private:
+        static std::mutex mPluginManagerMutex;
+        static std::shared_ptr<PluginManager> pm;
+        static std::vector<pm_item_t> registeredStreams;
+        static std::vector<pm_item_t> registeredSessions;
+        static std::vector<pm_item_t> registeredDevices;
+        void deinitStreamPlugins();
+        PluginManager();
+        static int32_t registeredPlugin(pm_item_t item, pal_plugin_manager_t type);
+        static void startElement(void* userData, const char* name, const char** attrs);
+        static int32_t getRegisteredPluginList(pal_plugin_manager_t type, std::vector<pm_item_t> **pluginList);
+        void getVendorConfigPath (char* config_file_path, int path_size);
+        static void data_handler(void *userdata, const XML_Char *s, int len);
+        int XmlParser(std::string xmlFile);
+
+    public:
+        static std::shared_ptr<PluginManager> getInstance();
+        int32_t openPlugin(pal_plugin_manager_t pluginType, std::string keyName, void* &plugin);
+        int32_t closePlugin(pal_plugin_manager_t pluginType, std::string keyName);
+        ~PluginManager();
+};
+
+#endif

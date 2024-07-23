@@ -39,6 +39,7 @@
 #include "PayloadBuilder.h"
 #include "Device.h"
 #include "kvh2xml.h"
+#include "SessionAR.h"
 
 enum {
     EXT_DISPLAY_TYPE_NONE,
@@ -225,7 +226,7 @@ int DisplayPort::configureDpEndpoint()
     }
     stream = static_cast<Stream *>(activestreams[0]);
     stream->getAssociatedSession(&session);
-    status = session->getMIID(backEndName.c_str(), DEVICE_HW_ENDPOINT_RX, &miid);
+    status = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), DEVICE_HW_ENDPOINT_RX, &miid);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", DEVICE_HW_ENDPOINT_RX, status);
         goto exit;

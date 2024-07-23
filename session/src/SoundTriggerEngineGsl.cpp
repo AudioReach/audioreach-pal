@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -40,6 +40,7 @@
 #include <cutils/trace.h>
 #include <cstring>
 #include "Session.h"
+#include "SessionAR.h"
 #include "Stream.h"
 #include "StreamSoundTrigger.h"
 #include "ResourceManager.h"
@@ -324,10 +325,10 @@ int32_t SoundTriggerEngineGsl::StartBuffering(Stream *s) {
             if (total_read_size < ftrt_size &&
                 ftrt_size - total_read_size < buf.size) {
                 buf.size = ftrt_size - total_read_size;
-                status = session_->read(s, SHMEM_ENDPOINT, &buf, &size);
+                status = session_->read(s, &buf, &size);
                 buf.size = input_buf_size * input_buf_num;
             } else {
-                status = session_->read(s, SHMEM_ENDPOINT, &buf, &size);
+                status = session_->read(s, &buf, &size);
             }
             if (status) {
                 break;
@@ -1606,7 +1607,7 @@ int32_t SoundTriggerEngineGsl::GetParameters(uint32_t param_id,
                 PAL_ERR(LOG_TAG, "Failed to open graph, status = %d", status);
                 return status;
             }
-            status = session_->getMIID(nullptr,
+            status = dynamic_cast<SessionAR*>(session_)->getMIID(nullptr,
                 module_tag_ids_[MODULE_VERSION], &miid);
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "Failed to get instance id for tag %x, status = %d",
@@ -1824,11 +1825,11 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(Stream *s, st_param_id_type_
 
     if (use_lpi_) {
         if (lpi_miid_ == 0)
-            status = session_->getMIID(nullptr, tag_id, &lpi_miid_);
+            status = dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &lpi_miid_);
         detection_miid = lpi_miid_;
     } else {
         if (nlpi_miid_ == 0)
-            status = session_->getMIID(nullptr, tag_id, &nlpi_miid_);
+            status = dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &nlpi_miid_);
         detection_miid = nlpi_miid_;
     }
 

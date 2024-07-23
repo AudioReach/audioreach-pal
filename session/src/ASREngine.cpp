@@ -40,6 +40,7 @@
 #include <cutils/trace.h>
 #include <string.h>
 #include "Session.h"
+#include "SessionAR.h"
 #include "Stream.h"
 #include "StreamASR.h"
 #include "ResourceManager.h"
@@ -182,7 +183,7 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
     tagId = moduleTagIds[pid];
     paramId = paramIds[pid];
 
-    status = session->getMIID(nullptr, tagId, &miid);
+    status = dynamic_cast<SessionAR*>(session)->getMIID(nullptr, tagId, &miid);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to get instance id for tag %x, status = %d",
                 tagId, status);
@@ -301,8 +302,8 @@ int32_t ASREngine::StartEngine(Stream *s)
         PAL_ERR(LOG_TAG, "Error:%d Failed to open session", status);
         goto exit;
     }
-
-    session->setEventPayload(EVENT_ID_ASR_OUTPUT, (void *)eventPayload, eventPayloadSize);
+    dynamic_cast<SessionAR*>(session)->setEventPayload(
+        EVENT_ID_ASR_OUTPUT, (void *)eventPayload, eventPayloadSize);
 
     status = setParameters(s, ASR_INPUT_CONFIG);
     if (status) {

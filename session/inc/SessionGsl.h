@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+
  */
 
 #ifndef SESSION_GSL_H
@@ -33,7 +38,7 @@
 #define BUFF_FLAG_EOS 0x1
 
 #include "gsl_intf.h"
-#include "Session.h"
+#include "SessionAR.h"
 #include <dlfcn.h>
 #include "apm_api.h"
 #include "common_enc_dec_api.h"
@@ -119,7 +124,7 @@ struct __attribute__((__packed__)) volume_ctrl_multichannel_gain_t
 class Stream;
 class Session;
 
-class SessionGsl : public Session
+class SessionGsl : public SessionAR
 {
 private:
     void * graphHandle;
@@ -130,7 +135,6 @@ private:
     struct gslCmdGetReadWriteBufInfo *infoBuffer;
     static int seek;
     static void* gslLibHandle;
-    PayloadBuilder* builder;
       //TODO: move this to private
     struct gsl_key_vector *gkv;
     struct gsl_key_vector *ckv;
@@ -163,10 +167,8 @@ public:
     int start(Stream * s) override;
     int stop(Stream * s) override;
     int close(Stream * s) override;
-    int readBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
-    int writeBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
-    int read(Stream *s, int tag, struct pal_buffer *buf, int * size) override;
-    int write(Stream *s, int tag, struct pal_buffer *buf, int * size, int flag) override;
+    int read(Stream *s,struct pal_buffer *buf, int * size) override;
+    int write(Stream *s,struct pal_buffer *buf, int * size) override;
     int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload) override;
     int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload) override;
     static void stCallBack(struct gsl_event_cb_params *event_params, void *client_data);

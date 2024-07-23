@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -35,6 +35,7 @@
 #define LOG_TAG "StreamNonTunnel"
 
 #include "Session.h"
+#include "SessionAR.h"
 #include "kvh2xml.h"
 #include "SessionGsl.h"
 #include "ResourceManager.h"
@@ -339,7 +340,7 @@ int32_t  StreamNonTunnel::read(struct pal_buffer* buf)
     }
 
     if (currentState == STREAM_STARTED) {
-        status = session->read(this, SHMEM_ENDPOINT, buf, &size);
+        status = session->read(this, buf, &size);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session read is failed with status %d", status);
             if (status == -ENETRESET &&
@@ -393,7 +394,7 @@ int32_t  StreamNonTunnel::write(struct pal_buffer* buf)
     //we should allow writes to go through in Start/Pause state as well.
     if ( (currentState == STREAM_STARTED) ||
         (currentState == STREAM_PAUSED) ) {
-        status = session->write(this, SHMEM_ENDPOINT, buf, &size, 0);
+        status = session->write(this, buf, &size);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session write is failed with status %d", status);
 
@@ -447,7 +448,7 @@ int32_t StreamNonTunnel::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
         goto exit;
     }
 
-    status = session->getTagsWithModuleInfo(this, size, payload);
+    status = dynamic_cast<SessionAR*>(session)->getTagsWithModuleInfo(this, size, payload);
 exit:
     return status;
 }

@@ -37,6 +37,7 @@
 #include "PayloadBuilder.h"
 #include "Stream.h"
 #include "Session.h"
+#include "SessionAR.h"
 #include "kvh2xml.h"
 #include <vector>
 
@@ -154,7 +155,7 @@ int ECRefDevice::start()
     stream->getAssociatedSession(&session);
 
     /* RAT Module Configuration */
-    status = session->getMIID(backEndName.c_str(), RAT_RENDER, &ratMiid);
+    status = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), RAT_RENDER, &ratMiid);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d",
           RAT_RENDER, status);

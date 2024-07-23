@@ -186,6 +186,8 @@ protected:
    static std::vector<allKVs> all_streampps;
    static std::vector<allKVs> all_devices;
    static std::vector<allKVs> all_devicepps;
+   void *customPayload;
+   size_t customPayloadSize;
 
 public:
     void payloadUsbAudioConfig(uint8_t** payload, size_t* size,
@@ -328,6 +330,10 @@ public:
     void USToneRendererNotifyPayload(uint8_t **payload, size_t *size,
             struct pal_device *dAttr, uint32_t moduleId,
             us_tone_renderer_ep_media_format_status_t event);
+    int updateCustomPayload(void *payload, size_t size);
+    int freeCustomPayload(uint8_t **payload, size_t *payloadSize);
+    int getCustomPayload(uint8_t **payload, size_t *payloadSize);
+    int freeCustomPayload();
     PayloadBuilder();
     ~PayloadBuilder();
 };

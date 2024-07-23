@@ -37,36 +37,6 @@
 Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the
-disclaimer below) provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-
-    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
-
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
-HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
@@ -107,8 +77,6 @@ SessionAlsaVoice::SessionAlsaVoice(std::shared_ptr<ResourceManager> Rm)
    streamHandle = NULL;
    pcmRx = NULL;
    pcmTx = NULL;
-   customPayload = NULL;
-   customPayloadSize = 0;
 
    max_vol_index = rm->getMaxVoiceVol();
    if (max_vol_index == -1){
@@ -366,6 +334,8 @@ int SessionAlsaVoice::setSessionParameters(Stream *s, int dir)
 {
     int status = 0;
     int pcmId = 0;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
 
     if (dir == RX_HOSTLESS) {
         if (pcmDevRxIds.size()) {
@@ -419,8 +389,9 @@ int SessionAlsaVoice::setSessionParameters(Stream *s, int dir)
         }
     }
 
+    builder->getCustomPayload(&payload, &payloadSize);
     status = SessionAlsaUtils::setMixerParameter(mixer, pcmId,
-            customPayload, customPayloadSize);
+            payload, payloadSize);
 
     if (status != 0) {
         PAL_ERR(LOG_TAG,"setMixerParameter failed:%d for dir:%s",
@@ -429,7 +400,7 @@ int SessionAlsaVoice::setSessionParameters(Stream *s, int dir)
     }
 
 exit:
-    freeCustomPayload();
+    builder->freeCustomPayload();
     return status;
 }
 
@@ -466,8 +437,8 @@ int SessionAlsaVoice::populate_vsid_payload(Stream *s __unused)
     vsidpayloadSize += padBytes;
 
     if (vsidPayload && vsidpayloadSize) {
-        status = updateCustomPayload(vsidPayload, vsidpayloadSize);
-        freeCustomPayload(&vsidPayload, &vsidpayloadSize);
+        status = builder->updateCustomPayload(vsidPayload, vsidpayloadSize);
+        builder->freeCustomPayload(&vsidPayload, &vsidpayloadSize);
         if (status != 0) {
             PAL_ERR(LOG_TAG,"updateCustomPayload for vsid payload Failed %d\n", status);
             return status;
@@ -581,8 +552,8 @@ int SessionAlsaVoice::populate_ch_info_payload(Stream *s)
     ch_info_payloadSize += padBytes;
 
     if (ch_infoPayload && ch_info_payloadSize) {
-        status = updateCustomPayload(ch_infoPayload, ch_info_payloadSize);
-        freeCustomPayload(&ch_infoPayload, &ch_info_payloadSize);
+        status = builder->updateCustomPayload(ch_infoPayload, ch_info_payloadSize);
+        builder->freeCustomPayload(&ch_infoPayload, &ch_info_payloadSize);
         if (status != 0) {
             PAL_ERR(LOG_TAG,"updateCustomPayload for channel info payload Failed %d\n",
                 status);
@@ -634,8 +605,8 @@ int SessionAlsaVoice::populateVSIDLoopbackPayload(Stream* s){
     loopbackPayloadSize += padBytes;
 
     if (loopbackPayload && loopbackPayloadSize) {
-        status = updateCustomPayload(loopbackPayload, loopbackPayloadSize);
-        freeCustomPayload(&loopbackPayload, &loopbackPayloadSize);
+        status = builder->updateCustomPayload(loopbackPayload, loopbackPayloadSize);
+        builder->freeCustomPayload(&loopbackPayload, &loopbackPayloadSize);
         if (status != 0) {
             PAL_ERR(LOG_TAG,"updateCustomPayload for loopback payload Failed %d\n", status);
             return status;
@@ -684,8 +655,8 @@ int SessionAlsaVoice::populateRatPayload(Stream *s)
         associatedDevices[idx]->getDeviceAttributes(&dAttr);
         builder->payloadRATConfig(&ratPayload, &ratPayloadSize, miid, &dAttr.config);
         if (ratPayload && ratPayloadSize) {
-            status = updateCustomPayload(ratPayload, ratPayloadSize);
-            freeCustomPayload(&ratPayload, &ratPayloadSize);
+            status = builder->updateCustomPayload(ratPayload, ratPayloadSize);
+            builder->freeCustomPayload(&ratPayload, &ratPayloadSize);
             if (status != 0)
                 PAL_ERR(LOG_TAG,"updateCustomPayload for RAT_RENDER %XFailed\n", RAT_RENDER);
         }
@@ -760,8 +731,8 @@ int SessionAlsaVoice::populate_rx_mfc_payload(Stream *s, uint32_t rx_mfc_tag)
     }
     builder->payloadMFCConfig(&payload, &payloadSize, miid, &deviceData);
     if (payload && payloadSize) {
-        status = updateCustomPayload(payload, payloadSize);
-        freeCustomPayload(&payload, &payloadSize);
+        status = builder->updateCustomPayload(payload, payloadSize);
+        builder->freeCustomPayload(&payload, &payloadSize);
         if (status != 0)
             PAL_ERR(LOG_TAG,"updateCustomPayload for Rx mfc %XFailed\n", rx_mfc_tag);
     }
@@ -786,18 +757,19 @@ int SessionAlsaVoice::populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsD
 
     builder->payloadCRSMFCMixerCoeff((uint8_t **)&alsaParamData, &alsaPayloadSize, miid);
     if (alsaPayloadSize) {
-        status = updateCustomPayload(alsaParamData, alsaPayloadSize);
-        freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+        status = builder->updateCustomPayload(alsaParamData, alsaPayloadSize);
+        builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
             return status;
         }
     }
+    builder->getCustomPayload(&alsaParamData, &alsaPayloadSize);
     status = SessionAlsaUtils::setMixerParameter(mixer,
                                                  pcmDevRxIds.at(0),
-                                                 customPayload,
-                                                 customPayloadSize);
-    freeCustomPayload();
+                                                 alsaParamData,
+                                                 alsaPayloadSize);
+    builder->freeCustomPayload();
     if (status != 0) {
         PAL_ERR(LOG_TAG, "setMixerParameter failed");
         return status;
@@ -911,9 +883,10 @@ int SessionAlsaVoice::setTaggedSlotMask(Stream * s)
         status = -EINVAL;
         return status;
     }
+
     if ((rm->isDeviceMuxConfigEnabled || rm->isUPDVirtualPortEnabled) &&
         (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
-         setSlotMask(rm, sAttr, dAttr, pcmDevRxIds);
+         SessionAlsaUtils::setSlotMask(rm, sAttr, dAttr, pcmDevRxIds);
     }
 
     return status;
@@ -1063,9 +1036,10 @@ int SessionAlsaVoice::start(Stream * s)
         PAL_ERR(LOG_TAG,"Exit Configuring Rx mfc failed with status %d", status);
         goto err_pcm_open;
     }
+    builder->getCustomPayload(&payload, &payloadSize);
     status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevRxIds.at(0),
-                                                 customPayload, customPayloadSize);
-    freeCustomPayload();
+                                                 payload, payloadSize);
+    builder->freeCustomPayload();
     if (status != 0) {
         PAL_ERR(LOG_TAG,"setMixerParameter failed");
         goto err_pcm_open;
@@ -1086,13 +1060,13 @@ int SessionAlsaVoice::start(Stream * s)
 
     if (ResourceManager::isChargeConcurrencyEnabled) {
         if (PAL_DEVICE_OUT_SPEAKER == rxDevice->getSndDeviceId()) {
-            status = Session::NotifyChargerConcurrency(rm, true);
+            status = NotifyChargerConcurrency(rm, true);
             if (0 == status) {
-                status = Session::EnableChargerConcurrency(rm, s);
+                status = EnableChargerConcurrency(rm, s);
                 //Handle failure case of ICL config
                 if (0 != status) {
                     PAL_DBG(LOG_TAG, "Failed to set ICL Config status %d", status);
-                    status = Session::NotifyChargerConcurrency(rm, false);
+                    status = NotifyChargerConcurrency(rm, false);
                 }
             }
             status = 0;
@@ -1167,9 +1141,7 @@ err_pcm_open:
     mState = SESSION_STARTED;
 
 exit:
-    freeCustomPayload();
-    if (payload)
-        free(payload);
+    builder->freeCustomPayload();
     if (palPayload) {
         free(palPayload);
     }
@@ -1509,6 +1481,8 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
     int device = 0;
     uint8_t* paramData = NULL;
     size_t paramSize = 0;
+    uint8_t* customPayload = NULL;
+    size_t customPayloadSize = 0;
 
     PAL_DBG(LOG_TAG,"Enter setConfig called with tag: %d ", tag);
 
@@ -1553,6 +1527,8 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
                 PAL_ERR(LOG_TAG, "failed to get payload status %d", status);
                 goto exit;
             }
+            builder->getCustomPayload(&customPayload, &customPayloadSize);
+            PAL_DBG(LOG_TAG, "customPayload: %d customPayloadSize: %d", customPayload, customPayloadSize);
             status = SessionAlsaVoice::setVoiceMixerParameter(s, mixer,
                                                               customPayload,
                                                               customPayloadSize,
@@ -1606,8 +1582,8 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
     PAL_VERBOSE(LOG_TAG, "%pK - payload and %zu size", paramData , paramSize);
 
 exit:
-    freeCustomPayload();
-    freeCustomPayload(&paramData, &paramSize);
+    builder->freeCustomPayload();
+    builder->freeCustomPayload(&paramData, &paramSize);
     PAL_DBG(LOG_TAG,"Exit status:%d ", status);
     return status;
 }
@@ -1708,8 +1684,8 @@ int SessionAlsaVoice::payloadSetVSID(Stream* s){
     payloadSize += padBytes;
 
     if (payloadInfo && payloadSize) {
-        status = updateCustomPayload(payloadInfo, payloadSize);
-        freeCustomPayload(&payloadInfo, &payloadSize);
+        status = builder->updateCustomPayload(payloadInfo, payloadSize);
+        builder->freeCustomPayload(&payloadInfo, &payloadSize);
         if (status != 0) {
             PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
             return status;

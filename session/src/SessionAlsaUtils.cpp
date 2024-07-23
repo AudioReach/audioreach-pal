@@ -26,40 +26,11 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *
- *   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+* Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+*
+* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+*
 */
 
 #define LOG_TAG "PAL: SessionAlsaUtils"
@@ -116,6 +87,9 @@ struct agmMetaData {
     agmMetaData(uint8_t *b, uint32_t s)
         :buf(b),size(s) {}
 };
+
+void *SessionAlsaUtils::customPayload = NULL;
+size_t SessionAlsaUtils::customPayloadSize = 0;
 
 SessionAlsaUtils::~SessionAlsaUtils()
 {
@@ -2351,7 +2325,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
     if (PAL_STREAM_VOICE_CALL != streamType) {
         if (sAttr.direction == PAL_AUDIO_OUTPUT) {
             if (sess) {
-                sess->configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
+                status = configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
                                     aifBackEndsToConnect[0].second.data());
 
                 if (strcmp(dAttr.custom_config.custom_key, "mspp") &&
@@ -2369,12 +2343,12 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
                     if (status != 0) {
                         PAL_ERR(LOG_TAG,"handleDeviceRotation failed");
                         status = 0; //rotaton setting failed is not fatal.
-                        sess->getCustomPayload(&payload, &payloadSize);
+                        builder->getCustomPayload(&payload, &payloadSize);
                         if (payload) {
                             status = SessionAlsaUtils::setMixerParameter(mixerHandle,
                                                                      pcmDevIds.at(0),
                                                                      payload, payloadSize);
-                            sess->freeCustomPayload();
+                            builder->freeCustomPayload();
                             payload = NULL;
                             payloadSize = 0;
                             if (status != 0) {
@@ -2384,11 +2358,11 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
                         }
                     }
                 } else {
-                    sess->getCustomPayload(&payload, &payloadSize);
+                    builder->getCustomPayload(&payload, &payloadSize);
                     if (payload) {
                         status = SessionAlsaUtils::setMixerParameter(mixerHandle, pcmDevIds.at(0),
                                                                  payload, payloadSize);
-                        sess->freeCustomPayload();
+                        builder->freeCustomPayload();
                         payload = NULL;
                         payloadSize = 0;
                         if (status != 0) {
@@ -2416,18 +2390,11 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
             if (streamType == PAL_STREAM_ULTRA_LOW_LATENCY ||
                (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY)) {
                 if (sess) {
-                    sess->configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
+                    status = configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
                                     aifBackEndsToConnect[0].second.data());
-                    sess->getCustomPayload(&payload, &payloadSize);
-                    if (payload) {
-                        status = SessionAlsaUtils::setMixerParameter(mixerHandle, pcmDevIds.at(0),
-                                                payload, payloadSize);
-                    }
-                    sess->freeCustomPayload();
-                    payload = NULL;
-                    payloadSize = 0;
+                    
                     if (status != 0) {
-                        PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                        PAL_ERR(LOG_TAG, "configureMFC failed");
                         goto exit;
                     }
                 } else {
@@ -2529,19 +2496,12 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
           (streamType == PAL_STREAM_ULTRASOUND)) ||
         (is_out_dev && streamType == PAL_STREAM_LOOPBACK)) {
         if (sess) {
-            sess->configureMFC(rmHandle,sAttr, dAttr, pcmRxDevIds,
+            status = configureMFC(rmHandle,sAttr, dAttr, pcmRxDevIds,
                                 aifBackEndsToConnect[0].second.data());
-            sess->getCustomPayload(&payload, &payloadSize);
-            if (payload) {
-                status = SessionAlsaUtils::setMixerParameter(mixerHandle, pcmRxDevIds.at(0),
-                                                         payload, payloadSize);
-                sess->freeCustomPayload();
-                payload = NULL;
-                payloadSize = 0;
-                if (status != 0) {
-                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                    goto exit;
-                }
+            
+            if (status != 0) {
+                PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                goto exit;
             }
         } else {
             PAL_ERR(LOG_TAG, "invalid session ultrasound object");
@@ -2854,5 +2814,363 @@ int SessionAlsaUtils::flush(std::shared_ptr<ResourceManager> rmHandle, uint32_t 
 
     mixer_ctl_set_value(ctl, 0, doFlush);
 
+    return status;
+}
+
+/* This is to set devicePP MFC(if exists) and PSPD MFC and stream MFC*/
+int SessionAlsaUtils::configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
+            struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf)
+{
+    int status = 0;
+    std::shared_ptr<Device> dev = nullptr;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+    struct pal_media_config codecConfig;
+    struct sessionToPayloadParam mfcData;
+    PayloadBuilder* builder = new PayloadBuilder();
+    uint32_t miid = 0;
+    bool devicePPMFCSet =  true;
+    struct mixer *mixer = nullptr;
+    rm->getVirtualAudioMixer(&mixer);
+
+    // clear any cached custom payload
+    builder->freeCustomPayload();
+
+    /* Prepare devicePP MFC payload */
+    /* Try to set devicePP MFC for virtual port enabled device to match to DMA config */
+    if (rm->activeGroupDevConfig &&
+            (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
+             dAttr.id == PAL_DEVICE_OUT_HANDSET ||
+             dAttr.id == PAL_DEVICE_OUT_ULTRASOUND)) {
+        status = getModuleInstanceId(mixer, pcmDevIds.at(0), intf,
+                                                       TAG_DEVICE_PP_MFC, &miid);
+        if (status == 0) {
+            PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
+                    pcmDevIds.at(0), intf, dAttr.id);
+
+            if (rm->activeGroupDevConfig->devpp_mfc_cfg.bit_width)
+                mfcData.bitWidth = rm->activeGroupDevConfig->devpp_mfc_cfg.bit_width;
+            else
+                mfcData.bitWidth = dAttr.config.bit_width;
+            if (rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate)
+                mfcData.sampleRate = rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate;
+            else
+                mfcData.sampleRate = dAttr.config.sample_rate;
+            if (rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
+                mfcData.numChannel = rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+            else
+                mfcData.numChannel = dAttr.config.ch_info.channels;
+            mfcData.ch_info = nullptr;
+
+            builder->payloadMFCConfig((uint8_t**)&payload, &payloadSize, miid, &mfcData);
+            if (!payloadSize) {
+                PAL_ERR(LOG_TAG, "payloadMFCConfig failed\n");
+                status = -EINVAL;
+                goto exit;
+            }
+            status = builder->updateCustomPayload(payload, payloadSize);
+            builder->freeCustomPayload(&payload, &payloadSize);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                goto exit;
+            }
+        } else {
+            PAL_INFO(LOG_TAG, "deviePP MFC doesn't exist for stream %d \n", sAttr.type);
+            devicePPMFCSet = false;
+        }
+
+        /* set TKV for slot mask */
+        setSlotMask(rm, sAttr, dAttr, pcmDevIds);
+    } else if (rm->isDeviceMuxConfigEnabled && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
+              dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
+        setSlotMask(rm, sAttr, dAttr, pcmDevIds);
+    }
+
+    /* Prepare stream MFC payload */
+    if (sAttr.direction == PAL_AUDIO_INPUT) {
+        status = getModuleInstanceId(mixer, pcmDevIds.at(0), intf,
+                                                       TAG_STREAM_MFC_SR, &miid);
+        if (status == 0) {
+            PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
+                    pcmDevIds.at(0), intf, dAttr.id);
+            if (isPalPCMFormat(sAttr.in_media_config.aud_fmt_id))
+                mfcData.bitWidth = ResourceManager::palFormatToBitwidthLookup(
+                                                    sAttr.in_media_config.aud_fmt_id);
+            else
+                mfcData.bitWidth = sAttr.in_media_config.bit_width;
+            mfcData.sampleRate = sAttr.in_media_config.sample_rate;
+            mfcData.numChannel = sAttr.in_media_config.ch_info.channels;
+            mfcData.ch_info = nullptr;
+            builder->payloadMFCConfig((uint8_t **)&payload, &payloadSize, miid, &mfcData);
+            if (payloadSize && payload) {
+                status = builder->updateCustomPayload(payload, payloadSize);
+                builder->freeCustomPayload(&payload, &payloadSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload failed\n");
+                    goto exit;
+                }
+            }
+        }
+    }
+    /* Prepare PSPD MFC payload */
+    /* Get PSPD MFC MIID and configure to match to device config */
+    /* This has to be done after sending all mixer controls and before connect */
+    status = getModuleInstanceId(mixer, pcmDevIds.at(0), intf,
+                                                   TAG_DEVICE_MFC_SR, &miid);
+    if (status == 0) {
+        PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
+                pcmDevIds.at(0), intf, dAttr.id);
+
+        if (dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_A2DP ||
+            dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_SCO ||
+            dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_BLE ||
+            dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST) {
+            dev = Device::getInstance((struct pal_device *)&dAttr , rm);
+            if (!dev) {
+                PAL_ERR(LOG_TAG, "Device getInstance failed");
+                status = -EINVAL;
+                goto exit;
+            }
+            status = dev->getCodecConfig(&codecConfig);
+            if(0 != status) {
+                PAL_ERR(LOG_TAG, "getCodecConfig Failed \n");
+                goto exit;
+            }
+            mfcData.bitWidth = codecConfig.bit_width;
+            mfcData.sampleRate = codecConfig.sample_rate;
+            mfcData.numChannel = codecConfig.ch_info.channels;
+            mfcData.ch_info = nullptr;
+        } else {
+            mfcData.bitWidth = dAttr.config.bit_width;
+            if (!devicePPMFCSet && rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate)
+                mfcData.sampleRate = rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate;
+            else
+                mfcData.sampleRate = dAttr.config.sample_rate;
+            if (!devicePPMFCSet && rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
+                mfcData.numChannel = rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+            else
+                mfcData.numChannel = dAttr.config.ch_info.channels;
+            mfcData.ch_info = nullptr;
+        }
+
+        if (dAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL ||
+            dAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL_1 ||
+            dAttr.id == PAL_DEVICE_OUT_HDMI)
+            mfcData.ch_info = &dAttr.config.ch_info;
+
+        builder->payloadMFCConfig((uint8_t **)&payload, &payloadSize, miid, &mfcData);
+        if (!payloadSize) {
+            PAL_ERR(LOG_TAG, "payloadMFCConfig failed\n");
+            status = -EINVAL;
+            goto exit;
+        }
+
+        status = builder->updateCustomPayload(payload, payloadSize);
+        builder->freeCustomPayload(&payload, &payloadSize);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+            goto exit;
+        }
+    } else {
+        PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
+        if ((sAttr.direction == (PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT))||
+            (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
+            status = 0;
+    }
+
+exit:
+    builder->getCustomPayload(&payload, &payloadSize);
+    if (payload) {
+        if (pcmDevIds.size() == 0) {
+            PAL_ERR(LOG_TAG, "frontendIDs is not available.");
+            status = -EINVAL;
+            builder->freeCustomPayload();
+            goto exit;
+        }
+        status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
+                                         payload, payloadSize);
+        builder->freeCustomPayload();
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "setMixerParameter failed");
+        }
+    }
+    if (builder) {
+        delete builder;
+        builder = NULL;
+    }
+    return status;
+}
+
+int SessionAlsaUtils::setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
+            struct pal_device &dAttr, const std::vector<int> &pcmDevIds)
+{
+    int status = 0;
+    std::vector <std::pair<int, int>> tkv;
+    struct agm_tag_config* tagConfig = NULL;
+    const char *setParamTagControl = " setParamTag";
+    const char *streamPcm = "PCM";
+    const char *streamComp = "COMPRESS";
+    const char *streamVoice = "VOICEMMODE";
+    const char *feCtl = " control";
+    struct mixer_ctl *ctl;
+    std::ostringstream tagCntrlName;
+    std::ostringstream feName;
+    std::string backendname;
+    int tkv_size = 0;
+    uint32_t slot_mask = 0;
+    struct mixer *mixer = nullptr;
+    rm->getVirtualAudioMixer(&mixer);
+
+    if (rm->activeGroupDevConfig) {
+        tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, rm->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask));
+    } else if (rm->isDeviceMuxConfigEnabled) {
+         slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
+                         slotMaskBwLUT.at(dAttr.config.bit_width);
+         tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, slot_mask));
+    }
+
+    tagConfig = (struct agm_tag_config*)malloc(sizeof(struct agm_tag_config) +
+                    (tkv.size() * sizeof(agm_key_value)));
+
+    if (!tagConfig) {
+        status = -EINVAL;
+        goto exit;
+    }
+
+    status = getTagMetadata(TAG_DEVICE_MUX, tkv, tagConfig);
+    if (0 != status) {
+        goto exit;
+    }
+
+    if (PAL_STREAM_COMPRESSED == sAttr.type) {
+        tagCntrlName<<streamComp<<pcmDevIds.at(0)<<setParamTagControl;
+        feName<<streamComp<<pcmDevIds.at(0)<<feCtl;
+    } else if (PAL_STREAM_VOICE_CALL == sAttr.type) {
+        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
+            sAttr.info.voice_call_info.VSID == VOICELBMMODE1){
+            tagCntrlName<<streamVoice<<1<<"p"<<setParamTagControl;
+            feName<<streamVoice<<1<<"p"<<feCtl;
+        } else {
+            tagCntrlName<<streamVoice<<2<<"p"<<setParamTagControl;
+            feName<<streamVoice<<2<<"p"<<feCtl;
+        }
+    } else {
+        tagCntrlName<<streamPcm<<pcmDevIds.at(0)<<setParamTagControl;
+        feName << streamPcm<<pcmDevIds.at(0)<<feCtl;
+    }
+
+    // set FE ctl to BE first in case this is called from connectionSessionDevice
+    rm->getBackendName(dAttr.id, backendname);
+    ctl = mixer_get_ctl_by_name(mixer, feName.str().data());
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", feName.str().data());
+        status = -EINVAL;
+        goto exit;
+    }
+    mixer_ctl_set_enum_by_string(ctl, backendname.c_str());
+    ctl = NULL;
+
+    // set tag data
+    ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
+        status = -EINVAL;
+        goto exit;
+    }
+    tkv_size = tkv.size()*sizeof(struct agm_key_value);
+    status = mixer_ctl_set_array(ctl, tagConfig, sizeof(struct agm_tag_config) + tkv_size);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "failed to set the tag calibration %d", status);
+    }
+
+exit:
+    if (tagConfig)
+        free(tagConfig);
+    return status;
+}
+
+int SessionAlsaUtils::handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm,Stream *s,
+                    pal_speaker_rotation_type rotation_type, int device, struct mixer *mixer,
+                    PayloadBuilder* builder, std::vector<std::pair<int32_t, std::string>> rxAifBackEnds)
+{
+    int status = 0;
+    struct pal_stream_attributes sAttr = {};
+    struct pal_device dAttr = {};
+    uint32_t miid = 0;
+    uint8_t* alsaParamData = NULL;
+    size_t alsaPayloadSize = 0;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+    int mfc_tag = TAG_MFC_SPEAKER_SWAP;
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    status = s->getStreamAttributes(&sAttr);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "stream get attributes failed");
+        return status;
+    }
+
+    if (PAL_AUDIO_OUTPUT== sAttr.direction) {
+        status = s->getAssociatedDevices(associatedDevices);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "getAssociatedDevices Failed\n");
+            return status;
+        }
+
+        for (int i = 0; i < associatedDevices.size(); i++) {
+             status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+             if (0 != status) {
+                 PAL_ERR(LOG_TAG, "get Device Attributes Failed\n");
+                 return status;
+             }
+
+             if ((PAL_DEVICE_OUT_SPEAKER == dAttr.id) &&
+                  (2 == dAttr.config.ch_info.channels) &&
+                  (strcmp(dAttr.custom_config.custom_key, "mspp") != 0)) {
+                 /* Get DevicePP MFC MIID and configure to match to device config */
+                 /* This has to be done after sending all mixer controls and
+                  * before connect
+                  */
+                status =
+                        SessionAlsaUtils::getModuleInstanceId(mixer,
+                                                              device,
+                                                              rxAifBackEnds[i].second.data(),
+                                                              mfc_tag, &miid);
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
+                    return status;
+                }
+                PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
+                    device, rxAifBackEnds[i].second.data(), dAttr.id);
+
+                if (rm->activeGroupDevConfig) {
+                    if (rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
+                        dAttr.config.ch_info.channels =rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+                }
+                builder->payloadMFCMixerCoeff((uint8_t **)&alsaParamData,
+                                            &alsaPayloadSize, miid,
+                                            dAttr.config.ch_info.channels,
+                                            rotation_type);
+
+                if (alsaPayloadSize) {
+                    status = builder->updateCustomPayload(alsaParamData, alsaPayloadSize);
+                    builder->freeCustomPayload(&alsaParamData, &alsaPayloadSize);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                        return status;
+                    }
+                }
+                builder->getCustomPayload(&payload, &payloadSize);
+                status = SessionAlsaUtils::setMixerParameter(mixer,
+                                                             device,
+                                                             payload,
+                                                             payloadSize);
+                builder->freeCustomPayload();
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                    return status;
+                }
+            }
+        }
+    }
     return status;
 }

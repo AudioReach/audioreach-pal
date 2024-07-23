@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
@@ -73,6 +73,7 @@
 #include "kvh2xml.h"
 #include <unistd.h>
 #include <fstream>
+#include "SessionAR.h"
 
 std::shared_ptr<Device> USB::objRx = nullptr;
 std::shared_ptr<Device> USB::objTx = nullptr;
@@ -185,7 +186,7 @@ int USB::configureUsb()
         cfg.usb_token = deviceAttr.address.card_id << 16;
         cfg.svc_interval = 0;
     }
-    status = session->getMIID(backEndName.c_str(), tagId, &miid);
+    status = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), tagId, &miid);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %d, status = %d", tagId, status);
         goto exit;

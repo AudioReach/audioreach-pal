@@ -65,7 +65,7 @@ private:
     std::vector <std::pair<int, int>> ckv;
     std::vector <std::pair<int, int>> tkv;
     std::thread threadHandler;
-    uint32_t vsid = 0x11C0500; /*defualt*/
+    uint32_t vsid = 0x11C0500; /*default*/
     float default_volume = 0.4;
     int max_vol_index = -1;
     uint32_t ttyMode = PAL_TTY_OFF;
@@ -84,7 +84,7 @@ public:
     int prepare(Stream * s) override;
     int setConfig(Stream * s, configType type, int tag = 0) override;
     int setConfig(Stream * s, configType type, int tag = 0, int dir = 0) override;
-    int setParameters(Stream *streamHandle, int tagId, uint32_t param_id,
+    int setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id,
                       void *payload) override;
     int setSessionParameters(Stream *s, int dir);
     int start(Stream * s) override;
@@ -98,8 +98,9 @@ public:
     int connectSessionDevice(Stream* streamHandle,
                              pal_stream_type_t streamType,
                              std::shared_ptr<Device> deviceToConnect);
-    int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) {return 0;};
     bool isActive();
+    int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override {return 0;};
+    int32_t getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override {return 0;};
 private:
     int payloadCalKeys(Stream * s, uint8_t **payload, size_t *size);
     int payloadTaged(Stream * s, configType type, int tag, int device, int dir);

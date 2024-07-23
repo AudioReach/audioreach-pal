@@ -92,23 +92,23 @@ public:
     int close(Stream * s) override;
     int pause(Stream * s) override;
     int resume(Stream * s) override;
-    int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload);
-    int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload);
+    int setParamWithTag(Stream *s, int tagId, uint32_t param_id, void *payload) override;
+    int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override;
     int read(Stream *s, struct pal_buffer *buf, int * size) override;
     int write(Stream *s, struct pal_buffer *buf, int * size) override;
-    int setECRef(Stream *s __unused, std::shared_ptr<Device> rx_dev __unused, bool is_enable __unused) {return 0;};
-    int registerCallBack(session_callback cb, uint64_t cookie);
+    int setECRef(Stream *s __unused, std::shared_ptr<Device> rx_dev __unused, bool is_enable __unused) override {return 0;};
+    int registerCallBack(session_callback cb, uint64_t cookie) override;
     int drain(pal_drain_type_t type);
     int flush();
     int suspend(Stream * s);
     int getTagsWithModuleInfo(Stream *s, size_t *size, uint8_t *payload) override;
     int getTimestamp(struct pal_session_time *stime __unused) {return 0;};
     int setupSessionDevice(Stream* streamHandle __unused, pal_stream_type_t streamType __unused,
-        std::shared_ptr<Device> deviceToConnect __unused) {return 0;};
+        std::shared_ptr<Device> deviceToConnect __unused) override {return 0;};
     int connectSessionDevice(Stream* streamHandle __unused, pal_stream_type_t streamType __unused,
-        std::shared_ptr<Device> deviceToConnect __unused) {return 0;};
+        std::shared_ptr<Device> deviceToConnect __unused) override {return 0;};
     int disconnectSessionDevice(Stream* streamHandle __unused, pal_stream_type_t streamType __unused,
-        std::shared_ptr<Device> deviceToDisconnect __unused) {return 0;};
+        std::shared_ptr<Device> deviceToDisconnect __unused) override {return 0;};
     uint32_t getMIID(const char *backendName __unused, uint32_t tagId __unused, uint32_t *miid __unused)
                      {return 0;};
     struct mixer_ctl* getFEMixerCtl(const char *controlName __unused, int *device __unused, pal_stream_direction_t dir __unused) {return 0;}

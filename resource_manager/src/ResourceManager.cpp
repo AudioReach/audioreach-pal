@@ -2341,7 +2341,7 @@ int ResourceManager::setSessionParamConfig(uint32_t param_id, Stream *stream, in
         {
             if (!is_concurrent_boost_state_) goto exit;
 
-            status = session->setConfig(stream, MODULE, tag);
+            status = session->setParameters(stream, param_id, &tag);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "Failed to setConfig with status %d", status);
                 goto exit;
@@ -6841,7 +6841,7 @@ void ResourceManager::checkAndSetDutyCycleParam()
         UPDStream->getAssociatedSession(&session);
         if (session != NULL) {
             UPDStream->setDutyCycleEnable(enable_duty);
-            session->setParameters(UPDStream, 0, PAL_PARAM_ID_SET_UPD_DUTY_CYCLE, &enable_duty);
+            session->setParameters(UPDStream, PAL_PARAM_ID_SET_UPD_DUTY_CYCLE, &enable_duty);
             PAL_DBG(LOG_TAG, "set duty cycling: %d", enable_duty);
         }
     }
@@ -11402,7 +11402,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                         (sAttr.type == PAL_STREAM_PCM_OFFLOAD))) {
                         stream->setGainLevel(gain_lvl_cal->level);
                         stream->getAssociatedSession(&session);
-                        status = session->setConfig(stream, CALIBRATION, TAG_DEVICE_PP_MBDRC);
+                        status = session->setParameters(stream, param_id, nullptr);
                         if (0 != status) {
                             PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
                             goto exit;
@@ -11673,8 +11673,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                            (sAttr.type == PAL_STREAM_COMPRESSED) ||
                            (sAttr.type == PAL_STREAM_PCM_OFFLOAD))) {
                            stream->getAssociatedSession(&session);
-                           status = session->setParameters(stream, TAG_MODULE_MSPP,
-                               param_id, param_payload);
+                           status = session->setParameters(stream, param_id, param_payload);
                            if (0 != status) {
                                PAL_ERR(LOG_TAG, "session setConfig failed. stream: %d, status: %d",
                                       sAttr.type, status);
@@ -12109,7 +12108,8 @@ int ResourceManager::SetOrientationCal(pal_param_device_rotation_t
                 stream->setOrientation(rm->mOrientation);
                 stream->getAssociatedSession(&session);
                 PAL_INFO(LOG_TAG, "Apply device rotation");
-                status = session->setConfig(stream, MODULE, ORIENTATION_TAG);
+                //status = session->setConfig(stream, MODULE, ORIENTATION_TAG);
+                status = session->setParameters(stream, PAL_PARAM_ID_ORIENTATION, nullptr);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
                     goto error;

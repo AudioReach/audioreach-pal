@@ -1018,7 +1018,7 @@ int SessionAlsaVoice::start(Stream * s)
         if(palPayload != NULL){
             palPayload->payload_size = sizeof(ttyMode);
             *(palPayload->payload) = ttyMode;
-            setParameters(s, TTY_MODE, PAL_PARAM_ID_TTY_MODE, palPayload);
+            setParamWithTag(s, TTY_MODE, PAL_PARAM_ID_TTY_MODE, palPayload);
         }
     }
 
@@ -1272,7 +1272,7 @@ exit:
     mState = SESSION_IDLE;
     return status;
 }
-int SessionAlsaVoice::setParameters(Stream *s, int tagId, uint32_t param_id __unused, void *payload)
+int SessionAlsaVoice::setParamWithTag(Stream *s, int tagId, uint32_t param_id __unused, void *payload)
 {
     int status = 0;
     int device = 0;
@@ -1284,7 +1284,7 @@ int SessionAlsaVoice::setParameters(Stream *s, int tagId, uint32_t param_id __un
     int mute_tag = DEVICE_UNMUTE;
     pal_param_payload *PalPayload = (pal_param_payload *)payload;
 
-    PAL_INFO(LOG_TAG,"Enter setParam called with tag: %d ", tagId);
+    PAL_INFO(LOG_TAG,"Enter setParamWithTag called with tag: %d ", tagId);
 
     switch (static_cast<uint32_t>(tagId)) {
 
@@ -1410,7 +1410,7 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type, int tag)
     PAL_DBG(LOG_TAG,"Enter setConfig called with tag: %d ", tag);
 
     switch (static_cast<uint32_t>(tag)) {
-        case TAG_STREAM_VOLUME:
+        case VOLUME_LVL:
             status = payloadCalKeys(s, &paramData, &paramSize);
             status = SessionAlsaVoice::setVoiceMixerParameter(s, mixer,
                                                            paramData,

@@ -137,19 +137,17 @@ public:
     int setConfig(Stream * s, configType type, uint32_t tag1,
             uint32_t tag2, uint32_t tag3) override;
     int setTKV(Stream * s, configType type, effect_pal_payload_t *payload) override;
-    //int getConfig(Stream * s) override;
     int start(Stream * s) override;
     int stop(Stream * s) override;
     int close(Stream * s) override;
     int pause(Stream * s) override;
-    int resume(Stream * s) override;
-    int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload);
-    int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload);
+    int setParamWithTag(Stream *s, int tagId, uint32_t param_id, void *payload) override;
+    int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override;
     int read(Stream *s, struct pal_buffer *buf, int * size) override;
     int write(Stream *s, struct pal_buffer *buf, int * size) override;
     int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override;
     static void offloadThreadLoop(SessionAlsaCompress *ob);
-    int registerCallBack(session_callback cb, uint64_t cookie);
+    int registerCallBack(session_callback cb, uint64_t cookie) override;
     int drain(pal_drain_type_t type);
     int flush();
     int getTimestamp(struct pal_session_time *stime) override;

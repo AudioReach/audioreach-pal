@@ -351,6 +351,8 @@ int SessionAlsaPcm::open(Stream * s)
                          status = 0;
                      }
             }
+            // Register for Soft pause events
+            registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
             break;
         case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
             if (sAttr.info.opt_stream_info.loopback_type ==
@@ -1703,6 +1705,7 @@ set_mixer:
                     PAL_ERR(LOG_TAG, "updateCustomPayload failed for SILENCE DETECTION \n");
                     goto exit;
                 }
+                builder->getCustomPayload(&payload, &payloadSize);
                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
                                 payload, payloadSize);
                 builder->freeCustomPayload();
@@ -2716,10 +2719,10 @@ int SessionAlsaPcm::disconnectSessionDevice(Stream *streamHandle,
                      dAttr, (pcmDevIds.size() ? pcmDevIds : pcmDevRxIds), rxAifBackEndsToDisconnect);
         else {
             if (PAL_STREAM_ULTRASOUND == streamType) {
-                status = setParameters(streamHandle, DEVICE_POP_SUPPRESSOR,
+                status = setParamWithTag(streamHandle, DEVICE_POP_SUPPRESSOR,
                                         PAL_PARAM_ID_ULTRASOUND_RAMPDOWN, NULL);
                 if (0 != status) {
-                    PAL_ERR(LOG_TAG, "SetParameters failed for Rampdown, status = %d", status);
+                    PAL_ERR(LOG_TAG, "setParamWithTag failed for Rampdown, status = %d", status);
                 }
                 /* TODO: Need to adjust the delay based on requirement */
                 usleep(20000);
@@ -3052,7 +3055,7 @@ void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t pa
     memcpy(eventPayload, payload, payload_size);
 }
 
-int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t param_id, void *payload)
+int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id, void *payload)
 {
     int status = 0;
     int device = 0;
@@ -3730,7 +3733,7 @@ exit:
     return status;
 }
 
-int SessionAlsaPcm::getParameters(Stream *s, int tagId, uint32_t param_id, void **payload)
+int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t param_id, void **payload)
 {
     int status = 0;
     uint8_t *ptr = NULL;
@@ -4631,3 +4634,160 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
     return;
 }
 
+int SessionAlsaPcm::addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable)
+{
+    int status = 0;
+    int32_t tag = INVALID_TAG;
+    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", this);
+
+    if (!enable) {
+        if (PAL_AUDIO_EFFECT_ECNS == effect) {
+           tag = ECNS_OFF_TAG;
+        }
+    } else {
+        if (PAL_AUDIO_EFFECT_EC == effect) {
+            tag = EC_ON_TAG;
+        } else if (PAL_AUDIO_EFFECT_NS == effect) {
+            tag = NS_ON_TAG;
+        } else if (PAL_AUDIO_EFFECT_ECNS == effect) {
+            tag = ECNS_ON_TAG;
+        }
+    }
+    if (tag == INVALID_TAG) {
+        PAL_ERR(LOG_TAG, "Invalid effect ID %d", effect);
+        status = -EINVAL;
+        goto exit;
+    }
+    status = this->setConfig(s, MODULE, tag);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "session setConfig for addRemoveEffect failed with status %d",
+                status);
+        goto exit;
+    }
+    PAL_DBG(LOG_TAG, "session setConfig successful");
+exit:
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    return status;
+}
+
+int SessionAlsaPcm::pause(Stream * s)
+{
+    int32_t status = 0;
+    std::unique_lock<std::mutex> pauseLock(pauseMutex);
+    struct pal_vol_ctrl_ramp_param ramp_param;
+    struct pal_volume_data *volume = NULL;
+    uint8_t volSize = 0;
+    struct pal_volume_data *voldata = NULL;
+    pal_stream_type_t palStreamType;
+    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", this);
+
+    status = this->setConfig(s, MODULE, PAUSE_TAG);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "session setConfig for pause failed with status %d",
+                status);
+        return status;
+    }
+
+    //To separate StreamPCM and StreamInCall's original pause_l() implementation.
+    status = s->getStreamType(&palStreamType);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "palStreamType for pause failed with status %d",
+                status);
+        return status;
+    }
+    if (palStreamType == PAL_STREAM_VOICE_CALL_RECORD ||
+        palStreamType == PAL_STREAM_VOICE_CALL_MUSIC) {
+        goto exit;
+    }
+
+    if (this->isPauseRegistrationDone) {
+        PAL_DBG(LOG_TAG, "Waiting for Pause to complete from ADSP");
+        pauseCV.wait_for(pauseLock, std::chrono::microseconds(VOLUME_RAMP_PERIOD));
+    } else {
+        PAL_DBG(LOG_TAG, "Pause event registration not done, sleeping for %d",
+                VOLUME_RAMP_PERIOD);
+        usleep(VOLUME_RAMP_PERIOD);
+    }
+
+    PAL_DBG(LOG_TAG, "session setConfig successful");
+
+    //caching the volume before setting it to 0
+    if (s->mVolumeData) {
+        voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
+                    (sizeof(struct pal_channel_vol_kv) *
+                    (s->mVolumeData->no_of_volpair))));
+    }
+    if (!voldata) {
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    status = s->getVolumeData(voldata);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
+        goto exit;
+    }
+    /* set ramp period to 0 to make volume be changed to 0 instantly.
+        * ramp down is already done in soft pause, ramp down twice both
+        * in volume module and pause with non-0 period, the curve of
+        * final ramp down becomes not smooth. 
+        */
+    ramp_param.ramp_period_ms = 0;
+    status = this->setParamWithTag(s,
+                                   TAG_STREAM_VOLUME,
+                                   PAL_PARAM_ID_VOLUME_CTRL_RAMP,
+                                   &ramp_param);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "setParamWithTag for vol ctrl failed, status %d", status);
+        status = 0; //non-fatal
+    }
+
+    volSize = sizeof(uint32_t) + (sizeof(struct pal_channel_vol_kv) *
+                                        (voldata->no_of_volpair));
+    /* set volume to 0 to avoid the secerio of doing ramping up
+        * from higher volume to lower volume in coming resume.
+        */
+    volume = (struct pal_volume_data *)calloc(1, volSize);
+    if (!volume) {
+        PAL_ERR(LOG_TAG, "Failed to allocate mem for volume");
+        status = -ENOMEM;
+        goto exit;
+    }
+    ar_mem_cpy(volume, volSize, voldata, volSize);
+    for (int32_t i = 0; i < (voldata->no_of_volpair); i++) {
+        volume->volume_pair[i].vol = 0x0;
+    }
+    s->setVolume(volume);
+    if (s->mVolumeData) {
+        free(s->mVolumeData);
+        s->mVolumeData = NULL;
+    }
+    s->mVolumeData = (struct pal_volume_data *)calloc(1, volSize);
+    if (!s->mVolumeData) {
+        PAL_ERR(LOG_TAG, "failed to calloc for volume data");
+        status = -ENOMEM;
+        goto exit;
+    }
+    ar_mem_cpy(s->mVolumeData, volSize, voldata, volSize);
+
+        /* set ramp period to default */
+    ramp_param.ramp_period_ms = DEFAULT_RAMP_PERIOD;
+    status = this->setParamWithTag(s,
+                                   TAG_STREAM_VOLUME,
+                                   PAL_PARAM_ID_VOLUME_CTRL_RAMP,
+                                   &ramp_param);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG,"setParamWithTag for vol ctrl failed, status %d", status);
+        status = 0; //non-fatal
+    }
+exit:
+    if (volume) {
+         free(volume);
+         volume = NULL;
+    }
+    if (voldata) {
+         free(voldata);
+         voldata = NULL;
+    }
+    return status;
+}

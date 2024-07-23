@@ -38,7 +38,6 @@
 #include <amdb_api.h>
 #include "ResourceManager.h"
 #include "PayloadBuilder.h"
-#include "SessionGsl.h"
 #include "StreamSoundTrigger.h"
 #include "spr_api.h"
 #include "pop_suppressor_api.h"
@@ -52,6 +51,20 @@
 #include "tsm_module_api.h"
 #include "USBAudio.h"
 #include "asr_module_calibration_api.h"
+#include "PalMappings.h"
+#include "SessionAR.h"
+#include "apm_api.h"
+#include "rate_adapted_timer_api.h"
+#include "cop_packetizer_cmn_api.h"
+#include "cop_packetizer_v0_api.h"
+#include "cop_v2_depacketizer_api.h"
+#include "cop_v2_packetizer_api.h"
+#include "lc3_encoder_api.h"
+#include "audio_dam_buffer_api.h"
+#include "aptx_classic_encoder_api.h"
+#include "aptx_adaptive_encoder_api.h"
+#include "Stream.h"
+#include "PalCommon.h"
 
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
 #define USECASE_XML_FILE "/etc/usecaseKvManager.xml"
@@ -59,6 +72,10 @@
 #define USECASE_XML_FILE "/vendor/etc/usecaseKvManager.xml"
 #endif
 
+#define PARAM_ID_MEDIA_FORMAT 0x0800100C
+#define PARAM_ID_VOL_CTRL_MULTICHANNEL_GAIN 0x08001038
+#define PARAM_ID_VOL_CTRL_MASTER_GAIN 0x08001035
+#define PARAM_ID_FFV_DOA_TRACKING_MONITOR 0x080010A4
 #define PARAM_ID_CHMIXER_COEFF 0x0800101F
 #define CUSTOM_STEREO_NUM_OUT_CH 0x0002
 #define CUSTOM_STEREO_NUM_IN_CH 0x0002
@@ -260,6 +277,19 @@ struct volume_ctrl_master_mute_t
 };
 /* Structure type def for above payload. */
 typedef struct volume_ctrl_master_mute_t volume_ctrl_master_mute_t;
+
+struct __attribute__((__packed__)) volume_ctrl_channels_gain_config_t
+{
+    uint32_t channel_mask_lsb;
+    uint32_t channel_mask_msb;
+    uint32_t gain;
+};
+
+struct __attribute__((__packed__)) volume_ctrl_multichannel_gain_t
+{
+    uint32_t num_config;
+    volume_ctrl_channels_gain_config_t gain_data[0];
+};
 
 std::vector<allKVs> PayloadBuilder::all_streams;
 std::vector<allKVs> PayloadBuilder::all_streampps;
@@ -3432,7 +3462,7 @@ int PayloadBuilder::populateCalKeyVector(Stream *s, std::vector <std::pair<int,i
     }
 
     switch (static_cast<uint32_t>(tag)) {
-    case TAG_STREAM_VOLUME:
+    case VOLUME_LVL:
         voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
                           (sizeof(struct pal_channel_vol_kv) * (0xFFFF))));
         if (!voldata) {
@@ -3512,7 +3542,7 @@ int PayloadBuilder::populateCalKeyVector(Stream *s, std::vector <std::pair<int,i
             ckv.push_back(std::make_pair(VOLUME,LEVEL_0));
         }
         break;
-    case TAG_DEVICE_PP_MBDRC:
+    case GAIN_LVL:
         level = s->getGainLevel();
         if (level != -1) {
             ckv.push_back(std::make_pair(GAIN, level));

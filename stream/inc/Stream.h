@@ -74,59 +74,6 @@ typedef enum {
 #define PCM_OFFLOAD_OUTPUT_PERIOD_DURATION 80
 #define COMPRESS_OFFLOAD_FRAGMENT_SIZE (32 * 1024)
 #define NO_OF_BUF 4
-#define MUTE_TAG 0
-#define UNMUTE_TAG 1
-#define PAUSE_TAG 2
-#define RESUME_TAG 3
-#define MFC_SR_8K 4
-#define MFC_SR_16K 5
-#define MFC_SR_32K 6
-#define MFC_SR_44K 7
-#define MFC_SR_48K 8
-#define MFC_SR_96K 9
-#define MFC_SR_192K 10
-#define MFC_SR_384K 11
-#define ECNS_ON_TAG 12
-#define ECNS_OFF_TAG 13
-#define EC_ON_TAG 14
-#define NS_ON_TAG 15
-#define CHS_1 16
-#define CHS_2 17
-#define CHS_3 18
-#define CHS_4 19
-#define CHS_5 20
-#define CHS_6 21
-#define CHS_7 22
-#define CHS_8 23
-#define BW_16 24
-#define BW_24 25
-#define BW_32 26
-#define TTY_MODE 27
-#define VOICE_SLOW_TALK_OFF 28
-#define VOICE_SLOW_TALK_ON 29
-#define VOICE_VOLUME_BOOST 30
-#define SPKR_PROT_ENABLE 31
-#define INCALL_RECORD_UPLINK 32
-#define INCALL_RECORD_DOWNLINK 33
-#define INCALL_RECORD_UPLINK_DOWNLINK_MONO 34
-#define INCALL_RECORD_UPLINK_DOWNLINK_STEREO 35
-#define SPKR_VI_ENABLE 36
-#define VOICE_HD_VOICE 37
-#define LPI_LOGGING_ON 38
-#define LPI_LOGGING_OFF 39
-#define DEVICE_MUTE 40
-#define DEVICE_UNMUTE 41
-#define CHANNEL_INFO 42
-#define CHARGE_CONCURRENCY_ON_TAG 43
-#define CHARGE_CONCURRENCY_OFF_TAG 44
-#define DEVICEPP_MUTE 45
-#define DEVICEPP_UNMUTE 46
-#define ORIENTATION_TAG 47
-#define HANDSET_PROT_ENABLE 48
-#define HAPTICS_VI_ENABLE 49
-#define HAPTICS_PROT_ENABLE 50
-#define CRS_CALL_VOLUME 51
-#define INVALID_TAG -1
 
 /* This sleep is added to give time to kernel and
  * spf to recover from SSR so that audio-hal will
@@ -180,7 +127,6 @@ protected:
     stream_state_t currentState;
     stream_state_t cachedState;
     uint32_t mInstanceID = 0;
-    static std::condition_variable pauseCV;
     static std::mutex pauseMutex;
     bool mutexLockedbyRm = false;
     bool mDutyCycleEnable = false;
@@ -204,8 +150,7 @@ public:
     virtual int32_t start() = 0;
     virtual int32_t stop() = 0;
     virtual int32_t prepare() = 0;
-    virtual int32_t drain(pal_drain_type_t type __unused) {return 0;}
-    virtual int32_t setStreamAttributes(struct pal_stream_attributes *sattr) = 0;
+    virtual int32_t drain(pal_drain_type_t type __unused) = 0;
     virtual int32_t setVolume(struct pal_volume_data *volume) = 0;
     virtual int32_t mute(bool state) = 0;
     virtual int32_t mute_l(bool state) = 0;
@@ -215,8 +160,8 @@ public:
     virtual int32_t pause_l() = 0;
     virtual int32_t resume() = 0;
     virtual int32_t resume_l() = 0;
-    virtual int32_t flush() {return 0;}
-    virtual int32_t suspend() {return 0;}
+    virtual int32_t flush() = 0;
+    virtual int32_t suspend() = 0;
     virtual int32_t read(struct pal_buffer *buf) = 0;
 
     virtual int32_t addRemoveEffect(pal_audio_effect_t effect, bool enable) = 0; //TBD: make this non virtual and prrovide implementation as StreamPCM and StreamCompressed are doing the same things
@@ -238,7 +183,6 @@ public:
     virtual uint32_t GetPayloadSize() { return 0; }
     virtual bool ConfigSupportLPI() {return true;}; //Only LPI streams can update their vote to NLPI
     int32_t getStreamAttributes(struct pal_stream_attributes *sattr);
-    int32_t getModifiers(struct modifier_kv *modifiers,uint32_t *noOfModifiers);
     const std::string& getStreamSelector() const;
     const std::string& getDevicePPSelector() const;
     int32_t getStreamType(pal_stream_type_t* streamType);
@@ -277,7 +221,6 @@ public:
     int connectStreamDevice(Stream* streamHandle, struct pal_device *dattr);
     virtual int connectStreamDevice_l(Stream* streamHandle, struct pal_device *dattr);
     int switchDevice(Stream* streamHandle, uint32_t no_of_devices, struct pal_device *deviceArray);
-    bool isGKVMatch(pal_key_vector_t* gkv);
     int32_t getEffectParameters(void *effect_query, size_t *payload_size);
     uint32_t getInstanceId() { return mInstanceID; }
     inline void setInstanceId(uint32_t sid) { mInstanceID = sid; }
@@ -303,8 +246,6 @@ public:
     virtual int32_t DisconnectDevice(pal_device_id_t device_id) { return 0; }
     virtual int32_t ConnectDevice(pal_device_id_t device_id) { return 0; }
     virtual uint32_t getCallbackEventId() { return 0; }
-    static void handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id, void *data,
-                                                           uint32_t event_size);
     static void handleStreamException(struct pal_stream_attributes *attributes,
                                       pal_stream_callback cb, uint64_t cookie);
     void lockStreamMutex() {
@@ -337,7 +278,6 @@ public:
    int32_t start() override;
    int32_t stop() override;
    int32_t prepare() override;
-   int32_t setStreamAttributes( struct pal_stream_attributes *sattr __unused) {return 0;};
    int32_t setVolume( struct pal_volume_data *volume __unused) {return 0;};
    int32_t mute(bool state __unused) {return 0;};
    int32_t mute_l(bool state __unused) {return 0;};

@@ -57,21 +57,10 @@ int32_t StreamCommonProxy::getParameters(uint32_t param_id, void **payload)
 {
     int32_t status = 0;
 
-    PAL_DBG(LOG_TAG, "get parameter %u", param_id);
-    switch (param_id) {
-        case PAL_PARAM_ID_SVA_WAKEUP_MODULE_VERSION:
-        {
-            status = session->getParameters(this, 0, param_id, payload);
-            if (status)
-                PAL_ERR(LOG_TAG, "Error:getParam failed with %d",
+    status = session->getParameters(nullptr, param_id, payload);
+    if (status)
+            PAL_ERR(LOG_TAG, "Error:getParam failed with %d",
                     status);
-            break;
-        }
-        default:
-            PAL_ERR(LOG_TAG, "Error:Unsupported param id %u", param_id);
-            status = -EINVAL;
-            break;
-    }
 
     PAL_DBG(LOG_TAG, "get parameter status %d", status);
     return status;

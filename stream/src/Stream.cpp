@@ -56,20 +56,6 @@
 std::shared_ptr<ResourceManager> Stream::rm = nullptr;
 std::mutex Stream::mBaseStreamMutex;
 std::mutex Stream::pauseMutex;
-std::condition_variable Stream::pauseCV;
-
-
-void Stream::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
-                                        void *data __unused,
-                                        uint32_t event_size __unused) {
-
-    PAL_DBG(LOG_TAG,"Event id %x ", event_id);
-
-    if (event_id == EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE) {
-        PAL_DBG(LOG_TAG, "Pause done");
-        pauseCV.notify_all();
-    }
-}
 
 Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *dAttr,
     uint32_t noOfDevices, struct modifier_kv *modifiers, uint32_t noOfModifiers)
@@ -356,23 +342,6 @@ const std::string& Stream::getStreamSelector() const {
 
 const std::string& Stream::getDevicePPSelector() const {
     return mDevPPSelector;
-}
-
-int32_t  Stream::getModifiers(struct modifier_kv *modifiers,uint32_t *noOfModifiers)
-{
-    int32_t status = 0;
-
-    if (!mModifiers || !noOfModifiers) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Invalid modifers pointer, status %d", status);
-        goto exit;
-    }
-    ar_mem_cpy (modifiers, sizeof(modifier_kv), mModifiers,
-                      sizeof(modifier_kv));
-    *noOfModifiers = mNoOfModifiers;
-    PAL_DBG(LOG_TAG, "noOfModifiers %u", *noOfModifiers);
-exit:
-    return status;
 }
 
 int32_t Stream::getEffectParameters(void *effect_query)

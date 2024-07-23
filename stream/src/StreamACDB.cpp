@@ -169,34 +169,6 @@ int32_t StreamACDB::prepare()
     return 0;
 }
 
-int32_t  StreamACDB::setStreamAttributes(struct pal_stream_attributes *sattr)
-{
-    int32_t status = -EINVAL;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
-
-    if (!sattr)
-    {
-        PAL_ERR(LOG_TAG, "NULL stream attributes sent");
-        goto exit;
-    }
-    memset(mStreamAttr, 0, sizeof(struct pal_stream_attributes));
-    mStreamMutex.lock();
-    ar_mem_cpy (mStreamAttr, sizeof(struct pal_stream_attributes), sattr,
-                      sizeof(struct pal_stream_attributes));
-    mStreamMutex.unlock();
-    status = session->setConfig(this, MODULE, 0);  //TODO:gkv or ckv or tkv need to pass
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
-        goto exit;
-    }
-
-    PAL_DBG(LOG_TAG, "session setConfig successful");
-exit:
-    PAL_DBG(LOG_TAG, "Exit, status %d", status);
-    return status;
-}
-
 //TBD: move this to Stream, why duplicate code?
 int32_t  StreamACDB::setVolume(struct pal_volume_data *volume)
 {

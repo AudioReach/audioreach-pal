@@ -435,7 +435,7 @@ int32_t ACDEngine::RegDeregSoundModel(uint32_t sess_param_id, uint8_t *payload, 
         return -ENOMEM;
     }
 
-    status = session_->setParameters(stream_handle_, tag_id, sess_param_id, session_payload);
+    status = session_->setParamWithTag(stream_handle_, tag_id, sess_param_id, session_payload);
     if (status != 0)
         PAL_ERR(LOG_TAG, "Error:%d Failed to send sound model payload", status);
 

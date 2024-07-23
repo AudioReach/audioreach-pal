@@ -761,6 +761,7 @@ typedef enum {
     PAL_PARAM_ID_ASR_FORCE_OUTPUT = 80,
     PAL_PARAM_ID_ASR_OUTPUT = 81,
     PAL_PARAM_ID_ASR_SET_PARAM = 82,
+    PAL_PARAM_ID_ORIENTATION = 83, /**For PAL Refactor*/
 } pal_param_id_type_t;
 
 /** HDMI/DP */

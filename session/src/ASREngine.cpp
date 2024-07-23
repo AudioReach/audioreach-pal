@@ -265,7 +265,8 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
         return -ENOMEM;
     }
 
-    status = session->setParameters(streamHandle, tagId, sesParamId, payload);
+    status = dynamic_cast<SessionAR*>(session)->setParamWithTag(streamHandle, tagId,
+                                                                sesParamId, payload);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to set payload for param id %x, status = %d",
             sesParamId, status);
@@ -406,7 +407,7 @@ void ASREngine::ParseEventAndNotifyStream() {
     outputToken = event->output_token;
     payloadSize = event->payload_size;
 
-    status = session->getParameters(streamHandle,
+    status = dynamic_cast<SessionAR*>(session)->getParamWithTag(streamHandle,
                            moduleTagIds[ASR_OUTPUT], PAL_PARAM_ID_ASR_OUTPUT,
                            &payload);
     if (status != 0) {

@@ -41,7 +41,6 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
-#include <chrono>
 
 StreamPCM::StreamPCM(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                     const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -164,11 +163,6 @@ StreamPCM::StreamPCM(const struct pal_stream_attributes *sattr, struct pal_devic
         mDevices.push_back(dev);
         dev = nullptr;
     }
-
-
-    // Register for Soft pause events
-    if (mStreamAttr->direction == PAL_AUDIO_OUTPUT )
-        session->registerCallBack(handleSoftPauseCallBack, (uint64_t)this);
 
     mStreamMutex.unlock();
     PAL_DBG(LOG_TAG, "Exit. state %d", currentState);
@@ -817,35 +811,6 @@ int32_t StreamPCM::prepare()
     return status;
 }
 
-//TBD: move this to Stream, why duplicate code?
-int32_t  StreamPCM::setStreamAttributes(struct pal_stream_attributes *sattr)
-{
-    int32_t status = -EINVAL;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
-
-    if (!sattr)
-    {
-        PAL_ERR(LOG_TAG, "NULL stream attributes sent");
-        goto exit;
-    }
-    memset(mStreamAttr, 0, sizeof(struct pal_stream_attributes));
-    mStreamMutex.lock();
-    ar_mem_cpy (mStreamAttr, sizeof(struct pal_stream_attributes), sattr,
-                      sizeof(struct pal_stream_attributes));
-    mStreamMutex.unlock();
-    status = session->setConfig(this, MODULE, 0);  //TODO:gkv or ckv or tkv need to pass
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
-        goto exit;
-    }
-
-    PAL_DBG(LOG_TAG, "session setConfig successful");
-exit:
-    PAL_DBG(LOG_TAG, "Exit, status %d", status);
-    return status;
-}
-
 int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
 {
     int32_t status = 0;
@@ -903,11 +868,7 @@ int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
         if (!forceSetParameters && mVolumeData->volume_pair[0].vol == 0.0f &&
             !vol_set_param_info.isVolumeUsingSetParam) {
             //if the volume is 0, force settting parameters as well
-            if (rm->isCRSCallEnabled) {
-                status = session->setConfig(this, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-            } else {
-                status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
-            }
+            status = session->setVolume(this);
             forceSetParameters = true;
         }
         if ((isStreamAvail && vol_set_param_info.isVolumeUsingSetParam) || forceSetParameters) {
@@ -915,20 +876,15 @@ int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
             pal_param_payload *pld = (pal_param_payload *)volPayload;
             pld->payload_size = sizeof(struct pal_volume_data);
             memcpy(pld->payload, mVolumeData, volSize);
-            status = session->setParameters(this, TAG_STREAM_VOLUME,
-                    PAL_PARAM_ID_VOLUME_USING_SET_PARAM, (void *)pld);
+            status = session->setParameters(this, PAL_PARAM_ID_VOLUME_USING_SET_PARAM, (void *)pld);
             delete[] volPayload;
             PAL_DBG(LOG_TAG, "set volume by parameter, status: %d", status);
         } else {
-            if (rm->isCRSCallEnabled) {
-                status = session->setConfig(this, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-            } else {
-                status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
-            }
+            status = session->setVolume(this);
         }
 
         if (0 != status) {
-            PAL_ERR(LOG_TAG, "session setConfig for VOLUME_TAG failed with status %d",
+            PAL_ERR(LOG_TAG, "session setVolume for VOLUME_TAG failed with status %d",
                     status);
             goto exit;
         }
@@ -1189,103 +1145,12 @@ int32_t  StreamPCM::setParameters(uint32_t param_id, void *payload)
         mStreamMutex.unlock();
         return -EINVAL;
     }
-    // Stream may not know about tags, so use setParameters instead of setConfig
-    switch (param_id) {
-        case PAL_PARAM_ID_TTY_MODE:
-        {
-            param_payload = (pal_param_payload *)payload;
-            if (param_payload->payload_size > sizeof(uint32_t)) {
-                PAL_ERR(LOG_TAG, "Invalid payload size %d", param_payload->payload_size);
-                status = -EINVAL;
-                break;
-            }
-            uint32_t tty_mode = *((uint32_t *)param_payload->payload);
-            status = session->setParameters(this, TTY_MODE, param_id, payload);
-            if (status)
-               PAL_ERR(LOG_TAG, "setParam for tty mode %d failed with %d",
-                       tty_mode, status);
-            break;
-        }
-        case PAL_PARAM_ID_DEVICE_ROTATION:
-        {
-            // Call Session for Setting the parameter.
-            if (NULL != session) {
-                /* To avoid pop while switching channels, it is required to mute
-                   the playback first and then swap the channel and unmute */
-                if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
-                    mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = session->setConfig(this, MODULE, MUTE_TAG);
-                } else {
-                    setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_MUTE);
-                }
-                if (setConfigStatus) {
-                    PAL_INFO(LOG_TAG, "DevicePP Mute failed");
-                }
-                mStreamMutex.unlock();
-                usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
-                mStreamMutex.lock();
-                status = session->setParameters(this, 0,
-                                                PAL_PARAM_ID_DEVICE_ROTATION,
-                                                payload);
-                mStreamMutex.unlock();
-                usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
-                mStreamMutex.lock();
-                if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
-                    mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = session->setConfig(this, MODULE, UNMUTE_TAG);
-                } else {
-                    setConfigStatus = session->setConfig(this, MODULE, DEVICEPP_UNMUTE);
-                }
-                if (setConfigStatus) {
-                    PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
-                }
-            } else {
-                PAL_ERR(LOG_TAG, "Session is null");
-                status = -EINVAL;
-            }
-        }
-        break;
-        case PAL_PARAM_ID_VOLUME_BOOST:
-        {
-            status = session->setParameters(this, VOICE_VOLUME_BOOST, param_id, payload);
-            if (status)
-               PAL_ERR(LOG_TAG, "setParam for volume boost failed with %d",
-                       status);
-            break;
-        }
-        case PAL_PARAM_ID_SLOW_TALK:
-        {
-            bool slow_talk = false;
-            param_payload = (pal_param_payload *)payload;
-            slow_talk = *((bool *)param_payload->payload);
-
-            uint32_t slow_talk_tag =
-                          slow_talk ? VOICE_SLOW_TALK_ON : VOICE_SLOW_TALK_OFF;
-            status = session->setParameters(this, slow_talk_tag,
-                                            param_id, payload);
-            if (status)
-               PAL_ERR(LOG_TAG, "setParam for slow talk failed with %d",
-                       status);
-            break;
-        }
-        case PAL_PARAM_ID_DEVICE_MUTE:
-        {
-            param_payload = (pal_param_payload *)payload;
-            deviceMutePayload = (pal_device_mute_t *)(param_payload->payload);
-            status = session->setParameters(this, DEVICE_MUTE,
-                                            param_id, payload);
-            if (status) {
-               PAL_ERR(LOG_TAG, "setParam for device mute failed with %d",
-                       status);
-            } else {
-               setDeviceMute(deviceMutePayload->dir, deviceMutePayload->mute);
-            }
-            break;
-        }
-        default:
-            PAL_ERR(LOG_TAG, "Unsupported param id %u", param_id);
-            status = -EINVAL;
-            break;
+    // Call Session for Setting the parameter.
+    if (NULL != session) {
+        status = session->setParameters(this, param_id, payload);
+    } else {
+        PAL_ERR(LOG_TAG, "Session is null");
+        status = -EINVAL;
     }
 
     mStreamMutex.unlock();
@@ -1316,7 +1181,7 @@ int32_t StreamPCM::mute_l(bool state)
         unMutePending = !state;
         goto exit;
     }
-    status = session->setConfig(this, MODULE, state ? MUTE_TAG : UNMUTE_TAG);
+    status = session->mute(this, state);
 
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
@@ -1338,12 +1203,7 @@ int32_t StreamPCM::pause_l()
 {
     int32_t status = 0;
     std::unique_lock<std::mutex> pauseLock(pauseMutex);
-    struct pal_vol_ctrl_ramp_param ramp_param;
-    struct pal_volume_data *volume = NULL;
-    uint8_t volSize = 0;
-    struct pal_volume_data *voldata = NULL;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
+    PAL_DBG(LOG_TAG, "Enter.");
     if (PAL_CARD_STATUS_DOWN(rm->cardState)) {
         cachedState = STREAM_PAUSED;
         isPaused = true;
@@ -1354,105 +1214,16 @@ int32_t StreamPCM::pause_l()
     if (isPaused) {
         PAL_INFO(LOG_TAG, "Stream is already paused");
     } else {
-        status = session->setConfig(this, MODULE, PAUSE_TAG);
+        status = session->pause(this);
         if (0 != status) {
-           PAL_ERR(LOG_TAG, "session setConfig for pause failed with status %d",
-                    status);
-           return status;
-        }
-        if (session->isPauseRegistrationDone) {
-            PAL_DBG(LOG_TAG, "Waiting for Pause to complete from ADSP");
-            pauseCV.wait_for(pauseLock, std::chrono::microseconds(VOLUME_RAMP_PERIOD));
-        } else {
-            PAL_DBG(LOG_TAG, "Pause event registration not done, sleeping for %d",
-                    VOLUME_RAMP_PERIOD);
-            usleep(VOLUME_RAMP_PERIOD);
-        }
-        palStateEnqueue(this, PAL_STATE_PAUSED, status);
-        PAL_DBG(LOG_TAG, "session setConfig successful");
-
-        //caching the volume before setting it to 0
-        if (mVolumeData) {
-            voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
-                        (sizeof(struct pal_channel_vol_kv) *
-                        (mVolumeData->no_of_volpair))));
-        }
-        if (!voldata) {
-            status = -ENOMEM;
-            goto exit;
-        }
-
-        status = this->getVolumeData(voldata);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
-            goto exit;
-        }
-        /* set ramp period to 0 to make volume be changed to 0 instantly.
-         * ramp down is already done in soft pause, ramp down twice both
-         * in volume module and pause with non-0 period, the curve of
-         * final ramp down becomes not smooth. 
-         */
-        ramp_param.ramp_period_ms = 0;
-        status = session->setParameters(this,
-                                        TAG_STREAM_VOLUME,
-                                        PAL_PARAM_ID_VOLUME_CTRL_RAMP,
-                                        &ramp_param);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "setParam for vol ctrl failed, status %d", status);
-            status = 0; //non-fatal
-        }
-
-        volSize = sizeof(uint32_t) + (sizeof(struct pal_channel_vol_kv) *
-                                            (voldata->no_of_volpair));
-        /* set volume to 0 to avoid the secerio of doing ramping up
-         * from higher volume to lower volume in coming resume.
-         */
-        volume = (struct pal_volume_data *)calloc(1, volSize);
-        if (!volume) {
-            PAL_ERR(LOG_TAG, "Failed to allocate mem for volume");
-            status = -ENOMEM;
-            goto exit;
-        }
-        ar_mem_cpy(volume, volSize, voldata, volSize);
-        for (int32_t i = 0; i < (voldata->no_of_volpair); i++) {
-            volume->volume_pair[i].vol = 0x0;
-        }
-        setVolume(volume);
-        if (mVolumeData) {
-            free(mVolumeData);
-            mVolumeData = NULL;
-        }
-        mVolumeData = (struct pal_volume_data *)calloc(1, volSize);
-        if (!mVolumeData) {
-            PAL_ERR(LOG_TAG, "failed to calloc for volume data");
-            status = -ENOMEM;
-            goto exit;
-        }
-        ar_mem_cpy(mVolumeData, volSize, voldata, volSize);
-
-         /* set ramp period to default */
-        ramp_param.ramp_period_ms = DEFAULT_RAMP_PERIOD;
-        status = session->setParameters(this,
-                                        TAG_STREAM_VOLUME,
-                                        PAL_PARAM_ID_VOLUME_CTRL_RAMP,
-                                        &ramp_param);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG,"setParam for vol ctrl failed, status %d", status);
-            status = 0; //non-fatal
+            return status;
         }
     }
 exit:
     isPaused = true;
     currentState = STREAM_PAUSED;
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    if (volume) {
-         free(volume);
-         volume = NULL;
-    }
-    if (voldata) {
-         free(voldata);
-         voldata = NULL;
-    }
+    palStateEnqueue(this, PAL_STATE_PAUSED, status);
     return status;
 }
 
@@ -1479,9 +1250,9 @@ int32_t StreamPCM::resume_l()
         goto exit;
     }
 
-    status = session->setConfig(this, MODULE, RESUME_TAG);
+    status = session->resume(this);
     if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig for resume failed with status %d",
+        PAL_ERR(LOG_TAG, "session resume for resume failed with status %d",
                 status);
         goto exit;
     }
@@ -1493,7 +1264,7 @@ int32_t StreamPCM::resume_l()
             pal_param_device_rotation_t rotation;
             rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
                                     PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-            status = session->setParameters(this, 0, PAL_PARAM_ID_DEVICE_ROTATION, &rotation);
+            status = session->setParameters(this, PAL_PARAM_ID_DEVICE_ROTATION, &rotation);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "session setParameters for rotation failed with status %d",
                         status);
@@ -1628,38 +1399,11 @@ int32_t StreamPCM::isBitWidthSupported(uint32_t bitWidth)
 int32_t StreamPCM::addRemoveEffect(pal_audio_effect_t effect, bool enable)
 {
     int32_t status = 0;
-    int32_t tag = INVALID_TAG;
 
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
     mStreamMutex.lock();
-    if (!enable) {
-        if (PAL_AUDIO_EFFECT_ECNS == effect) {
-           tag = ECNS_OFF_TAG;
-        }
-    } else {
-        if (PAL_AUDIO_EFFECT_EC == effect) {
-            tag = EC_ON_TAG;
-        } else if (PAL_AUDIO_EFFECT_NS == effect) {
-            tag = NS_ON_TAG;
-        } else if (PAL_AUDIO_EFFECT_ECNS == effect) {
-            tag = ECNS_ON_TAG;
-        }
-    }
-    if (tag == INVALID_TAG) {
-        PAL_ERR(LOG_TAG, "Invalid effect ID %d", effect);
-        status = -EINVAL;
-        goto exit;
-    }
-    status = session->setConfig(this, MODULE, tag);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig for addRemoveEffect failed with status %d",
-                status);
-        goto exit;
-    }
-    PAL_DBG(LOG_TAG, "session setConfig successful");
-exit:
-    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    status = session->addRemoveEffect(this, effect, enable);
     mStreamMutex.unlock();
+
     return status;
 }
 

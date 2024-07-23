@@ -515,9 +515,9 @@ int32_t StreamCommon::setVolume(struct pal_volume_data *volume)
 
     if ((rm->cardState == CARD_STATUS_ONLINE) && (currentState != STREAM_IDLE)
             && (currentState != STREAM_INIT)) {
-        status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
+        status = session->setVolume(this);
         if (0 != status) {
-            PAL_ERR(LOG_TAG, "session setConfig for VOLUME_TAG failed with status %d",
+            PAL_ERR(LOG_TAG, "session setVolume for VOLUME_TAG failed with status %d",
                     status);
             goto exit;
         }

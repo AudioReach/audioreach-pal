@@ -30,7 +30,6 @@ h_sources = ./stream/inc/Stream.h \
             ./plugins/codecs/bt_intf.h \
             ./session/inc/Session.h \
             ./session/inc/PayloadBuilder.h \
-            ./session/inc/SessionGsl.h \
             ./session/inc/SessionAlsaPcm.h \
             ./session/inc/SessionAlsaCompress.h \
             ./session/inc/SessionAlsaVoice.h \
@@ -121,7 +120,6 @@ h_sources = ${top_srcdir}/stream/inc/Stream.h \
             ${top_srcdir}/session/inc/ACDEngine.h \
             ${top_srcdir}/session/inc/Session.h \
             ${top_srcdir}/session/inc/PayloadBuilder.h \
-            ${top_srcdir}/session/inc/SessionGsl.h \
             ${top_srcdir}/session/inc/SessionAlsaPcm.h \
             ${top_srcdir}/session/inc/SessionAlsaCompress.h \
             ${top_srcdir}/session/inc/SessionAlsaVoice.h \

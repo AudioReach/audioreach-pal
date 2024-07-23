@@ -8299,7 +8299,8 @@ int32_t ResourceManager::streamDevSwitch(std::vector <std::tuple<Stream *, uint3
         if (sAttr.direction == PAL_AUDIO_OUTPUT && sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
             (*sIter)->getAssociatedSession(&session);
             if ((session != NULL) && (*sIter)->isActive())
-                session->AdmRoutingChange((*sIter));
+                if (admOnRoutingChangeFn)
+                    admOnRoutingChangeFn(admData, static_cast<void *>(*sIter));
         }
     }
 

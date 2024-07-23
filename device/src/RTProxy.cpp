@@ -41,6 +41,7 @@
 #include "PayloadBuilder.h"
 #include "Stream.h"
 #include "Session.h"
+#include "SessionAR.h"
 
 RTProxyIn::RTProxyIn(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)
@@ -151,7 +152,7 @@ int RTProxyIn::start() {
     stream = static_cast<Stream *>(activestreams[0]);
     stream->getAssociatedSession(&session);
 
-    status = session->getMIID(backEndName.c_str(), RAT_RENDER, &ratMiid);
+    status = dynamic_cast<SessionAR*>(session)->getMIID(backEndName.c_str(), RAT_RENDER, &ratMiid);
     if (status) {
         PAL_INFO(LOG_TAG,
          "Failed to get tag info %x Skipping RAT Configuration Setup, status = %d",

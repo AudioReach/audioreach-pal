@@ -25,6 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: ContextDetectionEngine"
@@ -33,7 +37,7 @@
 
 #include "ACDEngine.h"
 #include "Stream.h"
-#include "Session.h"
+#include "SessionAR.h"
 
 std::shared_ptr<ContextDetectionEngine> ContextDetectionEngine::Create(
     Stream *s,
@@ -94,7 +98,7 @@ ContextDetectionEngine::ContextDetectionEngine(
         throw std::runtime_error("Failed to get ResourceManager instance");
     }
     stream_handle_->getStreamAttributes(&sAttr);
-    session_ = Session::makeSession(rm, &sAttr);
+    session_ = dynamic_cast<SessionAR*>(SessionAR::makeARSession(rm, &sAttr));
     if (!session_) {
         PAL_ERR(LOG_TAG, "Failed to create session");
         throw std::runtime_error("Failed to create session");
@@ -201,5 +205,5 @@ int32_t ContextDetectionEngine::getTagsWithModuleInfo(Stream *s, size_t *size, u
         return -EINVAL;
     }
 
-    return session_->getTagsWithModuleInfo(s, size, payload);
+    return dynamic_cast<SessionAR*>(session_)->getTagsWithModuleInfo(s, size, payload);
 }

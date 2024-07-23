@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -518,7 +518,7 @@ int32_t  StreamInCall::read(struct pal_buffer* buf)
     }
 
     if (currentState == STREAM_STARTED) {
-        status = session->read(this, SHMEM_ENDPOINT, buf, &size);
+        status = session->read(this, buf, &size);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session read is failed with status %d", status);
             if (errno == -ENETRESET &&
@@ -588,7 +588,7 @@ int32_t  StreamInCall::write(struct pal_buffer* buf)
     }
 
     if (currentState == STREAM_STARTED) {
-        status = session->write(this, SHMEM_ENDPOINT, buf, &size, 0);
+        status = session->write(this, buf, &size);
         mStreamMutex.unlock();
         if (0 != status) {
             PAL_ERR(LOG_TAG, "session write is failed with status %d", status);

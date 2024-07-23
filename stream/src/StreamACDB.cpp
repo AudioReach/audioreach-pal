@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@
 #define LOG_TAG "PAL: StreamACDB"
 
 #include "StreamACDB.h"
-#include "Session.h"
+#include "SessionAR.h"
 #include "kvh2xml.h"
 #include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
@@ -112,7 +112,7 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
 
     PAL_INFO(LOG_TAG, "Create new ACDBSession");
 
-    session = Session::makeACDBSession(rm, sattr);
+    session = SessionAR::makeACDBSession(rm, sattr);
     if (!session) {
         PAL_ERR(LOG_TAG, "session creation failed");
         free(mStreamAttr);

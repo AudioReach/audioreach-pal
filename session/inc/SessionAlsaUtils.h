@@ -42,6 +42,7 @@
 
 #include <tinyalsa/asoundlib.h>
 #include <sound/asound.h>
+#include <mutex>
 
 #define PADDING_8BYTE_ALIGN(x) ((((x) + 7) & 7) ^ 7)
 #define MAX_UTIL_PAYLOAD_SIZE ( \
@@ -85,6 +86,25 @@ enum BeCtrlsIndex {
     BE_MAX_NUM_MIXER_CONTROLS,
 };
 
+typedef enum {
+   SLOT_MASK1  = 1,
+   SLOT_MASK3  = 3,
+   SLOT_MASK7  = 7,
+   SLOT_MASK15 = 15,
+}slot_mask_t;
+
+const std::map<std::uint32_t, std::uint32_t> slotMaskBwLUT {
+   {16, 0},
+   {24, 0x40000000},
+   {32, 0x80000000},
+};
+
+const std::map<std::uint32_t, slot_mask_t> slotMaskLUT {
+   {1, SLOT_MASK1},
+   {2, SLOT_MASK3},
+   {3, SLOT_MASK7},
+   {4, SLOT_MASK15},
+};
 
 class SessionAlsaUtils
 {
@@ -95,6 +115,9 @@ private:
     static struct mixer_ctl *getBeMixerControl(struct mixer *am, std::string beName,
         uint32_t idx);
     static struct mixer_ctl *getStaticMixerControl(struct mixer *am, std::string name);
+    static void *customPayload;
+    static size_t customPayloadSize;
+
 public:
     ~SessionAlsaUtils();
     static bool isRxDevice(uint32_t devId);
@@ -175,6 +198,14 @@ public:
    static int mixerWriteDatapathParams(struct mixer *mixer, int device,
                                         void *payload, int size);
    static int flush(std::shared_ptr<ResourceManager> rm, uint32_t id);
+   static int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
+                    struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf);
+   static int setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
+                    struct pal_device &dAttr, const std::vector<int> &pcmDevIds);
+   static int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm,
+                    Stream *s, pal_speaker_rotation_type rotation_type,
+                    int device, struct mixer *mixer, PayloadBuilder* builder,
+                    std::vector<std::pair<int32_t, std::string>> rxAifBackEnds);
    static int getScoDevCount(void);
 
 };

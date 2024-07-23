@@ -36,7 +36,7 @@
 
 #include "ResourceManager.h"
 #include "PayloadBuilder.h"
-#include "Session.h"
+#include "SessionAR.h"
 #include "PalAudioRoute.h"
 #include "PalCommon.h"
 #include <tinyalsa/asoundlib.h>
@@ -55,11 +55,10 @@
 class Stream;
 class Session;
 
-class SessionAlsaPcm : public Session
+class SessionAlsaPcm : public SessionAR
 {
 private:
     uint32_t spr_miid = 0;
-    PayloadBuilder* builder;
     struct pcm *pcm;
     struct pcm *pcmRx;
     struct pcm *pcmTx;
@@ -83,6 +82,13 @@ private:
     static int pcmLpmRefCnt;
     int32_t configureInCallRxMFC();
     static bool silenceEventRegistered;
+    std::mutex kvMutex;
+    uint32_t eventId;
+    void *eventPayload;
+    size_t eventPayloadSize;
+    bool RegisterForEvents = false;
+    struct pal_param_haptics_cnfg_t *hpCnfg;
+    bool isMixerEventCbRegd;
 public:
 
     SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm);
@@ -93,14 +99,11 @@ public:
     int setConfig(Stream * s, configType type, int tag = 0) override;
     int setConfig(Stream * s, configType type, uint32_t tag1,
             uint32_t tag2, uint32_t tag3) override;
-    //int getConfig(Stream * s) override;
     int start(Stream * s) override;
     int stop(Stream * s) override;
     int close(Stream * s) override;
-    int readBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
-    int writeBufferInit(Stream *s, size_t noOfBuf, size_t bufSize, int flag) override;
-    int read(Stream *s, int tag, struct pal_buffer *buf, int * size) override;
-    int write(Stream *s, int tag, struct pal_buffer *buf, int * size, int flag) override;
+    int read(Stream *s, struct pal_buffer *buf, int * size) override;
+    int write(Stream *s, struct pal_buffer *buf, int * size) override;
     int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload) override;
     int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload) override;
     int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override;
@@ -128,7 +131,6 @@ public:
             pal_stream_flags_t flags, struct pcm *, struct pcm_config *cfg);
     void deRegisterAdmStream(Stream *s);
     void requestAdmFocus(Stream *s, long ns);
-    void AdmRoutingChange(Stream *s);
     void releaseAdmFocus(Stream *s);
     void setEventPayload(uint32_t event_id, void *payload, size_t payload_size);
     int register_asps_event(uint32_t reg);

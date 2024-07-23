@@ -99,6 +99,7 @@ LOCAL_SRC_FILES := \
     device/src/DummyDev.cpp \
     device/src/HapticsDevProtection.cpp \
     session/src/Session.cpp \
+    session/src/SessionAR.cpp \
     session/src/PayloadBuilder.cpp \
     session/src/SessionAlsaPcm.cpp \
     session/src/SessionAgm.cpp \

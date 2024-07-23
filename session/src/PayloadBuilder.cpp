@@ -876,6 +876,8 @@ exit:
 
 PayloadBuilder::PayloadBuilder()
 {
+    customPayload = NULL;
+    customPayloadSize = 0;
 
 }
 
@@ -5020,4 +5022,55 @@ void PayloadBuilder::USToneRendererNotifyPayload(uint8_t **payload, size_t *size
                       fmt_payload->status, fmt_payload->sampling_rate, fmt_payload->bit_width,
                       fmt_payload->num_channels, header->module_instance_id);
     PAL_DBG(LOG_TAG, "payload %pK size %zu", *payload, *size);
+}
+
+int PayloadBuilder::updateCustomPayload(void *payload, size_t size)
+{
+    if (!customPayloadSize || !customPayload) {
+        customPayload = calloc(1, size);
+    } else {
+        customPayload = realloc(customPayload, customPayloadSize + size);
+    }
+
+    if (!customPayload) {
+        PAL_ERR(LOG_TAG, "failed to allocate memory for custom payload");
+        return -ENOMEM;
+    }
+
+    memcpy((uint8_t *)customPayload + customPayloadSize, payload, size);
+    customPayloadSize += size;
+    PAL_INFO(LOG_TAG, "customPayloadSize = %zu", customPayloadSize);
+    return 0;
+}
+
+int PayloadBuilder::getCustomPayload(uint8_t **payload, size_t *payloadSize)
+{
+    if (customPayloadSize) {
+        *payload = (uint8_t *)customPayload;
+        *payloadSize = customPayloadSize;
+    } else {
+        *payload = NULL;
+        *payloadSize = 0;
+    }
+    return 0;
+}
+
+int PayloadBuilder::freeCustomPayload(uint8_t **payload, size_t *payloadSize)
+{
+    if (*payload) {
+        free(*payload);
+        *payload = NULL;
+        *payloadSize = 0;
+    }
+    return 0;
+}
+
+int PayloadBuilder::freeCustomPayload()
+{
+    if (customPayload) {
+        free(customPayload);
+        customPayload = NULL;
+        customPayloadSize = 0;
+    }
+    return 0;
 }

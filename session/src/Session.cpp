@@ -69,12 +69,10 @@
 
 Session::Session()
 {
-    isPauseRegistrationDone = false;
 }
 
 Session::~Session()
 {
-
 }
 
 Session* Session::makeSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr)

@@ -92,24 +92,10 @@ int32_t  StreamHaptics::setParameters(uint32_t param_id, void *payload)
     // Stream may not know about tags, so use setParameters instead of setConfig
     switch (param_id) {
         case PAL_PARAM_ID_HAPTICS_CNFG:
-        {
-            status = session->setParameters(NULL, 0, param_id, payload);
-            if (status)
-                PAL_ERR(LOG_TAG, "Error:%d, Failed to setParam for registering an event",
-                          status);
-            break;
-        }
         case PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM:
-        {
-            status = session->setParameters(NULL, 0, param_id, payload);
-            if (status)
-                PAL_ERR(LOG_TAG, "Error:%d, Failed to setParam for registering an event",
-                          status);
-            break;
-        }
         case PARAM_ID_HAPTICS_WAVE_DESIGNER_UPDATE_PARAM:
         {
-            status = session->setParameters(NULL, 0, param_id, payload);
+            status = session->setParameters(NULL, param_id, payload);
             if (status)
                 PAL_ERR(LOG_TAG, "Error:%d, Failed to setParam", status);
             break;
@@ -292,9 +278,8 @@ int32_t StreamHaptics::HandleHapticsConcurrency(struct pal_stream_attributes *sa
                              sizeof(param_id_haptics_wave_designer_wave_designer_stop_param_t);
                 memcpy(param_payload->payload, &HapticsStopParam, param_payload->payload_size);
                 stream->getAssociatedSession(&ActHapticsSession);
-                status = ActHapticsSession->setParameters(NULL, 0,
-                                         PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM,
-                                                              (void*)param_payload);
+                status = ActHapticsSession->setParameters(stream, PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM,
+                                                          (void*)param_payload);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d, Stop SetParam is Failed", status);
             }

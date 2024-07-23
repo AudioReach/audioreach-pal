@@ -1598,8 +1598,7 @@ int32_t SoundTriggerEngineGsl::GetParameters(uint32_t param_id,
     PAL_DBG(LOG_TAG, "Enter");
     switch (param_id) {
         case PAL_PARAM_ID_DIRECTION_OF_ARRIVAL:
-            status = session_->getParameters(stream_handle_, TAG_ECNS,
-                                            param_id, payload);
+            status = session_->getParameters(stream_handle_, param_id, payload);
             break;
         case PAL_PARAM_ID_WAKEUP_MODULE_VERSION:
             status = session_->openGraph(stream_handle_);
@@ -1621,8 +1620,7 @@ int32_t SoundTriggerEngineGsl::GetParameters(uint32_t param_id,
             builder_->payloadQuery((uint8_t **)payload, &size, miid,
                 param_ids_[MODULE_VERSION],
                 sizeof(struct version_arch_payload));
-            status = session_->getParameters(stream_handle_,
-                module_tag_ids_[MODULE_VERSION], param_id, payload);
+            status = dynamic_cast<SessionAR*>(session_)->getParamWithTag(stream_handle_, module_tag_ids_[MODULE_VERSION], param_id, payload);
             status = session_->close(stream_handle_);
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "Failed to close session, status = %d", status);
@@ -1889,7 +1887,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(Stream *s, st_param_id_type_
         return -ENOMEM;
     }
 
-    status = session_->setParameters(stream_handle_, tag_id, ses_param_id, payload);
+    status = dynamic_cast<SessionAR*>(session_)->setParamWithTag(stream_handle_, tag_id, ses_param_id, payload);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to set payload for param id %x, status = %d",
             ses_param_id, status);

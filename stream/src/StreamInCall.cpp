@@ -37,7 +37,6 @@
 #include "StreamInCall.h"
 #include "Session.h"
 #include "kvh2xml.h"
-#include "SessionGsl.h"
 #include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
@@ -395,34 +394,6 @@ int32_t StreamInCall::prepare()
     return status;
 }
 
-//TBD: move this to Stream, why duplicate code?
-int32_t  StreamInCall::setStreamAttributes(struct pal_stream_attributes *sattr)
-{
-    int32_t status = -EINVAL;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
-
-    if (!sattr)
-    {
-        PAL_ERR(LOG_TAG, "NULL stream attributes sent");
-        goto exit;
-    }
-    memset(mStreamAttr, 0, sizeof(struct pal_stream_attributes));
-    mStreamMutex.lock();
-    ar_mem_cpy (mStreamAttr, sizeof(struct pal_stream_attributes), sattr,
-                      sizeof(struct pal_stream_attributes));
-    mStreamMutex.unlock();
-    status = session->setConfig(this, MODULE, 0);  //TODO:gkv or ckv or tkv need to pass
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
-        goto exit;
-    }
-    PAL_DBG(LOG_TAG, "Exit. session setConfig successful");
-
-exit:
-    return status;
-}
-
 int32_t StreamInCall::setVolume(struct pal_volume_data *volume)
 {
     int32_t status = 0;
@@ -465,9 +436,9 @@ int32_t StreamInCall::setVolume(struct pal_volume_data *volume)
 
     if ((rm->cardState == CARD_STATUS_ONLINE) && (currentState != STREAM_IDLE)
             && (currentState != STREAM_INIT)) {
-        status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
+        status = session->setVolume(this);
         if (0 != status) {
-            PAL_ERR(LOG_TAG, "session setConfig for VOLUME_TAG failed with status %d",
+            PAL_ERR(LOG_TAG, "session setVolume for VOLUME_TAG failed with status %d",
                     status);
             goto exit;
         }
@@ -703,7 +674,7 @@ int32_t StreamInCall::mute_l(bool state)
         unMutePending = !state;
         goto exit;
     }
-    status = session->setConfig(this, MODULE, (state ? MUTE_TAG : UNMUTE_TAG), TX_HOSTLESS);
+    status = session->mute(this, state);
 
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
@@ -733,9 +704,9 @@ int32_t StreamInCall::pause_l()
         goto exit;
     }
 
-    status = session->setConfig(this, MODULE, PAUSE_TAG);
+    status = session->pause(this);
     if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig for pause failed with status %d",
+        PAL_ERR(LOG_TAG, "session pause failed with status %d",
                 status);
         goto exit;
     }
@@ -743,7 +714,7 @@ int32_t StreamInCall::pause_l()
     isPaused = true;
     currentState = STREAM_PAUSED;
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
-    PAL_DBG(LOG_TAG, "Exit. session setConfig successful");
+    PAL_DBG(LOG_TAG, "Exit. session pause successful");
 exit:
     return status;
 }
@@ -769,16 +740,16 @@ int32_t StreamInCall::resume_l()
         goto exit;
     }
 
-    status = session->setConfig(this, MODULE, RESUME_TAG);
+    status = session->resume(this);
     if (0 != status) {
-        PAL_ERR(LOG_TAG, "session setConfig for pause failed with status %d",
+        PAL_ERR(LOG_TAG, "session resume failed with status %d",
                 status);
         goto exit;
     }
     isPaused = false;
     currentState = STREAM_STARTED;
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-    PAL_DBG(LOG_TAG, "Exit. session setConfig successful");
+    PAL_DBG(LOG_TAG, "Exit. session resume successful");
 exit:
     return status;
 }

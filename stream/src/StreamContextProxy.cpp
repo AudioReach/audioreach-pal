@@ -73,7 +73,7 @@ int32_t  StreamContextProxy::setParameters(uint32_t param_id, void *payload)
     switch (param_id) {
         case PAL_PARAM_ID_MODULE_CONFIG:
         {
-            status = session->setParameters(this, 0, param_id, payload);
+            status = session->setParameters(this, param_id, payload);
             if (status)
                 PAL_ERR(LOG_TAG, "Error:setParam for volume boost failed with %d",
                     status);

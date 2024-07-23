@@ -104,8 +104,9 @@ public:
     int close(Stream * s) override;
     int read(Stream *s, struct pal_buffer *buf, int * size) override;
     int write(Stream *s, struct pal_buffer *buf, int * size) override;
-    int setParameters(Stream *s, int tagId, uint32_t param_id, void *payload) override;
-    int getParameters(Stream *s, int tagId, uint32_t param_id, void **payload) override;
+    int pause(Stream *s) override;
+    int setParamWithTag(Stream *s, int tagId, uint32_t param_id, void *payload) override;
+    int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override;
     int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) override;
     int getTimestamp(struct pal_session_time *stime) override;
     int registerCallBack(session_callback cb, uint64_t cookie) override;
@@ -126,6 +127,7 @@ public:
     int GetMmapPosition(Stream *s, struct pal_mmap_position *position) override;
     int ResetMmapBuffer(Stream *s) override;
     int openGraph(Stream *s) override;
+    int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) override;
     void adjustMmapPeriodCount(struct pcm_config *config, int32_t min_size_frames);
     void registerAdmStream(Stream *s, pal_stream_direction_t dir,
             pal_stream_flags_t flags, struct pcm *, struct pcm_config *cfg);

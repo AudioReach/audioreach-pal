@@ -54,7 +54,6 @@ public:
    int32_t start() override;
    int32_t stop() override;
    int32_t prepare() override;
-   int32_t setStreamAttributes( struct pal_stream_attributes *sattr) override;
    int32_t setVolume( struct pal_volume_data *volume) override;
    int32_t mute(bool state) override;
    int32_t mute_l(bool state) override;
@@ -64,7 +63,9 @@ public:
    int32_t pause_l() override;
    int32_t resume() override;
    int32_t resume_l() override;
-   int32_t flush();
+   int32_t drain(pal_drain_type_t type __unused) override { return 0; };
+   int32_t suspend() { return 0; };
+   int32_t flush() override;
    int32_t addRemoveEffect(pal_audio_effect_t effect, bool enable) override;
    int32_t read(struct pal_buffer *buf) override;
    int32_t write(struct pal_buffer *buf) override;

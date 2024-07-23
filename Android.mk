@@ -5,6 +5,22 @@ PAL_BASE_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE := libarpal_internalheaders
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/stream/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/session/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/resource_manager/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/device/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/utils/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/context_manager/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/plugins/codecs
+
+LOCAL_VENDOR_MODULE := true
+
+include $(BUILD_HEADER_LIBRARY)
+
+include $(CLEAR_VARS)
+
 LOCAL_MODULE        := libar-pal
 LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
@@ -151,6 +167,8 @@ LOCAL_SHARED_LIBRARIES := \
     libvui_intf \
     libarmemlog \
     libhidlbase
+
+LOCAL_STATIC_LIBRARIES := libplugin_manager
 
 ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
 LOCAL_SHARED_LIBRARIES += libPeripheralStateUtils

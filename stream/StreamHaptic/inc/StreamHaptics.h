@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -59,6 +59,8 @@ public:
     pal_stream_callback callback_= 0;
     int32_t setParameters(uint32_t param_id, void *payload);
     int32_t start();
+    int32_t ssrDownHandler() override;
+    int32_t ssrUpHandler() override;
     int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) override;
 private:
     static void HandleCallBack(uint64_t hdl, uint32_t event_id,

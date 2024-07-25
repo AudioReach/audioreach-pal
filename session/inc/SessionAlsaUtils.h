@@ -117,6 +117,9 @@ private:
     static struct mixer_ctl *getStaticMixerControl(struct mixer *am, std::string name);
     static void *customPayload;
     static size_t customPayloadSize;
+    static int32_t resumeInCallMusic();
+    static int32_t pauseInCallMusic();
+    static int32_t reconfigureInCallMusicStream(struct pal_media_config config);
 
 public:
     ~SessionAlsaUtils();

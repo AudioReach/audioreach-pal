@@ -7,31 +7,32 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
     <version>1.0</version>
     <!-- .so mapping for all streams supported on target-->
     <streams>
-        <stream name="PAL_STREAM_DEEP_BUFFER" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_SPATIAL_AUDIO" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_GENERIC" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOIP_TX" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOIP_RX" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_PCM_OFFLOAD" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOICE_CALL" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_LOOPBACK" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_PROXY" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_RAW" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOICE_RECOGNITION" lib="libstream_pcm.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_COMPRESSED" lib="libstream_compress.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOICE_UI" lib="libstream_soundtrigger.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOICE_CALL_RECORD" lib="libstream_incall.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libstream_incall.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_NON_TUNNEL" lib="libstream_nontunnel.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_ACD" lib="libstream_acd.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_HAPTICS" lib="libstream_haptics.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_CONTEXT_PROXY" lib="libstream_contextproxy.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_ULTRASOUND" lib="libstream_ultrasound.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_SENSOR_PCM_DATA" lib="libstream_sensorpcmdata.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_COMMON_PROXY" lib="libstream_commonproxy.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libstream_sensorrenderer.so" entryFunction="CreateStream"/>
-        <stream name="PAL_STREAM_ASR" lib="libstream_asr.so" entryFunction="CreateStream"/>
+        <stream name="PAL_STREAM_DEEP_BUFFER" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_SPATIAL_AUDIO" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_GENERIC" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOIP_TX" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOIP_RX" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PCM_OFFLOAD" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOOPBACK" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PROXY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_RAW" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOICE_RECOGNITION" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_COMPRESSED" lib="libstream_compress.so" entryFunction="CreateCompressStream"/>
+        <stream name="PAL_STREAM_VOICE_UI" lib="libstream_soundtrigger.so" entryFunction="CreateSoundTriggerStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL_RECORD" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
+        <stream name="PAL_STREAM_NON_TUNNEL" lib="libstream_nontunnel.so" entryFunction="CreateNonTunnelStream"/>
+        <stream name="PAL_STREAM_ACD" lib="libstream_acd.so" entryFunction="CreateACDStream"/>
+        <stream name="PAL_STREAM_HAPTICS" lib="libstream_haptics.so" entryFunction="CreateHapticsStream"/>
+        <stream name="PAL_STREAM_CONTEXT_PROXY" lib="libstream_contextproxy.so" entryFunction="CreateContextProxyStream"/>
+        <stream name="PAL_STREAM_ULTRASOUND" lib="libstream_ultrasound.so" entryFunction="CreateUltraSoundStream"/>
+        <stream name="PAL_STREAM_SENSOR_PCM_DATA" lib="libstream_sensorpcmdata.so" entryFunction="CreateSensorPCMDataStream"/>
+        <stream name="PAL_STREAM_COMMON_PROXY" lib="libstream_commonproxy.so" entryFunction="CreateCommonProxyStream"/>
+        <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libstream_sensorrenderer.so" entryFunction="CreateSensorRendererStream"/>
+        <stream name="PAL_USE_ACDB_STREAM" lib="libstream_acdb.so" entryFunction="CreateACDBStream"/>
+        <stream name="PAL_STREAM_ASR" lib="libstream_asr.so" entryFunction="CreateASRStream"/>
     </streams>
 </plugin_manager_info>

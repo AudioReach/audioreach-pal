@@ -78,8 +78,8 @@ std::shared_ptr<Device> HapticsDev::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        if (ResourceManager::isHapticsProtectionEnabled &&
-                      ResourceManager::isHapticsthroughWSA) {
+        if (ResourceManager::IsHapticsProtectionEnabled() &&
+            ResourceManager::IsHapticsThroughWSA()) {
             std::shared_ptr<Device> sp(new HapticsDevProtection(device, Rm));
             obj = sp;
         } else {

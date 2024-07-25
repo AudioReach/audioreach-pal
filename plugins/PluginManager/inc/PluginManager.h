@@ -28,11 +28,6 @@ typedef struct {
     uint32_t refCount;
 } pm_item_t;
 
-struct xml_userdata {
-    char data_buf[1024];
-    size_t offs;
-    XML_Parser parser;
-};
 
 class PluginManager
 {

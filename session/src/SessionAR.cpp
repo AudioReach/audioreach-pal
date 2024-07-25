@@ -548,7 +548,7 @@ int SessionAR::NotifyChargerConcurrency(std::shared_ptr<ResourceManager>rm, bool
     PAL_DBG(LOG_TAG, "Enter concurrency state %d Notify state %d \n",
             rm->getConcurrentBoostState(), state);
 
-    ResourceManager::mChargerBoostMutex.lock();
+    rm->lockChargerBoostMutex();
     if (rm->getChargerOnlineState()) {
         if (rm->getConcurrentBoostState() ^ state)
             status = rm->chargerListenerSetBoostState(state, CHARGER_ON_PB_STARTS);
@@ -559,7 +559,7 @@ int SessionAR::NotifyChargerConcurrency(std::shared_ptr<ResourceManager>rm, bool
 
     PAL_DBG(LOG_TAG, "Exit concurrency state %d with status %d",
             rm->getConcurrentBoostState(), status);
-    ResourceManager::mChargerBoostMutex.unlock();
+   rm->unlockChargerBoostMutex();
 exit:
     return status;
 }
@@ -577,7 +577,7 @@ int SessionAR::EnableChargerConcurrency(std::shared_ptr<ResourceManager>rm, Stre
     if ((s && rm->getChargerOnlineState()) &&
         (rm->getConcurrentBoostState())) {
          status = rm->setSessionParamConfig(PAL_PARAM_ID_CHARGER_STATE, s,
-                                               CHARGE_CONCURRENCY_ON_TAG);
+                                            true);
         if (0 != status) {
             PAL_DBG(LOG_TAG, "Set SessionParamConfig with status %d", status);
             status = rm->chargerListenerSetBoostState(false, CHARGER_ON_PB_STARTS);
@@ -941,7 +941,9 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             break;
         case PAL_PARAM_ID_CHARGER_STATE:
         {
-            int tag = *((int *) payload);
+            bool enable = *((bool *) payload);
+            int tag = enable ? CHARGE_CONCURRENCY_ON_TAG
+                      : CHARGE_CONCURRENCY_OFF_TAG;
             setConfigStatus = this->setConfig(s, MODULE, tag);
             if (setConfigStatus) {
                 PAL_INFO(LOG_TAG, "Charger state setConfig failed.");
@@ -993,7 +995,7 @@ int SessionAR::resume(Stream * s)
 int SessionAR::setVolume(Stream *s)
 {
     int32_t status = 0;
-    if (rm->isCRSCallEnabled) {
+    if (rm->IsCRSCallEnabled()) {
         status = this->setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
     } else {
         status = this->setConfig(s, CALIBRATION, VOLUME_LVL);

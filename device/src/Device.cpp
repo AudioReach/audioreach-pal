@@ -518,7 +518,7 @@ int Device::open()
             goto exit;
         }
 
-        if (ResourceManager::isQmpEnabled) {
+        if (rm->IsQmpEnabled()) {
             if (strstr(this->deviceAttr.custom_config.custom_key, "unprocessed-hdr-mic")){
                 if (Device::initHdrRoutine(this->deviceAttr.custom_config.custom_key))
                     PAL_ERR(LOG_TAG, "Failed to set QMP hdr config");
@@ -549,8 +549,8 @@ int Device::close()
            disableDevice(audioRoute, mSndDeviceName);
            mCurrentPriority = MIN_USECASE_PRIORITY;
            deviceStartStopCount = 0;
-           if(rm->num_proxy_channels != 0)
-               rm->num_proxy_channels = 0;
+           if(rm->getProxyChannels() != 0)
+               rm->setProxyChannels(0);
        }
     }
     PAL_INFO(LOG_TAG, "Exit. deviceCount %d for device id %d (%s), exit status %d", deviceCount,

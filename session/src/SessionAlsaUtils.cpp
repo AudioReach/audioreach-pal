@@ -40,12 +40,8 @@
 #include <sstream>
 #include <string>
 #include <set>
-//#include "SessionAlsa.h"
-//#include "SessionAlsaPcm.h"
-//#include "SessionAlsaCompress.h"
 #include "SessionAlsaVoice.h"
 #include "ResourceManager.h"
-#include "StreamSoundTrigger.h"
 #include <agm/agm_api.h>
 #include "spr_api.h"
 #include "apm_api.h"
@@ -511,7 +507,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
 
         deviceCKV.clear();
 
-        if (ResourceManager::isSpeakerProtectionEnabled) {
+        if (rmHandle->IsSpeakerProtectionEnabled()) {
             PAL_DBG(LOG_TAG, "Speaker protection enabled");
             if (be->first == PAL_DEVICE_OUT_SPEAKER) {
                 status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -523,8 +519,8 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
             }
         }
 
-        if (ResourceManager::isHandsetProtectionEnabled &&
-               ResourceManager::isSpeakerProtectionEnabled) {
+        if (rmHandle->IsHandsetProtectionEnabled() &&
+               rmHandle->IsSpeakerProtectionEnabled()) {
             PAL_DBG(LOG_TAG, "Handset enabled");
             if (be->first == PAL_DEVICE_OUT_HANDSET) {
                 status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -537,7 +533,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
         }
 
         if (be->first == PAL_DEVICE_OUT_HAPTICS_DEVICE &&
-                                ResourceManager::isHapticsthroughWSA) {
+                                ResourceManager::IsHapticsThroughWSA()) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
                                  HAPTICS_PROT_ENABLE);
             if (status != 0) {
@@ -980,6 +976,8 @@ int SessionAlsaUtils::setDeviceMediaConfig(std::shared_ptr<ResourceManager> rmHa
     long aif_group_atrr_config[5];
     struct mixer *mixerHandle = NULL;
     int status = 0;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
+    group_dev_config_t currentGroupDevConfig;
 
     status = rmHandle->getVirtualAudioMixer(&mixerHandle);
     if (status) {
@@ -1003,8 +1001,8 @@ int SessionAlsaUtils::setDeviceMediaConfig(std::shared_ptr<ResourceManager> rmHa
     }
 
     // if it's virtual port, need to set group attribute as well
-    if (rmHandle->activeGroupDevConfig &&
-        (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
+    groupDevConfig = rmHandle->getActiveGroupDevConfig();
+    if (groupDevConfig && (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
         dAttr->id == PAL_DEVICE_OUT_HANDSET ||
         dAttr->id == PAL_DEVICE_OUT_ULTRASOUND)) {
         std::string truncatedBeName = backEndName;
@@ -1016,28 +1014,25 @@ int SessionAlsaUtils::setDeviceMediaConfig(std::shared_ptr<ResourceManager> rmHa
                 beCtrlNames[BE_GROUP_ATTR]);
         return -EINVAL;
         }
-        if (rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.sample_rate)
-            aif_group_atrr_config[0] = rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.sample_rate;
+        if (groupDevConfig->grp_dev_hwep_cfg.sample_rate)
+            aif_group_atrr_config[0] = groupDevConfig->grp_dev_hwep_cfg.sample_rate;
         else
             aif_group_atrr_config[0] = dAttr->config.sample_rate;
-        if (rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.channels)
-            aif_group_atrr_config[1] = rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.channels;
+        if (groupDevConfig->grp_dev_hwep_cfg.channels)
+            aif_group_atrr_config[1] = groupDevConfig->grp_dev_hwep_cfg.channels;
         else
             aif_group_atrr_config[1] = dAttr->config.ch_info.channels;
         aif_group_atrr_config[2] = palToSndDriverFormat(
-                                    rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.aud_fmt_id);
+                                    groupDevConfig->grp_dev_hwep_cfg.aud_fmt_id);
         aif_group_atrr_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
-        aif_group_atrr_config[4] = rmHandle->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask;
+        aif_group_atrr_config[4] = groupDevConfig->grp_dev_hwep_cfg.slot_mask;
 
         mixer_ctl_set_array(ctl, &aif_group_atrr_config,
                                sizeof(aif_group_atrr_config)/sizeof(aif_group_atrr_config[0]));
         PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt slot_mask %ld %ld %ld %ld %ld\n", truncatedBeName.c_str(),
                 aif_group_atrr_config[0], aif_group_atrr_config[1], aif_group_atrr_config[2],
                 aif_group_atrr_config[3], aif_group_atrr_config[4]);
-        memcpy(&rmHandle->currentGroupDevConfig, rmHandle->activeGroupDevConfig.get(),
-               sizeof(group_dev_config_t));
-        rmHandle->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate = aif_group_atrr_config[0];
-        rmHandle->currentGroupDevConfig.grp_dev_hwep_cfg.channels = aif_group_atrr_config[1];
+        rmHandle->setCurrentGroupDevConfig(groupDevConfig, aif_group_atrr_config[0], aif_group_atrr_config[1]);
     }
     ctl = SessionAlsaUtils::getBeMixerControl(mixerHandle, backEndName , BE_MEDIAFMT);
     if (!ctl) {
@@ -1622,7 +1617,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
         }
     }
     deviceCKV.clear();
-    if (ResourceManager::isSpeakerProtectionEnabled) {
+    if (rmHandle->IsSpeakerProtectionEnabled()) {
         PAL_DBG(LOG_TAG, "Speaker protection enabled");
         if (rxBackEnds[0].first == PAL_DEVICE_OUT_SPEAKER) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -1633,8 +1628,8 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
             }
         }
     }
-    if (ResourceManager::isHandsetProtectionEnabled &&
-            ResourceManager::isSpeakerProtectionEnabled) {
+    if (rmHandle->IsHandsetProtectionEnabled() &&
+            rmHandle->IsSpeakerProtectionEnabled()) {
         PAL_DBG(LOG_TAG, "Handset enabled");
         if (rxBackEnds[0].first == PAL_DEVICE_OUT_HANDSET) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -1647,7 +1642,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
     }
 
     if (rxBackEnds[0].first == PAL_DEVICE_OUT_HAPTICS_DEVICE &&
-                             ResourceManager::isHapticsthroughWSA) {
+                             ResourceManager::IsHapticsThroughWSA()) {
         status = builder->populateCalKeyVector(streamHandle, deviceCKV,
                        HAPTICS_PROT_ENABLE);
         if (status != 0) {
@@ -2104,7 +2099,7 @@ int SessionAlsaUtils::disconnectSessionDevice(Stream* streamHandle, pal_stream_t
 
     if (PAL_STREAM_VOICE_CALL == streamType) {
         if (SessionAlsaUtils::isRxDevice(aifBackEndsToDisconnect[0].first)) {
-            rmHandle->pauseInCallMusic();
+            pauseInCallMusic();
         }
     }
 
@@ -2313,12 +2308,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
     /*Setup inCall MFC configuration before the speaker device subgraph moves to START state*/
     /*Make sure the speaker protection module can apply the correct media format*/
     if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first)) {
-        struct sessionToPayloadParam deviceData;
-        deviceData.bitWidth = dAttr.config.bit_width;
-        deviceData.sampleRate = dAttr.config.sample_rate;
-        deviceData.numChannel = dAttr.config.ch_info.channels;
-        deviceData.ch_info = nullptr;
-        rm->reconfigureInCallMusicStream(deviceData);
+        reconfigureInCallMusicStream(dAttr.config);
     }
     /* Configure MFC to match to device config */
     /* This has to be done after sending all mixer controls and before connect */
@@ -2337,7 +2327,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
                     (sAttr.type == PAL_STREAM_DEEP_BUFFER) ||
                     (sAttr.type == PAL_STREAM_COMPRESSED))) {
                     pal_param_device_rotation_t rotation;
-                    rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
+                    rotation.rotation_type = rmHandle->getOrientation() == ORIENTATION_270 ?
                                             PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
                     status = handleDeviceRotation(rmHandle, streamHandle, rotation.rotation_type,
                                                     pcmDevIds.at(0), mixerHandle, builder,
@@ -2445,7 +2435,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
             goto exit;
         }
         if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first)) {
-            rm->resumeInCallMusic();
+            resumeInCallMusic();
         }
     }
 exit:
@@ -2471,6 +2461,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
     bool is_out_dev = false;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
 
     if (dAttr.id > PAL_DEVICE_OUT_MIN && dAttr.id < PAL_DEVICE_OUT_MAX) {
         is_out_dev = true;
@@ -2493,14 +2484,15 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
         PAL_ERR(LOG_TAG, "could not get stream attributes, status:%d", status);
         goto exit;
     }
+    groupDevConfig = rmHandle->getActiveGroupDevConfig();
     if ((((dAttr.id == PAL_DEVICE_OUT_SPEAKER || dAttr.id == PAL_DEVICE_OUT_HANDSET) ||
-          (rmHandle->activeGroupDevConfig && dAttr.id == PAL_DEVICE_OUT_ULTRASOUND)) &&
+          (groupDevConfig && dAttr.id == PAL_DEVICE_OUT_ULTRASOUND)) &&
           (streamType == PAL_STREAM_ULTRASOUND)) ||
         (is_out_dev && streamType == PAL_STREAM_LOOPBACK)) {
         if (sess) {
             status = configureMFC(rmHandle,sAttr, dAttr, pcmRxDevIds,
                                 aifBackEndsToConnect[0].second.data());
-            
+
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "setMixerParameter failed");
                 goto exit;
@@ -2637,7 +2629,7 @@ int SessionAlsaUtils::setupSessionDevice(Stream* streamHandle, pal_stream_type_t
 
     deviceCKV.clear();
 
-    if (ResourceManager::isSpeakerProtectionEnabled) {
+    if (rmHandle->IsSpeakerProtectionEnabled()) {
         PAL_DBG(LOG_TAG, "Speaker protection enabled");
         if (aifBackEndsToConnect[0].first == PAL_DEVICE_OUT_SPEAKER) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -2649,7 +2641,7 @@ int SessionAlsaUtils::setupSessionDevice(Stream* streamHandle, pal_stream_type_t
         }
     }
     if (aifBackEndsToConnect[0].first == PAL_DEVICE_OUT_HAPTICS_DEVICE &&
-                                         ResourceManager::isHapticsthroughWSA) {
+                                         ResourceManager::IsHapticsThroughWSA()) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
                             HAPTICS_PROT_ENABLE);
             if (status != 0) {
@@ -2658,8 +2650,8 @@ int SessionAlsaUtils::setupSessionDevice(Stream* streamHandle, pal_stream_type_t
             }
     }
 
-   if (ResourceManager::isHandsetProtectionEnabled &&
-          ResourceManager::isSpeakerProtectionEnabled) {
+   if (rmHandle->IsHandsetProtectionEnabled() &&
+          rmHandle->IsSpeakerProtectionEnabled()) {
        PAL_DBG(LOG_TAG, "Handset enabled");
        if (aifBackEndsToConnect[0].first == PAL_DEVICE_OUT_HANDSET) {
             status = builder->populateCalKeyVector(streamHandle, deviceCKV,
@@ -2834,14 +2826,15 @@ int SessionAlsaUtils::configureMFC(const std::shared_ptr<ResourceManager>& rm, s
     bool devicePPMFCSet =  true;
     struct mixer *mixer = nullptr;
     rm->getVirtualAudioMixer(&mixer);
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
 
     // clear any cached custom payload
     builder->freeCustomPayload();
 
     /* Prepare devicePP MFC payload */
     /* Try to set devicePP MFC for virtual port enabled device to match to DMA config */
-    if (rm->activeGroupDevConfig &&
-            (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
+    groupDevConfig = rm->getActiveGroupDevConfig();
+    if (groupDevConfig && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
              dAttr.id == PAL_DEVICE_OUT_HANDSET ||
              dAttr.id == PAL_DEVICE_OUT_ULTRASOUND)) {
         status = getModuleInstanceId(mixer, pcmDevIds.at(0), intf,
@@ -2850,16 +2843,16 @@ int SessionAlsaUtils::configureMFC(const std::shared_ptr<ResourceManager>& rm, s
             PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
                     pcmDevIds.at(0), intf, dAttr.id);
 
-            if (rm->activeGroupDevConfig->devpp_mfc_cfg.bit_width)
-                mfcData.bitWidth = rm->activeGroupDevConfig->devpp_mfc_cfg.bit_width;
+            if (groupDevConfig->devpp_mfc_cfg.bit_width)
+                mfcData.bitWidth = groupDevConfig->devpp_mfc_cfg.bit_width;
             else
                 mfcData.bitWidth = dAttr.config.bit_width;
-            if (rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate)
-                mfcData.sampleRate = rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate;
+            if (groupDevConfig->devpp_mfc_cfg.sample_rate)
+                mfcData.sampleRate = groupDevConfig->devpp_mfc_cfg.sample_rate;
             else
                 mfcData.sampleRate = dAttr.config.sample_rate;
-            if (rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
-                mfcData.numChannel = rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+            if (groupDevConfig->devpp_mfc_cfg.channels)
+                mfcData.numChannel = groupDevConfig->devpp_mfc_cfg.channels;
             else
                 mfcData.numChannel = dAttr.config.ch_info.channels;
             mfcData.ch_info = nullptr;
@@ -2883,7 +2876,7 @@ int SessionAlsaUtils::configureMFC(const std::shared_ptr<ResourceManager>& rm, s
 
         /* set TKV for slot mask */
         setSlotMask(rm, sAttr, dAttr, pcmDevIds);
-    } else if (rm->isDeviceMuxConfigEnabled && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
+    } else if (rm->IsDeviceMuxConfigEnabled() && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
               dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
         setSlotMask(rm, sAttr, dAttr, pcmDevIds);
     }
@@ -2944,12 +2937,12 @@ int SessionAlsaUtils::configureMFC(const std::shared_ptr<ResourceManager>& rm, s
             mfcData.ch_info = nullptr;
         } else {
             mfcData.bitWidth = dAttr.config.bit_width;
-            if (!devicePPMFCSet && rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate)
-                mfcData.sampleRate = rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate;
+            if (!devicePPMFCSet && groupDevConfig->devpp_mfc_cfg.sample_rate)
+                mfcData.sampleRate = groupDevConfig->devpp_mfc_cfg.sample_rate;
             else
                 mfcData.sampleRate = dAttr.config.sample_rate;
-            if (!devicePPMFCSet && rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
-                mfcData.numChannel = rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+            if (!devicePPMFCSet && groupDevConfig->devpp_mfc_cfg.channels)
+                mfcData.numChannel = groupDevConfig->devpp_mfc_cfg.channels;
             else
                 mfcData.numChannel = dAttr.config.ch_info.channels;
             mfcData.ch_info = nullptr;
@@ -3021,11 +3014,12 @@ int SessionAlsaUtils::setSlotMask(const std::shared_ptr<ResourceManager>& rm, st
     int tkv_size = 0;
     uint32_t slot_mask = 0;
     struct mixer *mixer = nullptr;
+    std::shared_ptr<group_dev_config_t> groupDevConfig = rm->getActiveGroupDevConfig();
     rm->getVirtualAudioMixer(&mixer);
 
-    if (rm->activeGroupDevConfig) {
-        tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, rm->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask));
-    } else if (rm->isDeviceMuxConfigEnabled) {
+    if (groupDevConfig) {
+        tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, groupDevConfig->grp_dev_hwep_cfg.slot_mask));
+    } else if (rm->IsDeviceMuxConfigEnabled()) {
          slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
                          slotMaskBwLUT.at(dAttr.config.bit_width);
          tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, slot_mask));
@@ -3105,6 +3099,7 @@ int SessionAlsaUtils::handleDeviceRotation(const std::shared_ptr<ResourceManager
     size_t payloadSize = 0;
     int mfc_tag = TAG_MFC_SPEAKER_SWAP;
     std::vector<std::shared_ptr<Device>> associatedDevices;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
     status = s->getStreamAttributes(&sAttr);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "stream get attributes failed");
@@ -3144,9 +3139,10 @@ int SessionAlsaUtils::handleDeviceRotation(const std::shared_ptr<ResourceManager
                 PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
                     device, rxAifBackEnds[i].second.data(), dAttr.id);
 
-                if (rm->activeGroupDevConfig) {
-                    if (rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
-                        dAttr.config.ch_info.channels =rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+                groupDevConfig = rm->getActiveGroupDevConfig();
+                if (groupDevConfig) {
+                    if (groupDevConfig->devpp_mfc_cfg.channels)
+                        dAttr.config.ch_info.channels = groupDevConfig->devpp_mfc_cfg.channels;
                 }
                 builder->payloadMFCMixerCoeff((uint8_t **)&alsaParamData,
                                             &alsaPayloadSize, miid,
@@ -3174,5 +3170,111 @@ int SessionAlsaUtils::handleDeviceRotation(const std::shared_ptr<ResourceManager
             }
         }
     }
+    return status;
+}
+
+int32_t SessionAlsaUtils::reconfigureInCallMusicStream(struct pal_media_config config) {
+    int status = 0;
+    std::list<Stream*>::iterator it;
+    Session *session = nullptr;
+    struct pal_stream_attributes sAttr;
+    std::vector<Stream*> activeStreams;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);
+    if(status){
+        PAL_ERR(LOG_TAG, "failed to get active streams for stream type PAL_STREAM_VOICE_CALL_MUSIC");
+        goto exit;
+    }
+    if (!activeStreams.size()) {
+        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to configure");
+        goto exit;
+    }
+    for (auto& str: activeStreams) {
+        str->getStreamAttributes(&sAttr);
+        status = str->getStreamAttributes(&sAttr);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "stream get attributes failed");
+            goto exit;
+        }
+        if (sAttr.info.incall_music_info.local_playback) {
+            PAL_INFO(LOG_TAG, "found incall stream to configure");
+            status = str->getAssociatedSession(&session);
+            if (!session) {
+                PAL_ERR(LOG_TAG, "No associated session for stream exist");
+                status = -EINVAL;
+                goto exit;
+            }
+            status = session->reconfigureSession(str, config);
+        }
+    }
+exit:
+    return status;
+}
+
+int32_t SessionAlsaUtils::resumeInCallMusic() {
+    int status = 0;
+    std::list<Stream*>::iterator it;
+    struct pal_stream_attributes sAttr;
+    bool_t found = false;
+    std::vector<Stream*> activeStreams;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);
+    if(status || !activeStreams.size()){
+        PAL_ERR(LOG_TAG, "failed to get active streams for stream type PAL_STREAM_VOICE_CALL_MUSIC");
+        goto exit;
+    }
+    for (auto& str: activeStreams) {
+        str->getStreamAttributes(&sAttr);
+        status = str->getStreamAttributes(&sAttr);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "stream get attributes failed");
+            goto exit;
+        }
+        if (sAttr.info.incall_music_info.local_playback) {
+            PAL_INFO(LOG_TAG, "found incall stream to resume");
+            str->resume();
+            found = true;
+        }
+    }
+    if (!found) {
+        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to resume");
+    }
+exit:
+    return status;
+}
+
+int32_t SessionAlsaUtils::pauseInCallMusic() {
+    int status = 0;
+    bool_t found = false;
+    std::list<Stream*>::iterator it;
+    struct pal_stream_attributes sAttr;
+    std::vector<Stream*> activeStreams;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);
+    if(status || !activeStreams.size()){
+        PAL_ERR(LOG_TAG, "failed to get active streams for stream type PAL_STREAM_VOICE_CALL_MUSIC");
+        goto exit;
+    }
+    for (auto& str: activeStreams) {
+        str->getStreamAttributes(&sAttr);
+        status = str->getStreamAttributes(&sAttr);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "stream get attributes failed");
+            goto exit;
+        }
+        if (sAttr.info.incall_music_info.local_playback) {
+            PAL_INFO(LOG_TAG, "found incall stream to pause and flush");
+            str->pause();
+            str->flush();
+            found = true;
+        }
+    }
+    if (!found) {
+        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to pause");
+    }
+exit:
     return status;
 }

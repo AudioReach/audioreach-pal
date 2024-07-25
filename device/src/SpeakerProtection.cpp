@@ -1196,9 +1196,9 @@ SpeakerProtection::SpeakerProtection(struct pal_device *device,
 
     spkerTempList = NULL;
 
-    if (ResourceManager::spQuickCalTime > 0 &&
-        ResourceManager::spQuickCalTime < MIN_SPKR_IDLE_SEC)
-        minIdleTime = ResourceManager::spQuickCalTime;
+    if (rm->getSpQuickCalTime() > 0 &&
+        rm->getSpQuickCalTime() < MIN_SPKR_IDLE_SEC)
+        minIdleTime = rm->getSpQuickCalTime();
     else
         minIdleTime = MIN_SPKR_IDLE_SEC;
 
@@ -1459,6 +1459,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
     std::unique_lock<std::mutex> lock(calibrationMutex);
     struct agm_event_reg_cfg event_cfg;
     session_callback sessionCb;
+    pal_spkr_prot_payload spkrProtPayload;
 
     PAL_DBG(LOG_TAG, "Flag %d", flag);
     deviceMutex.lock();
@@ -1697,7 +1698,8 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
 
         // Setting the mode of VI module
         modeConfg.num_speakers = vi_device.channels;
-        switch (rm->mSpkrProtModeValue.operationMode) {
+        spkrProtPayload = rm->getSpkrProtModeValue();
+        switch (spkrProtPayload.operationMode) {
             case PAL_SP_MODE_FACTORY_TEST:
                 modeConfg.th_operation_mode = FACTORY_TEST_MODE;
             break;
@@ -1746,7 +1748,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
         }
 
         // Setting Excursion mode
-        if (rm->mSpkrProtModeValue.operationMode == PAL_SP_MODE_FACTORY_TEST)
+        if (spkrProtPayload.operationMode == PAL_SP_MODE_FACTORY_TEST)
             viExModeConfg.ex_FTM_mode_enable_flag = 1; // FTM Mode
         else
             viExModeConfg.ex_FTM_mode_enable_flag = 0; // Normal Mode
@@ -1763,11 +1765,11 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
             }
         }
 
-        if (rm->mSpkrProtModeValue.operationMode) {
-            PAL_DBG(LOG_TAG, "Operation mode %d", rm->mSpkrProtModeValue.operationMode);
+        if (spkrProtPayload.operationMode) {
+            PAL_DBG(LOG_TAG, "Operation mode %d", spkrProtPayload.operationMode);
             param_id_sp_th_vi_ftm_cfg_t viFtmConfg;
             viFtmConfg.num_ch = vi_device.channels;
-            switch (rm->mSpkrProtModeValue.operationMode) {
+            switch (spkrProtPayload.operationMode) {
                 case PAL_SP_MODE_FACTORY_TEST:
                     viParamId = PARAM_ID_SP_TH_VI_FTM_CFG;
                     payloadSize = 0;
@@ -1924,8 +1926,8 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
 
         // Set the operation mode for SP module
         PAL_DBG(LOG_TAG, "Operation mode for SP %d",
-                        rm->mSpkrProtModeValue.operationMode);
-        switch (rm->mSpkrProtModeValue.operationMode) {
+                        spkrProtPayload.operationMode);
+        switch (spkrProtPayload.operationMode) {
             case PAL_SP_MODE_FACTORY_TEST:
                 spModeConfg.operation_mode = FACTORY_TEST_MODE;
             break;
@@ -1953,7 +1955,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
             }
         }
 
-        switch(ResourceManager::cpsMode)
+        switch(rm->getCpsMode())
         {
             case 1:
                 goto cps_dev_setup;
@@ -2391,7 +2393,7 @@ int SpeakerProtection::start()
 {
     PAL_DBG(LOG_TAG, "Enter");
 
-    if (ResourceManager::isVIRecordStarted) {
+    if (rm->IsVIRecordStarted()) {
         PAL_DBG(LOG_TAG, "record running so just update SP payload");
         updateSPcustomPayload();
     }
@@ -2408,9 +2410,9 @@ int SpeakerProtection::stop()
 {
     PAL_DBG(LOG_TAG, "Inside Speaker Protection stop");
     Device::stop();
-    if (ResourceManager::isVIRecordStarted) {
+    if (rm->IsVIRecordStarted()) {
         PAL_DBG(LOG_TAG, "record running so no need to proceed");
-        ResourceManager::isVIRecordStarted = false;
+        rm->setVIRecordState(false);
         return 0;
     }
     spkrProtProcessingMode(false);
@@ -2448,6 +2450,7 @@ int32_t SpeakerProtection::getFTMParameter(void **param)
     vi_ex_ftm_params_t exFtm_ret[numberOfChannels];
     param_id_sp_th_vi_ftm_params_t *ftmValue;
     param_id_sp_ex_vi_ftm_params_t *exFtmValue;
+    pal_spkr_prot_payload spkrProtPayload;
 
     memset(&ftm_ret, 0,sizeof(vi_th_ftm_params_t) * numberOfChannels);
     memset(&exFtm_ret, 0,sizeof(vi_ex_ftm_params_t) * numberOfChannels);
@@ -2602,7 +2605,7 @@ int32_t SpeakerProtection::getFTMParameter(void **param)
         size = resString.str().length();
 
         // Get is done now, we will clear up the stored mode now
-        memset(&(rm->mSpkrProtModeValue), 0, sizeof(pal_spkr_prot_payload));
+        rm->setSpkrProtModeValue(0);
     }
 
 exit :
@@ -2822,10 +2825,10 @@ SpeakerFeedback::~SpeakerFeedback()
 
 int32_t SpeakerFeedback::start()
 {
-    ResourceManager::isVIRecordStarted = true;
+    rm->setVIRecordState(true);
     // Do the customPayload configuration for VI path and call the Device::start
     PAL_DBG(LOG_TAG," Feedback start\n");
-    if (rm->isSpeakerProtectionEnabled)
+    if (rm->IsSpeakerProtectionEnabled())
         updateVIcustomPayload();
 
     Device::start();
@@ -2835,7 +2838,7 @@ int32_t SpeakerFeedback::start()
 
 int32_t SpeakerFeedback::stop()
 {
-    ResourceManager::isVIRecordStarted = false;
+    rm->setVIRecordState(false);
     PAL_DBG(LOG_TAG," Feedback stop\n");
     Device::stop();
 

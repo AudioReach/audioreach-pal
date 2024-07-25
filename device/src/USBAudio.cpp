@@ -421,7 +421,7 @@ int USB::selectBestConfig(struct pal_device *dattr,
         if ((*iter)->isConfigCached(dattr->address)) {
             PAL_DBG(LOG_TAG, "usb device is found.");
             status = (*iter)->readBestConfig(&dattr->config, sattr, is_playback,
-                                   devinfo, rm->isUHQAEnabled);
+                                   devinfo, rm->IsUHQAEnabled());
             break;
         }
     }

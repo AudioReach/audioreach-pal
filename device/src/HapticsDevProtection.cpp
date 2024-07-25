@@ -1622,8 +1622,9 @@ int HapticsDevProtection::HapticsDevProtectionDynamicCal()
 int HapticsDevProtection::start()
 {
     PAL_DBG(LOG_TAG, "Enter");
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
-    if (ResourceManager::isVIRecordStarted) {
+    if (rm->IsVIRecordStarted()) {
         PAL_DBG(LOG_TAG, "record running so just update SP payload");
         updateHPcustomPayload();
     }
@@ -1640,9 +1641,11 @@ int HapticsDevProtection::stop()
 {
     PAL_DBG(LOG_TAG, "Inside  HapticsDevice Protection stop");
     Device::stop();
-    if (ResourceManager::isVIRecordStarted) {
+
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    if (rm->IsVIRecordStarted()) {
         PAL_DBG(LOG_TAG, "record running so no need to proceed");
-        ResourceManager::isVIRecordStarted = false;
+        rm->setVIRecordState(false);
         return 0;
     }
     HapticsDevProtProcessingMode(false);
@@ -1947,7 +1950,8 @@ HapticsDevFeedback::~HapticsDevFeedback()
 
 int32_t HapticsDevFeedback::start()
 {
-    ResourceManager::isVIRecordStarted = true;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    rm->setVIRecordState(true);
     // Do the customPayload configuration for VI path and call the Device::start
     PAL_DBG(LOG_TAG," Feedback start\n");
     updateVIcustomPayload();
@@ -1958,7 +1962,8 @@ int32_t HapticsDevFeedback::start()
 
 int32_t HapticsDevFeedback::stop()
 {
-    ResourceManager::isVIRecordStarted = false;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    rm->setVIRecordState(false);
     PAL_DBG(LOG_TAG," Feedback stop\n");
     Device::stop();
 

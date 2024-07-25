@@ -79,8 +79,8 @@ std::shared_ptr<Device> Handset::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        if (ResourceManager::isHandsetProtectionEnabled &&
-                            ResourceManager::isSpeakerProtectionEnabled) {
+        if (ResourceManager::IsHandsetProtectionEnabled() &&
+            ResourceManager::IsSpeakerProtectionEnabled()) {
             std::shared_ptr<Device> sp(new SpeakerProtection(device, Rm));
             obj = sp;
         } else {

@@ -38,7 +38,6 @@
 #include <amdb_api.h>
 #include "ResourceManager.h"
 #include "PayloadBuilder.h"
-#include "StreamSoundTrigger.h"
 #include "spr_api.h"
 #include "pop_suppressor_api.h"
 #include "sp_vi.h"
@@ -2398,6 +2397,7 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
     size_t payloadSize = 0, padBytes = 0, streamMapSize = 0;
     uint64_t channel_mask = 0;
     int i = 0;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     bleCfg = (audio_lc3_codec_cfg_t *)codecInfo;
     if (!bleCfg) {
@@ -2438,7 +2438,7 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
                  sizeof(struct param_id_cop_v2_stream_info_t));
 
     header->module_instance_id = miid;
-    header->param_id = ResourceManager::isCPEnabled ? PARAM_ID_CONN_PROXY_STREAM_INFO : PARAM_ID_COP_V2_STREAM_INFO;
+    header->param_id = rm->IsCPEnabled() ? PARAM_ID_CONN_PROXY_STREAM_INFO : PARAM_ID_COP_V2_STREAM_INFO;
     header->error_code = 0x0;
     header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
     PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
@@ -2801,7 +2801,7 @@ std::vector<std::pair<selector_type_t, std::string>> PayloadBuilder::getSelector
             break;
             case INSTANCE_SEL:
                 if (sattr->type == PAL_STREAM_VOICE_UI)
-                    instance_id = dynamic_cast<StreamSoundTrigger *>(s)->GetInstanceId();
+                    instance_id = s->getInstanceId();
                 else
                     instance_id = rm->getStreamInstanceID(s);
                 if (instance_id < INSTANCE_1) {
@@ -3397,10 +3397,10 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
             case PAL_STREAM_COMPRESSED:
                 if (dAttr.id == PAL_DEVICE_OUT_SPEAKER) {
                     PAL_INFO(LOG_TAG,"SpeakerProt Status[%d], RAS Status[%d]\n",
-                            rm->isSpeakerProtectionEnabled, rm->isRasEnabled);
+                            rm->IsSpeakerProtectionEnabled(), rm->IsRasEnabled());
                 }
-                if (rm->isSpeakerProtectionEnabled == true &&
-                    rm->isRasEnabled == true &&
+                if (rm->IsSpeakerProtectionEnabled() == true &&
+                    rm->IsRasEnabled() == true &&
                     dAttr.id == PAL_DEVICE_OUT_SPEAKER) {
                     if (dAttr.config.ch_info.channels == 2) {
                         PAL_INFO(LOG_TAG,"Enabling RAS - device channels[%d]\n",
@@ -3958,6 +3958,7 @@ void PayloadBuilder::payloadSPConfig(uint8_t** payload, size_t* size, uint32_t m
     struct apm_module_param_data_t* header = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
+    pal_spkr_prot_payload spkrProtModeValue;
 
     if (!param) {
         PAL_ERR(LOG_TAG, "Invalid input parameters");
@@ -4146,11 +4147,12 @@ void PayloadBuilder::payloadSPConfig(uint8_t** payload, size_t* size, uint32_t m
                                 + sizeof(param_id_sp_th_vi_ftm_cfg_t));
 
                 spConf->num_ch = data->num_ch;
+                spkrProtModeValue = rm->getSpkrProtModeValue();
                 for (int i = 0; i < data->num_ch; i++) {
                     ftmCfg[i].wait_time_ms =
-                            rm->mSpkrProtModeValue.spkrHeatupTime;
+                            spkrProtModeValue.spkrHeatupTime;
                     ftmCfg[i].ftm_time_ms =
-                            rm->mSpkrProtModeValue.operationModeRunTime;
+                            spkrProtModeValue.operationModeRunTime;
                 }
             }
         break;
@@ -4403,6 +4405,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
     struct apm_module_param_data_t* header = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
+    pal_spkr_prot_payload spkrProtModeValue;
 
     if (!param) {
         PAL_ERR(LOG_TAG, "Invalid input parameters");
@@ -4566,11 +4569,12 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                                 sizeof(struct apm_module_param_data_t));
 
                 hpConf->num_channels = data->num_channels;
+                spkrProtModeValue = rm->getSpkrProtModeValue();
                 for (int i = 0; i < data->num_channels; i++) {
                     hpConf->wait_time_ms[i] =
-                            rm->mSpkrProtModeValue.spkrHeatupTime;
+                            spkrProtModeValue.spkrHeatupTime;
                     hpConf->ftm_time_ms[i] =
-                            rm->mSpkrProtModeValue.operationModeRunTime;
+                            spkrProtModeValue.operationModeRunTime;
                 }
             }
          break;

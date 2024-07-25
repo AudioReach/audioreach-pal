@@ -35,7 +35,6 @@
 #ifndef SESSION_H
 #define SESSION_H
 
-#include "PayloadBuilder.h"
 #include "PalDefs.h"
 #include <mutex>
 #include <algorithm>
@@ -64,6 +63,9 @@ typedef enum {
     SESSION_FLUSHED,
     SESSION_STOPPED,
 }sessionState;
+
+typedef void (*session_callback)(uint64_t hdl, uint32_t event_id, void *event_data,
+                uint32_t event_size);
 
 class Stream;
 class ResourceManager;
@@ -125,6 +127,7 @@ public:
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
+    virtual int32_t reconfigureSession(Stream *s, struct pal_media_config config){return -EINVAL;};
 };
 
 #endif //SESSION_H

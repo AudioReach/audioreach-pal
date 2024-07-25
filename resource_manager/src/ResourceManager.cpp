@@ -45,20 +45,6 @@
 #include "Session.h"
 #include "Device.h"
 #include "Stream.h"
-#include "StreamPCM.h"
-#include "StreamCompress.h"
-#include "StreamSoundTrigger.h"
-#include "StreamACD.h"
-#include "StreamASR.h"
-#include "StreamInCall.h"
-#include "StreamACDB.h"
-#include "StreamContextProxy.h"
-#include "StreamUltraSound.h"
-#include "StreamSensorPCMData.h"
-#include "StreamCommonProxy.h"
-#include "StreamHaptics.h"
-#include "StreamSensorRenderer.h"
-#include "gsl_intf.h"
 #include "Headphone.h"
 #include "PayloadBuilder.h"
 #include "Bluetooth.h"
@@ -77,7 +63,9 @@
 #include "HapticsDevProtection.h"
 #include "AudioHapticsInterface.h"
 #include "VUIInterfaceProxy.h"
-#include "kvh2xml.h"
+#include "VoiceUIPlatformInfo.h"
+#include "STUtils.h"
+#include "PluginManager.h"
 
 #include "PerfLock.h"
 
@@ -503,10 +491,6 @@ void* ResourceManager::cl_lib_handle = NULL;
 cl_init_t ResourceManager::cl_init = NULL;
 cl_deinit_t ResourceManager::cl_deinit = NULL;
 cl_set_boost_state_t ResourceManager::cl_set_boost_state = NULL;
-
-void* ResourceManager::vui_dmgr_lib_handle = NULL;
-vui_dmgr_init_t ResourceManager::vui_dmgr_init = NULL;
-vui_dmgr_deinit_t ResourceManager::vui_dmgr_deinit = NULL;
 
 void* ResourceManager::feature_stats_handle = NULL;
 afs_init_t ResourceManager::feature_stats_init = NULL;
@@ -1674,141 +1658,6 @@ exit:
     return status;
 }
 
-template <class T>
-void getMatchingStStreams(std::list<T> &active_streams, std::vector<Stream*> &st_streams, vui_dmgr_uuid_t &uuid)
-{
-    int ret = 0;
-    struct st_uuid st_uuid;
-
-    for (auto st : active_streams) {
-        if (NULL != st) {
-            st_uuid = st->GetVendorUuid();
-            if (!memcmp(&st_uuid, &uuid, sizeof(uuid))) {
-                PAL_INFO(LOG_TAG, "vendor uuid matched");
-                st_streams.push_back(static_cast<Stream*>(st));
-            }
-        }
-    }
-}
-
-int32_t ResourceManager::voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info)
-{
-    int status = 0;
-    std::vector<Stream*> st_streams;
-    pal_stream_type_t st_type;
-
-    for (int i = 0; i < uc_info->num_usecases; i++) {
-        if (uc_info->usecases[i].stream_type == PAL_STREAM_VOICE_UI && active_streams_st.size()) {
-            PAL_INFO(LOG_TAG, "get matching streams for VoiceUI");
-            getMatchingStStreams(active_streams_st, st_streams, uc_info->usecases[i].vendor_uuid);
-        }
-        else if (uc_info->usecases[i].stream_type == PAL_STREAM_ACD && active_streams_acd.size()) {
-            PAL_INFO(LOG_TAG, "get matching streams for acd");
-            getMatchingStStreams(active_streams_acd, st_streams, uc_info->usecases[i].vendor_uuid);
-        }
-        else if (uc_info->usecases[i].stream_type == PAL_STREAM_ASR && active_streams_asr.size()) {
-            PAL_INFO(LOG_TAG, "get matching streams for asr");
-            getMatchingStStreams(active_streams_asr, st_streams, uc_info->usecases[i].vendor_uuid);
-        }
-        else if (uc_info->usecases[i].stream_type == PAL_STREAM_SENSOR_PCM_DATA && active_streams_sensor_pcm_data.size()) {
-            PAL_INFO(LOG_TAG, "get matching streams for sensor");
-            getMatchingStStreams(active_streams_sensor_pcm_data, st_streams, uc_info->usecases[i].vendor_uuid);
-        }
-    }
-
-    // Reuse SSR mechanism for stream teardown and bring up.
-    PAL_INFO(LOG_TAG, "restart %d streams", st_streams.size());
-    for (auto &st : st_streams) {
-        st->getStreamType(&st_type);
-        status = st->ssrDownHandler();
-        if (status) {
-            PAL_ERR(LOG_TAG, "stream teardown failed %d", st_type);
-        }
-        status = st->ssrUpHandler();
-        if (status) {
-            PAL_ERR(LOG_TAG, "strem bring up failed %d", st_type);
-        }
-    }
-    return status;
-}
-
-int32_t ResourceManager::voiceuiDmgrPalCallback(int32_t param_id, void *payload, size_t payload_size)
-{
-    int status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter param id: %d", param_id);
-    if (!payload) {
-        PAL_ERR(LOG_TAG, "Null payload");
-        return -EINVAL;
-    }
-    if (!rm) {
-        PAL_ERR(LOG_TAG, "null resource manager");
-        return -EINVAL;
-    }
-
-    switch (param_id) {
-        case VUI_DMGR_PARAM_ID_RESTART_USECASES:
-        {
-            vui_dmgr_param_restart_usecases_t *uc_info = (vui_dmgr_param_restart_usecases_t *)payload;
-            if (payload_size != sizeof(vui_dmgr_param_restart_usecases_t)) {
-                PAL_ERR(LOG_TAG, "Incorrect payload size %zu", payload_size);
-                status = -EINVAL;
-                break;
-            }
-            if (rm) {
-                mActiveStreamMutex.lock();
-                rm->voiceuiDmgrRestartUseCases(uc_info);
-                mActiveStreamMutex.unlock();
-            }
-        }
-        break;
-        default:
-            PAL_ERR(LOG_TAG, "Unknown param id: %d", param_id);
-            break;
-    }
-
-    PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    return status;
-}
-
-void ResourceManager::voiceuiDmgrManagerInit()
-{
-    int status = 0;
-
-    vui_dmgr_lib_handle = dlopen(VUI_DMGR_LIB_PATH, RTLD_NOW);
-
-    if (!vui_dmgr_lib_handle) {
-        PAL_ERR(LOG_TAG, "dlopen failed for voiceui dmgr %s", dlerror());
-        return;
-    }
-
-    vui_dmgr_init = (vui_dmgr_init_t)dlsym(vui_dmgr_lib_handle, "vui_dmgr_init");
-    if (!vui_dmgr_init) {
-        PAL_ERR(LOG_TAG, "dlsym for vui_dmgr_init failed %s", dlerror());
-        goto exit;
-    }
-    vui_dmgr_deinit = (vui_dmgr_deinit_t)dlsym(vui_dmgr_lib_handle, "vui_dmgr_deinit");
-    if (!vui_dmgr_deinit) {
-        PAL_ERR(LOG_TAG, "dlsym for voiceui dmgr failed %s", dlerror());
-        goto exit;
-    }
-    status = vui_dmgr_init(voiceuiDmgrPalCallback);
-    if (status) {
-        PAL_DBG(LOG_TAG, "voiceui dmgr failed to initialize, status %d", status);
-        goto exit;
-    }
-    PAL_INFO(LOG_TAG, "voiceui dgmr initialized");
-    return;
-
-exit:
-    if (vui_dmgr_lib_handle) {
-        dlclose(vui_dmgr_lib_handle);
-        vui_dmgr_lib_handle = NULL;
-    }
-    vui_dmgr_init = NULL;
-    vui_dmgr_deinit = NULL;
-}
-
 void ResourceManager::checkQVAAppPresence(afs_param_payload_t *payload)
 {
     std::ifstream fp;
@@ -1987,19 +1836,6 @@ void ResourceManager::AudioFeatureStatsDeInit()
     }
     feature_stats_init = NULL;
     feature_stats_deinit = NULL;
-}
-
-void ResourceManager::voiceuiDmgrManagerDeInit()
-{
-    if (vui_dmgr_deinit)
-        vui_dmgr_deinit();
-
-    if (vui_dmgr_lib_handle) {
-        dlclose(vui_dmgr_lib_handle);
-        vui_dmgr_lib_handle = NULL;
-    }
-    vui_dmgr_init = NULL;
-    vui_dmgr_deinit = NULL;
 }
 
 int ResourceManager::initContextManager()
@@ -2289,11 +2125,10 @@ exit:
     return status;
 }
 
-int ResourceManager::handleChargerEvent(Stream *stream, int tag)
+int ResourceManager::handleChargerEvent(Stream *stream, bool enable)
 {
     int status = 0;
-    PAL_DBG(LOG_TAG, "Enter: tag %s", tag == CHARGE_CONCURRENCY_ON_TAG ?
-    "CHARGE_CONCURRENCY_ON_TAG" : "CHARGE_CONCURRENCY_OFF_TAG");
+    PAL_DBG(LOG_TAG, "Enter: enabled =  %d", enable);
 
     if (!stream) {
         PAL_ERR(LOG_TAG, "No Stream opened");
@@ -2301,9 +2136,9 @@ int ResourceManager::handleChargerEvent(Stream *stream, int tag)
         goto exit;
     }
 
-    if (!is_concurrent_boost_state_ && tag == CHARGE_CONCURRENCY_ON_TAG)
+    if (!is_concurrent_boost_state_ && enable)
         status = handlePBChargerInsertion(stream);
-    else if (is_concurrent_boost_state_ && tag == CHARGE_CONCURRENCY_OFF_TAG)
+    else if (is_concurrent_boost_state_ && !enable)
         status = handlePBChargerRemoval(stream);
     else
         PAL_DBG(LOG_TAG, "Concurrency state unchanged");
@@ -2316,13 +2151,13 @@ exit:
     return status;
 }
 
-int ResourceManager::setSessionParamConfig(uint32_t param_id, Stream *stream, int tag)
+int ResourceManager::setSessionParamConfig(uint32_t param_id, Stream *stream, bool enable)
 {
     int status = 0;
     Session *session = nullptr;
     struct audio_route *audioRoute = nullptr;
 
-    PAL_DBG(LOG_TAG, "Enter param id: %d with tag: %d", param_id, tag);
+    PAL_DBG(LOG_TAG, "Enter param id: %d with enable: %d", param_id, enable);
 
     if (!stream) {
         PAL_ERR(LOG_TAG, "No Stream opened");
@@ -2341,12 +2176,12 @@ int ResourceManager::setSessionParamConfig(uint32_t param_id, Stream *stream, in
         {
             if (!is_concurrent_boost_state_) goto exit;
 
-            status = session->setParameters(stream, param_id, &tag);
+            status = session->setParameters(stream, param_id, &enable);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "Failed to setConfig with status %d", status);
                 goto exit;
             }
-            is_ICL_config_ = (tag == CHARGE_CONCURRENCY_ON_TAG) ? true : false ;
+            is_ICL_config_ = enable;
         }
         break;
         default:
@@ -3178,8 +3013,7 @@ exit:
     return status;
 }
 
-bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes,
-                                        struct pal_device *devices, int no_of_devices)
+bool ResourceManager::isStreamSupported(Stream *s, struct pal_device *devices, int no_of_devices)
 {
     bool result = false;
     uint16_t channels;
@@ -3187,19 +3021,31 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
     uint32_t rc;
     size_t cur_sessions = 0;
     size_t max_sessions = 0;
+    struct pal_stream_attributes attributes;
 
-    if (!attributes || ((no_of_devices > 0) && !devices && (attributes->type != PAL_STREAM_VOICE_CALL_MUSIC)
-                         && (attributes->type != PAL_STREAM_VOICE_CALL_RECORD))) {
-        PAL_ERR(LOG_TAG, "Invalid input parameter attr %p, noOfDevices %d devices %p",
-                attributes, no_of_devices, devices);
+    if (!s) {
+        rc = -EINVAL;
+        PAL_ERR(LOG_TAG, "Stream doesn't exist, status %d", rc);
+        goto exit;
+    }
+    rc = s->getStreamAttributes(&attributes);
+    if(rc){
+        rc = -EINVAL;
+        PAL_ERR(LOG_TAG, "Get stream attributes failed, status %d", rc);
+        goto exit;
+    }
+
+    if (((no_of_devices > 0) && !devices && (attributes.type != PAL_STREAM_VOICE_CALL_MUSIC)
+                         && (attributes.type != PAL_STREAM_VOICE_CALL_RECORD))) {
+        PAL_ERR(LOG_TAG, "Invalid input parameter, noOfDevices %d devices %p",
+                no_of_devices, devices);
         return result;
     }
 
     // check if stream type is supported
     // and new stream session is allowed
-    pal_stream_type_t type = attributes->type;
-    PAL_DBG(LOG_TAG, "Enter. type %d", type);
-    switch (type) {
+    PAL_DBG(LOG_TAG, "Enter. type %d", attributes.type);
+    switch (attributes.type) {
         case PAL_STREAM_LOW_LATENCY:
         case PAL_STREAM_VOIP:
         case PAL_STREAM_VOIP_RX:
@@ -3235,7 +3081,6 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             cur_sessions = active_streams_voice_rec.size();
             max_sessions = MAX_SESSIONS_VOICE_RECOGNITION;
             break;
-        case PAL_STREAM_LOOPBACK:
         case PAL_STREAM_TRANSCODE:
         case PAL_STREAM_VOICE_UI:
             cur_sessions = active_streams_st.size();
@@ -3249,6 +3094,7 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             cur_sessions = active_streams_asr.size();
             max_sessions = MAX_SESSIONS_ASR;
             break;
+        case PAL_STREAM_LOOPBACK:
         case PAL_STREAM_PCM_OFFLOAD:
             cur_sessions = active_streams_po.size();
             max_sessions = MAX_SESSIONS_PCM_OFFLOAD;
@@ -3288,21 +3134,23 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             max_sessions = MAX_SESSIONS_SENSOR_PLAYBACK;
             break;
         default:
-            PAL_ERR(LOG_TAG, "Invalid stream type = %d", type);
+            PAL_ERR(LOG_TAG, "Invalid stream type = %d", attributes.type);
         return result;
     }
-    if (cur_sessions == max_sessions && type != PAL_STREAM_VOICE_CALL) {
-        if (type == PAL_STREAM_VOICE_RECOGNITION &&
-            active_streams_db.size() < MAX_SESSIONS_DEEP_BUFFER) {
-                attributes->type = PAL_STREAM_DEEP_BUFFER;
-                type = PAL_STREAM_DEEP_BUFFER;
-        } else {
-            PAL_ERR(LOG_TAG, "no new session allowed for stream %d", type);
-            return result;
+
+    if (attributes.type != PAL_STREAM_VOICE_CALL) {
+        if ((cur_sessions - 1) == max_sessions) {
+            if (attributes.type == PAL_STREAM_VOICE_RECOGNITION &&
+                active_streams_db.size() < MAX_SESSIONS_DEEP_BUFFER) {
+                    attributes.type = PAL_STREAM_DEEP_BUFFER;
+            } else {
+                PAL_ERR(LOG_TAG, "no new session allowed for stream %d", attributes.type);
+                return result;
+            }
         }
     }
 
-    if (type == PAL_STREAM_HAPTICS) {
+    if (attributes.type == PAL_STREAM_HAPTICS) {
         struct pal_device hapticsDattr;
         std::shared_ptr<Device> hapticsDev = nullptr;
         std::vector <Stream *> activeStreams;
@@ -3322,7 +3170,7 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
     }
 
     // check if param supported by audio configruation
-    switch (type) {
+    switch (attributes.type) {
         case PAL_STREAM_VOICE_CALL_RECORD:
         case PAL_STREAM_LOW_LATENCY:
         case PAL_STREAM_ULTRA_LOW_LATENCY:
@@ -3337,77 +3185,77 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
         case PAL_STREAM_PROXY:
         case PAL_STREAM_VOICE_CALL_MUSIC:
         case PAL_STREAM_VOICE_RECOGNITION:
-            if (attributes->direction == PAL_AUDIO_INPUT) {
-                channels = attributes->in_media_config.ch_info.channels;
-                samplerate = attributes->in_media_config.sample_rate;
-                bitwidth = attributes->in_media_config.bit_width;
+            if (attributes.direction == PAL_AUDIO_INPUT) {
+                channels = attributes.in_media_config.ch_info.channels;
+                samplerate = attributes.in_media_config.sample_rate;
+                bitwidth = attributes.in_media_config.bit_width;
             } else {
-                channels = attributes->out_media_config.ch_info.channels;
-                samplerate = attributes->out_media_config.sample_rate;
-                bitwidth = attributes->out_media_config.bit_width;
+                channels = attributes.out_media_config.ch_info.channels;
+                samplerate = attributes.out_media_config.sample_rate;
+                bitwidth = attributes.out_media_config.bit_width;
             }
-            rc = (StreamPCM::isBitWidthSupported(bitwidth) |
-                  StreamPCM::isSampleRateSupported(samplerate) |
-                  StreamPCM::isChannelSupported(channels));
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
-               return result;
+               goto exit;
             }
             PAL_VERBOSE(LOG_TAG, "config suppported");
             result = true;
             break;
         case PAL_STREAM_RAW:
-            if (attributes->direction == PAL_AUDIO_INPUT) {
-               channels = attributes->in_media_config.ch_info.channels;
-               samplerate = attributes->in_media_config.sample_rate;
-               bitwidth = attributes->in_media_config.bit_width;
+            if (attributes.direction == PAL_AUDIO_INPUT) {
+               channels = attributes.in_media_config.ch_info.channels;
+               samplerate = attributes.in_media_config.sample_rate;
+               bitwidth = attributes.in_media_config.bit_width;
             } else {
-                channels = attributes->out_media_config.ch_info.channels;
-                samplerate = attributes->out_media_config.sample_rate;
-                bitwidth = attributes->out_media_config.bit_width;
+                channels = attributes.out_media_config.ch_info.channels;
+                samplerate = attributes.out_media_config.sample_rate;
+                bitwidth = attributes.out_media_config.bit_width;
             }
-            rc = (StreamPCM::isBitWidthSupported(bitwidth) |
-                  StreamPCM::isSampleRateSupported(samplerate) |
-                  StreamPCM::isChannelSupported(channels));
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
-               return result;
+               goto exit;
             }
             PAL_VERBOSE(LOG_TAG, "config suppported");
             result = true;
             break;
         case PAL_STREAM_COMPRESSED:
-            if (attributes->direction == PAL_AUDIO_INPUT) {
-               channels = attributes->in_media_config.ch_info.channels;
-               samplerate = attributes->in_media_config.sample_rate;
-               bitwidth = attributes->in_media_config.bit_width;
+            if (attributes.direction == PAL_AUDIO_INPUT) {
+               channels = attributes.in_media_config.ch_info.channels;
+               samplerate = attributes.in_media_config.sample_rate;
+               bitwidth = attributes.in_media_config.bit_width;
             } else {
-               channels = attributes->out_media_config.ch_info.channels;
-               samplerate = attributes->out_media_config.sample_rate;
-               bitwidth = attributes->out_media_config.bit_width;
+               channels = attributes.out_media_config.ch_info.channels;
+               samplerate = attributes.out_media_config.sample_rate;
+               bitwidth = attributes.out_media_config.bit_width;
             }
-            rc = (StreamCompress::isBitWidthSupported(bitwidth) |
-                  StreamCompress::isSampleRateSupported(samplerate) |
-                  StreamCompress::isChannelSupported(channels));
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
-               return result;
+               goto exit;
             }
             result = true;
             break;
         case PAL_STREAM_VOICE_UI:
-            if (attributes->direction == PAL_AUDIO_INPUT) {
-               channels = attributes->in_media_config.ch_info.channels;
-               samplerate = attributes->in_media_config.sample_rate;
-               bitwidth = attributes->in_media_config.bit_width;
+            if (attributes.direction == PAL_AUDIO_INPUT) {
+               channels = attributes.in_media_config.ch_info.channels;
+               samplerate = attributes.in_media_config.sample_rate;
+               bitwidth = attributes.in_media_config.bit_width;
             } else {
-               channels = attributes->out_media_config.ch_info.channels;
-               samplerate = attributes->out_media_config.sample_rate;
-               bitwidth = attributes->out_media_config.bit_width;
+               channels = attributes.out_media_config.ch_info.channels;
+               samplerate = attributes.out_media_config.sample_rate;
+               bitwidth = attributes.out_media_config.bit_width;
             }
-            rc = (StreamSoundTrigger::isBitWidthSupported(bitwidth) |
-                  StreamSoundTrigger::isSampleRateSupported(samplerate) |
-                  StreamSoundTrigger::isChannelSupported(channels));
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
                return result;
@@ -3416,16 +3264,16 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             result = true;
             break;
         case PAL_STREAM_ASR:
-            if (attributes->direction != PAL_AUDIO_INPUT) {
+            if (attributes.direction != PAL_AUDIO_INPUT) {
                 return result;
             }
-            channels = attributes->in_media_config.ch_info.channels;
-            samplerate = attributes->in_media_config.sample_rate;
-            bitwidth = attributes->in_media_config.bit_width;
+            channels = attributes.in_media_config.ch_info.channels;
+            samplerate = attributes.in_media_config.sample_rate;
+            bitwidth = attributes.in_media_config.bit_width;
 
-            rc = (StreamASR::isBitWidthSupported(bitwidth) |
-                  StreamASR::isSampleRateSupported(samplerate) |
-                  StreamASR::isChannelSupported(channels));
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                 PAL_ERR(LOG_TAG, "Config not supported rc: %d", rc);
                 return result;
@@ -3434,23 +3282,23 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             result = true;
             break;
         case PAL_STREAM_VOICE_CALL:
-            channels = attributes->out_media_config.ch_info.channels;
-            samplerate = attributes->out_media_config.sample_rate;
-            bitwidth = attributes->out_media_config.bit_width;
-            rc = (StreamPCM::isBitWidthSupported(bitwidth) |
-                  StreamPCM::isSampleRateSupported(samplerate) |
-                  StreamPCM::isChannelSupported(channels));
+            channels = attributes.out_media_config.ch_info.channels;
+            samplerate = attributes.out_media_config.sample_rate;
+            bitwidth = attributes.out_media_config.bit_width;
+            rc = (s->isBitWidthSupported(bitwidth) |
+                  s->isSampleRateSupported(samplerate) |
+                  s->isChannelSupported(channels));
             if (0 != rc) {
                PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
-               return result;
+               goto exit;
             }
             PAL_VERBOSE(LOG_TAG, "config suppported");
             result = true;
             break;
         case PAL_STREAM_NON_TUNNEL:
-            if (attributes->direction != PAL_AUDIO_INPUT_OUTPUT) {
-               PAL_ERR(LOG_TAG, "config dir %d not supported", attributes->direction);
-               return result;
+            if (attributes.direction != PAL_AUDIO_INPUT_OUTPUT) {
+               PAL_ERR(LOG_TAG, "config dir %d not supported", attributes.direction);
+               goto exit;
             }
             PAL_VERBOSE(LOG_TAG, "config suppported");
             result = true;
@@ -3462,18 +3310,18 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
              result = true;
              break;
         case PAL_STREAM_HAPTICS:
-            if (attributes->info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)
+            if (attributes.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)
                 result = true;
             else {
-                channels = attributes->out_media_config.ch_info.channels;
-                samplerate = attributes->out_media_config.sample_rate;
-                bitwidth = attributes->out_media_config.bit_width;
-                rc = (StreamPCM::isBitWidthSupported(bitwidth) |
-                      StreamPCM::isSampleRateSupported(samplerate) |
-                      StreamPCM::isChannelSupported(channels));
+                channels = attributes.out_media_config.ch_info.channels;
+                samplerate = attributes.out_media_config.sample_rate;
+                bitwidth = attributes.out_media_config.bit_width;
+                rc = (s->isBitWidthSupported(bitwidth) |
+                      s->isSampleRateSupported(samplerate) |
+                      s->isChannelSupported(channels));
                 if (0 != rc) {
                     PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
-                    return result;
+                    goto exit;
                 }
                 PAL_VERBOSE(LOG_TAG, "config suppported");
                 result = true;
@@ -3483,6 +3331,7 @@ bool ResourceManager::isStreamSupported(struct pal_stream_attributes *attributes
             PAL_ERR(LOG_TAG, "unknown type");
             return false;
     }
+exit:
     PAL_DBG(LOG_TAG, "Exit. result %d", result);
     return result;
 }
@@ -3520,137 +3369,115 @@ int ResourceManager::registerStream(Stream *s)
         case PAL_STREAM_VOIP_TX:
         case PAL_STREAM_VOICE_CALL:
         {
-            StreamPCM* sPCM = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sPCM, active_streams_ll);
+            ret = registerstream(s, active_streams_ll);
             break;
         }
         case PAL_STREAM_PCM_OFFLOAD:
         case PAL_STREAM_LOOPBACK:
         {
-            StreamPCM* sPCM = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sPCM, active_streams_po);
+            ret = registerstream(s, active_streams_po);
             break;
         }
         case PAL_STREAM_DEEP_BUFFER:
         {
-            StreamPCM* sDB = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sDB, active_streams_db);
+            ret = registerstream(s, active_streams_db);
             break;
         }
         case PAL_STREAM_SPATIAL_AUDIO:
         {
-            StreamPCM* sSA = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sSA, active_streams_sa);
+            ret = registerstream(s, active_streams_sa);
             break;
         }
         case PAL_STREAM_COMPRESSED:
         {
-            StreamCompress* sComp = dynamic_cast<StreamCompress*>(s);
-            ret = registerstream(sComp, active_streams_comp);
+            ret = registerstream(s, active_streams_comp);
             break;
         }
         case PAL_STREAM_GENERIC:
         {
-            StreamPCM* sULLA = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sULLA, active_streams_ulla);
+            ret = registerstream(s, active_streams_ulla);
             break;
         }
         case PAL_STREAM_VOICE_UI:
         {
             if (active_streams_st.size() == 0)
                 onVUIStreamRegistered();
-            StreamSoundTrigger* sST = dynamic_cast<StreamSoundTrigger*>(s);
-            ret = registerstream(sST, active_streams_st);
+            ret = registerstream(s, active_streams_st);
             break;
         }
         case PAL_STREAM_ASR:
         {
-            StreamASR* sASR = dynamic_cast<StreamASR*>(s);
-            ret = registerstream(sASR, active_streams_asr);
+            ret = registerstream(s, active_streams_asr);
             break;
         }
         case PAL_STREAM_ULTRA_LOW_LATENCY:
         {
-            StreamPCM* sULL = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sULL, active_streams_ull);
+            ret = registerstream(s, active_streams_ull);
             break;
         }
         case PAL_STREAM_PROXY:
         {
-            StreamPCM* sProxy = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sProxy, active_streams_proxy);
+            ret = registerstream(s, active_streams_proxy);
             break;
         }
         case PAL_STREAM_VOICE_CALL_MUSIC:
         {
-            StreamInCall* sPCM = dynamic_cast<StreamInCall*>(s);
-            ret = registerstream(sPCM, active_streams_incall_music);
+            ret = registerstream(s, active_streams_incall_music);
             break;
         }
         case PAL_STREAM_VOICE_CALL_RECORD:
         {
-            StreamInCall* sPCM = dynamic_cast<StreamInCall*>(s);
-            ret = registerstream(sPCM, active_streams_incall_record);
+            ret = registerstream(s, active_streams_incall_record);
             break;
         }
         case PAL_STREAM_NON_TUNNEL:
         {
-            StreamNonTunnel* sNonTunnel = dynamic_cast<StreamNonTunnel*>(s);
-            ret = registerstream(sNonTunnel, active_streams_non_tunnel);
+            ret = registerstream(s, active_streams_non_tunnel);
             break;
         }
         case PAL_STREAM_HAPTICS:
         {
-            StreamPCM* sHap = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sHap, active_streams_haptics);
+            ret = registerstream(s, active_streams_haptics);
             break;
         }
         case PAL_STREAM_ACD:
         {
-            StreamACD* sAcd = dynamic_cast<StreamACD*>(s);
-            ret = registerstream(sAcd, active_streams_acd);
+            ret = registerstream(s, active_streams_acd);
             break;
         }
         case PAL_STREAM_ULTRASOUND:
         {
-            StreamUltraSound* sUPD = dynamic_cast<StreamUltraSound*>(s);
-            ret = registerstream(sUPD, active_streams_ultrasound);
+            ret = registerstream(s, active_streams_ultrasound);
             break;
         }
         case PAL_STREAM_RAW:
         {
-            StreamPCM* sRaw = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sRaw, active_streams_raw);
+            ret = registerstream(s, active_streams_raw);
             break;
         }
         case PAL_STREAM_SENSOR_PCM_DATA:
         {
-            StreamSensorPCMData* sPCM = dynamic_cast<StreamSensorPCMData*>(s);
-            ret = registerstream(sPCM, active_streams_sensor_pcm_data);
+            ret = registerstream(s, active_streams_sensor_pcm_data);
             break;
         }
         case PAL_STREAM_CONTEXT_PROXY:
         {
-            StreamContextProxy* sCtxt = dynamic_cast<StreamContextProxy*>(s);
-            ret = registerstream(sCtxt, active_streams_context_proxy);
+            ret = registerstream(s, active_streams_context_proxy);
             break;
         }
         case PAL_STREAM_VOICE_RECOGNITION:
         {
-            StreamPCM* sVR = dynamic_cast<StreamPCM*>(s);
-            ret = registerstream(sVR, active_streams_voice_rec);
+            ret = registerstream(s, active_streams_voice_rec);
             break;
         }
         case PAL_STREAM_COMMON_PROXY:
         {
-            StreamCommonProxy* sAFS = dynamic_cast<StreamCommonProxy*>(s);
-            ret = registerstream(sAFS, active_streams_afs);
+            ret = registerstream(s, active_streams_afs);
             break;
         }
         case PAL_STREAM_SENSOR_PCM_RENDERER:
         {
-            StreamSensorRenderer* sPCM = dynamic_cast<StreamSensorRenderer*>(s);
-            ret = registerstream(sPCM, active_streams_sensor_renderer);
+            ret = registerstream(s, active_streams_sensor_renderer);
             break;
         }
         default:
@@ -3718,45 +3545,38 @@ int ResourceManager::deregisterStream(Stream *s)
         case PAL_STREAM_VOIP_TX:
         case PAL_STREAM_VOICE_CALL:
         {
-            StreamPCM* sPCM = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sPCM, active_streams_ll);
+            ret = deregisterstream(s, active_streams_ll);
             break;
         }
         case PAL_STREAM_PCM_OFFLOAD:
         case PAL_STREAM_LOOPBACK:
         {
-            StreamPCM* sPCM = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sPCM, active_streams_po);
+            ret = deregisterstream(s, active_streams_po);
             break;
         }
         case PAL_STREAM_DEEP_BUFFER:
         {
-            StreamPCM* sDB = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sDB, active_streams_db);
+            ret = deregisterstream(s, active_streams_db);
             break;
         }
         case PAL_STREAM_SPATIAL_AUDIO:
         {
-            StreamPCM* sSA = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sSA, active_streams_sa);
+            ret = deregisterstream(s, active_streams_sa);
             break;
         }
         case PAL_STREAM_COMPRESSED:
         {
-            StreamCompress* sComp = dynamic_cast<StreamCompress*>(s);
-            ret = deregisterstream(sComp, active_streams_comp);
+            ret = deregisterstream(s, active_streams_comp);
             break;
         }
         case PAL_STREAM_GENERIC:
         {
-            StreamPCM* sULLA = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sULLA, active_streams_ulla);
+            ret = deregisterstream(s, active_streams_ulla);
             break;
         }
         case PAL_STREAM_VOICE_UI:
         {
-            StreamSoundTrigger* sST = dynamic_cast<StreamSoundTrigger*>(s);
-            ret = deregisterstream(sST, active_streams_st);
+            ret = deregisterstream(s, active_streams_st);
             // reset concurrency count when all st streams deregistered
             if (active_streams_st.size() == 0) {
                 onVUIStreamDeregistered();
@@ -3765,92 +3585,77 @@ int ResourceManager::deregisterStream(Stream *s)
         }
         case PAL_STREAM_ASR:
         {
-            StreamASR* sASR = dynamic_cast<StreamASR*>(s);
-            ret = deregisterstream(sASR, active_streams_asr);
+            ret = deregisterstream(s, active_streams_asr);
             break;
         }
         case PAL_STREAM_ULTRA_LOW_LATENCY:
         {
-            StreamPCM* sULL = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sULL, active_streams_ull);
+            ret = deregisterstream(s, active_streams_ull);
             break;
         }
         case PAL_STREAM_PROXY:
         {
-            StreamPCM* sProxy = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sProxy, active_streams_proxy);
+            ret = deregisterstream(s, active_streams_proxy);
             break;
         }
         case PAL_STREAM_VOICE_CALL_MUSIC:
         {
-            StreamInCall* sPCM = dynamic_cast<StreamInCall*>(s);
-            ret = deregisterstream(sPCM, active_streams_incall_music);
+            ret = deregisterstream(s, active_streams_incall_music);
             break;
         }
         case PAL_STREAM_VOICE_CALL_RECORD:
         {
-            StreamInCall* sPCM = dynamic_cast<StreamInCall*>(s);
-            ret = deregisterstream(sPCM, active_streams_incall_record);
+            ret = deregisterstream(s, active_streams_incall_record);
             break;
         }
         case PAL_STREAM_NON_TUNNEL:
         {
-            StreamNonTunnel* sNonTunnel = dynamic_cast<StreamNonTunnel*>(s);
-            ret = deregisterstream(sNonTunnel, active_streams_non_tunnel);
+            ret = deregisterstream(s, active_streams_non_tunnel);
             break;
         }
         case PAL_STREAM_HAPTICS:
         {
-            StreamPCM* sHap = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sHap, active_streams_haptics);
+            ret = deregisterstream(s, active_streams_haptics);
             break;
         }
         case PAL_STREAM_ACD:
         {
-            StreamACD* sAcd = dynamic_cast<StreamACD*>(s);
-            ret = deregisterstream(sAcd, active_streams_acd);
+            ret = deregisterstream(s, active_streams_acd);
             break;
         }
         case PAL_STREAM_ULTRASOUND:
         {
-            StreamUltraSound* sUPD = dynamic_cast<StreamUltraSound*>(s);
-            ret = deregisterstream(sUPD, active_streams_ultrasound);
+            ret = deregisterstream(s, active_streams_ultrasound);
             break;
         }
         case PAL_STREAM_RAW:
         {
-            StreamPCM* sRaw = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sRaw, active_streams_raw);
+            ret = deregisterstream(s, active_streams_raw);
             break;
         }
         case PAL_STREAM_SENSOR_PCM_DATA:
         {
-            StreamSensorPCMData* sPCM = dynamic_cast<StreamSensorPCMData*>(s);
-            ret = deregisterstream(sPCM, active_streams_sensor_pcm_data);
+            ret = deregisterstream(s, active_streams_sensor_pcm_data);
             break;
         }
         case PAL_STREAM_CONTEXT_PROXY:
         {
-            StreamContextProxy* sCtxt = dynamic_cast<StreamContextProxy*>(s);
-            ret = deregisterstream(sCtxt, active_streams_context_proxy);
+            ret = deregisterstream(s, active_streams_context_proxy);
             break;
         }
         case PAL_STREAM_VOICE_RECOGNITION:
         {
-            StreamPCM* sVR = dynamic_cast<StreamPCM*>(s);
-            ret = deregisterstream(sVR, active_streams_voice_rec);
+            ret = deregisterstream(s, active_streams_voice_rec);
             break;
         }
         case PAL_STREAM_COMMON_PROXY:
         {
-            StreamCommonProxy* sAFS = dynamic_cast<StreamCommonProxy*>(s);
-            ret = deregisterstream(sAFS, active_streams_afs);
+            ret = deregisterstream(s, active_streams_afs);
             break;
         }
         case PAL_STREAM_SENSOR_PCM_RENDERER:
         {
-            StreamSensorRenderer* sPCM = dynamic_cast<StreamSensorRenderer*>(s);
-            ret = deregisterstream(sPCM, active_streams_sensor_renderer);
+            ret = deregisterstream(s, active_streams_sensor_renderer);
             break;
         }
 
@@ -4099,7 +3904,7 @@ void ResourceManager::disableInternalECRefs(Stream *s)
             dev = associatedDevices[i];
             if (isExternalECSupported(dev)) {
                 rx_dev = clearInternalECRefCounts(str, dev);
-                if (rx_dev && !checkStreamMatch(str, s)) {
+                if (rx_dev && !str->checkStreamMatch(s)) {
                     if (isDeviceSwitch)
                         status = str->setECRef_l(rx_dev, false);
                     else
@@ -4151,45 +3956,6 @@ void ResourceManager::restoreInternalECRefs()
     }
 
     PAL_DBG(LOG_TAG, "Exit");
-}
-
-bool ResourceManager::checkStreamMatch(Stream *target, Stream *ref) {
-    int32_t status = 0;
-    bool is_match = false;
-    struct pal_stream_attributes target_attr;
-    struct pal_stream_attributes ref_attr;
-    StreamSoundTrigger *st_target = nullptr;
-    StreamSoundTrigger *st_ref = nullptr;
-
-    if (target == ref)
-        return true;
-
-    status = target->getStreamAttributes(&target_attr);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"stream get attributes failed");
-        goto exit;
-    }
-
-    status = ref->getStreamAttributes(&ref_attr);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"stream get attributes failed");
-        goto exit;
-    }
-
-    if (target_attr.type != PAL_STREAM_VOICE_UI ||
-        ref_attr.type != PAL_STREAM_VOICE_UI)
-        goto exit;
-
-    st_target = dynamic_cast<StreamSoundTrigger *>(target);
-    st_ref = dynamic_cast<StreamSoundTrigger *>(ref);
-
-    if (st_target->GetGSLEngine() == st_ref->GetGSLEngine()) {
-        PAL_DBG(LOG_TAG, "Voice UI stream match because same gsl engine used");
-        is_match = true;
-    }
-
-exit:
-    return is_match;
 }
 
 int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
@@ -4806,7 +4572,7 @@ bool ResourceManager::CheckForForcedTransitToNonLPI() {
 }
 
 std::shared_ptr<CaptureProfile> ResourceManager::GetASRCaptureProfileByPriority(
-    StreamASR *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
+    Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
     std::string backend) {
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
 
@@ -4834,7 +4600,7 @@ std::shared_ptr<CaptureProfile> ResourceManager::GetASRCaptureProfileByPriority(
 }
 
 std::shared_ptr<CaptureProfile> ResourceManager::GetACDCaptureProfileByPriority(
-    StreamACD *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
+    Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
     std::string backend) {
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
 
@@ -4863,7 +4629,7 @@ std::shared_ptr<CaptureProfile> ResourceManager::GetACDCaptureProfileByPriority(
 }
 
 std::shared_ptr<CaptureProfile> ResourceManager::GetSVACaptureProfileByPriority(
-    StreamSoundTrigger *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
+    Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
     std::string backend) {
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
 
@@ -4878,7 +4644,7 @@ std::shared_ptr<CaptureProfile> ResourceManager::GetSVACaptureProfileByPriority(
          * 1. sound model loaded but not started by sthal
          * 2. stop recognition called by sthal
          */
-        if (!str->isStarted())
+        if (!str->isActive())
             continue;
 
         cap_prof = str->GetCurrentCaptureProfile();
@@ -4901,7 +4667,7 @@ std::shared_ptr<CaptureProfile> ResourceManager::GetSVACaptureProfileByPriority(
 }
 
 std::shared_ptr<CaptureProfile> ResourceManager::GetSPDCaptureProfileByPriority(
-    StreamSensorPCMData *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
+    Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority,
     std::string backend) {
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
 
@@ -4932,36 +4698,24 @@ std::shared_ptr<CaptureProfile> ResourceManager::GetCaptureProfileByPriority(
     Stream *s, std::string backend)
 {
     struct pal_stream_attributes sAttr;
-    StreamSoundTrigger *st_st = nullptr;
-    StreamACD *st_acd = nullptr;
-    StreamASR *st_asr = nullptr;
-    StreamSensorPCMData *st_sns_pcm_data = nullptr;
     std::shared_ptr<CaptureProfile> cap_prof_priority = nullptr;
     int32_t status = 0;
 
     if (!s)
         goto get_priority;
-
     status = s->getStreamAttributes(&sAttr);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "stream get attributes failed");
-        return nullptr;
+        goto exit;
     }
 
-    if (sAttr.type == PAL_STREAM_VOICE_UI)
-        st_st = dynamic_cast<StreamSoundTrigger*>(s);
-    else if (sAttr.type == PAL_STREAM_ACD)
-        st_acd = dynamic_cast<StreamACD*>(s);
-    else if (sAttr.type == PAL_STREAM_ASR)
-        st_asr = dynamic_cast<StreamASR*>(s);
-    else
-        st_sns_pcm_data = dynamic_cast<StreamSensorPCMData*>(s);
-
 get_priority:
-    cap_prof_priority = GetSVACaptureProfileByPriority(st_st, cap_prof_priority, backend);
-    cap_prof_priority = GetACDCaptureProfileByPriority(st_acd, cap_prof_priority, backend);
-    cap_prof_priority = GetASRCaptureProfileByPriority(st_asr, cap_prof_priority, backend);
-    return GetSPDCaptureProfileByPriority(st_sns_pcm_data, cap_prof_priority, backend);
+    cap_prof_priority = GetSVACaptureProfileByPriority(s, cap_prof_priority, backend);
+    cap_prof_priority = GetACDCaptureProfileByPriority(s, cap_prof_priority, backend);
+    cap_prof_priority = GetSPDCaptureProfileByPriority(s, cap_prof_priority, backend);
+    cap_prof_priority = GetASRCaptureProfileByPriority(s, cap_prof_priority, backend);
+ exit:
+   return cap_prof_priority;
 }
 
 bool ResourceManager::UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active) {
@@ -4971,10 +4725,6 @@ bool ResourceManager::UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active
     std::shared_ptr<CaptureProfile> cap_prof_priority = nullptr;
     std::shared_ptr<CaptureProfile> common_cap_prof = nullptr;
     struct pal_stream_attributes sAttr;
-    StreamSoundTrigger *st_st = nullptr;
-    StreamACD *st_acd = nullptr;
-    StreamASR *st_asr = nullptr;
-    StreamSensorPCMData *st_sns_pcm_data = nullptr;
     int32_t status = 0;
 
     if (!s) {
@@ -4988,29 +4738,16 @@ bool ResourceManager::UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active
         return false;
     }
 
-    if (sAttr.type == PAL_STREAM_VOICE_UI)
-        st_st = dynamic_cast<StreamSoundTrigger*>(s);
-    else if (sAttr.type == PAL_STREAM_ACD)
-        st_acd = dynamic_cast<StreamACD*>(s);
-    else if (sAttr.type == PAL_STREAM_ASR)
-        st_asr = dynamic_cast<StreamASR*>(s);
-    else if (sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
-        st_sns_pcm_data = dynamic_cast<StreamSensorPCMData*>(s);
-    else {
+    if (sAttr.type != PAL_STREAM_VOICE_UI && 
+        sAttr.type != PAL_STREAM_ACD &&
+        sAttr.type != PAL_STREAM_SENSOR_PCM_DATA &&
+        sAttr.type != PAL_STREAM_ASR) {
         PAL_ERR(LOG_TAG, "Error:%d Invalid stream type", -EINVAL);
         return false;
     }
     // backend config update
     if (is_active) {
-        if (sAttr.type == PAL_STREAM_VOICE_UI)
-            cap_prof = st_st->GetCurrentCaptureProfile();
-        else if (sAttr.type == PAL_STREAM_ACD)
-            cap_prof = st_acd->GetCurrentCaptureProfile();
-        else if (sAttr.type == PAL_STREAM_ASR)
-            cap_prof = st_asr->GetCurrentCaptureProfile();
-        else
-            cap_prof = st_sns_pcm_data->GetCurrentCaptureProfile();
-
+        cap_prof = s->GetCurrentCaptureProfile();
         if (!cap_prof) {
             PAL_ERR(LOG_TAG, "Failed to get capture profile");
             return false;
@@ -5055,7 +4792,7 @@ bool ResourceManager::UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active
 }
 
 void ResourceManager::SwitchSoundTriggerDevices(bool connect_state,
-                                                pal_device_id_t st_device) {
+                               pal_device_id_t st_device) {
     pal_device_id_t device_to_disconnect;
     pal_device_id_t device_to_connect;
     std::vector<pal_stream_type_t> st_streams;
@@ -5644,7 +5381,7 @@ bool ResourceManager::checkAndUpdateDeferSwitchState(bool stream_active)
             deferred_switch_cnt_ = NLPI_LPI_SWITCH_DELAY_SEC;
             vui_switch_cv_.notify_all();
             return true;
-        } else if (isAnyVUIStreamBuffering()) {
+        } else if (isAnyStreamBuffering()) {
             deferredSwitchState =
                 (deferredSwitchState == DEFER_LPI_NLPI_SWITCH) ? NO_DEFER :
                  DEFER_NLPI_LPI_SWITCH;
@@ -5654,7 +5391,7 @@ bool ResourceManager::checkAndUpdateDeferSwitchState(bool stream_active)
             return true;
         }
     } else {
-        if (isAnyVUIStreamBuffering()) {
+        if (isAnyStreamBuffering()) {
             deferredSwitchState =
                 (deferredSwitchState == DEFER_NLPI_LPI_SWITCH) ? NO_DEFER :
                  DEFER_LPI_NLPI_SWITCH;
@@ -5719,10 +5456,10 @@ void ResourceManager::handleDeferredSwitch()
         return;
     }
 
-    PAL_DBG(LOG_TAG, "enter, isAnyVUIStreambuffering:%d deferred state:%d",
-        isAnyVUIStreamBuffering(), deferredSwitchState);
+    PAL_DBG(LOG_TAG, "enter, isAnyStreambuffering:%d deferred state:%d",
+        isAnyStreamBuffering(), deferredSwitchState);
 
-    if (!isAnyVUIStreamBuffering() && deferredSwitchState != NO_DEFER) {
+    if (!isAnyStreamBuffering() && deferredSwitchState != NO_DEFER) {
         if (deferredSwitchState == DEFER_LPI_NLPI_SWITCH)
             active = true;
         else if (deferredSwitchState == DEFER_NLPI_LPI_SWITCH)
@@ -5747,8 +5484,9 @@ void ResourceManager::handleDeferredSwitch()
     PAL_DBG(LOG_TAG, "Exit");
 }
 
-bool ResourceManager::isAnyVUIStreamBuffering()
+bool ResourceManager::isAnyStreamBuffering()
 {
+    /* as of now only st streams buffer*/
     for (auto& str: active_streams_st) {
         if (str->IsStreamInBuffering())
             return true;
@@ -6300,6 +6038,156 @@ int ResourceManager::getActiveStream(std::vector<Stream*> &activestreams,
     mResourceManagerMutex.lock();
     ret = getActiveStream_l(activestreams, d);
     mResourceManagerMutex.unlock();
+    PAL_DBG(LOG_TAG, "Exit. ret %d", ret);
+    return ret;
+}
+
+
+int ResourceManager::getActiveStreamByType(std::vector<Stream*> &activestreams,
+                                           pal_stream_type_t type)
+{
+    int ret = 0;
+    PAL_DBG(LOG_TAG, "Enter.");
+    mActiveStreamMutex.lock();
+    ret = getActiveStreamByType_l(activestreams, type);
+    mActiveStreamMutex.unlock();
+    PAL_DBG(LOG_TAG, "Exit. ret %d", ret);
+    return ret;
+}
+
+int ResourceManager::getActiveStreamByType_l(std::vector<Stream*> &activestreams,
+                                                pal_stream_type_t type)
+{
+    int ret = 0;
+    PAL_DBG(LOG_TAG, "Enter.");
+    std::list<Stream*> *currentStreams = nullptr;
+     switch (type) {
+        case PAL_STREAM_LOW_LATENCY:
+        case PAL_STREAM_VOIP_RX:
+        case PAL_STREAM_VOIP_TX:
+        case PAL_STREAM_VOICE_CALL:
+        {
+            currentStreams = &active_streams_ll;
+            break;
+        }
+        case PAL_STREAM_PCM_OFFLOAD:
+        case PAL_STREAM_LOOPBACK:
+        {
+            currentStreams = &active_streams_po;
+            break;
+        }
+        case PAL_STREAM_DEEP_BUFFER:
+        {
+            currentStreams = &active_streams_db;
+            break;
+        }
+        case PAL_STREAM_SPATIAL_AUDIO:
+        {
+            currentStreams = &active_streams_sa;
+            break;
+        }
+        case PAL_STREAM_COMPRESSED:
+        {
+            currentStreams = &active_streams_comp;
+            break;
+        }
+        case PAL_STREAM_GENERIC:
+        {
+            currentStreams = &active_streams_ulla;
+            break;
+        }
+        case PAL_STREAM_VOICE_UI:
+        {
+            currentStreams = &active_streams_st;
+            break;
+        }
+        case PAL_STREAM_ULTRA_LOW_LATENCY:
+        {
+            currentStreams = &active_streams_ull;
+            break;
+        }
+        case PAL_STREAM_PROXY:
+        {
+            currentStreams = &active_streams_proxy;
+            break;
+        }
+        case PAL_STREAM_VOICE_CALL_MUSIC:
+        {
+            currentStreams = &active_streams_incall_music;
+            break;
+        }
+        case PAL_STREAM_VOICE_CALL_RECORD:
+        {
+            currentStreams = &active_streams_incall_record;
+            break;
+        }
+        case PAL_STREAM_NON_TUNNEL:
+        {
+            currentStreams = &active_streams_non_tunnel;
+            break;
+        }
+        case PAL_STREAM_HAPTICS:
+        {
+            currentStreams = &active_streams_haptics;
+            break;
+        }
+        case PAL_STREAM_ACD:
+        {
+            currentStreams = &active_streams_acd;
+            break;
+        }
+        case PAL_STREAM_ULTRASOUND:
+        {
+            currentStreams = &active_streams_ultrasound;
+            break;
+        }
+        case PAL_STREAM_RAW:
+        {
+            currentStreams = &active_streams_raw;
+            break;
+        }
+        case PAL_STREAM_SENSOR_PCM_DATA:
+        {
+            currentStreams = &active_streams_sensor_pcm_data;
+            break;
+        }
+        case PAL_STREAM_CONTEXT_PROXY:
+        {
+            currentStreams = &active_streams_context_proxy;
+            break;
+        }
+        case PAL_STREAM_VOICE_RECOGNITION:
+        {
+            currentStreams = &active_streams_voice_rec;
+            break;
+        }
+        case PAL_STREAM_COMMON_PROXY:
+        {
+            currentStreams = &active_streams_afs;
+            break;
+        }
+        case PAL_STREAM_SENSOR_PCM_RENDERER:
+        {
+            currentStreams = &active_streams_sensor_renderer;
+            break;
+        }
+        case PAL_STREAM_ASR:
+        {
+            currentStreams = &active_streams_asr;
+            break;
+        }
+        default:
+            ret = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid stream type = %d ret %d", type, ret);
+            goto exit;
+    }
+    if(currentStreams){
+        for (typename std::list<Stream*>::iterator iter = (*currentStreams).begin();
+                 iter != (*currentStreams).end(); iter++) {
+            activestreams.push_back(*iter);
+        }
+    }
+exit:
     PAL_DBG(LOG_TAG, "Exit. ret %d", ret);
     return ret;
 }
@@ -10951,7 +10839,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
         break;
         case PAL_PARAM_ID_CHARGER_STATE:
         {
-            int i, tag;
+            int i;
             struct pal_device dattr;
             Stream *stream = nullptr;
             std::vector<Stream*> activestreams;
@@ -10976,8 +10864,6 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                     int deviceId = active_devices[i].first->getSndDeviceId();
                     if (deviceId == dattr.id) {
                         dev = Device::getInstance(&dattr, rm);
-                        tag = is_charger_online_ ? CHARGE_CONCURRENCY_ON_TAG
-                        : CHARGE_CONCURRENCY_OFF_TAG;
                         //Setting deviceRX: Config ICL Tag in AL module.
                         status = rm->getActiveStream_l(activestreams, dev);
                         if ((0 != status) || (activestreams.size() == 0)) {
@@ -10991,10 +10877,10 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                          handle charger event, Otherwise for charger online case handle
                          charger event and then set config as part of device switch.
                         */
-                        if (tag == CHARGE_CONCURRENCY_OFF_TAG)
-                            status = setSessionParamConfig(param_id, stream, tag);
+                        if (!is_charger_online_)
+                            status = setSessionParamConfig(param_id, stream, is_charger_online_);
                         if (0 == status)
-                            status = handleChargerEvent(stream, tag);
+                            status = handleChargerEvent(stream, is_charger_online_);
                         mResourceManagerMutex.lock();
                         if (0 != status)
                             PAL_ERR(LOG_TAG, "SetSession Param config failed %d", status);
@@ -11841,12 +11727,16 @@ int ResourceManager::rwParameterACDB(uint32_t paramId, void *paramPayload,
                  uint32_t instanceId, bool isParamWrite, bool isPlay)
 {
     int status = -EINVAL;
-    StreamACDB *s = NULL;
+    Stream *s = NULL;
     struct pal_stream_attributes sattr;
     struct pal_device dattr;
     bool match = false;
     uint32_t matchCount = 0;
     std::list<Stream*>::iterator sIter;
+    static std::shared_ptr<PluginManager> pm;
+    void* plugin = nullptr;
+    StreamACDBCreate streamACDB = nullptr;
+    Session *session = nullptr;
 
     PAL_DBG(LOG_TAG, "Enter: device=%d type=%d rate=%d instance=%d is_param_write=%d\n",
             palDeviceId, palStreamType, sampleRate,
@@ -11883,15 +11773,38 @@ int ResourceManager::rwParameterACDB(uint32_t paramId, void *paramPayload,
             sattr.out_media_config.sample_rate = sampleRate;
             sattr.direction = PAL_AUDIO_OUTPUT;
             dattr.id = palDeviceId;
-            s = new StreamACDB(&sattr, &dattr, instanceId, getInstance());
+
+            try {
+                pm = PluginManager::getInstance();
+                if(!pm){
+                    PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+                    goto error;
+                }
+                status = pm->openPlugin(PAL_PLUGIN_MANAGER_STREAM, "PAL_USE_ACDB_STREAM", plugin);
+                if (plugin && !status) {
+                    streamACDB = reinterpret_cast<StreamACDBCreate>(plugin);
+                    s = streamACDB(&sattr,
+                                   &dattr,
+                                   instanceId,
+                                   getInstance());
+                } else {
+                    PAL_ERR(LOG_TAG, "unable to get plugin for ACDB Stream");
+                }
+            }
+            catch (const std::exception& e) {
+                PAL_ERR(LOG_TAG, "Stream create failed for ACDB Stream");
+                throw std::runtime_error(e.what());
+            }
             if (!s) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "stream creation failed status %d", status);
                 goto error;
             }
-
-            status = s->rwACDBParam(palDeviceId, palStreamType, sampleRate,
-                instanceId, paramPayload, isParamWrite);
+            status = s->getAssociatedSession(&session);
+            if(session){
+                status = session->rwACDBParamTunnel(paramPayload, palDeviceId, palStreamType, sampleRate,
+                                                    instanceId, isParamWrite, s); /*will fix onces this is more generic*/
+            }
 
             delete s;
         }
@@ -12108,7 +12021,6 @@ int ResourceManager::SetOrientationCal(pal_param_device_rotation_t
                 stream->setOrientation(rm->mOrientation);
                 stream->getAssociatedSession(&session);
                 PAL_INFO(LOG_TAG, "Apply device rotation");
-                //status = session->setConfig(stream, MODULE, ORIENTATION_TAG);
                 status = session->setParameters(stream, PAL_PARAM_ID_ORIENTATION, nullptr);
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
@@ -14205,91 +14117,6 @@ exit:
     return status;
 }
 
-int32_t ResourceManager::reconfigureInCallMusicStream(struct sessionToPayloadParam deviceData) {
-    int status = 0;
-    std::list<Stream*>::iterator it;
-    StreamInCall *sInCall = nullptr;
-    struct pal_stream_attributes sAttr;
-
-    for (it = mActiveStreams.begin(); it != mActiveStreams.end(); it++) {
-        (*it)->getStreamAttributes(&sAttr);
-        status = (*it)->getStreamAttributes(&sAttr);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG, "stream get attributes failed");
-            goto exit;
-        }
-        if (sAttr.type == PAL_STREAM_VOICE_CALL_MUSIC &&
-        sAttr.info.incall_music_info.local_playback) {
-            PAL_INFO(LOG_TAG, "found incall stream to configure");
-            sInCall = dynamic_cast<StreamInCall*>(*it);
-            sInCall->reconfigureModule(PER_STREAM_PER_DEVICE_MFC, "ZERO", &deviceData);
-            break;
-        }
-    }
-    if (!sInCall) {
-        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to configure");
-    }
-exit:
-    return status;
-}
-
-int32_t ResourceManager::resumeInCallMusic() {
-    int status = 0;
-    std::list<Stream*>::iterator it;
-    StreamInCall *sInCall = nullptr;
-    struct pal_stream_attributes sAttr;
-
-    for (it = mActiveStreams.begin(); it != mActiveStreams.end(); it++) {
-        (*it)->getStreamAttributes(&sAttr);
-        status = (*it)->getStreamAttributes(&sAttr);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG, "stream get attributes failed");
-            goto exit;
-        }
-        if (sAttr.type == PAL_STREAM_VOICE_CALL_MUSIC &&
-        sAttr.info.incall_music_info.local_playback) {
-            PAL_INFO(LOG_TAG, "found incall stream to resume");
-            sInCall = dynamic_cast<StreamInCall*>(*it);
-            sInCall->resume();
-            break;
-        }
-    }
-    if (!sInCall) {
-        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to resume");
-    }
-exit:
-    return status;
-}
-
-int32_t ResourceManager::pauseInCallMusic() {
-    int status = 0;
-    std::list<Stream*>::iterator it;
-    StreamInCall *sInCall = nullptr;
-    struct pal_stream_attributes sAttr;
-
-    for (it = mActiveStreams.begin(); it != mActiveStreams.end(); it++) {
-        (*it)->getStreamAttributes(&sAttr);
-        status = (*it)->getStreamAttributes(&sAttr);
-        if (status != 0) {
-            PAL_ERR(LOG_TAG, "stream get attributes failed");
-            goto exit;
-        }
-        if (sAttr.type == PAL_STREAM_VOICE_CALL_MUSIC &&
-        sAttr.info.incall_music_info.local_playback) {
-            PAL_INFO(LOG_TAG, "found incall stream to pause and flush");
-            sInCall = dynamic_cast<StreamInCall*>(*it);
-            sInCall->pause();
-            sInCall->flush();
-            break;
-        }
-    }
-    if (!sInCall) {
-        PAL_DBG(LOG_TAG, "No In-Call Music Stream found to pause");
-    }
-exit:
-    return status;
-}
-
 void ResourceManager::RegisterSTCaptureHandle(pal_param_st_capture_info_t stCaptureInfo,
                                               bool start) {
     PAL_DBG(LOG_TAG, "start %d, capture handle %d, pal handle %pK",
@@ -14343,4 +14170,156 @@ void ResourceManager::WbSpeechConfig(pal_device_id_t devId,
                 "force device switch for running SCO stream, status: %d, sample rate(%d->%d)",
                 status, curDevAttr.config.sample_rate, newDevAttr.config.sample_rate);
     }
+}
+
+void ResourceManager::setVIRecordState(bool isStarted) {
+    isVIRecordStarted = isStarted;
+}
+
+void ResourceManager::setCRSCallEnabled(bool isEnabled) {
+    isCRSCallEnabled = isEnabled;
+}
+
+void ResourceManager::setCurrentGroupDevConfig(std::shared_ptr<group_dev_config_t> activeDevConfig,
+                                                long config1, long config2) {
+    memcpy(&(ResourceManager::currentGroupDevConfig), activeGroupDevConfig.get(),
+            sizeof(group_dev_config_t));
+    ResourceManager::currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate = config1;
+    ResourceManager::currentGroupDevConfig.grp_dev_hwep_cfg.channels = config2;
+}
+
+void ResourceManager::setSpkrProtModeValue(int value) {
+    memset(&mSpkrProtModeValue, value, sizeof(pal_spkr_prot_payload));
+}
+
+void ResourceManager::setProxyChannels(int value) {
+    num_proxy_channels = value;
+}
+
+bool ResourceManager::IsCPEnabled() {
+    return ResourceManager::isCPEnabled;
+}
+
+bool ResourceManager::IsDummyDevEnabled() {
+    return ResourceManager::isDummyDevEnabled;
+}
+
+bool ResourceManager::IsSpeakerProtectionEnabled() {
+    return ResourceManager::isSpeakerProtectionEnabled;
+}
+
+bool ResourceManager::IsHandsetProtectionEnabled() {
+    return ResourceManager::isHandsetProtectionEnabled;
+}
+
+bool ResourceManager::IsHapticsProtectionEnabled() {
+    return ResourceManager::isHapticsProtectionEnabled;
+}
+
+bool ResourceManager::IsChargeConcurrencyEnabled() {
+    return ResourceManager::isChargeConcurrencyEnabled;
+}
+
+bool ResourceManager::IsRasEnabled() {
+    return ResourceManager::isRasEnabled;
+}
+
+bool ResourceManager::IsGaplessEnabled() {
+    return ResourceManager::isGaplessEnabled;
+}
+
+bool ResourceManager::IsDualMonoEnabled() {
+    return ResourceManager::isDualMonoEnabled;
+}
+
+bool ResourceManager::IsDeviceMuxConfigEnabled() {
+    return ResourceManager::isDeviceMuxConfigEnabled;
+}
+
+bool ResourceManager::IsUHQAEnabled() {
+    return ResourceManager::isUHQAEnabled;
+}
+
+bool ResourceManager::IsVIRecordStarted() {
+    return ResourceManager::isVIRecordStarted;
+}
+
+bool ResourceManager::IsCRSCallEnabled() {
+    return ResourceManager::isCRSCallEnabled;
+}
+
+bool ResourceManager::IsQmpEnabled() {
+    return ResourceManager::isQmpEnabled;
+}
+
+bool ResourceManager::IsSilenceDetectionEnabled() {
+    return ResourceManager::isSilenceDetectionEnabled;
+}
+
+int ResourceManager::getCpsMode() {
+    return ResourceManager::cpsMode;
+}
+
+int ResourceManager::getSpQuickCalTime() {
+    return ResourceManager::spQuickCalTime;
+}
+
+int ResourceManager::getOrientation() {
+    return mOrientation;
+}
+
+uint32_t ResourceManager::getProxyChannels() {
+    return num_proxy_channels;
+}
+
+void* ResourceManager::getAdmData() {
+    return admData;
+}
+
+enum card_status_t ResourceManager::getSoundCardState() {
+    return cardState;
+}
+
+pal_spkr_prot_payload ResourceManager::getSpkrProtModeValue() {
+    return mSpkrProtModeValue;
+}
+
+pal_param_mspp_linear_gain_t ResourceManager::getLinearGain() {
+    return linear_gain;
+}
+
+adm_register_output_stream_t ResourceManager::getAdmRegisterOutputStreamFn() {
+    return admRegisterOutputStreamFn;
+}
+
+adm_register_input_stream_t ResourceManager::getAdmRegisterInputStreamFn() {
+    return admRegisterInputStreamFn;
+}
+
+adm_set_config_t ResourceManager::getAdmSetConfigFn() {
+    return admSetConfigFn;
+}
+
+adm_request_focus_t ResourceManager::getAdmRequestFocusFn() {
+    return admRequestFocusFn;
+}
+
+adm_request_focus_v2_t ResourceManager::getAdmRequestFocusV2Fn() {
+    return admRequestFocusV2Fn;
+}
+
+adm_abandon_focus_t ResourceManager::getAdmAbandonFocusFn() {
+    return admAbandonFocusFn;
+}
+
+adm_deregister_stream_t ResourceManager::getAdmDeregisterStreamFn() {
+    return admDeregisterStreamFn;
+}
+
+std::shared_ptr<group_dev_config_t> ResourceManager::getActiveGroupDevConfig() {
+    return ResourceManager::activeGroupDevConfig;
+}
+
+group_dev_config_t ResourceManager::getCurrentGroupDevConfig() {
+    return ResourceManager::currentGroupDevConfig;
 }

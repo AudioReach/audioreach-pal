@@ -46,7 +46,7 @@ std::shared_ptr<Device> Speaker::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        if (ResourceManager::isSpeakerProtectionEnabled) {
+        if (ResourceManager::IsSpeakerProtectionEnabled()) {
             std::shared_ptr<Device> sp(new SpeakerProtection(device, Rm));
             obj = sp;
         }
@@ -134,7 +134,7 @@ int Speaker::close()
     if (status == 0 && deviceCount == 0) {
         std::shared_ptr<ResourceManager> Rm = nullptr;
         Rm = ResourceManager::getInstance();
-        if (Rm && Rm->isChargeConcurrencyEnabled && Rm->getChargerOnlineState() &&
+        if (Rm && Rm->IsChargeConcurrencyEnabled() && Rm->getChargerOnlineState() &&
             Rm->getConcurrentBoostState()) {
             status = Rm->chargerListenerSetBoostState(false, CONCURRENCY_PB_STOPS);
             if (0 != status)

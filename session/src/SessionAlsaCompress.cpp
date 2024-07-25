@@ -546,7 +546,7 @@ bool SessionAlsaCompress::isGaplessFormat(pal_audio_fmt_t fmt)
     /* If platform doesn't support Gapless,
      * then return false for all formats.
      */
-    if (!(rm->isGaplessEnabled)) {
+    if (!(rm->IsGaplessEnabled())) {
         return isSupported;
     }
     switch (fmt) {
@@ -735,7 +735,7 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
                 break; // exit the thread
 
             if (msg && msg->cmd == OFFLOAD_CMD_WAIT_FOR_BUFFER) {
-                if (compressObj->rm->cardState == CARD_STATUS_ONLINE) {
+                if (compressObj->rm->getSoundCardState() == CARD_STATUS_ONLINE) {
                     PAL_VERBOSE(LOG_TAG, "calling compress_wait");
                     ret = compress_wait(compressObj->compress, -1);
                     PAL_VERBOSE(LOG_TAG, "out of compress_wait, ret %d", ret);
@@ -745,7 +745,7 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
             } else if (msg && msg->cmd == OFFLOAD_CMD_DRAIN) {
                 if (!is_drain_called) {
                     PAL_INFO(LOG_TAG, "calling compress_drain");
-                    if (compressObj->rm->cardState == CARD_STATUS_ONLINE &&
+                    if (compressObj->rm->getSoundCardState() == CARD_STATUS_ONLINE &&
                         compressObj->compress != NULL) {
                          ret = compress_drain(compressObj->compress);
                          PAL_INFO(LOG_TAG, "out of compress_drain, ret %d", ret);
@@ -759,7 +759,7 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
                 is_drain_called = false;
                 event_id = PAL_STREAM_CBK_EVENT_DRAIN_READY;
             } else if (msg && msg->cmd == OFFLOAD_CMD_PARTIAL_DRAIN) {
-                if (compressObj->rm->cardState == CARD_STATUS_ONLINE &&
+                if (compressObj->rm->getSoundCardState() == CARD_STATUS_ONLINE &&
                         compressObj->compress != NULL) {
                     if (compressObj->isGaplessFmt) {
                         PAL_DBG(LOG_TAG, "calling partial compress_drain");
@@ -1427,6 +1427,7 @@ int SessionAlsaCompress::start(Stream * s)
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
     struct sessionToPayloadParam streamData = {};
+    pal_param_mspp_linear_gain_t mLinearGain = rm->getLinearGain();
     memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -1550,7 +1551,7 @@ int SessionAlsaCompress::start(Stream * s)
                         status = 0;
                     }
                 }
-                if ((ResourceManager::isChargeConcurrencyEnabled) &&
+                if ((rm->IsChargeConcurrencyEnabled()) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
                     status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
@@ -1577,7 +1578,7 @@ int SessionAlsaCompress::start(Stream * s)
                         break;
                     }
 
-                    builder->payloadMSPPConfig(&payload, &payloadSize, miid, rm->linear_gain.gain);
+                    builder->payloadMSPPConfig(&payload, &payloadSize, miid, mLinearGain.gain);
                     if (payloadSize && payload) {
                         volStatus = builder->updateCustomPayload(payload, payloadSize);
                         builder->freeCustomPayload(&payload, &payloadSize);
@@ -1749,18 +1750,18 @@ int SessionAlsaCompress::start(Stream * s)
     setInitialVolume();
     //Setting the device orientation during stream open
     if (PAL_DEVICE_OUT_SPEAKER == dAttr.id) {
-        PAL_DBG(LOG_TAG,"set device orientation %d", rm->mOrientation);
+        PAL_DBG(LOG_TAG,"set device orientation %d", rm->getOrientation());
         if (!strcmp(dAttr.custom_config.custom_key, "mspp")) {
-            s->setOrientation(rm->mOrientation);
+            s->setOrientation(rm->getOrientation());
             if (setConfig(s, MODULE, ORIENTATION_TAG) != 0) {
                 PAL_ERR(LOG_TAG,"Setting device orientation failed");
             }
         } else {
             pal_param_device_rotation_t rotation;
-            rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
+            rotation.rotation_type = rm->getOrientation() == ORIENTATION_270 ?
                                     PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
             status = SessionAlsaUtils::handleDeviceRotation(rm, s, rotation.rotation_type, compressDevIds.at(0), mixer,
-                                          builder, rxAifBackEnds);
+                                                            builder, rxAifBackEnds);
             if (status != 0) {
                 PAL_ERR(LOG_TAG,"handleDeviceRotation failed\n");
                 goto exit;
@@ -1814,7 +1815,7 @@ int SessionAlsaCompress::stop(Stream * s __unused)
                 status = SessionAlsaUtils::registerMixerEvent(mixer, compressDevIds.at(0),
                             rxAifBackEnds[0].second.data(), TAG_PAUSE, (void *)&event_cfg,
                             payload_size);
-                if (status == 0 || rm->cardState == CARD_STATUS_OFFLINE) {
+                if (status == 0 || rm->getSoundCardState() == CARD_STATUS_OFFLINE) {
                     isPauseRegistrationDone = false;
                 } else {
                     // Not a fatal error
@@ -1889,7 +1890,7 @@ int SessionAlsaCompress::close(Stream * s)
                 PAL_ERR(LOG_TAG, "session alsa close failed with %d", status);
             }
             if (compress) {
-                if (PAL_CARD_STATUS_DOWN(rm->cardState)) {
+                if (PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
                     std::shared_ptr<offload_msg> msg = std::make_shared<offload_msg>(OFFLOAD_CMD_ERROR);
                     std::lock_guard<std::mutex> lock(cv_mutex_);
                     msg_queue_.push(msg);

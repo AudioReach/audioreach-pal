@@ -13,122 +13,121 @@
 #include <cutils/properties.h>
 #include "PalDefs.h"
 #include "PalMappings.h"
+/*include all streams*/
+#include "StreamACD.h"
+#include "StreamCompress.h"
+#include "StreamHaptics.h"
+#include "StreamInCall.h"
+#include "StreamNonTunnel.h"
+#include "StreamPCM.h"
+#include "StreamSoundTrigger.h"
+#include "StreamCommonProxy.h"
+#include "StreamContextProxy.h"
+#include "StreamSensorPCMData.h"
+#include "StreamSensorRenderer.h"
+#include "StreamUltraSound.h"
+#include "StreamACDB.h"
+#include "StreamASR.h"
 
 std::shared_ptr<PluginManager> PluginManager::pm = nullptr;
 std::mutex PluginManager::mPluginManagerMutex;
-std::vector<pm_item_t> PluginManager::registeredStreams = {};
-std::vector<pm_item_t> PluginManager::registeredSessions = {};
-std::vector<pm_item_t> PluginManager::registeredDevices = {};
-
-/*this can be over written by the config file settings*/
-uint32_t pal_log_lvl = (PAL_LOG_ERR|PAL_LOG_INFO);
-
-#define XML_PATH_MAX_LENGTH 100
-#define PLUGIN_MANAGER_FILENAME "plugin_manager.xml"
-#define VENDOR_CONFIG_PATH_MAX_LENGTH 128
-char pimngr_xml_file[XML_PATH_MAX_LENGTH] = {0};
-char pimngr_vendor_config_path[VENDOR_CONFIG_PATH_MAX_LENGTH] = {0};
-
-static const std::map<std::string, pal_plugin_manager_t> PmNameToType
-{
-    { "stream",  PAL_PLUGIN_MANAGER_STREAM},
-    { "session", PAL_PLUGIN_MANAGER_SESSION},
-    { "device",  PAL_PLUGIN_MANAGER_DEVICE},
-    { "config",  PAL_PLUGIN_MANAGER_CONFIG},
-    { "effects", PAL_PLUGIN_MANAGER_EFFECTS}
-};
-
 
 PluginManager::PluginManager() {
-        getVendorConfigPath(pimngr_vendor_config_path, sizeof(pimngr_vendor_config_path));
-        snprintf(pimngr_xml_file, sizeof(pimngr_xml_file),
-            "%s/%s", pimngr_vendor_config_path, PLUGIN_MANAGER_FILENAME);
-        XmlParser(pimngr_xml_file);
 }
 
 PluginManager::~PluginManager() {
-   deinitStreamPlugins();
 }
 
 void PluginManager::deinitStreamPlugins(){
 }
 
-int32_t PluginManager::getRegisteredPluginList(pal_plugin_manager_t type, std::vector<pm_item_t> **pluginList){
-    int32_t status = 0;
-    switch (type) {
-        case PAL_PLUGIN_MANAGER_STREAM:
-            *pluginList = &registeredStreams;
-            break;
-        case PAL_PLUGIN_MANAGER_SESSION:
-            *pluginList = &registeredSessions;
-            break;
-        case PAL_PLUGIN_MANAGER_DEVICE:
-            *pluginList = &registeredDevices;
-            break;
-        default:
-            PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);
-            status = -EINVAL;
-            break;
-    }
-    return status;
+int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t type){
+    return 0;
 }
 
-int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t type){
-    void* handle = NULL;
+int32_t getStreamFunc(void* func, std::string name) {
     int32_t status = 0;
-    bool_t foundLib = false;
-    std::vector<pm_item_t> *pluginList = nullptr;
 
-    status = getRegisteredPluginList(type, &pluginList);
-    if (status || !pluginList) {
-        PAL_ERR(LOG_TAG, "failed to get register plugin list");
-        goto exit;
+    if( name =="PAL_USE_ACDB_STREAM"){
+         func = (void*)&CreateACDBStream;
+         goto exit;
     }
-        for (auto& reg : *pluginList) {
-            if (item.libName == reg.libName) {
-                PAL_DBG(LOG_TAG, "%s lib already mapped adding key %s", item.libName.c_str(), item.keyNames[0].c_str());
-                reg.keyNames.push_back(item.keyNames[0]);
-                foundLib = true;
-                break;
-            }
-        }
-        if (!foundLib){
-            PAL_ERR(LOG_TAG, "%s registered", item.libName.c_str());
-            pluginList->push_back(item);
-        }
-
+    switch (usecaseIdLUT.at(name)) {
+        case PAL_STREAM_LOW_LATENCY:
+        case PAL_STREAM_DEEP_BUFFER:
+        case PAL_STREAM_SPATIAL_AUDIO:
+        case PAL_STREAM_GENERIC:
+        case PAL_STREAM_VOIP_TX:
+        case PAL_STREAM_VOIP_RX:
+        case PAL_STREAM_PCM_OFFLOAD:
+        case PAL_STREAM_VOICE_CALL:
+        case PAL_STREAM_LOOPBACK:
+        case PAL_STREAM_ULTRA_LOW_LATENCY:
+        case PAL_STREAM_PROXY:
+        case PAL_STREAM_RAW:
+        case PAL_STREAM_VOICE_RECOGNITION:
+            func = (void*)&CreatePCMStream;
+            break;
+        case PAL_STREAM_COMPRESSED:
+            func = (void*)&CreateCompressStream;
+            break;
+        case PAL_STREAM_VOICE_UI:
+            func = (void*)&CreateSoundTriggerStream;
+            break;
+        case PAL_STREAM_VOICE_CALL_RECORD:
+        case PAL_STREAM_VOICE_CALL_MUSIC:
+            func = (void*)&CreateInCallStream;
+            break;
+        case PAL_STREAM_NON_TUNNEL:
+            func = (void*)&CreateNonTunnelStream;
+            break;
+        case PAL_STREAM_ACD:
+            func = (void*)&CreateACDStream;
+            break;
+        case PAL_STREAM_HAPTICS:
+            func = (void*)&CreateHapticsStream;
+            break;
+        case PAL_STREAM_CONTEXT_PROXY:
+            func = (void*)&CreateContextProxyStream;
+            break;
+        case PAL_STREAM_ULTRASOUND:
+            func = (void*)&CreateUltraSoundStream;
+            break;
+        case PAL_STREAM_SENSOR_PCM_DATA:
+            func = (void*)&CreateSensorPCMDataStream;
+            break;
+        case PAL_STREAM_COMMON_PROXY:
+            func = (void*)&CreateCommonProxyStream;
+        break;
+        case PAL_STREAM_SENSOR_PCM_RENDERER:
+            func = (void*)&CreateSensorRendererStream;
+            break;
+        case PAL_STREAM_ASR:
+            func = (void*)&CreateASRStream;
+        default:
+            PAL_ERR(LOG_TAG, "unsupported stream type %s", name.c_str());
+            break;
+    }
     exit:
     return status;
 }
 
-int32_t getStreamFunc(void* func, uint32_t type) {
+int32_t getSessionFunc(void* func, std::string name) {
     int32_t status = 0;
-    switch(type){
-        default:
-            PAL_ERR(LOG_TAG, "unsupported Stream Type %s", streamNameLUT.at(type).c_str());
-            status = -EINVAL;
-            break;
-
-    }
-    return status;
-}
-
-int32_t getSessionFunc(void* func, uint32_t type) {
-    int32_t status = 0;
-    switch(type){
+    switch(usecaseIdLUT.at(name)){
          default:
-            PAL_ERR(LOG_TAG, "unsupported Stream Type %s", streamNameLUT.at(type).c_str());
+            PAL_ERR(LOG_TAG, "unsupported session type %s", name.c_str());
             status = -EINVAL;
             break;
     }
     return status;
 }
 
-int32_t getDeviceFunc(void* func, uint32_t type) {
+int32_t getDeviceFunc(void* func, std::string name) {
     int32_t status = 0;
-    switch(type){
+    switch(deviceIdLUT.at(name)){
          default:
-            PAL_ERR(LOG_TAG, "unsupported Device Type %s", deviceNameLUT.at(type).c_str());
+            PAL_ERR(LOG_TAG, "unsupported device type %s", name.c_str());
             status = -EINVAL;
             break;
     }
@@ -141,42 +140,26 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
 
     PAL_DBG(LOG_TAG, "Enter");
     mPluginManagerMutex.lock();
-    status = getRegisteredPluginList(type, &pluginList);
-    if (status || !pluginList) {
-        PAL_ERR(LOG_TAG, "failed to get register plugin list");
-        goto exit;
-    }
-    for (auto& item : *pluginList) {
-        for (auto& key : item.keyNames) {
-            if (key == keyName) {
-                switch (type) {
-                    case PAL_PLUGIN_MANAGER_STREAM:
-                        status = getStreamFunc(plugin, usecaseIdLUT.at(keyName));
-                        break;
-                    case PAL_PLUGIN_MANAGER_SESSION:
-                        status = getSessionFunc(plugin, usecaseIdLUT.at(keyName));
-                        break;
-                    case PAL_PLUGIN_MANAGER_DEVICE:
-                        status = getDeviceFunc(plugin, deviceIdLUT.at(keyName));
-                        break;
-                    default:
-                        PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);
-                        status = -EINVAL;
-                        break;
-                }
-                if(status){
-                    PAL_ERR(LOG_TAG, "failed to get function pointer for %s", keyName.c_str());
-                    break;
-                }
-            }
-            if (plugin)
-                break;
-        }
-        if (plugin)
+    switch (type) {
+        case PAL_PLUGIN_MANAGER_STREAM:
+            status = getStreamFunc(plugin, keyName);
+            break;
+        case PAL_PLUGIN_MANAGER_SESSION:
+            status = getSessionFunc(plugin, keyName);
+            break;
+        case PAL_PLUGIN_MANAGER_DEVICE:
+            status = getDeviceFunc(plugin, keyName);
+            break;
+        default:
+            PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);
+            status = -EINVAL;
             break;
     }
+    if(status){
+        PAL_ERR(LOG_TAG, "failed to get function pointer for %s", keyName.c_str());
+    }
     if (!plugin) {
-        PAL_ERR(LOG_TAG, "cannot find a registered plugin for stream type %s",
+        PAL_ERR(LOG_TAG, "cannot find the stream for stream type %s",
                 keyName.c_str());
         status = -EINVAL;
     }
@@ -189,128 +172,6 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
 int32_t  PluginManager::closePlugin(pal_plugin_manager_t type, std::string keyName) {
     return 0;
 }
-
-
-// Callback function for handling start elements
-void PluginManager::startElement(void* userData, const char* name, const char** attrs) {
-    if (strcmp(name, "stream") == 0 || strcmp(name, "session") == 0 || strcmp(name, "device") == 0) {
-        pm_item_t item;
-        // std::string stream;
-        PAL_DBG(LOG_TAG, "enter");
-
-        // Extract attributes
-        for (int i = 0; attrs[i]; i += 2) {
-            if (strcmp(attrs[i], "name") == 0){
-                item.keyNames.push_back(attrs[i + 1]);
-            }
-            else if (strcmp(attrs[i], "lib") == 0)
-                item.libName = attrs[i + 1];
-            else if (strcmp(attrs[i], "entryFunction") == 0)
-                item.entryFunction = attrs[i + 1];
-        }
-        if (item.keyNames[0].length() && item.libName.length() && item.entryFunction.length())
-            registeredPlugin(item, PmNameToType.at(name));
-        else
-            PAL_ERR(LOG_TAG, "invalid parameters during parsing plugin manager xml");
-    }
-}
-
-/* Function to get audio vendor configs path */
-void PluginManager::getVendorConfigPath (char* config_file_path, int path_size)
-{
-   char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
-   if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
-#if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-       /* Audio configs are stored in /etc */
-       snprintf(config_file_path, path_size, "%s", "/etc");
-#else
-       /* Audio configs are stored in /vendor/etc */
-       snprintf(config_file_path, path_size, "%s", "/vendor/etc");
-#endif
-    } else {
-       /* Audio configs are stored in /vendor/etc/audio/sku_${vendor_sku} */
-       snprintf(config_file_path, path_size,
-                       "%s%s", "/vendor/etc/audio/sku_", vendor_sku);
-    }
-}
-
-void PluginManager::data_handler(void *userdata, const XML_Char *s, int len)
-{
-   struct xml_userdata *data = (struct xml_userdata *)userdata;
-
-   if (len + data->offs >= sizeof(data->data_buf) ) {
-       data->offs += len;
-       /* string length overflow, return */
-       return;
-   } else {
-       memcpy(data->data_buf + data->offs, s, len);
-       data->offs += len;
-   }
-}
-
-int PluginManager::XmlParser(std::string xmlFile)
-{
-    XML_Parser parser;
-    FILE *file = NULL;
-    int ret = 0;
-    int bytes_read;
-    void *buf = NULL;
-    struct xml_userdata data;
-    memset(&data, 0, sizeof(data));
-
-    PAL_INFO(LOG_TAG, "XML parsing started - file name %s", xmlFile.c_str());
-    file = fopen(xmlFile.c_str(), "r");
-    if(!file) {
-        ret = -ENOENT;
-        PAL_ERR(LOG_TAG, "Failed to open xml file name %s ret %d", xmlFile.c_str(), ret);
-        goto done;
-    }
-
-    parser = XML_ParserCreate(NULL);
-    if (!parser) {
-        ret = -EINVAL;
-        PAL_ERR(LOG_TAG, "Failed to create XML ret %d", ret);
-        goto closeFile;
-    }
-
-    data.parser = parser;
-    XML_SetUserData(parser, &data);
-    XML_SetElementHandler(parser, startElement, nullptr);
-    XML_SetCharacterDataHandler(parser, data_handler);
-
-    while (1) {
-        buf = XML_GetBuffer(parser, 1024);
-        if(buf == NULL) {
-            ret = -EINVAL;
-            PAL_ERR(LOG_TAG, "XML_Getbuffer failed ret %d", ret);
-            goto freeParser;
-        }
-
-        bytes_read = fread(buf, 1, 1024, file);
-        if(bytes_read < 0) {
-            ret = -EINVAL;
-            PAL_ERR(LOG_TAG, "fread failed ret %d", ret);
-            goto freeParser;
-        }
-
-        if(XML_ParseBuffer(parser, bytes_read, bytes_read == 0) == XML_STATUS_ERROR) {
-            ret = -EINVAL;
-            PAL_ERR(LOG_TAG, "XML ParseBuffer failed for %s file ret %d", xmlFile.c_str(), ret);
-            goto freeParser;
-        }
-        if (bytes_read == 0)
-            break;
-    }
-
-freeParser:
-    XML_ParserFree(parser);
-closeFile:
-    fclose(file);
-done:
-    return ret;
-}
-
-
 
 /*public APIs*/
 

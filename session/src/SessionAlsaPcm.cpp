@@ -956,32 +956,38 @@ exit:
 
 void SessionAlsaPcm::deRegisterAdmStream(Stream *s)
 {
-    if (rm->admDeregisterStreamFn)
-        rm->admDeregisterStreamFn(rm->admData, static_cast<void *>(s));
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    adm_deregister_stream_t admDeregisterStreamFn = rm->getAdmDeregisterStreamFn();
+    if (admDeregisterStreamFn)
+        admDeregisterStreamFn(rm->getAdmData(), static_cast<void *>(s));
 }
 
 void SessionAlsaPcm::registerAdmStream(Stream *s, pal_stream_direction_t dir,
         pal_stream_flags_t flags, struct pcm *pcm, struct pcm_config *cfg)
 {
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    adm_set_config_t admSetConfigFn = rm->getAdmSetConfigFn();
+    adm_register_output_stream_t admRegisterOutputStreamFn = rm->getAdmRegisterOutputStreamFn();
+    adm_register_input_stream_t admRegisterInputStreamFn = rm->getAdmRegisterInputStreamFn();
     switch (dir) {
     case PAL_AUDIO_INPUT:
-        if (rm->admRegisterInputStreamFn) {
-            rm->admRegisterInputStreamFn(rm->admData, static_cast<void *>(s));
+        if (admRegisterInputStreamFn) {
+            admRegisterInputStreamFn(rm->getAdmData(), static_cast<void *>(s));
 
             if (flags & PAL_STREAM_FLAG_MMAP_MASK) {
-                if (rm->admSetConfigFn)
-                    rm->admSetConfigFn(rm->admData, static_cast<void *>(s),
+                if (admSetConfigFn)
+                    admSetConfigFn(rm->getAdmData(), static_cast<void *>(s),
                             pcm, cfg);
             }
         }
         break;
     case PAL_AUDIO_OUTPUT:
-        if (rm->admRegisterOutputStreamFn) {
-            rm->admRegisterOutputStreamFn(rm->admData, static_cast<void *>(s));
+        if (admRegisterOutputStreamFn) {
+            admRegisterOutputStreamFn(rm->getAdmData(), static_cast<void *>(s));
 
             if (flags & PAL_STREAM_FLAG_MMAP_MASK) {
-                if (rm->admSetConfigFn)
-                    rm->admSetConfigFn(rm->admData, static_cast<void *>(s),
+                if (admSetConfigFn)
+                    admSetConfigFn(rm->getAdmData(), static_cast<void *>(s),
                             pcm, cfg);
             }
         }
@@ -993,17 +999,22 @@ void SessionAlsaPcm::registerAdmStream(Stream *s, pal_stream_direction_t dir,
 
 void SessionAlsaPcm::requestAdmFocus(Stream *s,  long ns)
 {
-    if (rm->admRequestFocusV2Fn)
-        rm->admRequestFocusV2Fn(rm->admData, static_cast<void *>(s),
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    adm_request_focus_t requestFocusFn = rm->getAdmRequestFocusFn();
+    adm_request_focus_v2_t requestFocusV2Fn = rm->getAdmRequestFocusV2Fn();
+    if (requestFocusV2Fn)
+        requestFocusV2Fn(rm->getAdmData(), static_cast<void *>(s),
                 ns);
-    else if (rm->admRequestFocusFn)
-        rm->admRequestFocusFn(rm->admData, static_cast<void *>(s));
+    else if (requestFocusFn)
+        requestFocusFn(rm->getAdmData(), static_cast<void *>(s));
 }
 
 void SessionAlsaPcm::releaseAdmFocus(Stream *s)
 {
-    if (rm->admAbandonFocusFn)
-        rm->admAbandonFocusFn(rm->admData, static_cast<void *>(s));
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    adm_abandon_focus_t abandonFocusFn = rm->getAdmAbandonFocusFn();
+    if (abandonFocusFn)
+        abandonFocusFn(rm->getAdmData(), static_cast<void *>(s));
 }
 
 int SessionAlsaPcm::start(Stream * s)
@@ -1027,6 +1038,9 @@ int SessionAlsaPcm::start(Stream * s)
     struct disable_lpm_info lpm_info = {};
     bool isStreamAvail = false;
     bool us_notify_format = false;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
+    group_dev_config_t currentGroupDevConfig;
+    pal_param_mspp_linear_gain_t linearGain;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -1635,8 +1649,8 @@ set_mixer:
             }
 
             /* Silence Detection Configuration */
-            if ((ResourceManager::isSilenceDetectionEnabled) && (!silenceEventRegistered) &&
-                            (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
+            if ((rm->IsSilenceDetectionEnabled()) && (!silenceEventRegistered) &&
+                (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC)) {
             /*
              *
              * 1. Register to listen at AGM level for Silence Detection Even
@@ -1760,7 +1774,7 @@ set_mixer:
                 status = -EINVAL;
                 goto exit;
             }
-            if (sAttr.type == PAL_STREAM_HAPTICS && rm->IsHapticsThroughWSA()) {
+            if (sAttr.type == PAL_STREAM_HAPTICS && ResourceManager::IsHapticsThroughWSA()) {
                 status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevIds.at(0),
                                       rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, &miid);
                 if (status != 0) {
@@ -1826,7 +1840,7 @@ set_mixer:
                     PAL_ERR(LOG_TAG, "configure MFC failed");
                     goto exit;
                 }
-                if ((ResourceManager::isChargeConcurrencyEnabled) &&
+                if ((rm->IsChargeConcurrencyEnabled()) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
                     status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
@@ -1858,8 +1872,8 @@ set_mixer:
                         goto pcm_start;
                     }
                     PAL_INFO(LOG_TAG, "miid : %x id = %d\n", miid, pcmDevIds.at(0));
-
-                    builder->payloadMSPPConfig(&payload, &payloadSize, miid, rm->linear_gain.gain);
+                    linearGain = rm->getLinearGain();
+                    builder->payloadMSPPConfig(&payload, &payloadSize, miid, linearGain.gain);
                     if (payloadSize && payload) {
                         status = builder->updateCustomPayload(payload, payloadSize);
                         builder->freeCustomPayload(&payload, &payloadSize);
@@ -1896,7 +1910,7 @@ set_mixer:
                         goto pcm_start;
                     }
 
-                    s->setOrientation(rm->mOrientation);
+                    s->setOrientation(rm->getOrientation());
                     PAL_DBG(LOG_TAG,"MSPP set device orientation %d", s->getOrientation());
 
                     if (setConfig(s, MODULE, ORIENTATION_TAG) != 0) {
@@ -1904,7 +1918,7 @@ set_mixer:
                     }
                 } else {
                     pal_param_device_rotation_t rotation;
-                    rotation.rotation_type = rm->mOrientation == ORIENTATION_270 ?
+                    rotation.rotation_type = rm->getOrientation() == ORIENTATION_270 ?
                                             PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
                     status = SessionAlsaUtils::handleDeviceRotation(rm, s, rotation.rotation_type, pcmDevIds.at(0),
                                                     mixer, builder, rxAifBackEnds);
@@ -2042,20 +2056,22 @@ set_mixer:
             }
 pcm_start:
             if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER) {
-                if (rm->activeGroupDevConfig) {
+                groupDevConfig = rm->getActiveGroupDevConfig();
+                currentGroupDevConfig = rm->getCurrentGroupDevConfig();
+                if (groupDevConfig) {
                     if ((dAttr.config.sample_rate !=
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate) ||
+                         currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate) ||
                         (dAttr.config.ch_info.channels !=
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels) ||
+                         currentGroupDevConfig.grp_dev_hwep_cfg.channels) ||
                         (dAttr.config.bit_width != ResourceManager::palFormatToBitwidthLookup(
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id))) {
+                         currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id))) {
                          us_notify_format = true;
                          dAttr.config.sample_rate =
-                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate;
+                             currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate;
                          dAttr.config.ch_info.channels =
-                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels;
+                             currentGroupDevConfig.grp_dev_hwep_cfg.channels;
                          dAttr.config.bit_width = ResourceManager::palFormatToBitwidthLookup(
-                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id);
+                             currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id);
                     }
                 } else if (dAttr.id != PAL_DEVICE_OUT_ULTRASOUND_DEDICATED) {
                     us_notify_format = true;
@@ -2176,7 +2192,7 @@ pcm_start:
                         goto exit;
                     }
                 }
-                if ((ResourceManager::isChargeConcurrencyEnabled) &&
+                if ((rm->IsChargeConcurrencyEnabled()) &&
                     (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {
                     status = NotifyChargerConcurrency(rm, true);
                     if (0 == status) {
@@ -2255,7 +2271,7 @@ int SessionAlsaPcm::stop(Stream * s)
             }
 
 
-            if (ResourceManager::isSilenceDetectionEnabled && silenceEventRegistered) {
+            if (rm->IsSilenceDetectionEnabled() && silenceEventRegistered) {
 
                 status = s->getAssociatedDevices(associatedDevices);
                 if (0 != status) {
@@ -2326,7 +2342,7 @@ int SessionAlsaPcm::stop(Stream * s)
                 status = SessionAlsaUtils::registerMixerEvent(mixer, pcmDevIds.at(0),
                         rxAifBackEnds[0].second.data(), TAG_PAUSE, (void *)&event_cfg,
                         payload_size);
-                if (status == 0 || rm->cardState == CARD_STATUS_OFFLINE) {
+                if (status == 0 || rm->getSoundCardState() == CARD_STATUS_OFFLINE) {
                     isPauseRegistrationDone = false;
                 } else {
                     // Not a fatal error
@@ -2807,6 +2823,7 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
     std::vector<std::pair<int32_t, std::string>> txAifBackEndsToConnect;
     struct pal_stream_attributes sAttr = {};
     int32_t status = 0;
+    group_dev_config_t currentGroupDevConfig;
 
     deviceList.push_back(deviceToConnect);
     rm->getBackEndNames(deviceList, rxAifBackEndsToConnect,
@@ -2847,13 +2864,14 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
         } else {
             if (streamType == PAL_STREAM_SENSOR_PCM_RENDERER) {
                 // update sr/ch/bw in dAttr if virtual port is enabled
-                if (rm->activeGroupDevConfig) {
+                currentGroupDevConfig = rm->getCurrentGroupDevConfig();
+                if (rm->getActiveGroupDevConfig()) {
                     dAttr.config.sample_rate =
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate;
+                         currentGroupDevConfig .grp_dev_hwep_cfg.sample_rate;
                     dAttr.config.ch_info.channels =
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels;
+                         currentGroupDevConfig .grp_dev_hwep_cfg.channels;
                     dAttr.config.bit_width = ResourceManager::palFormatToBitwidthLookup(
-                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id);
+                         currentGroupDevConfig .grp_dev_hwep_cfg.aud_fmt_id);
                 }
                 status = notifyUPDToneRendererFmtChng(&dAttr,
                             US_TONE_RENDERER_EP_MEDIA_FORMAT_INFO_CHANGE_DONE);
@@ -4788,6 +4806,23 @@ exit:
     if (voldata) {
          free(voldata);
          voldata = NULL;
+    }
+    return status;
+}
+
+int32_t SessionAlsaPcm::reconfigureSession(Stream *s, struct pal_media_config config){
+    int32_t status = 0;
+    pal_stream_type_t streamType;
+    struct sessionToPayloadParam deviceData;
+    deviceData.bitWidth = config.bit_width;
+    deviceData.sampleRate = config.sample_rate;
+    deviceData.numChannel = config.ch_info.channels;
+    deviceData.ch_info = nullptr;
+
+    status = s->getStreamType(&streamType);
+    if(status && streamType == PAL_STREAM_VOICE_CALL_MUSIC) {
+        //for in call reconfigure PSPD MFC
+       status = reconfigureModule(PER_STREAM_PER_DEVICE_MFC, "ZERO", &deviceData);
     }
     return status;
 }

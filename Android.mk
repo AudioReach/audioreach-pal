@@ -14,6 +14,7 @@ LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/device/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/utils/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/context_manager/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/plugins/codecs
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/plugins/PluginManager/inc
 
 LOCAL_VENDOR_MODULE := true
 
@@ -44,13 +45,6 @@ LOCAL_CFLAGS        += -DA2DP_SINK_SUPPORTED
 endif
 
 LOCAL_C_INCLUDES := \
-    $(LOCAL_PATH)/stream/inc \
-    $(LOCAL_PATH)/device/inc \
-    $(LOCAL_PATH)/session/inc \
-    $(LOCAL_PATH)/resource_manager/inc \
-    $(LOCAL_PATH)/context_manager/inc \
-    $(LOCAL_PATH)/utils/inc \
-    $(LOCAL_PATH)/plugins/codecs \
     $(TOP)/system/media/audio_route/include \
     $(TOP)/system/media/audio/include
 
@@ -70,29 +64,15 @@ endif
 
 LOCAL_C_INCLUDES              += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 LOCAL_C_INCLUDES              += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+
 LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
-LOCAL_EXPORT_C_INCLUDE_DIRS   := $(LOCAL_PATH)/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS   := $(LOCAL_PATH)/inc \
 
 LOCAL_SRC_FILES := \
     Pal.cpp \
     PalAR.cpp \
     stream/src/Stream.cpp \
-    stream/src/StreamCompress.cpp \
-    stream/src/StreamPCM.cpp \
-    stream/src/StreamACDB.cpp \
-    stream/src/StreamInCall.cpp \
-    stream/src/StreamNonTunnel.cpp \
-    stream/src/StreamSoundTrigger.cpp \
-    stream/src/StreamACD.cpp \
-    stream/src/StreamCommon.cpp \
-    stream/src/StreamContextProxy.cpp \
-    stream/src/StreamCommonProxy.cpp \
-    stream/src/StreamUltraSound.cpp \
-    stream/src/StreamSensorPCMData.cpp\
-    stream/src/StreamHaptics.cpp \
-    stream/src/StreamSensorRenderer.cpp \
-    stream/src/StreamASR.cpp \
     device/src/Headphone.cpp \
     device/src/USBAudio.cpp \
     device/src/Device.cpp \
@@ -122,25 +102,19 @@ LOCAL_SRC_FILES := \
     session/src/SessionAlsaUtils.cpp \
     session/src/SessionAlsaCompress.cpp \
     session/src/SessionAlsaVoice.cpp \
-    session/src/SoundTriggerEngine.cpp \
-    session/src/SoundTriggerEngineCapi.cpp \
-    session/src/SoundTriggerEngineGsl.cpp \
-    session/src/ContextDetectionEngine.cpp \
-    session/src/ASREngine.cpp \
     context_manager/src/ContextManager.cpp \
-    session/src/ACDEngine.cpp \
     resource_manager/src/ResourceManager.cpp \
     resource_manager/src/SndCardMonitor.cpp \
     utils/src/SoundTriggerPlatformInfo.cpp \
     utils/src/ACDPlatformInfo.cpp \
-    utils/src/VoiceUIPlatformInfo.cpp \
     utils/src/ASRPlatformInfo.cpp \
-    utils/src/PalRingBuffer.cpp \
+    utils/src/VoiceUIPlatformInfo.cpp \
     utils/src/SignalHandler.cpp \
     utils/src/AudioHapticsInterface.cpp \
     utils/src/MetadataParser.cpp \
     utils/src/MemLogBuilder.cpp \
-    utils/src/PerfLock.cpp
+    utils/src/PerfLock.cpp \
+    utils/src/STUtils.cpp
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \
@@ -153,7 +127,8 @@ LOCAL_HEADER_LIBRARIES := \
     libvui_dmgr_headers \
     libaudiofeaturestats_headers \
     libarvui_intf_headers \
-    libarmemlog_headers
+    libarmemlog_headers \
+    libarpal_internalheaders
 
 LOCAL_SHARED_LIBRARIES := \
     libar-gsl\
@@ -234,5 +209,6 @@ include $(CLEAR_VARS)
 
 include $(PAL_BASE_PATH)/plugins/Android.mk
 include $(PAL_BASE_PATH)/ipc/aidl/Android.mk
+include $(PAL_BASE_PATH)/stream/Android.mk
 
 endif #AUDIO_USE_STUB_HAL

@@ -46,16 +46,13 @@
 #else
 #include "audio_route/audio_route.h"
 #endif
-#include <tinyalsa/asoundlib.h>
 #include <array>
 #include <map>
 #include <set>
-#include <expat.h>
 #include <stdio.h>
 #include <queue>
 #include <deque>
 #include <unordered_map>
-#include <vui_dmgr_audio_intf.h>
 #include <audio_feature_stats_intf.h>
 #include <amdb_api.h>
 #include "PalCommon.h"
@@ -66,6 +63,7 @@
 #include "SoundTriggerPlatformInfo.h"
 #include "SignalHandler.h"
 #include "MemLogBuilder.h"
+#include "Session.h"
 
 typedef enum {
     RX_HOSTLESS = 1,
@@ -398,8 +396,6 @@ enum NTStreamTypes_t : uint32_t {
 
 typedef void (*SoundTriggerOnResourceAvailableCallback)(uint64_t cookie);
 
-typedef void (*session_callback)(uint64_t hdl, uint32_t event_id, void *event_data,
-                uint32_t event_size);
 bool isPalPCMFormat(uint32_t fmt_id);
 
 typedef void* (*adm_init_t)();
@@ -424,22 +420,7 @@ typedef int32_t (*deregisterPeripheralCBFnPtr)(void *context);
 
 class Device;
 class Stream;
-class StreamPCM;
-class StreamCompress;
-class StreamSoundTrigger;
-class StreamACD;
-class StreamASR;
-class StreamInCall;
-class StreamNonTunnel;
-class SoundTriggerEngine;
-class SndCardMonitor;
-class StreamUltraSound;
 class ContextManager;
-class StreamSensorPCMData;
-class StreamContextProxy;
-class StreamCommonProxy;
-class StreamHaptics;
-class StreamSensorRenderer;
 
 struct deviceIn {
     int deviceId;
@@ -516,30 +497,117 @@ private:
     bool checkDeviceSwitchForHaptics(struct pal_device *inDevAttr, struct pal_device *curDevAttr);
     SoundTriggerOnResourceAvailableCallback onResourceAvailCb = NULL;
     uint64_t onResourceAvailCookie;
+
+    static bool isQmpEnabled;
+    static bool mixerClosed;
+    enum card_status_t cardState;
+    //bool ssrStarted = false;
+    /* Variable to cache a2dp suspended state for a2dp device */
+    static bool a2dp_suspended;
+    /* Variable to store whether Speaker protection is enabled or not */
+    static bool isSpeakerProtectionEnabled;
+    static bool isHandsetProtectionEnabled;
+    static bool isHapticsProtectionEnabled;
+    static bool isChargeConcurrencyEnabled;
+    static int cpsMode;
+    static bool isVbatEnabled;
+    static bool isRasEnabled;
+    static bool isGaplessEnabled;
+    static bool isContextManagerEnabled;
+    static bool isDualMonoEnabled;
+    static bool isDeviceMuxConfigEnabled;
+    static bool isUHQAEnabled;
+    static bool isSignalHandlerEnabled;
+    static bool isCPEnabled;
+    static bool isCRSCallEnabled;
+    static bool isDummyDevEnabled;
+    static bool isProxyRecordActive;
+    static std::mutex mChargerBoostMutex;
+    /* Variable to store which speaker side is being used for call audio.
+     * Valid for Stereo case only
+     */
+    static bool isMainSpeakerRight;
+    /* Variable to store Quick calibration time for Speaker protection */
+    static int spQuickCalTime;
+    /* Variable to store the mode request for Speaker protection */
+    pal_spkr_prot_payload mSpkrProtModeValue;
+
+    /* Variable to store the device orientation for Speaker*/
+    int mOrientation = 0;
+    uint32_t num_proxy_channels = 0;
+    /* Flag to store the state of VI record */
+    static bool isVIRecordStarted;
+    /* Flag to indicate if shared backend is enabled for UPD */
+    static bool isUpdDedicatedBeEnabled;
+    /* Flag to indicate if shared backend is enabled for UPD */
+    static bool isUpdDutyCycleEnabled;
+    /* Flag to indicate if virtual port is enabled for UPD */
+    static bool isUPDVirtualPortEnabled;
+    /* Flag to indicate if Haptics isdriven thorugh WSA */
+    static bool isHapticsthroughWSA;
+    /* Variable to store max volume index for voice call */
+    static int max_voice_vol;
+    /* Variable to store if Silence Detection is enabled */
+    static bool isSilenceDetectionEnabled;
+    /*variable to store MSPP linear gain*/
+    pal_param_mspp_linear_gain_t linear_gain;
+#ifdef SOC_PERIPHERAL_PROT
+    static std::thread socPerithread;
+    static bool isTZSecureZone;
+    static void *tz_handle;
+    static void *socPeripheralLibHdl;
+    static getPeripheralStatusFnPtr mGetPeripheralState;
+    static registerPeripheralCBFnPtr mRegisterPeripheralCb;
+    static deregisterPeripheralCBFnPtr mDeregisterPeripheralCb;
+#endif
+    adm_init_t admInitFn = NULL;
+    adm_deinit_t admDeInitFn = NULL;
+    adm_register_output_stream_t admRegisterOutputStreamFn = NULL;
+    adm_register_input_stream_t admRegisterInputStreamFn = NULL;
+    adm_deregister_stream_t admDeregisterStreamFn = NULL;
+    adm_request_focus_t admRequestFocusFn = NULL;
+    adm_abandon_focus_t admAbandonFocusFn = NULL;
+    adm_set_config_t admSetConfigFn = NULL;
+    adm_request_focus_v2_t admRequestFocusV2Fn = NULL;
+    adm_on_routing_change_t admOnRoutingChangeFn = NULL;
+    adm_request_focus_v2_1_t  admRequestFocus_v2_1Fn = NULL;
+    void *admData = NULL;
+    void *admLibHdl = NULL;
+    static void *cl_lib_handle;
+    static cl_init_t cl_init;
+    static cl_deinit_t cl_deinit;
+    static cl_set_boost_state_t cl_set_boost_state;
+    static std::shared_ptr<group_dev_config_t> activeGroupDevConfig;
+    static group_dev_config_t currentGroupDevConfig;
+
+    pal_stream_handle_t *afs_stream_handle = NULL;
+    static void *feature_stats_handle;
+    static afs_init_t feature_stats_init;
+    static afs_deinit_t feature_stats_deinit;
 protected:
     std::list <Stream*> mActiveStreams;
-    std::list <StreamPCM*> active_streams_ll;
-    std::list <StreamPCM*> active_streams_ulla;
-    std::list <StreamPCM*> active_streams_ull;
-    std::list <StreamPCM*> active_streams_db;
-    std::list <StreamPCM*> active_streams_sa;
-    std::list <StreamPCM*> active_streams_po;
-    std::list <StreamPCM*> active_streams_proxy;
-    std::list <StreamPCM*> active_streams_haptics;
-    std::list <StreamPCM*> active_streams_raw;
-    std::list <StreamPCM*> active_streams_voice_rec;
-    std::list <StreamInCall*> active_streams_incall_record;
-    std::list <StreamNonTunnel*> active_streams_non_tunnel;
-    std::list <StreamInCall*> active_streams_incall_music;
-    std::list <StreamCompress*> active_streams_comp;
-    std::list <StreamSoundTrigger*> active_streams_st;
-    std::list <StreamACD*> active_streams_acd;
-    std::list <StreamASR*> active_streams_asr;
-    std::list <StreamUltraSound*> active_streams_ultrasound;
-    std::list <StreamSensorPCMData*> active_streams_sensor_pcm_data;
-    std::list <StreamContextProxy*> active_streams_context_proxy;
-    std::list <StreamCommonProxy*> active_streams_afs;
-    std::list <StreamSensorRenderer*> active_streams_sensor_renderer;
+    std::list <Stream*> active_streams_ll;
+    std::list <Stream*> active_streams_ulla;
+    std::list <Stream*> active_streams_ull;
+    std::list <Stream*> active_streams_db;
+    std::list <Stream*> active_streams_sa;
+    std::list <Stream*> active_streams_po;
+    std::list <Stream*> active_streams_proxy;
+    std::list <Stream*> active_streams_haptics;
+    std::list <Stream*> active_streams_raw;
+    std::list <Stream*> active_streams_voice_rec;
+    std::list <Stream*> active_streams_incall_record;
+    std::list <Stream*> active_streams_non_tunnel;
+    std::list <Stream*> active_streams_incall_music;
+    std::list <Stream*> active_streams_comp;
+    std::list <Stream*> active_streams_st;
+    std::list <Stream*> active_streams_acd;
+    std::list <Stream*> active_streams_ultrasound;
+    std::list <Stream*> active_streams_sensor_pcm_data;
+    std::list <Stream*> active_streams_context_proxy;
+    std::list <Stream*> active_streams_afs;
+    std::list <Stream*> active_streams_sensor_renderer;
+    std::list <Stream*> active_streams_asr;
     std::vector <std::pair<std::shared_ptr<Device>, Stream*>> active_devices;
     std::vector <std::shared_ptr<Device>> plugin_devices_;
     std::vector <pal_device_id_t> avail_devices_;
@@ -662,108 +730,19 @@ protected:
 
 public:
     ~ResourceManager();
-    static bool mixerClosed;
-    enum card_status_t cardState;
-    bool ssrStarted = false;
-    static bool isQmpEnabled;
-    /* Variable to store whether Speaker protection is enabled or not */
-    static bool isSpeakerProtectionEnabled;
-    static bool isHandsetProtectionEnabled;
-    static bool isHapticsProtectionEnabled;
-    static bool isChargeConcurrencyEnabled;
-    static int cpsMode;
-    static bool isVbatEnabled;
-    static bool isRasEnabled;
-    static bool isGaplessEnabled;
-    static bool isContextManagerEnabled;
-    static bool isDualMonoEnabled;
-    static bool isDeviceMuxConfigEnabled;
-    static bool isUHQAEnabled;
-    static bool isSignalHandlerEnabled;
-    static bool isCPEnabled;
-    static bool isCRSCallEnabled;
-    static bool isDummyDevEnabled;
-    static bool isProxyRecordActive;
-    static std::mutex mChargerBoostMutex;
-    /* Variable to store which speaker side is being used for call audio.
-     * Valid for Stereo case only
-     */
-    static bool isMainSpeakerRight;
-    /* Variable to store Quick calibration time for Speaker protection */
-    static int spQuickCalTime;
-    /* Variable to store the mode request for Speaker protection */
-    pal_spkr_prot_payload mSpkrProtModeValue;
-
-    /* Variable to store the device orientation for Speaker*/
-    int mOrientation = 0;
+    uint64_t cookie;
     pal_global_callback globalCb = NULL;
-    uint32_t num_proxy_channels = 0;
-    /* Flag to store the state of VI record */
-    static bool isVIRecordStarted;
-    /* Flag to indicate if shared backend is enabled for UPD */
-    static bool isUpdDedicatedBeEnabled;
-    /* Flag to indicate if shared backend is enabled for UPD */
-    static bool isUpdDutyCycleEnabled;
-    /* Flag to indicate if virtual port is enabled for UPD */
-    static bool isUPDVirtualPortEnabled;
-    /* Flag to indicate if Haptics isdriven thorugh WSA */
-    static bool isHapticsthroughWSA;
-    /* Variable to store max volume index for voice call */
-    static int max_voice_vol;
-    /* Variable to store if Silence Detection is enabled */
-    static bool isSilenceDetectionEnabled;
-    /*variable to store MSPP linear gain*/
-    pal_param_mspp_linear_gain_t linear_gain;
 #ifdef SOC_PERIPHERAL_PROT
-    static std::thread socPerithread;
-    static bool isTZSecureZone;
-    static void *tz_handle;
     static int deregPeripheralCb(void *cntxt);
     static int registertoPeripheral(uint32_t pUID);
     static int32_t secureZoneEventCb(const uint32_t peripheral,
                                            const uint8_t secureState);
     static void loadSocPeripheralLib();
-    static void *socPeripheralLibHdl;
-    static getPeripheralStatusFnPtr mGetPeripheralState;
-    static registerPeripheralCBFnPtr mRegisterPeripheralCb;
-    static deregisterPeripheralCBFnPtr mDeregisterPeripheralCb;
+    bool IsTZSecureZone() { return ResourceManager::isTZSecureZone; }
 #endif
-    uint64_t cookie;
     int initSndMonitor();
     int initContextManager();
     void deInitContextManager();
-    adm_init_t admInitFn = NULL;
-    adm_deinit_t admDeInitFn = NULL;
-    adm_register_output_stream_t admRegisterOutputStreamFn = NULL;
-    adm_register_input_stream_t admRegisterInputStreamFn = NULL;
-    adm_deregister_stream_t admDeregisterStreamFn = NULL;
-    adm_request_focus_t admRequestFocusFn = NULL;
-    adm_abandon_focus_t admAbandonFocusFn = NULL;
-    adm_set_config_t admSetConfigFn = NULL;
-    adm_request_focus_v2_t admRequestFocusV2Fn = NULL;
-    adm_on_routing_change_t admOnRoutingChangeFn = NULL;
-    adm_request_focus_v2_1_t  admRequestFocus_v2_1Fn = NULL;
-    void *admData = NULL;
-    void *admLibHdl = NULL;
-    static void *cl_lib_handle;
-    static cl_init_t cl_init;
-    static cl_deinit_t cl_deinit;
-    static cl_set_boost_state_t cl_set_boost_state;
-    static std::shared_ptr<group_dev_config_t> activeGroupDevConfig;
-    static group_dev_config_t currentGroupDevConfig;
-
-    static void *vui_dmgr_lib_handle;
-    static vui_dmgr_init_t vui_dmgr_init;
-    static vui_dmgr_deinit_t vui_dmgr_deinit;
-    static void voiceuiDmgrManagerInit();
-    static void voiceuiDmgrManagerDeInit();
-    static int32_t voiceuiDmgrPalCallback(int32_t param_id, void *payload, size_t payload_size);
-    int32_t voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info);
-
-    pal_stream_handle_t *afs_stream_handle = NULL;
-    static void *feature_stats_handle;
-    static afs_init_t feature_stats_init;
-    static afs_deinit_t feature_stats_deinit;
     static void AudioFeatureStatsInit();
     static void AudioFeatureStatsDeInit();
     static int AudioFeatureStatsGetInfo(void **afs_payload, size_t *afs_payload_size);
@@ -771,8 +750,7 @@ public:
     pal_param_payload *AFSWakeUpAlgoDetection();
 
     /* checks config for both stream and device */
-    bool isStreamSupported(struct pal_stream_attributes *attributes,
-                           struct pal_device *devices, int no_of_devices);
+    bool isStreamSupported(Stream *s,struct pal_device *devices, int no_of_devices);
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *attributes);
     /*getDeviceInfo - updates channels, fluence info of the device*/
@@ -839,8 +817,8 @@ public:
     int setParameter(uint32_t param_id, void *param_payload,
                      size_t payload_size, pal_device_id_t pal_device_id,
                      pal_stream_type_t pal_stream_type);
-    int setSessionParamConfig(uint32_t param_id, Stream *stream, int tag);
-    int handleChargerEvent(Stream *stream, int tag);
+    int setSessionParamConfig(uint32_t param_id, Stream *stream, bool enable);
+    int handleChargerEvent(Stream *stream, bool enable);
     int rwParameterACDB(uint32_t param_id, void *param_payload,
                      size_t payload_size, pal_device_id_t pal_device_id,
                      pal_stream_type_t pal_stream_type, uint32_t sample_rate,
@@ -858,6 +836,9 @@ public:
     int getHwAudioMixer(struct audio_mixer **am);
     int getActiveStream(std::vector<Stream*> &activestreams, std::shared_ptr<Device> d = nullptr);
     int getActiveStream_l(std::vector<Stream*> &activestreams,std::shared_ptr<Device> d = nullptr);
+    int getActiveStreamByType(std::vector<Stream*> &activestreams, pal_stream_type_t type);
+    int getActiveStreamByType_l(std::vector<Stream*> &activestreams,
+                                pal_stream_type_t type);
     int getOrphanStream(std::vector<Stream*> &orphanstreams, std::vector<Stream*> &retrystreams);
     int getOrphanStream_l(std::vector<Stream*> &orphanstreams, std::vector<Stream*> &retrystreams);
     int getActiveDevices(std::vector<std::shared_ptr<Device>> &deviceList);
@@ -915,7 +896,7 @@ public:
     bool IsDutyCycleForUPDEnabled();
     bool IsVirtualPortForUPDEnabled();
     uint32_t getHapticsPriority();
-    bool IsHapticsThroughWSA();
+    static bool IsHapticsThroughWSA();
     void GetSoundTriggerConcurrencyCount(pal_stream_type_t type, int32_t *enable_count, int32_t *disable_count);
     void GetSoundTriggerConcurrencyCount_l(pal_stream_type_t type, int32_t *enable_count, int32_t *disable_count);
     bool GetChargingState() const { return charging_state_; }
@@ -929,13 +910,13 @@ public:
     int HandleDetectionStreamAction(pal_stream_type_t type, int32_t action, void *data);
     void HandleStreamPauseResume(pal_stream_type_t st_type, bool active);
     std::shared_ptr<CaptureProfile> GetASRCaptureProfileByPriority(
-        StreamASR *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
+        Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
     std::shared_ptr<CaptureProfile> GetACDCaptureProfileByPriority(
-        StreamACD *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
+        Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
     std::shared_ptr<CaptureProfile> GetSVACaptureProfileByPriority(
-        StreamSoundTrigger *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
+        Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
     std::shared_ptr<CaptureProfile> GetSPDCaptureProfileByPriority(
-        StreamSensorPCMData *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
+        Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
     std::shared_ptr<CaptureProfile> GetCaptureProfileByPriority(Stream *s, std::string backend);
     bool UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active);
     std::shared_ptr<CaptureProfile> GetSoundTriggerCaptureProfile() const { return SoundTriggerCaptureProfile; }
@@ -955,7 +936,7 @@ public:
     void HandleConcurrencyForSoundTriggerStreams(pal_stream_type_t type,
                                 pal_stream_direction_t dir,
                                 bool active);
-    bool isAnyVUIStreamBuffering();
+    bool isAnyStreamBuffering();
     bool isTxConcurrencyActive() { return (TxconcurrencyEnableCount > 0); }
     void handleDeferredSwitch();
     void handleConcurrentStreamSwitch(std::vector<pal_stream_type_t>& st_streams);
@@ -972,7 +953,6 @@ public:
     bool isExternalECRefEnabled(int rx_dev_id);
     void disableInternalECRefs(Stream *s);
     void restoreInternalECRefs();
-    bool checkStreamMatch(Stream *target, Stream *ref);
 
     static void endTag(void *userdata __unused, const XML_Char *tag_name);
     static void snd_reset_data_buf(struct xml_userdata *data);
@@ -1056,6 +1036,8 @@ public:
     void unlockActiveStream() { mActiveStreamMutex.unlock(); };
     void lockResourceManagerMutex() {mResourceManagerMutex.lock();};
     void unlockResourceManagerMutex() {mResourceManagerMutex.unlock();};
+    void lockChargerBoostMutex() { mChargerBoostMutex.lock(); };
+    void unlockChargerBoostMutex() { mChargerBoostMutex.unlock(); };
     void getSharedBEActiveStreamDevs(std::vector <std::tuple<Stream *, uint32_t>> &activeStreamDevs,
                                      int dev_id);
     bool compareSharedBEStreamDevAttr(std::vector <std::tuple<Stream *, uint32_t>> &sharedBEStreamDev,
@@ -1109,12 +1091,48 @@ public:
     void checkAndSetDutyCycleParam();
     int32_t getActiveVoiceCallDevices(std::vector <std::shared_ptr<Device>> &devices);
     bool isValidDeviceSwitchForStream(Stream *s, pal_device_id_t newDeviceId);
-    int32_t reconfigureInCallMusicStream(struct sessionToPayloadParam deviceData);
-    int32_t resumeInCallMusic();
-    int32_t pauseInCallMusic();
     void RegisterSTCaptureHandle(pal_param_st_capture_info_t stCaptureInfo, bool start);
     static void setProxyRecordActive(bool isActive);
     void WbSpeechConfig(pal_device_id_t devId, uint32_t param_id, void *param_payload);
+    void setVIRecordState(bool isStarted);
+    void setCRSCallEnabled(bool isEnabled);
+    void setCurrentGroupDevConfig(std::shared_ptr<group_dev_config_t> activeDevConfig,
+                                    long config1, long config2);
+    void setSpkrProtModeValue(int value);
+    void setProxyChannels(int value);
+    bool IsCPEnabled();
+    bool IsDummyDevEnabled();
+    static bool IsSpeakerProtectionEnabled();
+    static bool IsHandsetProtectionEnabled();
+    static bool IsHapticsProtectionEnabled();
+    bool IsChargeConcurrencyEnabled();
+    bool IsRasEnabled();
+    bool IsGaplessEnabled();
+    bool IsDualMonoEnabled();
+    bool IsDeviceMuxConfigEnabled();
+    bool IsUHQAEnabled();
+    bool IsVIRecordStarted();
+    bool IsCRSCallEnabled();
+    bool IsQmpEnabled();
+    bool IsSilenceDetectionEnabled();
+    int getCpsMode();
+    int getSpQuickCalTime();
+    int getOrientation();
+    uint32_t getProxyChannels();
+    void* getAdmData();
+    enum card_status_t getSoundCardState();
+    pal_spkr_prot_payload getSpkrProtModeValue();
+    pal_param_mspp_linear_gain_t getLinearGain();
+    adm_register_output_stream_t getAdmRegisterOutputStreamFn();
+    adm_register_input_stream_t getAdmRegisterInputStreamFn();
+    adm_set_config_t getAdmSetConfigFn();
+    adm_request_focus_t getAdmRequestFocusFn();
+    adm_request_focus_v2_t getAdmRequestFocusV2Fn();
+    adm_abandon_focus_t getAdmAbandonFocusFn();
+    adm_deregister_stream_t getAdmDeregisterStreamFn();
+    std::shared_ptr<group_dev_config_t> getActiveGroupDevConfig();
+    group_dev_config_t getCurrentGroupDevConfig();
+
 };
 
 #endif

@@ -50,6 +50,7 @@
 #include "PalCommon.h"
 #include "mem_logger.h"
 #include "PerfLock.h"
+#include "PluginManager.h"
 class Stream;
 
 /**
@@ -203,7 +204,7 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     PAL_INFO(LOG_TAG, "Enter, stream type:%d", attributes->type);
     kpiEnqueue(__func__, true);
 #ifdef SOC_PERIPHERAL_PROT
-    if (ResourceManager::isTZSecureZone) {
+    if (rm->IsTZSecureZone()) {
         PAL_DBG(LOG_TAG, "In secure zone, so stop the usecase");
         status = -ENODEV;
         goto exit;
@@ -230,7 +231,7 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
         if (s->close() != 0) {
             PAL_ERR(LOG_TAG, "stream closed failed.");
         }
-        delete s;
+        Stream::destroy(s);
         goto exit;
     }
 
@@ -297,10 +298,9 @@ exit:
     s->getStreamAttributes(&sAttr);
     notify_concurrent_stream(sAttr.type, sAttr.direction, false);
     if (sAttr.type == PAL_STREAM_VOICE_CALL)
-        rm->isCRSCallEnabled = false;
+        rm->setCRSCallEnabled(false);
     rm->eraseStreamUserCounter(s);
-    delete s;
-    PAL_INFO(LOG_TAG, "Exit. status %d", status);
+    status = Stream::destroy(s);
     kpiEnqueue(__func__, false);
     return status;
 }
@@ -321,7 +321,7 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     PAL_INFO(LOG_TAG, "Enter. Stream handle %pK", stream_handle);
 
 #ifdef SOC_PERIPHERAL_PROT
-    if (ResourceManager::isTZSecureZone) {
+    if (rm->IsTZSecureZone()) {
         PAL_DBG(LOG_TAG, "In secure zone, so stop the usecase");
         status = -ENODEV;
         goto exit;

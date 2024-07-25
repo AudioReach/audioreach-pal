@@ -39,7 +39,6 @@
 #include "SessionAR.h"
 #include "PalAudioRoute.h"
 #include "PalCommon.h"
-#include <tinyalsa/asoundlib.h>
 #include <thread>
 #include <mutex>
 
@@ -141,6 +140,7 @@ public:
     int reconfigureModule(uint32_t tagID, const char* BE, struct sessionToPayloadParam *data);
     int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
             us_tone_renderer_ep_media_format_status_t event);
+    int32_t reconfigureSession(Stream *s, struct pal_media_config config) override;
 };
 
 #endif //SESSION_ALSAPCM_H

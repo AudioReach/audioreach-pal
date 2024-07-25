@@ -50,6 +50,7 @@
 #include <condition_variable>
 #endif
 #include "PalCommon.h"
+#include "VoiceUIPlatformInfo.h"
 
 typedef enum {
     DATA_MODE_SHMEM = 0,
@@ -97,7 +98,17 @@ typedef enum {
 
 class Device;
 class ResourceManager;
+class PluginManager;
 class Session;
+class Stream;
+
+typedef Stream* (*StreamCreate)(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+                const uint32_t no_of_devices,
+                const struct modifier_kv *modifiers, const uint32_t no_of_modifiers,
+                const std::shared_ptr<ResourceManager> rm);
+
+typedef Stream* (*StreamACDBCreate)(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+                               uint32_t instance_id, const std::shared_ptr<ResourceManager> rm);
 
 class Stream
 {
@@ -114,6 +125,7 @@ protected:
     std::mutex mStreamMutex;
     static std::mutex mBaseStreamMutex; //TBD change this. as having a single static mutex for all instances of Stream is incorrect. Replace
     static std::shared_ptr<ResourceManager> rm;
+    static std::shared_ptr<PluginManager> pm;
     struct modifier_kv *mModifiers;
     uint32_t mNoOfModifiers;
     std::string mStreamSelector;
@@ -134,7 +146,8 @@ protected:
     sem_t mInUse;
     int connectToDefaultDevice(Stream* streamHandle, uint32_t dir);
 public:
-    virtual ~Stream() {};
+    Stream();
+    virtual ~Stream();
     struct pal_volume_data* mVolumeData = NULL;
     pal_stream_callback streamCb;
     uint64_t cookie;
@@ -174,6 +187,9 @@ public:
     virtual int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable) = 0;
     virtual int32_t ssrDownHandler() = 0;
     virtual int32_t ssrUpHandler() = 0;
+    virtual int32_t isBitWidthSupported(uint32_t bitWidth) = 0;
+    virtual int32_t isSampleRateSupported(uint32_t sampleRate) = 0;
+    virtual int32_t isChannelSupported(uint32_t numChannels) = 0;
     virtual int32_t createMmapBuffer(int32_t min_size_frames __unused,
                                    struct pal_mmap_buffer *info __unused) {return -EINVAL;}
     virtual int32_t GetMmapPosition(struct pal_mmap_position *position __unused) {return -EINVAL;}
@@ -182,6 +198,8 @@ public:
     virtual uint32_t GetOutputToken() { return 0; }
     virtual uint32_t GetPayloadSize() { return 0; }
     virtual bool ConfigSupportLPI() {return true;}; //Only LPI streams can update their vote to NLPI
+    virtual bool checkStreamMatch(Stream *ref);
+    virtual bool IsStreamInBuffering() {return false;};
     int32_t getStreamAttributes(struct pal_stream_attributes *sattr);
     const std::string& getStreamSelector() const;
     const std::string& getDevicePPSelector() const;
@@ -212,6 +230,7 @@ public:
     /* static so that this method can be accessed wihtout object */
     static Stream* create(struct pal_stream_attributes *sattr, struct pal_device *dattr,
          uint32_t no_of_devices, struct modifier_kv *modifiers, uint32_t no_of_modifiers);
+    static int32_t destroy(Stream* s);
     bool isStreamAudioOutFmtSupported(pal_audio_fmt_t format);
     int32_t getTimestamp(struct pal_session_time *stime);
     int32_t handleBTDeviceNotReadyToDummy(bool& a2dpSuspend);
@@ -222,7 +241,7 @@ public:
     virtual int connectStreamDevice_l(Stream* streamHandle, struct pal_device *dattr);
     int switchDevice(Stream* streamHandle, uint32_t no_of_devices, struct pal_device *deviceArray);
     int32_t getEffectParameters(void *effect_query, size_t *payload_size);
-    uint32_t getInstanceId() { return mInstanceID; }
+    virtual uint32_t getInstanceId() { return mInstanceID; }
     inline void setInstanceId(uint32_t sid) { mInstanceID = sid; }
     int initStreamSmph();
     int deinitStreamSmph();
@@ -236,7 +255,7 @@ public:
     int32_t rwACDBParameters(void *payload, uint32_t sampleRate,
                                 bool isParamWrite);
     stream_state_t getCurState() { return currentState; }
-    bool isActive() { return currentState == STREAM_STARTED; }
+    virtual bool isActive() { return currentState == STREAM_STARTED; }
     bool isAlive() { return currentState != STREAM_IDLE; }
     bool isA2dpMuted() { return a2dpMuted; }
     /* Detection stream related APIs */
@@ -263,52 +282,7 @@ public:
     void clearmDevices();
     void removemDevice(int palDevId);
     void addmDevice(struct pal_device *dattr);
-};
-
-class StreamNonTunnel : public Stream
-{
-public:
-   StreamNonTunnel(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
-             const uint32_t no_of_devices,
-             const struct modifier_kv *modifiers, const uint32_t no_of_modifiers,
-             const std::shared_ptr<ResourceManager> rm);
-   virtual ~StreamNonTunnel();
-   int32_t open() override;
-   int32_t close() override;
-   int32_t start() override;
-   int32_t stop() override;
-   int32_t prepare() override;
-   int32_t setVolume( struct pal_volume_data *volume __unused) {return 0;};
-   int32_t mute(bool state __unused) {return 0;};
-   int32_t mute_l(bool state __unused) {return 0;};
-   int32_t pause() {return 0;};
-   int32_t pause_l() {return 0;};
-   int32_t resume() {return 0;};
-   int32_t resume_l() {return 0;};
-   int32_t drain(pal_drain_type_t type) override;
-   int32_t flush();
-   int32_t suspend() override;
-   int32_t getTagsWithModuleInfo(size_t *size , uint8_t *payload) override;
-   int32_t setBufInfo(size_t *in_buf_size, size_t in_buf_count,
-                       size_t *out_buf_size, size_t out_buf_count);
-
-   int32_t addRemoveEffect(pal_audio_effect_t effect __unused, bool enable __unused) {return 0;};
-   int32_t read(struct pal_buffer *buf) override;
-   int32_t write(struct pal_buffer *buf) override;
-   int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) override;
-   int32_t getCallBack(pal_stream_callback *cb) override;
-   int32_t getParameters(uint32_t param_id, void **payload) override;
-   int32_t setParameters(uint32_t param_id, void *payload) override;
-   static int32_t isSampleRateSupported(uint32_t sampleRate);
-   static int32_t isChannelSupported(uint32_t numChannels);
-   static int32_t isBitWidthSupported(uint32_t bitWidth);
-   int32_t setECRef(std::shared_ptr<Device> dev __unused, bool is_enable __unused) {return 0;};
-   int32_t setECRef_l(std::shared_ptr<Device> dev __unused, bool is_enable __unused) {return 0;};
-   int32_t ssrDownHandler() override;
-   int32_t ssrUpHandler() override;
-private:
-   /*This notifies that the system went through/is in a ssr*/
-   bool ssrInNTMode;
+    virtual std::shared_ptr<CaptureProfile> GetCurrentCaptureProfile(){return nullptr;};
 };
 
 #endif//STREAM_H_

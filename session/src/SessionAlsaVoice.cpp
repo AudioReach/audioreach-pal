@@ -262,7 +262,7 @@ int SessionAlsaVoice::open(Stream * s)
         if (!strncmp(deviceAttribute.custom_config.custom_key,
                     "crsCall", sizeof("crsCall"))) {
                 PAL_INFO(LOG_TAG, "setting RM CRS")
-                rm->isCRSCallEnabled = true;
+                rm->setCRSCallEnabled(true);
         }
     }
 
@@ -785,6 +785,7 @@ int SessionAlsaVoice::getDeviceData(Stream *s, struct sessionToPayloadParam *dev
     struct pal_device dAttr;
     int idx = 0;
     std::vector<std::shared_ptr<Device>> associatedDevices;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
 
     if(!s){
         PAL_ERR(LOG_TAG, "invalid stream pointer")
@@ -831,13 +832,13 @@ int SessionAlsaVoice::getDeviceData(Stream *s, struct sessionToPayloadParam *dev
         PAL_DBG(LOG_TAG,"set devicePPMFC to match codec configuration for device %d\n", dAttr.id);
     } else {
         // update device pp configuration if virtual port is enabled
-        if (rm->activeGroupDevConfig &&
-            (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
+        groupDevConfig = rm->getActiveGroupDevConfig();
+        if (groupDevConfig && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
              dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
-            if (rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate)
-                dAttr.config.sample_rate = rm->activeGroupDevConfig->devpp_mfc_cfg.sample_rate;
-            if (rm->activeGroupDevConfig->devpp_mfc_cfg.channels)
-                dAttr.config.ch_info.channels = rm->activeGroupDevConfig->devpp_mfc_cfg.channels;
+            if (groupDevConfig->devpp_mfc_cfg.sample_rate)
+                dAttr.config.sample_rate = groupDevConfig->devpp_mfc_cfg.sample_rate;
+            if (groupDevConfig->devpp_mfc_cfg.channels)
+                dAttr.config.ch_info.channels = groupDevConfig->devpp_mfc_cfg.channels;
         }
         deviceData->bitWidth = dAttr.config.bit_width;
         deviceData->sampleRate = dAttr.config.sample_rate;
@@ -884,7 +885,7 @@ int SessionAlsaVoice::setTaggedSlotMask(Stream * s)
         return status;
     }
 
-    if ((rm->isDeviceMuxConfigEnabled || rm->isUPDVirtualPortEnabled) &&
+    if ((rm->IsDeviceMuxConfigEnabled() || rm->IsVirtualPortForUPDEnabled()) &&
         (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
          SessionAlsaUtils::setSlotMask(rm, sAttr, dAttr, pcmDevRxIds);
     }
@@ -1005,7 +1006,7 @@ int SessionAlsaVoice::start(Stream * s)
         s->setVolume(volume);
     };
     /*call to apply volume*/
-    if (rm->isCRSCallEnabled) {
+    if (rm->IsCRSCallEnabled()) {
         setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
     } else {
         setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
@@ -1058,7 +1059,7 @@ int SessionAlsaVoice::start(Stream * s)
             PAL_ERR(LOG_TAG, "Failed to set data logging param status = %d", status);
     }
 
-    if (ResourceManager::isChargeConcurrencyEnabled) {
+    if (rm->IsChargeConcurrencyEnabled()) {
         if (PAL_DEVICE_OUT_SPEAKER == rxDevice->getSndDeviceId()) {
             status = NotifyChargerConcurrency(rm, true);
             if (0 == status) {
@@ -1087,7 +1088,7 @@ int SessionAlsaVoice::start(Stream * s)
     }
     isTxStarted = true;
 
-    if (rm->isCRSCallEnabled) {
+    if (rm->IsCRSCallEnabled()) {
         status = populate_rx_mfc_coeff_payload(rxDevice);
         if (status != 0) {
             PAL_ERR(LOG_TAG,"populating Rx mfc coeff payload failed :%d", status);
@@ -2100,7 +2101,7 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
                }
            }
         }
-        if (rm->isCRSCallEnabled) {
+        if (rm->IsCRSCallEnabled()) {
             status = populate_rx_mfc_coeff_payload(deviceToConnect);
             if (status != 0) {
                 PAL_ERR(LOG_TAG,"populating Rx mfc coeff payload failed :%d", status);

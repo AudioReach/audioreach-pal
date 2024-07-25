@@ -34,6 +34,11 @@ static const std::map<std::string, pal_plugin_manager_t> PmNameToType
     { "effects", PAL_PLUGIN_MANAGER_EFFECTS}
 };
 
+struct xml_userdata {
+    char data_buf[1024];
+    size_t offs;
+    XML_Parser parser;
+};
 
 PluginManager::PluginManager() {
         getVendorConfigPath(pimngr_vendor_config_path, sizeof(pimngr_vendor_config_path));

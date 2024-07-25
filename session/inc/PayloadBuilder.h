@@ -38,7 +38,6 @@
 #include <vector>
 #include <set>
 #include <algorithm>
-#include <expat.h>
 #include <map>
 #include <regex>
 #include <sstream>

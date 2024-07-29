@@ -918,8 +918,14 @@ public:
         Stream *s, std::shared_ptr<CaptureProfile> cap_prof_priority, std::string backend);
     std::shared_ptr<CaptureProfile> GetCaptureProfileByPriority(Stream *s, std::string backend);
     bool UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active);
-    std::shared_ptr<CaptureProfile> GetSoundTriggerCaptureProfile() const { return SoundTriggerCaptureProfile; }
-    std::shared_ptr<CaptureProfile> GetTXMacroCaptureProfile() const { return TXMacroCaptureProfile; }
+    std::shared_ptr<CaptureProfile> GetSoundTriggerCaptureProfile() const {
+        std::lock_guard<std::mutex> lck(mResourceManagerMutex);
+        return SoundTriggerCaptureProfile;
+    }
+    std::shared_ptr<CaptureProfile> GetTXMacroCaptureProfile() const {
+        std::lock_guard<std::mutex> lck(mResourceManagerMutex);
+        return TXMacroCaptureProfile;
+    }
     void SwitchSoundTriggerDevices(bool connect_state, pal_device_id_t st_device);
     static void mixerEventWaitThreadLoop(std::shared_ptr<ResourceManager> rm);
     bool isCallbackRegistered() { return (mixerEventRegisterCount > 0); }

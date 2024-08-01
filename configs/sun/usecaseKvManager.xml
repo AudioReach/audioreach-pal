@@ -830,6 +830,8 @@
                 <graph_kv key="0xA3000000" value="0xA3000002"/>
                 <!-- BT_PROFILE - BLE -->
                 <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_QLEA -->
+                <graph_kv key="0xB5000000" value="0xB5000007"/>
             </keys_and_values>
             <keys_and_values CodecFormat="CODEC_TYPE_APTX_AD_R4" Hostless="TRUE">
                 <!-- DEVICETX - BT_TX -->

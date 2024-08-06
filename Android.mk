@@ -60,6 +60,7 @@ LOCAL_EXPORT_C_INCLUDE_DIRS   := $(LOCAL_PATH)/inc
 
 LOCAL_SRC_FILES := \
     Pal.cpp \
+    PalAR.cpp \
     stream/src/Stream.cpp \
     stream/src/StreamCompress.cpp \
     stream/src/StreamPCM.cpp \

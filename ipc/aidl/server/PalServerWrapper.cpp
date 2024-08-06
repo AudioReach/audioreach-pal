@@ -13,6 +13,7 @@
 #include <pal/SharedMemoryWrapper.h>
 #include <pal/Utils.h>
 #include "MetadataParser.h"
+#include <map>
 
 #define MAX_CACHE_SIZE 64
 

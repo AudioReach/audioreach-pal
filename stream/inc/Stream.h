@@ -35,6 +35,7 @@
 #define STREAM_H_
 
 #include "PalDefs.h"
+#include "PalApi.h"
 #include <algorithm>
 #include <vector>
 #include <string.h>

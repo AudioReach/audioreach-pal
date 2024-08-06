@@ -76,7 +76,8 @@
 #define PAL_API_H
 
 #include "PalDefs.h"
-
+#include "PalAR.h" /*may not be needed after phase 2 refactoring*/
+#include "PalMappings.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -263,21 +264,6 @@ int32_t pal_stream_suspend(pal_stream_handle_t *stream_handle);
   */
 int32_t pal_stream_get_buffer_size(pal_stream_handle_t *stream_handle,
                                    size_t *in_buffer, size_t *out_buffer);
-
-/**
-  * Gets all the tags and associated module iid and module_id
-  * mapping associated with a Pal session handle
-  * \param[in] stream_handle - Valid stream handle obtained
-  *       from pal_stream_open.
-  * \param[in/out] size - size of the memory passed by the client. If it is not
-                          enough to copy the tag_module_info a error is returned with
-                          the size set to the expected size of the memory to be passed.
-  * \param[out] payload - It is in the form of struct pal_tag_module_info
-  *
-  * \return - 0 on success, error code otherwise.
-  */
-int32_t pal_stream_get_tags_with_module_info(pal_stream_handle_t *stream_handle,
-                                   size_t *size ,uint8_t *payload);
 
 /**
   * Set audio buffer size based on the direction of the stream.
@@ -559,60 +545,6 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
   * \return 0 on success, error code otherwise
   */
 int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie);
-
-/**
-  * \brief Set and get pal parameters for generic effect framework
-  *
-  * \param[in] param_id - param id whose parameters are to be
-  *       set.
-  * \param[in/out] param_payload - param data applicable to the
-  *       param_id
-  * \param[in] payload_size - size of payload
-  *
-  * \param[in] pal_stream_type - type of stream to apply the GEF param
-  *
-  * \param[in] pal_device_id - device id to apply the effect
-  *
-  * \param[i] pal_stream_type - stream type to apply the effect
-  *
-  * \param[in] dir - param read or write
-  *
-  * \return 0 on success, error code otherwise
-  */
-int32_t pal_gef_rw_param(uint32_t param_id, void *param_payload,
-                      size_t payload_size, pal_device_id_t pal_device_id,
-                      pal_stream_type_t pal_stream_type, unsigned int dir);
-
-/**
-  * \brief Set and get pal parameters for generic effect framework with ACDB
-  *
-  * \param[in] param_id - param id whose parameters are to be
-  *       set.
-  * \param[in/out] param_payload - param data applicable to the
-  *       param_id
-  * \param[in] payload_size - size of payload
-  *
-  * \param[in] pal_stream_type - type of stream to apply the GEF param
-  *
-  * \param[in] pal_device_id - device id to apply the effect
-  *
-  * \param[i] pal_stream_type - stream type to apply the effect
-  *
-  * \param[in] sample_rate - sample_rate value for CKV. 0 for default CKV
-  *
-  * \param[in] instance_id - instance id
-  *
-  * \param[in] dir - param read or write
-  *
-  * \param[in] is_play - stream direction. true for playback. false for recording.
-  *
-  * \return 0 on success, error code otherwise
-  */
-
-int32_t pal_gef_rw_param_acdb(uint32_t param_id, void *param_payload,
-                      size_t payload_size, pal_device_id_t pal_device_id,
-                      pal_stream_type_t pal_stream_type, uint32_t sample_rate,
-                      uint32_t instance_id, uint32_t dir, bool is_play);
 
 
 #ifdef __cplusplus

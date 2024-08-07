@@ -13855,7 +13855,7 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     if (sharedBEStreamDev.size() > 0) {
         /* check to see if curDevAttr changed, curDevAttr will be updated if switch is needed */
         bool switchStreams = compareSharedBEStreamDevAttr(sharedBEStreamDev, &curDevAttr, false/* disable device */);
-        if (switchStreams) {
+        if (switchStreams && isDeviceReady(curDevAttr.id)) {
             /*device switch every stream to new dev attr*/
             for (const auto &elem : sharedBEStreamDev) {
                  sharedStream = std::get<0>(elem);

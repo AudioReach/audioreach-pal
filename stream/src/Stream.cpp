@@ -478,6 +478,30 @@ int32_t Stream::getAssociatedDevices(std::vector <std::shared_ptr<Device>> &aDev
     return status;
 }
 
+int32_t Stream::getAssociatedOutDevices(std::vector <std::shared_ptr<Device>> &aDevices)
+{
+    int32_t status = 0;
+
+    for (int32_t i=0; i < mDevices.size(); i++) {
+        if (rm->isOutputDevId(mDevices[i]->getSndDeviceId()))
+            aDevices.push_back(mDevices[i]);
+    }
+
+    return status;
+}
+
+int32_t Stream::getAssociatedInDevices(std::vector <std::shared_ptr<Device>> &aDevices)
+{
+    int32_t status = 0;
+
+    for (int32_t i=0; i < mDevices.size(); i++) {
+        if (rm->isInputDevId(mDevices[i]->getSndDeviceId()))
+            aDevices.push_back(mDevices[i]);
+    }
+
+    return status;
+}
+
 int32_t Stream::getPalDevices(std::vector <std::shared_ptr<Device>> &PalDevices)
 {
     int32_t status = 0;

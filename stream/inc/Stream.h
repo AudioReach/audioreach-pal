@@ -200,6 +200,8 @@ public:
     uint32_t getRenderLatency();
     uint32_t getLatency();
     int32_t getAssociatedDevices(std::vector <std::shared_ptr<Device>> &adevices);
+    int32_t getAssociatedOutDevices(std::vector <std::shared_ptr<Device>> &adevices);
+    int32_t getAssociatedInDevices(std::vector <std::shared_ptr<Device>> &adevices);
     int32_t getPalDevices(std::vector <std::shared_ptr<Device>> &PalDevices);
     void removePalDevice(Stream *streamHandle, int palDevId);
     void clearOutPalDevices(Stream *streamHandle);

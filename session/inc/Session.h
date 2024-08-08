@@ -45,6 +45,7 @@
 #include <errno.h>
 #include "PalCommon.h"
 #include "Device.h"
+#include "PluginManager.h"
 
 typedef enum {
     GRAPH = 0,
@@ -69,6 +70,10 @@ typedef void (*session_callback)(uint64_t hdl, uint32_t event_id, void *event_da
 
 class Stream;
 class ResourceManager;
+class Session;
+
+typedef Session* (*SessionCreate)(const std::shared_ptr<ResourceManager> rm);
+
 class Session
 {
 protected:
@@ -81,6 +86,7 @@ protected:
     bool frontEndIdAllocated = false;
 public:
     virtual ~Session();
+    static std::shared_ptr<PluginManager> pm;
     static Session* makeSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr);
 
     /*pure virtual intface APIs*/
@@ -127,7 +133,10 @@ public:
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
-    virtual int32_t reconfigureSession(Stream *s, struct pal_media_config config){return -EINVAL;};
+    virtual int32_t reconfigureSession(Stream *s, struct pal_media_config config,
+                                       pal_stream_direction_t dir){return -EINVAL;};
+    virtual int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
+                                      uint8_t *payload __unused) {return -EINVAL;}; //Revert this later
 };
 
 #endif //SESSION_H

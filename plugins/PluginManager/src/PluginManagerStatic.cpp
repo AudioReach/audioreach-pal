@@ -28,6 +28,11 @@
 #include "StreamUltraSound.h"
 #include "StreamACDB.h"
 #include "StreamASR.h"
+/*include all sessions*/
+#include "SessionAgm.h"
+#include "SessionAlsaCompress.h"
+#include "SessionAlsaPcm.h"
+#include "SessionAlsaVoice.h"
 
 std::shared_ptr<PluginManager> PluginManager::pm = nullptr;
 std::mutex PluginManager::mPluginManagerMutex;
@@ -115,9 +120,17 @@ int32_t getStreamFunc(void* func, std::string name) {
 int32_t getSessionFunc(void* func, std::string name) {
     int32_t status = 0;
     switch(usecaseIdLUT.at(name)){
+        case PAL_STREAM_COMPRESSED:
+            func = (void*)&CreateCompressSession;
+            break;
+        case PAL_STREAM_VOICE_CALL:
+            func = (void*)&CreateVoiceSession;
+            break;
+        case PAL_STREAM_NON_TUNNEL:
+            func = (void*)&CreateAgmSession;
+            break;
          default:
-            PAL_ERR(LOG_TAG, "unsupported session type %s", name.c_str());
-            status = -EINVAL;
+            func = (void*)&CreatePcmSession;
             break;
     }
     return status;

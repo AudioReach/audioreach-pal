@@ -185,6 +185,7 @@ protected:
    static std::vector<allKVs> all_streampps;
    static std::vector<allKVs> all_devices;
    static std::vector<allKVs> all_devicepps;
+   static bool isInitialized;
    void *customPayload;
    size_t customPayloadSize;
 

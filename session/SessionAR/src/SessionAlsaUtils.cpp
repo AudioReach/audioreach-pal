@@ -40,7 +40,7 @@
 #include <sstream>
 #include <string>
 #include <set>
-#include "SessionAlsaVoice.h"
+#include "SessionAR.h"
 #include "ResourceManager.h"
 #include <agm/agm_api.h>
 #include "spr_api.h"
@@ -2259,6 +2259,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
         const std::vector<std::pair<int32_t, std::string>> &aifBackEndsToConnect)
 {
     struct mixer_ctl *connectCtrl;
+    pal_media_config config;
     struct mixer *mixerHandle = nullptr;
     bool is_compress = false;
     int status = 0;
@@ -2398,18 +2399,12 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
         }
     } else if (!(SessionAlsaUtils::isMmapUsecase(sAttr))) {
         if (sess) {
-            SessionAlsaVoice *voiceSession = dynamic_cast<SessionAlsaVoice *>(sess);
-            if (!voiceSession) {
-                PAL_ERR(LOG_TAG, "invalid session voice object");
-                status = -EINVAL;
-                goto exit;
-            }
             if (streamHandle->getCurState() != STREAM_INIT) {
                 if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first)) {
-                    voiceSession->setSessionParameters(streamHandle, RX_HOSTLESS);
+                    sess->reconfigureSession(streamHandle, config, PAL_AUDIO_OUTPUT);
                 } else {
-                    voiceSession->setSessionParameters(streamHandle, TX_HOSTLESS);
-               }
+                    sess->reconfigureSession(streamHandle, config, PAL_AUDIO_INPUT);
+                }
             }
         } else {
             PAL_ERR(LOG_TAG, "invalid session voice object");
@@ -2428,12 +2423,6 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
     status = mixer_ctl_set_enum_by_string(connectCtrl, aifBackEndsToConnect[0].second.data());
 
     if (PAL_STREAM_VOICE_CALL == streamType) {
-        SessionAlsaVoice *voiceSession = dynamic_cast<SessionAlsaVoice *>(sess);
-        if (!voiceSession) {
-            PAL_ERR(LOG_TAG, "invalid session voice object");
-            status = -EINVAL;
-            goto exit;
-        }
         if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first)) {
             resumeInCallMusic();
         }
@@ -3205,7 +3194,7 @@ int32_t SessionAlsaUtils::reconfigureInCallMusicStream(struct pal_media_config c
                 status = -EINVAL;
                 goto exit;
             }
-            status = session->reconfigureSession(str, config);
+            status = session->reconfigureSession(str, config, PAL_AUDIO_INPUT_OUTPUT);
         }
     }
 exit:

@@ -130,8 +130,7 @@ protected:
     bool isPauseRegistrationDone = false;
     int32_t setInitialVolume();
 public:
-    static Session* makeARSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr);
-    static Session* makeACDBSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr);
+    SessionAR();
     static void handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id, void *data, uint32_t event_size);
     int HDRConfigKeyToDevOrientation(const char* hdr_custom_key);
     void setPmQosMixerCtl(pmQosVote vote);
@@ -157,8 +156,8 @@ public:
     virtual uint32_t getMIID(const char *backendName __unused, uint32_t tagId __unused, uint32_t *miid __unused) { return -EINVAL; }
     virtual void setEventPayload(uint32_t event_id __unused, void *payload __unused, size_t payload_size __unused) {  };
     virtual struct mixer_ctl* getFEMixerCtl(const char *controlName __unused, int *device __unused, pal_stream_direction_t dir __unused) {return nullptr;}
-    virtual int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
-                                      uint8_t *payload __unused) {return -EINVAL;}
+    int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
+                                      uint8_t *payload __unused) override {return -EINVAL;}; //Revert this later
     virtual int checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                                  Stream *s, bool is_enable);
     virtual void AdmRoutingChange(Stream *s __unused) {  };

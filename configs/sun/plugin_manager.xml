@@ -35,4 +35,32 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <stream name="PAL_USE_ACDB_STREAM" lib="libstream_acdb.so" entryFunction="CreateACDBStream"/>
         <stream name="PAL_STREAM_ASR" lib="libstream_asr.so" entryFunction="CreateASRStream"/>
     </streams>
+    <sessions>
+        <session name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SPATIAL_AUDIO" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_GENERIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOIP_TX" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOIP_RX" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOOPBACK" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_RAW" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_UI" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ACD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_HAPTICS" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ULTRASOUND" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SENSOR_PCM_DATA" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_COMMON_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ASR" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL" lib="libsession_voice.so" entryFunction="CreateVoiceSession"/>
+        <session name="PAL_STREAM_COMPRESSED" lib="libsession_compress.so" entryFunction="CreateCompressSession"/>
+        <session name="PAL_STREAM_NON_TUNNEL" lib="libsession_agm.so" entryFunction="CreateAgmSession"/>
+    </sessions>
 </plugin_manager_info>

@@ -35,7 +35,6 @@
 #define LOG_TAG "PAL: StreamNonTunnel"
 
 #include "Session.h"
-#include "SessionAR.h"
 #include "StreamNonTunnel.h"
 #include "kvh2xml.h"
 #include "ResourceManager.h"
@@ -441,7 +440,7 @@ int32_t StreamNonTunnel::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
         goto exit;
     }
 
-    status = dynamic_cast<SessionAR*>(session)->getTagsWithModuleInfo(this, size, payload);
+    status = (session)->getTagsWithModuleInfo(this, size, payload);
 exit:
     return status;
 }

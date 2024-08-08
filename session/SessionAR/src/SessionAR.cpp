@@ -36,12 +36,9 @@
 #include "SessionAR.h"
 #include "Stream.h"
 #include "ResourceManager.h"
+#include "PluginManager.h"
 #include "SessionAlsaUtils.h"
-#include "SessionAgm.h"
-#include "SessionAlsaPcm.h"
-#include "SessionAlsaCompress.h"
-#include "SessionAlsaUtils.h"
-#include "SessionAlsaVoice.h"
+#include "PayloadBuilder.h"
 #include <agm/agm_api.h>
 #include "apm_api.h"
 #include <sstream>
@@ -52,6 +49,15 @@ int SessionAR::extECRefCnt = 0;
 std::mutex SessionAR::extECMutex;
 std::mutex SessionAR::pauseMutex;
 std::condition_variable SessionAR::pauseCV;
+
+SessionAR::SessionAR() {
+    int32_t ret = PayloadBuilder::init();
+    if (ret) {
+        throw std::runtime_error("Failed to parse usecase manager xml");
+    } else {
+        PAL_INFO(LOG_TAG, "usecase manager xml parsing successful");
+    }
+}
 
 void SessionAR::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
                                         void *data __unused,
@@ -64,33 +70,6 @@ void SessionAR::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
         PAL_DBG(LOG_TAG, "Pause done");
         pauseCV.notify_all();
     }
-}
-
-Session* SessionAR::makeARSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr)
-{
-    if (!rm || !sAttr) {
-        PAL_ERR(LOG_TAG, "Invalid parameters passed");
-        return nullptr;
-    }
-
-    Session* s = (Session*) nullptr;
-
-    switch (sAttr->type) {
-        //create compressed if the stream type is compressed
-        case PAL_STREAM_COMPRESSED:
-            s = new SessionAlsaCompress(rm);
-            break;
-        case PAL_STREAM_VOICE_CALL:
-            s = new SessionAlsaVoice(rm);
-            break;
-        case PAL_STREAM_NON_TUNNEL:
-            s = new SessionAgm(rm);
-            break;
-        default:
-            s = new SessionAlsaPcm(rm);
-            break;
-    }
-    return s;
 }
 
 void SessionAR::setPmQosMixerCtl(pmQosVote vote)
@@ -680,20 +659,6 @@ int32_t SessionAR::setInitialVolume() {
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;
-}
-
-Session* SessionAR::makeACDBSession(const std::shared_ptr<ResourceManager>& rm,
-                                    const struct pal_stream_attributes *sAttr)
-{
-    if (!rm || !sAttr) {
-        PAL_ERR(LOG_TAG,"Invalid parameters passed");
-        return nullptr;
-    }
-
-    Session* s = (Session*) nullptr;
-    s = new SessionAgm(rm);
-
-    return s;
 }
 
 int SessionAR::rwACDBParameters(void *payload, uint32_t sampleRate,

@@ -95,13 +95,6 @@ LOCAL_SRC_FILES := \
     device/src/DummyDev.cpp \
     device/src/HapticsDevProtection.cpp \
     session/src/Session.cpp \
-    session/src/SessionAR.cpp \
-    session/src/PayloadBuilder.cpp \
-    session/src/SessionAlsaPcm.cpp \
-    session/src/SessionAgm.cpp \
-    session/src/SessionAlsaUtils.cpp \
-    session/src/SessionAlsaCompress.cpp \
-    session/src/SessionAlsaVoice.cpp \
     context_manager/src/ContextManager.cpp \
     resource_manager/src/ResourceManager.cpp \
     resource_manager/src/SndCardMonitor.cpp \
@@ -210,5 +203,6 @@ include $(CLEAR_VARS)
 include $(PAL_BASE_PATH)/plugins/Android.mk
 include $(PAL_BASE_PATH)/ipc/aidl/Android.mk
 include $(PAL_BASE_PATH)/stream/Android.mk
+include $(PAL_BASE_PATH)/session/Android.mk
 
 endif #AUDIO_USE_STUB_HAL

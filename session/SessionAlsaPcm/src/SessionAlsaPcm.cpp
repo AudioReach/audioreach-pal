@@ -109,6 +109,10 @@ bool SessionAlsaPcm::silenceEventRegistered = false;
 /* Param ID definitions */
 #define PARAM_ID_FFV_DOA_TRACKING_MONITOR 0x080010A4
 
+extern "C" Session* CreatePcmSession(const std::shared_ptr<ResourceManager> rm) {
+    return new SessionAlsaPcm(rm);
+}
+
 SessionAlsaPcm::SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm)
 {
    rm = Rm;
@@ -196,6 +200,10 @@ int SessionAlsaPcm::open(Stream * s)
     std::vector<std::shared_ptr<Device>> associatedDevices;
     int ldir = 0;
     std::vector<int> pcmId;
+    struct pal_device deviceAttribute;
+    bool checkDeviceCustomKeyForDualMono = false;
+    bool setEffectParametersForDualMono = false;
+    uint8_t* paramData = NULL;
 
     PAL_DBG(LOG_TAG, "Enter");
     status = s->getStreamAttributes(&sAttr);
@@ -204,6 +212,16 @@ int SessionAlsaPcm::open(Stream * s)
         PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
         goto exit;
     }
+
+    // enable dual mono
+    if (rm->IsDualMonoEnabled() == true) {
+        PAL_INFO(LOG_TAG, "Dual mono feature is on");
+        if (sAttr.type == PAL_STREAM_LOW_LATENCY) {
+            PAL_INFO(LOG_TAG, "stream type is low-latency");
+            checkDeviceCustomKeyForDualMono = true;
+        }
+    }
+
     if (sAttr.type != PAL_STREAM_VOICE_CALL_RECORD &&
         sAttr.type != PAL_STREAM_VOICE_CALL_MUSIC  &&
         sAttr.type != PAL_STREAM_CONTEXT_PROXY &&
@@ -234,6 +252,38 @@ int SessionAlsaPcm::open(Stream * s)
                     PAL_ERR(LOG_TAG, "backend specified incorrectly for this stream\n");
                     return -EINVAL;
                 }
+            }
+        }
+        for (int32_t i = 0; i < associatedDevices.size(); i++) {
+            if (checkDeviceCustomKeyForDualMono) {
+                status = associatedDevices[i]->getDeviceAttributes(&deviceAttribute);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "getDeviceAttributes failed with status %d", status);
+                }
+                PAL_INFO(LOG_TAG, "device custom key=%s",
+                            deviceAttribute.custom_config.custom_key);
+                if (deviceAttribute.id == PAL_DEVICE_OUT_SPEAKER &&
+                        !strncmp(deviceAttribute.custom_config.custom_key,
+                            "speaker-safe", sizeof("speaker-safe"))) {
+                    setEffectParametersForDualMono = true;
+                }
+            }
+        }
+
+        if (setEffectParametersForDualMono) {
+            status = PayloadBuilder::payloadDualMono(&paramData);
+            if (status) {
+                PAL_ERR(LOG_TAG, "failed to create dual mono info");
+            } else {
+                pal_param_payload *pal_param = (pal_param_payload *)paramData;
+                effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
+                status = setEffectParameters(s, effectPayload);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "failed to set dual mono param.");
+                } else {
+                    PAL_INFO(LOG_TAG, "dual mono setparameter succeeded.");
+                }
+                free(paramData);
             }
         }
     }
@@ -4810,7 +4860,9 @@ exit:
     return status;
 }
 
-int32_t SessionAlsaPcm::reconfigureSession(Stream *s, struct pal_media_config config){
+int32_t SessionAlsaPcm::reconfigureSession(Stream *s, struct pal_media_config config,
+                                           pal_stream_direction_t dir)
+{
     int32_t status = 0;
     pal_stream_type_t streamType;
     struct sessionToPayloadParam deviceData;

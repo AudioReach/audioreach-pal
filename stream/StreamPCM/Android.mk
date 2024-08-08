@@ -35,8 +35,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblx-osal \
     libar-pal \
-    libexpat \
-    libar-gsl #need to remove once we clean up PayloadBuilder::payloadDualMono(&paramData);
+    libexpat
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)

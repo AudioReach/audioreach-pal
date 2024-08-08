@@ -57,7 +57,13 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libstream_sensorrenderer_headers \
         libstream_soundtrigger_headers \
         libstream_ultrasound_headers \
-        libstream_asr_headers
+        libstream_asr_headers \
+        libsession_ar_headers \
+        libsession_agm_headers \
+        libsession_compress_headers \
+        libsession_voice_headers \
+        libsession_pcm_headers
+
 
     LOCAL_STATIC_LIBRARIES := \
         libstream_acd \
@@ -74,7 +80,11 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libstream_sensorrenderer \
         libstream_soundtrigger \
         libstream_ultrasound \
-        libstream_asr
+        libstream_asr \
+        libsession_ar \
+        libsession_compress \
+        libsession_pcm \
+        libsession_voice
 endif
 
 include $(BUILD_STATIC_LIBRARY)

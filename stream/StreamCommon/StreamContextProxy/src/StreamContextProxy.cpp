@@ -35,7 +35,6 @@
 
 #include "StreamContextProxy.h"
 #include "Session.h"
-#include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include <unistd.h>
 

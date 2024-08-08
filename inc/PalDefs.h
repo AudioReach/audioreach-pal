@@ -185,6 +185,19 @@ struct pal_snd_dec_opus {
 
 
 
+/* Type of Modes for Haptics Device Protection */
+typedef enum {
+    PAL_HAP_MODE_DYNAMIC_CAL = 1,
+    PAL_HAP_MODE_FACTORY_TEST,
+} pal_haptics_mode;
+
+/* Payload For ID: PAL_PARAM_ID_HAPTICS_MODE
+ * Description   : Values for haptics modes
+ */
+typedef struct pal_haptics_payload {
+    pal_haptics_mode operationMode;/* Type of mode for which request is raised */
+} pal_haptics_payload;
+
 /* Type of Modes for Speaker Protection */
 typedef enum {
     PAL_SP_MODE_DYNAMIC_CAL = 1,
@@ -439,6 +452,7 @@ typedef enum {
 typedef enum {
     PAL_STREAM_HAPTICS_RINGTONE,
     PAL_STREAM_HAPTICS_TOUCH = 1,
+    PAL_STREAM_HAPTICS_PCM = 2,
 } pal_stream_haptics_type_t;
 
 /* type of asynchronous write callback events. Mutually exclusive */
@@ -792,6 +806,7 @@ typedef enum {
     PAL_PARAM_ID_IS_DEVICE_CONNECTED = 85,
     PAL_PARAM_ID_DTMF_DETECTION_CFG = 86,
     PAL_PARAM_ID_DTMF_GEN_TONE_CFG = 87,
+    PAL_PARAM_ID_HAPTICS_MODE = 88,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -962,6 +977,9 @@ typedef struct  pal_param_haptics_cnfg_t {
     int16_t  strength;
     int32_t time;
     int16_t ch_mask;
+    bool isCompose;
+    int32_t buffer_size;
+    uint8_t *buffer_ptr;
 } pal_param_haptics_cnfg_t;
 
 /* Payload For ID: PAL_PARAM_ID_BT_SCO*

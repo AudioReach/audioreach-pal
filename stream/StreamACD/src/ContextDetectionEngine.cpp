@@ -98,7 +98,8 @@ ContextDetectionEngine::ContextDetectionEngine(
         throw std::runtime_error("Failed to get ResourceManager instance");
     }
     stream_handle_->getStreamAttributes(&sAttr);
-    session_ = dynamic_cast<SessionAR*>(SessionAR::makeARSession(rm, &sAttr));
+    session_ = dynamic_cast<SessionAR*>(Session::makeSession(rm, &sAttr));
+
     if (!session_) {
         PAL_ERR(LOG_TAG, "Failed to create session");
         throw std::runtime_error("Failed to create session");

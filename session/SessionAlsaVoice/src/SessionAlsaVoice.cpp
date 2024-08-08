@@ -70,6 +70,10 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 
 static uint32_t retries = 0;
 
+extern "C" Session* CreateVoiceSession(const std::shared_ptr<ResourceManager> rm) {
+    return new SessionAlsaVoice(rm);
+}
+
 SessionAlsaVoice::SessionAlsaVoice(std::shared_ptr<ResourceManager> Rm)
 {
    rm = Rm;
@@ -330,14 +334,18 @@ exit:
     return status;
 }
 
-int SessionAlsaVoice::setSessionParameters(Stream *s, int dir)
+int SessionAlsaVoice::reconfigureSession(Stream *s, pal_media_config config,
+                                         pal_stream_direction_t dir)
 {
     int status = 0;
     int pcmId = 0;
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
 
-    if (dir == RX_HOSTLESS) {
+    if (!dir)
+        return -EINVAL;
+
+    if (dir == PAL_AUDIO_OUTPUT) {
         if (pcmDevRxIds.size()) {
             pcmId = pcmDevRxIds.at(0);
         } else {

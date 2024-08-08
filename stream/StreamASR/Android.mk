@@ -28,7 +28,8 @@ LOCAL_HEADER_LIBRARIES := \
     libacdb_headers \
     libaudioroute \
     libarpal_internalheaders \
-    libarmemlog_headers
+    libarmemlog_headers \
+    libsession_ar_headers
 
 
 LOCAL_SHARED_LIBRARIES := \
@@ -37,7 +38,8 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-    libar-gsl
+    libar-gsl \
+    libsession_ar
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)

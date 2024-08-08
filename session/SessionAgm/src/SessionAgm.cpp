@@ -46,6 +46,10 @@
 
 #define MICRO_SECS_PER_SEC (1000000LL)
 
+extern "C" Session* CreateAgmSession(const std::shared_ptr<ResourceManager> rm) {
+    return new SessionAgm(rm);
+}
+
 void eventCallback(uint32_t session_id, struct agm_event_cb_params *event_params __unused,
                   void *client_data)
 {

@@ -65,7 +65,9 @@
 
 #include "Session.h"
 #include "ResourceManager.h"
-#include "SessionAR.h"
+#include "PalMappings.h"
+
+std::shared_ptr<PluginManager> Session::pm = nullptr;
 
 Session::Session()
 {
@@ -78,11 +80,35 @@ Session::~Session()
 Session* Session::makeSession(const std::shared_ptr<ResourceManager>& rm, const struct pal_stream_attributes *sAttr)
 {
     Session* s = (Session*) nullptr;
+    int32_t status;
+    void* plugin = nullptr;
+    SessionCreate sessionCreate = NULL;
+
     if (!rm || !sAttr) {
         PAL_ERR(LOG_TAG, "Invalid parameters passed");
     } else {
-        /*add case or featurize will be removed in phase2*/
-        s = SessionAR::makeARSession(rm, sAttr);
+        pm = PluginManager::getInstance();
+        if (!pm) {
+            PAL_ERR(LOG_TAG, "Unable to get plugin manager instance");
+            return s;
+        }
+
+        try {
+            status = pm->openPlugin(PAL_PLUGIN_MANAGER_SESSION,
+                                    streamNameLUT.at(sAttr->type), plugin);
+            if (plugin && !status) {
+                sessionCreate = reinterpret_cast<SessionCreate>(plugin);
+                s = sessionCreate(rm);
+            }
+            else {
+                PAL_ERR(LOG_TAG, "unable to get session plugin for stream type %s",
+                    streamNameLUT.at(sAttr->type).c_str());
+            }
+        }
+        catch (const std::exception& e) {
+            PAL_ERR(LOG_TAG, "Session create failed for stream type %s",
+                streamNameLUT.at(sAttr->type).c_str());
+        }
     }
     return s;
 }

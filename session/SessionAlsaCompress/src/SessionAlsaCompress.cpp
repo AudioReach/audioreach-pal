@@ -52,6 +52,10 @@
 
 std::condition_variable cvPause;
 
+extern "C" Session* CreateCompressSession(const std::shared_ptr<ResourceManager> rm) {
+    return new SessionAlsaCompress(rm);
+}
+
 static void handleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,
                                   uint32_t event_size)
 {

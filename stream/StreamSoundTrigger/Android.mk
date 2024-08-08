@@ -33,7 +33,8 @@ LOCAL_HEADER_LIBRARIES := \
     libaudioroute \
     libarpal_internalheaders \
     libarmemlog_headers \
-	libcapiv2_headers
+	libcapiv2_headers \
+    libsession_ar_headers
 
 
 LOCAL_SHARED_LIBRARIES := \
@@ -42,7 +43,8 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-	libvui_intf
+    libvui_intf \
+    libsession_ar
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)

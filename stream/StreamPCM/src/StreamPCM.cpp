@@ -37,7 +37,6 @@
 #include "StreamPCM.h"
 #include "Session.h"
 #include "kvh2xml.h"
-#include "SessionAlsaPcm.h" /*remove once dep is removed*/
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
@@ -195,37 +194,11 @@ int32_t  StreamPCM::open()
     }
 
     if (currentState == STREAM_IDLE) {
-        bool checkDeviceCustomKeyForDualMono = false;
-        bool setEffectParametersForDualMono = false;
-        // enable dual mono
-        if (rm->IsDualMonoEnabled() == true) {
-            PAL_INFO(LOG_TAG, "Dual mono feature is on");
-            if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY) {
-                PAL_INFO(LOG_TAG, "stream type is low-latency");
-                checkDeviceCustomKeyForDualMono = true;
-            }
-        }
-
         for (int32_t i = 0; i < mDevices.size(); i++) {
             status = mDevices[i]->open();
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "device open failed with status %d", status);
                 goto exit;
-            }
-
-            if (checkDeviceCustomKeyForDualMono) {
-                struct pal_device deviceAttribute;
-                ret = mDevices[i]->getDeviceAttributes(&deviceAttribute, this);
-                if (ret) {
-                    PAL_ERR(LOG_TAG, "getDeviceAttributes failed with status %d", ret);
-                }
-                PAL_INFO(LOG_TAG, "device custom key=%s",
-                            deviceAttribute.custom_config.custom_key);
-                if (deviceAttribute.id == PAL_DEVICE_OUT_SPEAKER &&
-                        !strncmp(deviceAttribute.custom_config.custom_key,
-                            "speaker-safe", sizeof("speaker-safe"))) {
-                    setEffectParametersForDualMono = true;
-                }
             }
         }
 
@@ -238,23 +211,6 @@ int32_t  StreamPCM::open()
         }
         PAL_VERBOSE(LOG_TAG, "session open successful");
 
-        if (setEffectParametersForDualMono) {
-            uint8_t* paramData = NULL;
-            ret = PayloadBuilder::payloadDualMono(&paramData);
-            if (ret) {
-                PAL_ERR(LOG_TAG, "failed to create dual mono info");
-            } else {
-                pal_param_payload *pal_param = (pal_param_payload *)paramData;
-                effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
-                ret = session->setEffectParameters(this, effectPayload);
-                if (ret) {
-                    PAL_ERR(LOG_TAG, "failed to set dual mono param.");
-                } else {
-                    PAL_INFO(LOG_TAG, "dual mono setparameter succeeded.");
-                }
-                free(paramData);
-            }
-        }
         currentState = STREAM_INIT;
         PAL_DBG(LOG_TAG, "stream pcm opened. state %d", currentState);
         goto exit;

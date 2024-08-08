@@ -35,9 +35,10 @@
 #include "StreamACDB.h"
 #include "SessionAR.h"
 #include "kvh2xml.h"
-#include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
+#include "PalMappings.h"
+#include "PluginManager.h"
 #include <unistd.h>
 #include <chrono>
 
@@ -52,6 +53,10 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
     mStreamMutex.lock();
     uint32_t in_channels = 0, out_channels = 0;
     uint32_t attribute_size = 0;
+    std::shared_ptr<PluginManager> pm;
+    int32_t status;
+    void* plugin = nullptr;
+    SessionCreate sessionCreate = NULL;
 
     session = NULL;
     mGainLevel = -1;
@@ -86,13 +91,28 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
     ar_mem_cpy(mStreamAttr, sizeof(pal_stream_attributes), sattr, sizeof(pal_stream_attributes));
 
     PAL_INFO(LOG_TAG, "Create new ACDBSession");
-
-    session = SessionAR::makeACDBSession(rm, sattr);
-    if (!session) {
-        PAL_ERR(LOG_TAG, "session creation failed");
-        free(mStreamAttr);
-        mStreamMutex.unlock();
-        throw std::runtime_error("failed to create session object");
+    try {
+        pm = PluginManager::getInstance();
+        if (!pm) {
+            PAL_ERR(LOG_TAG, "Unable to get plugin manager instance");
+        } else {
+            /* Send PAL_STREAM_NON_TUNNEL stream type to force plugin
+             * plugin manager to open an AGM session.
+             */
+            status = pm->openPlugin(PAL_PLUGIN_MANAGER_SESSION,
+                                    "PAL_STREAM_NON_TUNNEL", plugin);
+            if (plugin && !status) {
+                sessionCreate = reinterpret_cast<SessionCreate>(plugin);
+                session = sessionCreate(rm);
+            }
+            else {
+                PAL_ERR(LOG_TAG, "unable to get session plugin for stream type %s",
+                streamNameLUT.at(mStreamAttr->type).c_str());
+            }
+        }
+    } catch (const std::exception& e) {
+        PAL_ERR(LOG_TAG, "Session create failed for stream type %s",
+            streamNameLUT.at(mStreamAttr->type).c_str());
     }
 
     mStreamMutex.unlock();

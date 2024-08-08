@@ -35,7 +35,6 @@
 #include <semaphore.h>
 #include "Stream.h"
 #include "Session.h"
-#include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include "USBAudio.h"
@@ -57,11 +56,6 @@ Stream::Stream() {
 }
 
  Stream::~Stream(){
-    if (mStreamAttr) {
-        free(mStreamAttr);
-        mStreamAttr = (struct pal_stream_attributes *)NULL;
-    }
-
     if(mVolumeData)  {
         free(mVolumeData);
         mVolumeData = (struct pal_volume_data *)NULL;
@@ -72,6 +66,14 @@ Stream::Stream() {
     if (session) {
         delete session;
         session = nullptr;
+        if (Session::pm)
+            Session::pm->closePlugin(PAL_PLUGIN_MANAGER_SESSION,
+                                     streamNameLUT.at(mStreamAttr->type));
+    }
+
+    if (mStreamAttr) {
+        free(mStreamAttr);
+        mStreamAttr = (struct pal_stream_attributes *)NULL;
     }
  }
 

@@ -7,7 +7,6 @@
 
 #include "StreamSensorRenderer.h"
 #include "Session.h"
-#include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include "us_detect_api.h"

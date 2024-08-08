@@ -60,6 +60,8 @@ struct agmMetaData {
         :buf(b),size(s) {}
 };
 
+extern "C" Session* CreateAgmSession(const std::shared_ptr<ResourceManager> rm);
+
 class SessionAgm : public SessionAR
 {
 private:

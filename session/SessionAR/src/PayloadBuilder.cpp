@@ -294,6 +294,7 @@ std::vector<allKVs> PayloadBuilder::all_streams;
 std::vector<allKVs> PayloadBuilder::all_streampps;
 std::vector<allKVs> PayloadBuilder::all_devices;
 std::vector<allKVs> PayloadBuilder::all_devicepps;
+bool PayloadBuilder::isInitialized = false;
 
 template <typename T>
 void PayloadBuilder::populateChannelMixerCoeff(T pcmChannel, uint8_t numChannel,
@@ -1267,57 +1268,61 @@ int PayloadBuilder::init()
     int bytes_read;
     void *buf = NULL;
     struct user_xml_data tag_data;
-    memset(&tag_data, 0, sizeof(tag_data));
-    all_streams.clear();
-    all_streampps.clear();
-    all_devices.clear();
-    all_devicepps.clear();
 
-    PAL_INFO(LOG_TAG, "XML parsing started %s", USECASE_XML_FILE);
-    file = fopen(USECASE_XML_FILE, "r");
-    if (!file) {
-        PAL_ERR(LOG_TAG, "Failed to open xml");
-        ret = -EINVAL;
-        goto done;
-    }
+    if (!isInitialized) {
+        memset(&tag_data, 0, sizeof(tag_data));
+        all_streams.clear();
+        all_streampps.clear();
+        all_devices.clear();
+        all_devicepps.clear();
 
-    parser = XML_ParserCreate(NULL);
-    if (!parser) {
-        PAL_ERR(LOG_TAG, "Failed to create XML");
-        goto closeFile;
-    }
-    XML_SetUserData(parser,&tag_data);
-    XML_SetElementHandler(parser, startTag, endTag);
-    XML_SetCharacterDataHandler(parser, handleData);
-
-    while (1) {
-        buf = XML_GetBuffer(parser, 1024);
-        if (buf == NULL) {
-            PAL_ERR(LOG_TAG, "XML_Getbuffer failed");
+        PAL_INFO(LOG_TAG, "XML parsing started %s", USECASE_XML_FILE);
+        file = fopen(USECASE_XML_FILE, "r");
+        if (!file) {
+            PAL_ERR(LOG_TAG, "Failed to open xml");
             ret = -EINVAL;
-            goto freeParser;
+            goto done;
         }
 
-        bytes_read = fread(buf, 1, 1024, file);
-        if (bytes_read < 0) {
-            PAL_ERR(LOG_TAG, "fread failed");
-            ret = -EINVAL;
-            goto freeParser;
+        parser = XML_ParserCreate(NULL);
+        if (!parser) {
+            PAL_ERR(LOG_TAG, "Failed to create XML");
+            goto closeFile;
+        }
+        XML_SetUserData(parser,&tag_data);
+        XML_SetElementHandler(parser, startTag, endTag);
+        XML_SetCharacterDataHandler(parser, handleData);
+
+        while (1) {
+            buf = XML_GetBuffer(parser, 1024);
+            if (buf == NULL) {
+                PAL_ERR(LOG_TAG, "XML_Getbuffer failed");
+                ret = -EINVAL;
+                goto freeParser;
+            }
+
+            bytes_read = fread(buf, 1, 1024, file);
+            if (bytes_read < 0) {
+                PAL_ERR(LOG_TAG, "fread failed");
+                ret = -EINVAL;
+                goto freeParser;
+            }
+
+            if (XML_ParseBuffer(parser, bytes_read, bytes_read == 0) == XML_STATUS_ERROR) {
+                PAL_ERR(LOG_TAG, "XML ParseBuffer failed ");
+                ret = -EINVAL;
+                goto freeParser;
+            }
+            if (bytes_read == 0)
+                break;
         }
 
-        if (XML_ParseBuffer(parser, bytes_read, bytes_read == 0) == XML_STATUS_ERROR) {
-            PAL_ERR(LOG_TAG, "XML ParseBuffer failed ");
-            ret = -EINVAL;
-            goto freeParser;
-        }
-        if (bytes_read == 0)
-            break;
+        isInitialized = true;
+        freeParser:
+            XML_ParserFree(parser);
+        closeFile:
+            fclose(file);
     }
-
-freeParser:
-    XML_ParserFree(parser);
-closeFile:
-    fclose(file);
 done:
     return ret;
 }

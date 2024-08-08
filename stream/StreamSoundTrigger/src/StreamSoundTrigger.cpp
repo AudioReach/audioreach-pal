@@ -41,7 +41,6 @@
 #include <cstring>
 
 #include "Session.h"
-#include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include "kvh2xml.h"

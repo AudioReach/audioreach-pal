@@ -38,7 +38,6 @@
 
 #include "StreamCommon.h"
 #include "Session.h"
-#include "SessionAR.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
@@ -536,7 +535,7 @@ int32_t StreamCommon::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
     }
 
     if (session)
-        status = dynamic_cast<SessionAR*>(session)->getTagsWithModuleInfo(this, size, payload);
+        status = (session)->getTagsWithModuleInfo(this, size, payload);
     else
         PAL_ERR(LOG_TAG, "session handle is NULL");
 

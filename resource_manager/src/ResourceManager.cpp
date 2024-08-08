@@ -46,7 +46,6 @@
 #include "Device.h"
 #include "Stream.h"
 #include "Headphone.h"
-#include "PayloadBuilder.h"
 #include "Bluetooth.h"
 #include "SpeakerMic.h"
 #include "Speaker.h"
@@ -1022,12 +1021,6 @@ ResourceManager::ResourceManager()
 
     ResourceManager::loadAdmLib();
     ResourceManager::initWakeLocks();
-    ret = PayloadBuilder::init();
-    if (ret) {
-        throw std::runtime_error("Failed to parse usecase manager xml");
-    } else {
-        PAL_INFO(LOG_TAG, "usecase manager xml parsing successful");
-    }
 
     if (ResourceManager::isHapticsthroughWSA) {
         ret = AudioHapticsInterface::init();

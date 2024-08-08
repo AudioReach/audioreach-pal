@@ -87,6 +87,8 @@ struct offload_msg {
     int cmd; /**< command */
 };
 
+extern "C" Session* CreateCompressSession(const std::shared_ptr<ResourceManager> rm);
+
 class SessionAlsaCompress : public SessionAR
 {
 private:

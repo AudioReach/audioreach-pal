@@ -52,6 +52,8 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 class Stream;
 class Session;
 
+extern "C" Session* CreateVoiceSession(const std::shared_ptr<ResourceManager> rm);
+
 class SessionAlsaVoice : public SessionAR
 {
 private:
@@ -87,6 +89,8 @@ public:
     int setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id,
                       void *payload) override;
     int setSessionParameters(Stream *s, int dir);
+    int32_t reconfigureSession(Stream *s, struct pal_media_config config,
+                               pal_stream_direction_t dir) override;
     int start(Stream * s) override;
     int stop(Stream * s) override;
     int close(Stream * s) override;

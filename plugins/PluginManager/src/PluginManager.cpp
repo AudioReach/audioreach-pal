@@ -49,12 +49,18 @@ PluginManager::PluginManager() {
 
 PluginManager::~PluginManager() {
    deinitStreamPlugins();
+   deinitSessionPlugins();
 }
 
 void PluginManager::deinitStreamPlugins(){
     for (const auto& item : registeredStreams) {
         dlclose(item.handle);
     }
+}
+
+void PluginManager::deinitSessionPlugins() {
+    for (const auto& item : registeredSessions)
+        dlclose(item.handle);
 }
 
 int32_t PluginManager::getRegisteredPluginList(pal_plugin_manager_t type, std::vector<pm_item_t> **pluginList){

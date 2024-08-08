@@ -54,6 +54,8 @@
 class Stream;
 class Session;
 
+extern "C" Session* CreatePcmSession(const std::shared_ptr<ResourceManager> rm);
+
 class SessionAlsaPcm : public SessionAR
 {
 private:
@@ -140,7 +142,8 @@ public:
     int reconfigureModule(uint32_t tagID, const char* BE, struct sessionToPayloadParam *data);
     int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
             us_tone_renderer_ep_media_format_status_t event);
-    int32_t reconfigureSession(Stream *s, struct pal_media_config config) override;
+    int32_t reconfigureSession(Stream *s, struct pal_media_config config,
+                               pal_stream_direction_t dir) override;
 };
 
 #endif //SESSION_ALSAPCM_H

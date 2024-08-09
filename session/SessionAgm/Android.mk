@@ -20,7 +20,6 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/inc
 
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
-LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/args/gsl/api/
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \
@@ -43,7 +42,6 @@ LOCAL_SHARED_LIBRARIES := \
     libar-pal \
     libexpat \
     libagmclient \
-    libarmemlog \
     libsession_ar
 
 ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)

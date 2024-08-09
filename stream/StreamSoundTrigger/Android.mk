@@ -20,7 +20,6 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/inc
 
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
-LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/args/gsl/api/
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \

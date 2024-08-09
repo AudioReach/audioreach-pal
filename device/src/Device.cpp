@@ -65,241 +65,106 @@
 #include "Device.h"
 #include <tinyalsa/asoundlib.h>
 #include "ResourceManager.h"
-#include "SessionAlsaUtils.h"
 #include "Device.h"
-#include "Speaker.h"
-#include "SpeakerProtection.h"
-#include "Headphone.h"
-#include "USBAudio.h"
-#include "SpeakerMic.h"
-#include "Stream.h"
-#include "HeadsetMic.h"
-#include "HandsetMic.h"
-#include "HandsetVaMic.h"
-#include "HeadsetVaMic.h"
-#include "Handset.h"
-#include "Bluetooth.h"
-#include "DisplayPort.h"
-#include "RTProxy.h"
-#include "FMDevice.h"
-#include "HapticsDev.h"
-#include "UltrasoundDevice.h"
-#include "ExtEC.h"
-#include "ECRefDevice.h"
-#include "DummyDev.h"
 #include <dlfcn.h>
+#include <agm/agm_api.h>
+#include <sound/asound.h>
 
 #define MAX_CHANNEL_SUPPORTED 2
 #define DEFAULT_OUTPUT_SAMPLING_RATE 48000
 #define DEFAULT_OUTPUT_CHANNEL 2
 
 typedef void (*write_qmp_mode)(const char *hdr_custom_key);
+std::shared_ptr<PluginManager> Device::pm = nullptr;
 
 std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
-                                                 std::shared_ptr<ResourceManager> Rm)
+                                            std::shared_ptr<ResourceManager> Rm)
 {
+    uint32_t status;
+    std::string deviceName;
+    std::shared_ptr<Device> devPtr = nullptr;
+    void* plugin = nullptr;
+    DeviceCreate deviceCreate = NULL;
+
     if (!device || !Rm) {
         PAL_ERR(LOG_TAG, "Invalid input parameters");
         return NULL;
     }
 
+    pm = PluginManager::getInstance();
+    if (!pm) {
+        PAL_ERR(LOG_TAG, "Unable to get plugin manager instance");
+        return NULL;
+    }
+
     PAL_VERBOSE(LOG_TAG, "Enter device id %d", device->id);
 
-    //TBD: decide on supported devices from XML and not in code
-    switch (device->id) {
-    case PAL_DEVICE_NONE:
-        PAL_DBG(LOG_TAG,"device none");
-        return nullptr;
-    case PAL_DEVICE_OUT_HANDSET:
-        PAL_VERBOSE(LOG_TAG, "handset device");
-        return Handset::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_SPEAKER:
-        PAL_VERBOSE(LOG_TAG, "speaker device");
-        return Speaker::getInstance(device, Rm);
-    case PAL_DEVICE_IN_VI_FEEDBACK:
-        PAL_VERBOSE(LOG_TAG, "speaker feedback device");
-        return SpeakerFeedback::getInstance(device, Rm);
-    case PAL_DEVICE_IN_CPS_FEEDBACK:
-        PAL_VERBOSE(LOG_TAG, "speaker feedback device CPS");
-        return SpeakerFeedback::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_WIRED_HEADSET:
-    case PAL_DEVICE_OUT_WIRED_HEADPHONE:
-        PAL_VERBOSE(LOG_TAG, "headphone device");
-        return Headphone::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_USB_DEVICE:
-    case PAL_DEVICE_OUT_USB_HEADSET:
-    case PAL_DEVICE_IN_USB_DEVICE:
-    case PAL_DEVICE_IN_USB_HEADSET:
-        PAL_VERBOSE(LOG_TAG, "USB device");
-        return USB::getInstance(device, Rm);
-    case PAL_DEVICE_IN_HANDSET_MIC:
-        PAL_VERBOSE(LOG_TAG, "HandsetMic device");
-        return HandsetMic::getInstance(device, Rm);
-    case PAL_DEVICE_IN_SPEAKER_MIC:
-        PAL_VERBOSE(LOG_TAG, "speakerMic device");
-        return SpeakerMic::getInstance(device, Rm);
-    case PAL_DEVICE_IN_WIRED_HEADSET:
-        PAL_VERBOSE(LOG_TAG, "HeadsetMic device");
-        return HeadsetMic::getInstance(device, Rm);
-    case PAL_DEVICE_IN_HANDSET_VA_MIC:
-        PAL_VERBOSE(LOG_TAG, "HandsetVaMic device");
-        return HandsetVaMic::getInstance(device, Rm);
-    case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
-    case PAL_DEVICE_OUT_BLUETOOTH_SCO:
-        PAL_VERBOSE(LOG_TAG, "BTSCO device");
-        return BtSco::getInstance(device, Rm);
-    case PAL_DEVICE_IN_BLUETOOTH_A2DP:
-    case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
-    case PAL_DEVICE_IN_BLUETOOTH_BLE:
-    case PAL_DEVICE_OUT_BLUETOOTH_BLE:
-    case PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST:
-        PAL_VERBOSE(LOG_TAG, "BTA2DP device");
-        return BtA2dp::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_AUX_DIGITAL:
-    case PAL_DEVICE_OUT_AUX_DIGITAL_1:
-    case PAL_DEVICE_OUT_HDMI:
-        PAL_VERBOSE(LOG_TAG, "Display Port device");
-        return DisplayPort::getInstance(device, Rm);
-    case PAL_DEVICE_IN_HEADSET_VA_MIC:
-        PAL_VERBOSE(LOG_TAG, "HeadsetVaMic device");
-        return HeadsetVaMic::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxyOut device");
-        return RTProxyOut::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_RECORD_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxyOut record device");
-        return RTProxyOut::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_HEARING_AID:
-        PAL_VERBOSE(LOG_TAG, "RTProxy Hearing Aid device");
-        return RTProxyOut::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_HAPTICS_DEVICE:
-        PAL_VERBOSE(LOG_TAG, "Haptics Device");
-        return HapticsDev::getInstance(device, Rm);
-    case PAL_DEVICE_IN_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxyIn device");
-        return RTProxyIn::getInstance(device, Rm);
-    case PAL_DEVICE_IN_RECORD_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxyIn record device");
-        return RTProxyIn::getInstance(device, Rm);
-    case PAL_DEVICE_IN_TELEPHONY_RX:
-        PAL_VERBOSE(LOG_TAG, "RTProxy Telephony Rx device");
-        return RTProxyIn::getInstance(device, Rm);
-    case PAL_DEVICE_IN_FM_TUNER:
-        PAL_VERBOSE(LOG_TAG, "FM device");
-        return FMDevice::getInstance(device, Rm);
-    case PAL_DEVICE_IN_ULTRASOUND_MIC:
-    case PAL_DEVICE_OUT_ULTRASOUND:
-    case PAL_DEVICE_OUT_ULTRASOUND_DEDICATED:
-        PAL_VERBOSE(LOG_TAG, "Ultrasound device");
-        return UltrasoundDevice::getInstance(device, Rm);
-    case PAL_DEVICE_IN_EXT_EC_REF:
-        PAL_VERBOSE(LOG_TAG, "ExtEC device");
-        return ExtEC::getInstance(device, Rm);
-    case PAL_DEVICE_IN_ECHO_REF:
-        PAL_VERBOSE(LOG_TAG, "Echo ref device");
-        return ECRefDevice::getInstance(device, Rm);
-    case PAL_DEVICE_OUT_DUMMY:
-    case PAL_DEVICE_IN_DUMMY:
-        PAL_VERBOSE(LOG_TAG, "Dummy device");
-        return DummyDev::getInstance(device, Rm);
-    default:
-        PAL_ERR(LOG_TAG,"Unsupported device id %d",device->id);
-        return nullptr;
+    deviceName = (std::string) deviceNameLUT.at(device->id);
+    try {
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_DEVICE, deviceName, plugin);
+        if (plugin && !status) {
+            deviceCreate = reinterpret_cast<DeviceCreate>(plugin);
+            deviceCreate(device, Rm, device->id, true, &devPtr);
+            if (devPtr == nullptr) {
+                PAL_ERR(LOG_TAG, "Device create failed for type %s",
+                    deviceNameLUT.at(device->id).c_str());
+            }
+            return devPtr;
+        }
+        else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for device type %s",
+                    deviceName.c_str());
+        }
     }
+    catch (const std::exception& e) {
+        PAL_ERR(LOG_TAG, "Device create failed for type %s",
+            deviceNameLUT.at(device->id).c_str());
+    }
+
+    return nullptr;
 }
 
 std::shared_ptr<Device> Device::getObject(pal_device_id_t dev_id)
 {
+    uint32_t status;
+    std::string deviceName;
+    std::shared_ptr<Device> devPtr = nullptr;
+    void* plugin = nullptr;
+    DeviceCreate deviceCreate = NULL;
 
-    switch(dev_id) {
-    case PAL_DEVICE_NONE:
-        PAL_DBG(LOG_TAG,"device none");
-        return nullptr;
-    case PAL_DEVICE_OUT_HANDSET:
-        PAL_VERBOSE(LOG_TAG, "handset device");
-        return Handset::getObject();
-    case PAL_DEVICE_OUT_SPEAKER:
-        PAL_VERBOSE(LOG_TAG, "speaker device");
-        return Speaker::getObject();
-    case PAL_DEVICE_IN_VI_FEEDBACK:
-        PAL_VERBOSE(LOG_TAG, "speaker feedback device");
-        return SpeakerFeedback::getObject();
-    case PAL_DEVICE_OUT_WIRED_HEADSET:
-    case PAL_DEVICE_OUT_WIRED_HEADPHONE:
-        PAL_VERBOSE(LOG_TAG, "headphone device");
-        return Headphone::getObject(dev_id);
-    case PAL_DEVICE_OUT_USB_DEVICE:
-    case PAL_DEVICE_OUT_USB_HEADSET:
-    case PAL_DEVICE_IN_USB_DEVICE:
-    case PAL_DEVICE_IN_USB_HEADSET:
-        PAL_VERBOSE(LOG_TAG, "USB device");
-        return USB::getObject(dev_id);
-    case PAL_DEVICE_OUT_AUX_DIGITAL:
-    case PAL_DEVICE_OUT_AUX_DIGITAL_1:
-    case PAL_DEVICE_OUT_HDMI:
-        PAL_VERBOSE(LOG_TAG, "Display Port device");
-        return DisplayPort::getObject(dev_id);
-    case PAL_DEVICE_IN_HANDSET_MIC:
-        PAL_VERBOSE(LOG_TAG, "handset mic device");
-        return HandsetMic::getObject();
-    case PAL_DEVICE_IN_SPEAKER_MIC:
-        PAL_VERBOSE(LOG_TAG, "speaker mic device");
-        return SpeakerMic::getObject();
-    case PAL_DEVICE_IN_WIRED_HEADSET:
-        PAL_VERBOSE(LOG_TAG, "headset mic device");
-        return HeadsetMic::getObject();
-    case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
-    case PAL_DEVICE_IN_BLUETOOTH_A2DP:
-    case PAL_DEVICE_OUT_BLUETOOTH_BLE:
-    case PAL_DEVICE_IN_BLUETOOTH_BLE:
-    case PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST:
-        PAL_VERBOSE(LOG_TAG, "BT A2DP device %d", dev_id);
-        return BtA2dp::getObject(dev_id);
-    case PAL_DEVICE_OUT_BLUETOOTH_SCO:
-    case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
-        PAL_VERBOSE(LOG_TAG, "BT SCO device %d", dev_id);
-        return BtSco::getObject(dev_id);
-    case PAL_DEVICE_OUT_PROXY:
-    case PAL_DEVICE_OUT_HEARING_AID:
-    case PAL_DEVICE_OUT_RECORD_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxyOut device %d", dev_id);
-        return RTProxyOut::getObject(dev_id);
-    case PAL_DEVICE_IN_PROXY:
-    case PAL_DEVICE_IN_TELEPHONY_RX:
-    case PAL_DEVICE_IN_RECORD_PROXY:
-        PAL_VERBOSE(LOG_TAG, "RTProxy device %d", dev_id);
-        return RTProxyIn::getObject(dev_id);
-    case PAL_DEVICE_IN_FM_TUNER:
-        PAL_VERBOSE(LOG_TAG, "FMDevice %d", dev_id);
-        return FMDevice::getObject();
-    case PAL_DEVICE_IN_ULTRASOUND_MIC:
-    case PAL_DEVICE_OUT_ULTRASOUND:
-    case PAL_DEVICE_OUT_ULTRASOUND_DEDICATED:
-        PAL_VERBOSE(LOG_TAG, "Ultrasound device %d", dev_id);
-        return UltrasoundDevice::getObject(dev_id);
-    case PAL_DEVICE_IN_EXT_EC_REF:
-        PAL_VERBOSE(LOG_TAG, "ExtEC device %d", dev_id);
-        return ExtEC::getObject();
-    case PAL_DEVICE_IN_HANDSET_VA_MIC:
-        PAL_VERBOSE(LOG_TAG, "Handset VA Mic device %d", dev_id);
-        return HandsetVaMic::getObject();
-    case PAL_DEVICE_IN_HEADSET_VA_MIC:
-        PAL_VERBOSE(LOG_TAG, "Headset VA Mic device %d", dev_id);
-        return HeadsetVaMic::getObject();
-    case PAL_DEVICE_IN_ECHO_REF:
-        PAL_VERBOSE(LOG_TAG, "Echo ref device %d", dev_id);
-        return ECRefDevice::getObject();
-    case PAL_DEVICE_OUT_HAPTICS_DEVICE:
-        PAL_VERBOSE(LOG_TAG, "Haptics device %d", dev_id);
-        return HapticsDev::getObject();
-    case PAL_DEVICE_OUT_DUMMY:
-    case PAL_DEVICE_IN_DUMMY:
-        PAL_VERBOSE(LOG_TAG, "Dummy device %d", dev_id);
-        return DummyDev::getObject(dev_id);
-    default:
-        PAL_ERR(LOG_TAG,"Unsupported device id %d",dev_id);
+    //There is no registered plugin for device type none, so return null
+    if (dev_id == PAL_DEVICE_NONE) {
         return nullptr;
     }
+
+    pm = PluginManager::getInstance();
+    if (!pm) {
+        PAL_ERR(LOG_TAG, "Unable to get plugin manager instance");
+        return NULL;
+    }
+
+    PAL_VERBOSE(LOG_TAG, "Enter device id %d", dev_id);
+
+    deviceName = (std::string) deviceNameLUT.at(dev_id);
+    try {
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_DEVICE, deviceName,
+                                plugin);
+        if (plugin) {
+            deviceCreate = reinterpret_cast<DeviceCreate>(plugin);
+            deviceCreate(nullptr, nullptr, dev_id, false, &devPtr);
+            return devPtr;
+        }
+        else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for device type %s",
+                    deviceName.c_str());
+        }
+    }
+    catch (const std::exception& e) {
+        PAL_ERR(LOG_TAG, "exception: Device getObject failed for type %s",
+            deviceNameLUT.at(dev_id).c_str());
+    }
+
+    return nullptr;
 }
 
 int32_t Device::initHdrRoutine(const char *hdr_custom_key)
@@ -496,7 +361,7 @@ int Device::open()
         std::string backEndName;
         rm->getBackendName(this->deviceAttr.id, backEndName);
         if (strlen(backEndName.c_str())) {
-            SessionAlsaUtils::setDeviceMediaConfig(rm, backEndName, &(this->deviceAttr));
+            devObj->setMediaConfig(rm, backEndName, &(this->deviceAttr));
         }
 
         status = rm->getAudioRoute(&audioRoute);
@@ -614,10 +479,11 @@ int Device::start_l()
                 this->deviceAttr.config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
             }
         }
-        SessionAlsaUtils::setDeviceMediaConfig(rm, backEndName, &(this->deviceAttr));
+        devObj = Device::getInstance(&deviceAttr, rm);
+        devObj->setMediaConfig(rm, backEndName, &(this->deviceAttr));
 
         if (customPayloadSize) {
-            status = SessionAlsaUtils::setDeviceCustomPayload(rm, backEndName,
+            status = devObj->setCustomPayload(rm, backEndName,
                                         customPayload, customPayloadSize);
             if (status)
                  PAL_ERR(LOG_TAG, "Error: Dev setParam failed for %d\n",
@@ -672,6 +538,57 @@ int32_t Device::setParameter(uint32_t param_id __unused, void *param __unused)
 
 int32_t Device::getParameter(uint32_t param_id __unused, void **param __unused)
 {
+    return 0;
+}
+
+int32_t Device::checkAndUpdateSampleRate(uint32_t *sampleRate)
+{
+    return 0;
+}
+
+int32_t Device::checkAndUpdateBitWidth(uint32_t *bitWidth)
+{
+    return 0;
+}
+
+int Device::selectBestConfig(struct pal_device *dattr,
+                             struct pal_stream_attributes *sattr,
+                             bool is_playback, struct pal_device_info *devinfo)
+{
+    return 0;
+}
+
+int Device::getMaxChannel()
+{
+    return 0;
+}
+
+bool Device::isSupportedSR(int sr)
+{
+    return 0;
+}
+
+int Device::getHighestSupportedSR()
+{
+    return 0;
+}
+
+int32_t Device::isBitWidthSupported(uint32_t bitWidth)
+{
+    return 0;
+}
+
+int Device::getHighestSupportedBps()
+{
+    return 0;
+}
+
+bool Device::isDeviceConnected(struct pal_usb_device_address addr)
+{
+    return 0;
+}
+
+int32_t Device::checkDeviceStatus() {
     return 0;
 }
 
@@ -1013,4 +930,150 @@ int Device::getTopPriorityDeviceAttr(struct pal_device *deviceAttr, uint32_t *st
 
     mDeviceMutex.unlock();
     return 0;
+}
+
+unsigned int Device::palToSndDriverFormat(uint32_t fmt_id)
+{
+    switch (fmt_id) {
+        case PAL_AUDIO_FMT_PCM_S32_LE:
+            return SNDRV_PCM_FORMAT_S32_LE;
+        case PAL_AUDIO_FMT_PCM_S8:
+            return SNDRV_PCM_FORMAT_S8;
+        case PAL_AUDIO_FMT_PCM_S24_3LE:
+            return SNDRV_PCM_FORMAT_S24_3LE;
+        case PAL_AUDIO_FMT_PCM_S24_LE:
+            return SNDRV_PCM_FORMAT_S24_LE;
+        default:
+        case PAL_AUDIO_FMT_PCM_S16_LE:
+            return SNDRV_PCM_FORMAT_S16_LE;
+    };
+}
+
+unsigned int Device::bitsToAlsaFormat(unsigned int bits)
+{
+    switch (bits) {
+        case 32:
+            return SNDRV_PCM_FORMAT_S32_LE;
+        case 8:
+            return SNDRV_PCM_FORMAT_S8;
+        case 24:
+            return SNDRV_PCM_FORMAT_S24_3LE;
+        default:
+        case 16:
+            return SNDRV_PCM_FORMAT_S16_LE;
+    };
+}
+
+struct mixer_ctl *Device::getBeMixerControl(struct mixer *am, std::string beName,
+        uint32_t idx)
+{
+    std::ostringstream cntrlName;
+
+    cntrlName << beName << beCtrlNames[idx];
+    PAL_DBG(LOG_TAG, "mixer control %s", cntrlName.str().data());
+    return mixer_get_ctl_by_name(am, cntrlName.str().data());
+}
+
+int Device::setCustomPayload(std::shared_ptr<ResourceManager> rmHandle,
+                                std::string backEndName, void *payload, size_t size)
+{
+    struct mixer_ctl *ctl = NULL;
+    struct mixer *mixerHandle = NULL;
+    int status = 0;
+
+    status = rmHandle->getVirtualAudioMixer(&mixerHandle);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
+        return status;
+    }
+
+    ctl = getBeMixerControl(mixerHandle, backEndName, BE_SETPARAM);
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", backEndName.c_str(),
+                beCtrlNames[BE_SETPARAM]);
+        return -EINVAL;
+    }
+
+    return mixer_ctl_set_array(ctl, payload, size);
+}
+
+int Device::setMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
+                            std::string backEndName, struct pal_device *dAttr)
+{
+    struct mixer_ctl *ctl = NULL;
+    long aif_media_config[4];
+    long aif_group_atrr_config[5];
+    struct mixer *mixerHandle = NULL;
+    int status = 0;
+    std::shared_ptr<group_dev_config_t> groupDevConfig;
+    group_dev_config_t currentGroupDevConfig;
+
+    status = rmHandle->getVirtualAudioMixer(&mixerHandle);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
+        return status;
+    }
+
+    aif_media_config[0] = dAttr->config.sample_rate;
+    aif_media_config[1] = dAttr->config.ch_info.channels;
+
+    if (!isPalPCMFormat((uint32_t)dAttr->config.aud_fmt_id)) {
+        /*
+         *Only for configuring the BT A2DP device backend we use
+         *bitwidth instead of aud_fmt_id
+         */
+        aif_media_config[2] = bitsToAlsaFormat(dAttr->config.bit_width);
+        aif_media_config[3] = AGM_DATA_FORMAT_COMPR_OVER_PCM_PACKETIZED;
+    } else {
+        aif_media_config[2] = palToSndDriverFormat((uint32_t)dAttr->config.aud_fmt_id);
+        aif_media_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
+    }
+
+    // if it's virtual port, need to set group attribute as well
+    groupDevConfig = rmHandle->getActiveGroupDevConfig();
+    if (groupDevConfig && (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
+        dAttr->id == PAL_DEVICE_OUT_HANDSET ||
+        dAttr->id == PAL_DEVICE_OUT_ULTRASOUND)) {
+        std::string truncatedBeName = backEndName;
+        // remove "-VIRT-x" which length is 7
+        truncatedBeName.erase(truncatedBeName.end() - 7, truncatedBeName.end());
+        ctl = getBeMixerControl(mixerHandle, truncatedBeName , BE_GROUP_ATTR);
+        if (!ctl) {
+        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", truncatedBeName.c_str(),
+                beCtrlNames[BE_GROUP_ATTR]);
+        return -EINVAL;
+        }
+        if (groupDevConfig->grp_dev_hwep_cfg.sample_rate)
+            aif_group_atrr_config[0] = groupDevConfig->grp_dev_hwep_cfg.sample_rate;
+        else
+            aif_group_atrr_config[0] = dAttr->config.sample_rate;
+        if (groupDevConfig->grp_dev_hwep_cfg.channels)
+            aif_group_atrr_config[1] = groupDevConfig->grp_dev_hwep_cfg.channels;
+        else
+            aif_group_atrr_config[1] = dAttr->config.ch_info.channels;
+        aif_group_atrr_config[2] = palToSndDriverFormat(
+                                    groupDevConfig->grp_dev_hwep_cfg.aud_fmt_id);
+        aif_group_atrr_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
+        aif_group_atrr_config[4] = groupDevConfig->grp_dev_hwep_cfg.slot_mask;
+
+        mixer_ctl_set_array(ctl, &aif_group_atrr_config,
+                               sizeof(aif_group_atrr_config)/sizeof(aif_group_atrr_config[0]));
+        PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt slot_mask %ld %ld %ld %ld %ld\n", truncatedBeName.c_str(),
+                aif_group_atrr_config[0], aif_group_atrr_config[1], aif_group_atrr_config[2],
+                aif_group_atrr_config[3], aif_group_atrr_config[4]);
+        rmHandle->setCurrentGroupDevConfig(groupDevConfig, aif_group_atrr_config[0], aif_group_atrr_config[1]);
+    }
+    ctl = getBeMixerControl(mixerHandle, backEndName , BE_MEDIAFMT);
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", backEndName.c_str(),
+                beCtrlNames[BE_MEDIAFMT]);
+        return -EINVAL;
+    }
+
+    PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt %ld %ld %ld %ld\n", backEndName.c_str(),
+                     aif_media_config[0], aif_media_config[1],
+                     aif_media_config[2], aif_media_config[3]);
+
+    return mixer_ctl_set_array(ctl, &aif_media_config,
+                               sizeof(aif_media_config)/sizeof(aif_media_config[0]));
 }

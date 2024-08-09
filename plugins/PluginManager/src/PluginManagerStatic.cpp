@@ -33,6 +33,26 @@
 #include "SessionAlsaCompress.h"
 #include "SessionAlsaPcm.h"
 #include "SessionAlsaVoice.h"
+/*include all devices*/
+#include "Bluetooth.h"
+#include "DisplayPort.h"
+#include "DummyDev.h"
+#include "ECRefDevice.h"
+#include "ExtEC.h"
+#include "FMDevice.h"
+#include "Handset.h"
+#include "HandsetMic.h"
+#include "HandsetVaMic.h"
+#include "HapticsDev.h"
+#include "Headphone.h"
+#include "HeadsetMic.h"
+#include "HeadsetVaMic.h"
+#include "RTProxy.h"
+#include "Speaker.h"
+#include "SpeakerMic.h"
+#include "UltrasoundDevice.h"
+#include "USBAudio.h"
+
 
 std::shared_ptr<PluginManager> PluginManager::pm = nullptr;
 std::mutex PluginManager::mPluginManagerMutex;
@@ -50,11 +70,11 @@ int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t typ
     return 0;
 }
 
-int32_t getStreamFunc(void* func, std::string name) {
+int32_t getStreamFunc(void** func, std::string name) {
     int32_t status = 0;
 
     if( name =="PAL_USE_ACDB_STREAM"){
-         func = (void*)&CreateACDBStream;
+         *reinterpret_cast<StreamACDBCreate*>(func) = &CreateACDBStream;
          goto exit;
     }
     switch (usecaseIdLUT.at(name)) {
@@ -71,44 +91,44 @@ int32_t getStreamFunc(void* func, std::string name) {
         case PAL_STREAM_PROXY:
         case PAL_STREAM_RAW:
         case PAL_STREAM_VOICE_RECOGNITION:
-            func = (void*)&CreatePCMStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreatePCMStream;
             break;
         case PAL_STREAM_COMPRESSED:
-            func = (void*)&CreateCompressStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateCompressStream;
             break;
         case PAL_STREAM_VOICE_UI:
-            func = (void*)&CreateSoundTriggerStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateSoundTriggerStream;
             break;
         case PAL_STREAM_VOICE_CALL_RECORD:
         case PAL_STREAM_VOICE_CALL_MUSIC:
-            func = (void*)&CreateInCallStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateInCallStream;
             break;
         case PAL_STREAM_NON_TUNNEL:
-            func = (void*)&CreateNonTunnelStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateNonTunnelStream;
             break;
         case PAL_STREAM_ACD:
-            func = (void*)&CreateACDStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateACDStream;
             break;
         case PAL_STREAM_HAPTICS:
-            func = (void*)&CreateHapticsStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateHapticsStream;
             break;
         case PAL_STREAM_CONTEXT_PROXY:
-            func = (void*)&CreateContextProxyStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateContextProxyStream;
             break;
         case PAL_STREAM_ULTRASOUND:
-            func = (void*)&CreateUltraSoundStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateUltraSoundStream;
             break;
         case PAL_STREAM_SENSOR_PCM_DATA:
-            func = (void*)&CreateSensorPCMDataStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateSensorPCMDataStream;
             break;
         case PAL_STREAM_COMMON_PROXY:
-            func = (void*)&CreateCommonProxyStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateCommonProxyStream;
         break;
         case PAL_STREAM_SENSOR_PCM_RENDERER:
-            func = (void*)&CreateSensorRendererStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateSensorRendererStream;
             break;
         case PAL_STREAM_ASR:
-            func = (void*)&CreateASRStream;
+            *reinterpret_cast<StreamCreate*>(func) = &CreateASRStream;
         default:
             PAL_ERR(LOG_TAG, "unsupported stream type %s", name.c_str());
             break;
@@ -117,28 +137,150 @@ int32_t getStreamFunc(void* func, std::string name) {
     return status;
 }
 
-int32_t getSessionFunc(void* func, std::string name) {
+int32_t getSessionFunc(void** func, std::string name) {
     int32_t status = 0;
     switch(usecaseIdLUT.at(name)){
         case PAL_STREAM_COMPRESSED:
-            func = (void*)&CreateCompressSession;
+            *reinterpret_cast<SessionCreate*>(func) = &CreateCompressSession;
             break;
         case PAL_STREAM_VOICE_CALL:
-            func = (void*)&CreateVoiceSession;
+            *reinterpret_cast<SessionCreate*>(func) = &CreateVoiceSession;
             break;
         case PAL_STREAM_NON_TUNNEL:
-            func = (void*)&CreateAgmSession;
+            *reinterpret_cast<SessionCreate*>(func) = &CreateAgmSession;
             break;
          default:
-            func = (void*)&CreatePcmSession;
+            *reinterpret_cast<SessionCreate*>(func) = &CreatePcmSession;
             break;
     }
     return status;
 }
 
-int32_t getDeviceFunc(void* func, std::string name) {
+int32_t getDeviceFunc(void** func, std::string name) {
     int32_t status = 0;
     switch(deviceIdLUT.at(name)){
+        case PAL_DEVICE_NONE:
+            PAL_DBG(LOG_TAG,"device none");
+            *reinterpret_cast<DeviceCreate*>(func) = nullptr;
+            break;
+        case PAL_DEVICE_OUT_HANDSET:
+            PAL_VERBOSE(LOG_TAG, "handset device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHandsetDevice;
+            break;
+        case PAL_DEVICE_OUT_SPEAKER:
+            PAL_VERBOSE(LOG_TAG, "speaker device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerDevice;
+            break;
+        case PAL_DEVICE_IN_VI_FEEDBACK:
+            PAL_VERBOSE(LOG_TAG, "speaker feedback device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerDevice;
+            break;
+        case PAL_DEVICE_IN_CPS_FEEDBACK:
+            PAL_VERBOSE(LOG_TAG, "speaker feedback device CPS");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerDevice;
+            break;
+        case PAL_DEVICE_OUT_WIRED_HEADSET:
+        case PAL_DEVICE_OUT_WIRED_HEADPHONE:
+            PAL_VERBOSE(LOG_TAG, "headphone device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHeadphoneDevice;
+            break;
+        case PAL_DEVICE_OUT_USB_DEVICE:
+        case PAL_DEVICE_OUT_USB_HEADSET:
+        case PAL_DEVICE_IN_USB_DEVICE:
+        case PAL_DEVICE_IN_USB_HEADSET:
+            PAL_VERBOSE(LOG_TAG, "USB device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateUsbDevice;
+            break;
+        case PAL_DEVICE_IN_HANDSET_MIC:
+            PAL_VERBOSE(LOG_TAG, "HandsetMic device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHandsetMicDevice;
+            break;
+        case PAL_DEVICE_IN_SPEAKER_MIC:
+            PAL_VERBOSE(LOG_TAG, "speakerMic device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerMicDevice;
+            break;
+        case PAL_DEVICE_IN_WIRED_HEADSET:
+            PAL_VERBOSE(LOG_TAG, "HeadsetMic device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHeadsetMicDevice;
+            break;
+        case PAL_DEVICE_IN_HANDSET_VA_MIC:
+            PAL_VERBOSE(LOG_TAG, "HandsetVaMic device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHeadsetVaDevice;
+            break;
+        case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
+        case PAL_DEVICE_OUT_BLUETOOTH_SCO:
+            PAL_VERBOSE(LOG_TAG, "BTSCO device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateBtDevice;
+            break;
+        case PAL_DEVICE_IN_BLUETOOTH_A2DP:
+        case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
+        case PAL_DEVICE_IN_BLUETOOTH_BLE:
+        case PAL_DEVICE_OUT_BLUETOOTH_BLE:
+        case PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST:
+            PAL_VERBOSE(LOG_TAG, "BTA2DP device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateBtDevice;
+            break;
+        case PAL_DEVICE_OUT_AUX_DIGITAL:
+        case PAL_DEVICE_OUT_AUX_DIGITAL_1:
+        case PAL_DEVICE_OUT_HDMI:
+            PAL_VERBOSE(LOG_TAG, "Display Port device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateDisplayDevice;
+            break;
+        case PAL_DEVICE_IN_HEADSET_VA_MIC:
+            PAL_VERBOSE(LOG_TAG, "HeadsetVaMic device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHeadsetVaDevice;
+            break;
+        case PAL_DEVICE_OUT_PROXY:
+            PAL_VERBOSE(LOG_TAG, "RTProxyOut device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_OUT_RECORD_PROXY:
+            PAL_VERBOSE(LOG_TAG, "RTProxyOut record device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_OUT_HEARING_AID:
+            PAL_VERBOSE(LOG_TAG, "RTProxy Hearing Aid device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_OUT_HAPTICS_DEVICE:
+            PAL_VERBOSE(LOG_TAG, "Haptics Device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateHapticsDevice;
+            break;
+        case PAL_DEVICE_IN_PROXY:
+            PAL_VERBOSE(LOG_TAG, "RTProxyIn device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_IN_RECORD_PROXY:
+            PAL_VERBOSE(LOG_TAG, "RTProxyIn record device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_IN_TELEPHONY_RX:
+            PAL_VERBOSE(LOG_TAG, "RTProxy Telephony Rx device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateRTProxyDevice;
+            break;
+        case PAL_DEVICE_IN_FM_TUNER:
+            PAL_VERBOSE(LOG_TAG, "FM device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateFmDevice;
+            break;
+        case PAL_DEVICE_IN_ULTRASOUND_MIC:
+        case PAL_DEVICE_OUT_ULTRASOUND:
+        case PAL_DEVICE_OUT_ULTRASOUND_DEDICATED:
+            PAL_VERBOSE(LOG_TAG, "Ultrasound device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateUltrasoundDevice;
+            break;
+        case PAL_DEVICE_IN_EXT_EC_REF:
+            PAL_VERBOSE(LOG_TAG, "ExtEC device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateExtEcDevice;
+            break;
+        case PAL_DEVICE_IN_ECHO_REF:
+            PAL_VERBOSE(LOG_TAG, "Echo ref device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateECRefDevice;
+            break;
+        case PAL_DEVICE_OUT_DUMMY:
+        case PAL_DEVICE_IN_DUMMY:
+            PAL_VERBOSE(LOG_TAG, "Dummy device");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateDummyDevice;
+            break;
          default:
             PAL_ERR(LOG_TAG, "unsupported device type %s", name.c_str());
             status = -EINVAL;
@@ -155,13 +297,13 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
     mPluginManagerMutex.lock();
     switch (type) {
         case PAL_PLUGIN_MANAGER_STREAM:
-            status = getStreamFunc(plugin, keyName);
+            status = getStreamFunc(&plugin, keyName);
             break;
         case PAL_PLUGIN_MANAGER_SESSION:
-            status = getSessionFunc(plugin, keyName);
+            status = getSessionFunc(&plugin, keyName);
             break;
         case PAL_PLUGIN_MANAGER_DEVICE:
-            status = getDeviceFunc(plugin, keyName);
+            status = getDeviceFunc(&plugin, keyName);
             break;
         default:
             PAL_ERR(LOG_TAG, "unsupported Plugin type %d", type);

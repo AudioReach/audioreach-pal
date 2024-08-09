@@ -35,31 +35,19 @@
 #define LOG_TAG "PAL: ResourceManager"
 #include <agm/agm_api.h>
 #include <cutils/properties.h>
+#include <tinyalsa/asoundlib.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <mutex>
 #include <iostream>
 #include <fstream>
 #include <sys/ioctl.h>
+#include <bt_intf.h>
 #include "ResourceManager.h"
 #include "Session.h"
 #include "Device.h"
 #include "Stream.h"
-#include "Headphone.h"
-#include "Bluetooth.h"
-#include "SpeakerMic.h"
-#include "Speaker.h"
-#include "SpeakerProtection.h"
-#include "USBAudio.h"
-#include "HeadsetMic.h"
-#include "HandsetMic.h"
-#include "DisplayPort.h"
-#include "Handset.h"
 #include "SndCardMonitor.h"
-#include "UltrasoundDevice.h"
-#include "ECRefDevice.h"
-#include "HapticsDev.h"
-#include "HapticsDevProtection.h"
 #include "AudioHapticsInterface.h"
 #include "VUIInterfaceProxy.h"
 #include "VoiceUIPlatformInfo.h"
@@ -1856,7 +1844,6 @@ void ResourceManager::deInitContextManager()
 int ResourceManager::init()
 {
     std::shared_ptr<Device> dev = nullptr;
-    std::shared_ptr<HapticsDev> Hapdev = nullptr;
 
     // Initialize Speaker Protection calibration mode
     struct pal_device dattr;
@@ -1873,7 +1860,7 @@ int ResourceManager::init()
 
     // Get the speaker instance and activate speaker protection
     dattr.id = PAL_DEVICE_OUT_SPEAKER;
-    dev = std::dynamic_pointer_cast<Device>(Device::getInstance(&dattr , rm));
+    dev = Device::getInstance(&dattr, rm);
     if (dev) {
         PAL_DBG(LOG_TAG, "Speaker instance created");
     }
@@ -1882,8 +1869,8 @@ int ResourceManager::init()
 
     if (ResourceManager::isHapticsthroughWSA) {
         dattr.id = PAL_DEVICE_OUT_HAPTICS_DEVICE;
-        Hapdev = std::dynamic_pointer_cast<HapticsDev>(Device::getInstance(&dattr , rm));
-        if (Hapdev) {
+        dev = Device::getInstance(&dattr , rm);
+        if (dev) {
             PAL_DBG(LOG_TAG, "HapticsDev instance created");
         }
         else
@@ -2614,6 +2601,8 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
     bool is_wfd_in_progress = false;
     struct pal_stream_attributes tx_attr;
     struct pal_device_info devinfo = {};
+    std::shared_ptr<Device> tempDev = nullptr;
+    struct pal_device tempDevAttr;
 
     if (!deviceattr) {
         PAL_ERR(LOG_TAG, "Invalid deviceattr");
@@ -2676,11 +2665,16 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
         deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_LE;
         deviceattr->config.bit_width = BITWIDTH_24;
     }
-
+    tempDevAttr.id = deviceattr->id;
+    tempDev = Device::getInstance(&tempDevAttr, rm);
+    if (!tempDev) {
+        PAL_ERR(LOG_TAG, "failed to get device instance");
+        return -EINVAL;
+    }
     /*special cases to update attrs for hot plug devices*/
     switch (deviceattr->id) {
         case PAL_DEVICE_IN_WIRED_HEADSET:
-            status = (HeadsetMic::checkAndUpdateSampleRate(&deviceattr->config.sample_rate));
+            status = tempDev->checkAndUpdateSampleRate(&deviceattr->config.sample_rate);
             if (status) {
                 PAL_ERR(LOG_TAG, "failed to update samplerate/bitwidth");
                 status = -EINVAL;
@@ -2688,8 +2682,8 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
             break;
         case PAL_DEVICE_OUT_WIRED_HEADPHONE:
         case PAL_DEVICE_OUT_WIRED_HEADSET:
-            status = (Headphone::checkAndUpdateBitWidth(&deviceattr->config.bit_width) |
-                Headphone::checkAndUpdateSampleRate(&deviceattr->config.sample_rate));
+            status = (tempDev->checkAndUpdateBitWidth(&deviceattr->config.bit_width) |
+                tempDev->checkAndUpdateSampleRate(&deviceattr->config.sample_rate));
             if (status) {
                 PAL_ERR(LOG_TAG, "failed to update samplerate/bitwidth");
                 status = -EINVAL;
@@ -2706,14 +2700,8 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
         case PAL_DEVICE_OUT_BLUETOOTH_SCO:
         case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
             {
-                std::shared_ptr<BtSco> scoDev;
-                scoDev = std::dynamic_pointer_cast<BtSco>(BtSco::getInstance(deviceattr, rm));
-                if (!scoDev) {
-                    PAL_ERR(LOG_TAG, "failed to get BtSco singleton object.");
-                    return -EINVAL;
-                }
                 // update device sample rate based on sco mode
-                scoDev->updateSampleRate(&deviceattr->config.sample_rate);
+                tempDev->checkAndUpdateSampleRate(&deviceattr->config.sample_rate);
                 PAL_DBG(LOG_TAG, "BT SCO device samplerate %d, bitwidth %d",
                       deviceattr->config.sample_rate, deviceattr->config.bit_width);
             }
@@ -2726,13 +2714,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
                     return -EINVAL;
                 }
                 // config.ch_info memory is allocated in selectBestConfig below
-                std::shared_ptr<USB> USB_out_device;
-                USB_out_device = std::dynamic_pointer_cast<USB>(USB::getInstance(deviceattr, rm));
-                if (!USB_out_device) {
-                    PAL_ERR(LOG_TAG, "failed to get USB singleton object.");
-                    return -EINVAL;
-                }
-                status = USB_out_device->selectBestConfig(deviceattr, sAttr, true, &devinfo);
+                status = tempDev->selectBestConfig(deviceattr, sAttr, true, &devinfo);
                 deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
                 if (deviceattr->config.bit_width == BITWIDTH_24) {
                     if (devinfo.bitFormatSupported == PAL_AUDIO_FMT_PCM_S24_LE)
@@ -2749,13 +2731,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
                     PAL_ERR(LOG_TAG, "Invalid parameter.");
                     return -EINVAL;
                 }
-                std::shared_ptr<USB> USB_in_device;
-                USB_in_device = std::dynamic_pointer_cast<USB>(USB::getInstance(deviceattr, rm));
-                if (!USB_in_device) {
-                    PAL_ERR(LOG_TAG, "failed to get USB singleton object.");
-                    return -EINVAL;
-                }
-                USB_in_device->selectBestConfig(deviceattr, sAttr, false, &devinfo);
+                tempDev->selectBestConfig(deviceattr, sAttr, false, &devinfo);
                 /*Update aud_fmt_id based on the selected bitwidth*/
                 deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
                 if (deviceattr->config.bit_width == BITWIDTH_24) {
@@ -2880,14 +2856,6 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
         case PAL_DEVICE_OUT_AUX_DIGITAL_1:
         case PAL_DEVICE_OUT_HDMI:
             {
-                std::shared_ptr<DisplayPort> dp_device;
-                dp_device = std::dynamic_pointer_cast<DisplayPort>
-                                    (DisplayPort::getInstance(deviceattr, rm));
-                if (!dp_device) {
-                    PAL_ERR(LOG_TAG, "Failed to get DisplayPort object.");
-                    return -EINVAL;
-                }
-
                 if (!sAttr) {
                     PAL_ERR(LOG_TAG, "Invalid parameter.");
                     return -EINVAL;
@@ -2898,7 +2866,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
                  * channel then the channel of stream is taken othewise it is of
                  * device
                  */
-                int channels = dp_device->getMaxChannel();
+                int channels =  tempDev->getMaxChannel();
 
                 if (channels > sAttr->out_media_config.ch_info.channels)
                     channels = sAttr->out_media_config.ch_info.channels;
@@ -2915,20 +2883,19 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
                 getChannelMap(&(dev_ch_info.ch_map[0]), channels);
                 deviceattr->config.ch_info = dev_ch_info;
 
-                if (!dp_device->isSupportedSR(NULL,
-                            deviceattr->config.sample_rate)) {
-                    deviceattr->config.sample_rate = dp_device->getHighestSupportedSR();
+                if (!tempDev->isSupportedSR(deviceattr->config.sample_rate)) {
+                    deviceattr->config.sample_rate = tempDev->getHighestSupportedSR();
 
                     if (sAttr->out_media_config.sample_rate < SAMPLINGRATE_32K &&
                         (sAttr->out_media_config.sample_rate % 11025) == 0 &&
-                        dp_device->isSupportedSR(NULL,SAMPLINGRATE_44K)) {
+                        tempDev->isSupportedSR(SAMPLINGRATE_44K)) {
                             deviceattr->config.sample_rate = SAMPLINGRATE_44K;
                     }
                 }
 
-                if (DisplayPort::isBitWidthSupported(
+                if (tempDev->isBitWidthSupported(
                             deviceattr->config.bit_width) != 0) {
-                    int bps = dp_device->getHighestSupportedBps();
+                    int bps = tempDev->getHighestSupportedBps();
                     if (sAttr->out_media_config.bit_width > bps)
                         deviceattr->config.bit_width = bps;
                     else
@@ -10957,7 +10924,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
         break;
         case PAL_PARAM_ID_BT_A2DP_RECONFIG:
         {
-            std::shared_ptr<BtA2dp> a2dp_dev = nullptr;
+            std::shared_ptr<Device> dev = nullptr;
             std::vector <Stream *> activeA2dpStreams;
             struct pal_device dattr;
             pal_param_bta2dp_t *current_param_bt_a2dp = nullptr;
@@ -10967,29 +10934,28 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
 
             if (isDeviceAvailable(PAL_DEVICE_OUT_BLUETOOTH_A2DP)) {
                 dattr.id = PAL_DEVICE_OUT_BLUETOOTH_A2DP;
-                a2dp_dev = std::dynamic_pointer_cast<BtA2dp>
-                                (BtA2dp::getInstance(&dattr, rm));
-                if (!a2dp_dev) {
+                dev = Device::getInstance(&dattr, rm);
+                if (!dev) {
                     PAL_ERR(LOG_TAG, "Device getInstance failed");
                     status = -ENODEV;
                     goto exit;
                 }
 
-                if (a2dp_dev->checkDeviceStatus() == A2DP_STATE_DISCONNECTED) {
+                if (dev->checkDeviceStatus() == A2DP_STATE_DISCONNECTED) {
                     PAL_ERR(LOG_TAG, "failed to open A2dp source, skip a2dp reconfig.");
                     status = -ENODEV;
                     goto exit;
                 }
 
-                getActiveStream_l(activeA2dpStreams, a2dp_dev);
+                getActiveStream_l(activeA2dpStreams, dev);
                 if (activeA2dpStreams.size() == 0) {
                     PAL_DBG(LOG_TAG, "no active a2dp stream available, skip a2dp reconfig.");
                     status = 0;
                     goto exit;
                 }
 
-                a2dp_dev->setDeviceParameter(param_id, param_payload);
-                a2dp_dev->getDeviceParameter(param_id, (void **)&current_param_bt_a2dp);
+                dev->setDeviceParameter(param_id, param_payload);
+                dev->getDeviceParameter(param_id, (void **)&current_param_bt_a2dp);
                 if ((current_param_bt_a2dp->reconfig == true) &&
                     (current_param_bt_a2dp->a2dp_suspended == false)) {
                     mResourceManagerMutex.unlock();
@@ -11010,7 +10976,7 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                     mResourceManagerMutex.lock();
 
                     param_bt_a2dp.reconfig = false;
-                    a2dp_dev->setDeviceParameter(param_id, &param_bt_a2dp);
+                    dev->setDeviceParameter(param_id, &param_bt_a2dp);
                 }
             }
         }

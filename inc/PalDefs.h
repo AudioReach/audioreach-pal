@@ -205,6 +205,11 @@ typedef struct pal_spkr_prot_payload {
     pal_spkr_prot_mode operationMode;/* Type of mode for which request is raised */
 } pal_spkr_prot_payload;
 
+enum {
+    SPKR_RIGHT,    /* Right Speaker */
+    SPKR_LEFT,     /* Left Speaker */
+};
+
 /** Audio parameter data*/
 typedef union {
     struct pal_snd_dec_aac aac_dec;
@@ -394,6 +399,13 @@ typedef enum {
     // Add new IN devices here, increment MAX and MIN below when you do so
     PAL_DEVICE_IN_MAX = PAL_DEVICE_IN_MIN + 28,
 } pal_device_id_t;
+
+enum A2DP_STATE {
+    A2DP_STATE_CONNECTED,
+    A2DP_STATE_STARTED,
+    A2DP_STATE_STOPPED,
+    A2DP_STATE_DISCONNECTED,
+};
 
 typedef enum {
     VOICEMMODE1 = 0x11C05000,
@@ -763,6 +775,7 @@ typedef enum {
     PAL_PARAM_ID_ASR_SET_PARAM = 82,
     PAL_PARAM_ID_ORIENTATION = 83, /**For PAL Refactor*/
     PAL_PARAM_ID_VENDOR_UUID = 84,
+    PAL_PARAM_ID_IS_DEVICE_CONNECTED = 85,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1054,6 +1067,21 @@ struct pal_device {
     struct pal_usb_device_address address;
     char sndDevName[DEVICE_NAME_MAX_SIZE];
     pal_device_custom_config_t custom_config;        /**<  Optional */
+};
+
+enum BeCtrlsIndex {
+    BE_METADATA,
+    BE_MEDIAFMT,
+    BE_SETPARAM,
+    BE_GROUP_ATTR,
+    BE_MAX_NUM_MIXER_CONTROLS,
+};
+
+static const char *beCtrlNames[] = {
+    " metadata",
+    " rate ch fmt",
+    " setParam",
+    " grp config",
 };
 
 #define PAL_SOUND_TRIGGER_MAX_STRING_LEN 64 /* max length of strings in properties or descriptor structs */

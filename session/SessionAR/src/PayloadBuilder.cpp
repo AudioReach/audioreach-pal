@@ -48,7 +48,6 @@
 #include "fluence_ffv_common_calibration.h"
 #include "mspp_module_calibration_api.h"
 #include "tsm_module_api.h"
-#include "USBAudio.h"
 #include "asr_module_calibration_api.h"
 #include "PalMappings.h"
 #include "SessionAR.h"
@@ -64,6 +63,7 @@
 #include "aptx_adaptive_encoder_api.h"
 #include "Stream.h"
 #include "PalCommon.h"
+#include "gsl_intf.h"
 
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
 #define USECASE_XML_FILE "/etc/usecaseKvManager.xml"
@@ -3342,6 +3342,11 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
     struct pal_device dAttr;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
     struct pal_device_info devInfo = {};
+    int usb_ckv_id = 0;
+    pal_param_payload *payload;
+    bool isUSBConnected = false;
+    std::shared_ptr<Device> tempDev = nullptr;
+    struct pal_device tempDevAttr;
 
     PAL_DBG(LOG_TAG,"Enter");
     sattr = new struct pal_stream_attributes;
@@ -3372,6 +3377,8 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
 
         devInfo.isUSBUUIdBasedTuningEnabledFlag = 0;
         rm->getDeviceInfo(dAttr.id, sattr->type, dAttr.custom_config.custom_key, &devInfo);
+        tempDevAttr.id = dAttr.id;
+        tempDev = Device::getInstance(&tempDevAttr, rm);
 
         switch (sattr->type) {
             case PAL_STREAM_VOICE_UI:
@@ -3391,8 +3398,11 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
             case PAL_STREAM_VOIP_RX:
             case PAL_STREAM_VOIP_TX:
                 if ((devInfo.isUSBUUIdBasedTuningEnabledFlag) &&
-                    (USB::isUsbConnected(dAttr.address))) {
-                    keyVector.push_back(std::make_pair(USB_VENDOR_ID, USB::getVendorIdCkv()));
+                    tempDev->isDeviceConnected(dAttr.address)) {
+                    uint32_t *payload;
+                    status = tempDev->getParameter(PAL_PARAM_ID_VENDOR_UUID, (void**)&payload);
+                    usb_ckv_id = (int) *payload;
+                    keyVector.push_back(std::make_pair(USB_VENDOR_ID, usb_ckv_id));
                 }
                 break;
             case PAL_STREAM_LOW_LATENCY:
@@ -3426,8 +3436,11 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
                 }
 
                 if ((devInfo.isUSBUUIdBasedTuningEnabledFlag) &&
-                    (USB::isUsbConnected(dAttr.address))) {
-                    keyVector.push_back(std::make_pair(USB_VENDOR_ID, USB::getVendorIdCkv()));
+                    tempDev->isDeviceConnected(dAttr.address)) {
+                    uint32_t *payload;
+                    status = tempDev->getParameter(PAL_PARAM_ID_VENDOR_UUID, (void**)&payload);
+                    usb_ckv_id = (int) *payload;
+                    keyVector.push_back(std::make_pair(USB_VENDOR_ID, usb_ckv_id));
                 }
                 /* TBD: Push Channels for these types once Channels are added */
                 //keyVector.push_back(std::make_pair(CHANNELS,

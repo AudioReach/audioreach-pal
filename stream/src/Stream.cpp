@@ -37,7 +37,6 @@
 #include "Session.h"
 #include "ResourceManager.h"
 #include "Device.h"
-#include "USBAudio.h"
 #include "mem_logger.h"
 #include "PluginManager.h"
 
@@ -1523,7 +1522,7 @@ exit:
     /* check if USB is not available restore to default device */
     if (dev && status && (dev->getSndDeviceId() == PAL_DEVICE_OUT_USB_HEADSET ||
                    dev->getSndDeviceId() == PAL_DEVICE_IN_USB_HEADSET)) {
-       if (USB::isUsbConnected(dattr->address)) {
+       if (dev->isDeviceConnected(dattr->address)) {
            PAL_ERR(LOG_TAG, "USB still connected, connect failed");
        } else {
            status = -ENOSYS;

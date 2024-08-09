@@ -30,7 +30,7 @@ LOCAL_HEADER_LIBRARIES := \
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
 
     LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
-    LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/args/gsl/api/
+    LOCAL_C_INCLUDES += $(TOP)/system/media/audio/include
 
     LOCAL_HEADER_LIBRARIES += \
         libarpal_headers \
@@ -40,6 +40,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libaudiofeaturestats_headers \
         liblisten_headers \
         libacdb_headers \
+        libagm_headers \
         libaudioroute \
         libarpal_internalheaders \
         libarmemlog_headers \
@@ -62,29 +63,32 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libsession_agm_headers \
         libsession_compress_headers \
         libsession_voice_headers \
-        libsession_pcm_headers
+        libsession_pcm_headers \
+        libdev_bt_headers \
+        libdev_display_headers \
+        libdev_dummy_headers \
+        libdev_ecref_headers \
+        libdev_extec_headers \
+        libdev_fm_headers \
+        libdev_handset_headers \
+        libdev_handsetmic_headers \
+        libdev_handsetva_headers \
+        libdev_haptics_headers \
+        libdev_headphone_headers \
+        libdev_headsetmic_headers \
+        libdev_headsetva_headers \
+        libdev_proxy_headers \
+        libdev_speaker_headers \
+        libdev_speakermic_headers \
+        libdev_ultrasound_headers \
+        libdev_usb_headers
 
-
-    LOCAL_STATIC_LIBRARIES := \
-        libstream_acd \
-        libstream_acdb \
-        libstream_common \
-        libstream_commonproxy \
-        libstream_compress \
-        libstream_contextproxy \
-        libstream_haptics \
-        libstream_incall \
-        libstream_nontunnel \
-        libstream_pcm \
-        libstream_sensorpcmdata \
-        libstream_sensorrenderer \
-        libstream_soundtrigger \
-        libstream_ultrasound \
-        libstream_asr \
-        libsession_ar \
-        libsession_compress \
-        libsession_pcm \
-        libsession_voice
-endif
+    ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
+    LOCAL_SHARED_LIBRARIES += libqti-tinyalsa libqti-tinycompress
+    else
+    LOCAL_C_INCLUDES       += $(TOP)/external/tinycompress/include
+    LOCAL_SHARED_LIBRARIES += libtinyalsa libtinycompress
+    endif
+endif #end of static compilation
 
 include $(BUILD_STATIC_LIBRARY)

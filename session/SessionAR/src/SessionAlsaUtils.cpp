@@ -47,6 +47,7 @@
 #include "apm_api.h"
 #include <tinyalsa/asoundlib.h>
 #include <sound/asound.h>
+#include "gsl_intf.h"
 
 
 static constexpr const char* const COMPRESS_SND_DEV_NAME_PREFIX = "COMPRESS";
@@ -68,13 +69,6 @@ static const char *feCtrlNames[] = {
     " event",
     " setcal",
     " flush"
-};
-
-static const char *beCtrlNames[] = {
-    " metadata",
-    " rate ch fmt",
-    " setParam",
-    " grp config",
 };
 
 struct agmMetaData {
@@ -901,29 +895,6 @@ exit:
     return status;
 }
 
-int SessionAlsaUtils::setDeviceCustomPayload(std::shared_ptr<ResourceManager> rmHandle,
-                                           std::string backEndName, void *payload, size_t size)
-{
-    struct mixer_ctl *ctl = NULL;
-    struct mixer *mixerHandle = NULL;
-    int status = 0;
-
-    status = rmHandle->getVirtualAudioMixer(&mixerHandle);
-    if (status) {
-        PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
-        return status;
-    }
-
-    ctl = SessionAlsaUtils::getBeMixerControl(mixerHandle, backEndName, BE_SETPARAM);
-    if (!ctl) {
-        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", backEndName.c_str(),
-                beCtrlNames[BE_SETPARAM]);
-        return -EINVAL;
-    }
-
-    return mixer_ctl_set_array(ctl, payload, size);
-}
-
 int SessionAlsaUtils::setDeviceMetadata(std::shared_ptr<ResourceManager> rmHandle,
                                            std::string backEndName,
                                            std::vector <std::pair<int, int>> &deviceKV)
@@ -966,87 +937,6 @@ int SessionAlsaUtils::setDeviceMetadata(std::shared_ptr<ResourceManager> rmHandl
     deviceMetaData.buf = nullptr;
 
     return status;
-}
-
-int SessionAlsaUtils::setDeviceMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
-                                           std::string backEndName, struct pal_device *dAttr)
-{
-    struct mixer_ctl *ctl = NULL;
-    long aif_media_config[4];
-    long aif_group_atrr_config[5];
-    struct mixer *mixerHandle = NULL;
-    int status = 0;
-    std::shared_ptr<group_dev_config_t> groupDevConfig;
-    group_dev_config_t currentGroupDevConfig;
-
-    status = rmHandle->getVirtualAudioMixer(&mixerHandle);
-    if (status) {
-        PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
-        return status;
-    }
-
-    aif_media_config[0] = dAttr->config.sample_rate;
-    aif_media_config[1] = dAttr->config.ch_info.channels;
-
-    if (!isPalPCMFormat((uint32_t)dAttr->config.aud_fmt_id)) {
-        /*
-         *Only for configuring the BT A2DP device backend we use
-         *bitwidth instead of aud_fmt_id
-         */
-        aif_media_config[2] = bitsToAlsaFormat(dAttr->config.bit_width);
-        aif_media_config[3] = AGM_DATA_FORMAT_COMPR_OVER_PCM_PACKETIZED;
-    } else {
-        aif_media_config[2] = palToSndDriverFormat((uint32_t)dAttr->config.aud_fmt_id);
-        aif_media_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
-    }
-
-    // if it's virtual port, need to set group attribute as well
-    groupDevConfig = rmHandle->getActiveGroupDevConfig();
-    if (groupDevConfig && (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
-        dAttr->id == PAL_DEVICE_OUT_HANDSET ||
-        dAttr->id == PAL_DEVICE_OUT_ULTRASOUND)) {
-        std::string truncatedBeName = backEndName;
-        // remove "-VIRT-x" which length is 7
-        truncatedBeName.erase(truncatedBeName.end() - 7, truncatedBeName.end());
-        ctl = SessionAlsaUtils::getBeMixerControl(mixerHandle, truncatedBeName , BE_GROUP_ATTR);
-        if (!ctl) {
-        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", truncatedBeName.c_str(),
-                beCtrlNames[BE_GROUP_ATTR]);
-        return -EINVAL;
-        }
-        if (groupDevConfig->grp_dev_hwep_cfg.sample_rate)
-            aif_group_atrr_config[0] = groupDevConfig->grp_dev_hwep_cfg.sample_rate;
-        else
-            aif_group_atrr_config[0] = dAttr->config.sample_rate;
-        if (groupDevConfig->grp_dev_hwep_cfg.channels)
-            aif_group_atrr_config[1] = groupDevConfig->grp_dev_hwep_cfg.channels;
-        else
-            aif_group_atrr_config[1] = dAttr->config.ch_info.channels;
-        aif_group_atrr_config[2] = palToSndDriverFormat(
-                                    groupDevConfig->grp_dev_hwep_cfg.aud_fmt_id);
-        aif_group_atrr_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
-        aif_group_atrr_config[4] = groupDevConfig->grp_dev_hwep_cfg.slot_mask;
-
-        mixer_ctl_set_array(ctl, &aif_group_atrr_config,
-                               sizeof(aif_group_atrr_config)/sizeof(aif_group_atrr_config[0]));
-        PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt slot_mask %ld %ld %ld %ld %ld\n", truncatedBeName.c_str(),
-                aif_group_atrr_config[0], aif_group_atrr_config[1], aif_group_atrr_config[2],
-                aif_group_atrr_config[3], aif_group_atrr_config[4]);
-        rmHandle->setCurrentGroupDevConfig(groupDevConfig, aif_group_atrr_config[0], aif_group_atrr_config[1]);
-    }
-    ctl = SessionAlsaUtils::getBeMixerControl(mixerHandle, backEndName , BE_MEDIAFMT);
-    if (!ctl) {
-        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", backEndName.c_str(),
-                beCtrlNames[BE_MEDIAFMT]);
-        return -EINVAL;
-    }
-
-    PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt %ld %ld %ld %ld\n", backEndName.c_str(),
-                     aif_media_config[0], aif_media_config[1],
-                     aif_media_config[2], aif_media_config[3]);
-
-    return mixer_ctl_set_array(ctl, &aif_media_config,
-                               sizeof(aif_media_config)/sizeof(aif_media_config[0]));
 }
 
 int SessionAlsaUtils::getTimestamp(struct mixer *mixer, const std::vector<int> &DevIds,

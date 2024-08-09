@@ -50,6 +50,7 @@ PluginManager::PluginManager() {
 PluginManager::~PluginManager() {
    deinitStreamPlugins();
    deinitSessionPlugins();
+   deinitDevicePlugins();
 }
 
 void PluginManager::deinitStreamPlugins(){
@@ -60,6 +61,11 @@ void PluginManager::deinitStreamPlugins(){
 
 void PluginManager::deinitSessionPlugins() {
     for (const auto& item : registeredSessions)
+        dlclose(item.handle);
+}
+
+void PluginManager::deinitDevicePlugins() {
+    for (const auto& item : registeredDevices)
         dlclose(item.handle);
 }
 
@@ -138,7 +144,7 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
                                 dlclose(item.handle);
                                 status = -EINVAL;
                                 goto exit;
-                            } 
+                            }
                         } else {
                             PAL_ERR(LOG_TAG, "dlopen failed for lib %s", item.libName.c_str());
                         }

@@ -78,14 +78,6 @@ enum FeCtrlsIndex {
     FE_MAX_NUM_MIXER_CONTROLS,
 };
 
-enum BeCtrlsIndex {
-    BE_METADATA,
-    BE_MEDIAFMT,
-    BE_SETPARAM,
-    BE_GROUP_ATTR,
-    BE_MAX_NUM_MIXER_CONTROLS,
-};
-
 typedef enum {
    SLOT_MASK1  = 1,
    SLOT_MASK3  = 3,
@@ -183,10 +175,6 @@ public:
     static int setDeviceMetadata(std::shared_ptr<ResourceManager> rmHandle,
                                 std::string backEndName,
                                 std::vector <std::pair<int, int>> &deviceKV);
-    static int setDeviceMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
-                            std::string backEndName, struct pal_device *dAttr);
-    static int setDeviceCustomPayload(std::shared_ptr<ResourceManager> rmHandle,
-                           std::string backEndName, void *payload, size_t size);
     static unsigned int bytesToFrames(size_t bufSizeInBytes, unsigned int channels,
                            enum pcm_format format);
     static bool isMmapUsecase(struct pal_stream_attributes &attr);

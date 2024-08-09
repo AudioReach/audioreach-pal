@@ -73,6 +73,7 @@
 #include "PalCommon.h"
 #include "Device.h"
 #include "PalAudioRoute.h"
+#include "PluginManager.h"
 
 #define DEVICE_NAME_MAX_SIZE 128
 #define DUMP_DEV_ATTR 0
@@ -137,6 +138,26 @@ public:
     virtual int32_t getParameter(uint32_t param_id, void **param);
     virtual bool isDeviceReady() { return true;}
     virtual bool isScoNbWbActive() { return false;}
+    virtual int32_t checkAndUpdateSampleRate(uint32_t *sampleRate);
+    virtual int32_t checkAndUpdateBitWidth(uint32_t *bitWidth);
+    virtual int selectBestConfig(struct pal_device *dattr,
+                                   struct pal_stream_attributes *sattr,
+                                   bool is_playback, struct pal_device_info *devinfo);
+    virtual int getMaxChannel();
+    virtual int getHighestSupportedSR();
+    virtual int32_t isBitWidthSupported(uint32_t bitWidth);
+    virtual bool isSupportedSR(int sr);
+    virtual int getHighestSupportedBps();
+    virtual bool isDeviceConnected(struct pal_usb_device_address addr);
+    virtual int32_t checkDeviceStatus();
+    static unsigned int palToSndDriverFormat(uint32_t fmt_id);
+    unsigned int bitsToAlsaFormat(unsigned int bits);
+    struct mixer_ctl *getBeMixerControl(struct mixer *am, std::string beName,
+        uint32_t idx);
+    int setCustomPayload(std::shared_ptr<ResourceManager> rmHandle,
+                            std::string backEndName, void *payload, size_t size);
+    int setMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
+                            std::string backEndName, struct pal_device *dAttr);
     void setSndName (std::string snd_name) { UpdatedSndName = snd_name;}
     void clearSndName () { UpdatedSndName.clear();}
     virtual ~Device();
@@ -154,7 +175,14 @@ public:
     void removeStreamDeviceAttr(Stream* streamHandle);
     int getTopPriorityDeviceAttr(struct pal_device *deviceAttr, uint32_t *streamPrio);
     static int32_t initHdrRoutine(const char *hdr_custom_key);
+
+    static std::shared_ptr<PluginManager> pm;
 };
+
+typedef void (*DeviceCreate)(struct pal_device *device,
+                                const std::shared_ptr<ResourceManager> rm,
+                                pal_device_id_t id, bool createDevice,
+                                std::shared_ptr<Device> *dev);
 
 
 #endif //DEVICE_H

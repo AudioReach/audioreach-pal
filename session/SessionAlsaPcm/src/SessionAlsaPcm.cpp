@@ -213,6 +213,10 @@ int SessionAlsaPcm::open(Stream * s)
         goto exit;
     }
 
+    // Register for Soft pause events
+    if (sAttr.direction == PAL_AUDIO_OUTPUT )
+        registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
+
     // enable dual mono
     if (rm->IsDualMonoEnabled() == true) {
         PAL_INFO(LOG_TAG, "Dual mono feature is on");
@@ -401,8 +405,6 @@ int SessionAlsaPcm::open(Stream * s)
                          status = 0;
                      }
             }
-            // Register for Soft pause events
-            registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
             break;
         case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
             if (sAttr.info.opt_stream_info.loopback_type ==

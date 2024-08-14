@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: dev_dummy
+Description: dev_dummy library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/dev_dummy

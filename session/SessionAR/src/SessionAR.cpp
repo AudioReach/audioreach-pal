@@ -650,7 +650,7 @@ int32_t SessionAR::setInitialVolume() {
             sAttr.type != PAL_STREAM_HAPTICS &&
             sAttr.type != PAL_STREAM_COMMON_PROXY) {
 
-            if (setConfig(streamHandle, CALIBRATION, TAG_STREAM_VOLUME) != 0) {
+            if (setConfig(streamHandle, CALIBRATION, VOLUME_LVL) != 0) {
                 PAL_ERR(LOG_TAG,"Setting volume failed");
             }
         }

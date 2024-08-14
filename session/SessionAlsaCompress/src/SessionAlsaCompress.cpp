@@ -857,6 +857,8 @@ int SessionAlsaCompress::open(Stream * s)
     }
     frontEndIdAllocated = true;
 
+    registerCallBack(handleSessionCallBack, (uint64_t)s);
+
     for (int i = 0; i < compressDevIds.size(); i++) {
         PAL_DBG(LOG_TAG, "dev id size %zu, compressDevIds[%d] %d", compressDevIds.size(), i, compressDevIds[i]);
     }
@@ -920,7 +922,6 @@ int SessionAlsaCompress::open(Stream * s)
             PAL_ERR(LOG_TAG, "Invalid direction");
             break;
     }
-    registerCallBack(handleSessionCallBack, (uint64_t)s);
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;

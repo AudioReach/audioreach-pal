@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: stream_ultrasound
+Description: stream_ultrasound library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/stream_ultrasound

@@ -1,0 +1,1 @@
+SUBDIRS = StreamSoundTrigger StreamPCM StreamNonTunnel StreamInCall StreamHaptic StreamCompress StreamCommon StreamASR StreamACDB StreamACD

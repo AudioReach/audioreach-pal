@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: plugin_manager
+Description: plugin_manager library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/plugin_manager

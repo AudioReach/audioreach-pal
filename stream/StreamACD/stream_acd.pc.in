@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: stream_acd
+Description: stream_acd library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/stream_acd

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: stream_pcm
+Description: stream_pcm library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/stream_pcm

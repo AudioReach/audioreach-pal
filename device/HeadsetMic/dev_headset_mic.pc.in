@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: dev_headset_mic
+Description: dev_headset_mic library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/dev_headset_mic

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: customva_intf
+Description: customva_intf library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/customva_intf

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: stream_soundtrigger
+Description: stream_soundtrigger library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/stream_soundtrigger

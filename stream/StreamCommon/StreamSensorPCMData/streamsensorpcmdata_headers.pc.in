@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: streamsensorpcmdata_headers
+Description: streamsensorpcmdata_headers library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/streamsensorpcmdata_headers

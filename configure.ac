@@ -61,14 +61,21 @@ AM_CONDITIONAL([IS_SDXLEMUR], [test x$IS_SDXLEMUR_TARGET = xtrue])
 AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 
 # Checks for libraries
-PKG_CHECK_MODULES([AGM], [agm])
-AC_SUBST([AGM_CFLAGS])
+AC_ARG_WITH([spf],
+      AC_HELP_STRING([--with-spf],
+         [enable spf, Build against spf. Use this when building for HLOS systems which use spf]))
+SPF_CFLAGS=
+AS_IF([test "x$with_spf" != "xno"], [SPF_CFLAGS="-I$with_spf"])
+AC_SUBST(SPF_CFLAGS)
 
-PKG_CHECK_MODULES([SPF], [spf])
-AC_SUBST([SPF_CFLAGS])
+AC_ARG_WITH([acdbdata],
+      AC_HELP_STRING([--with-acdbdata],
+         [enable acdbdata, Build against acdbdata. Use this when building for HLOS systems which use acdbdata]))
 
-PKG_CHECK_MODULES([MMHEADERS], [mm-audio-headers])
-AC_SUBST([MMHEADERS_CFLAGS])
+ACDBDATA_CFLAGS=
+AS_IF([test "x$with_acdbdata" != "xno"], [ACDBDATA_CFLAGS="-I$with_acdbdata"])
+
+AC_SUBST(ACDBDATA_CFLAGS)
 
 AC_ARG_WITH([compress],
     AS_HELP_STRING([compile compress (default is no)]),
@@ -76,5 +83,96 @@ AC_ARG_WITH([compress],
     [with_compress=no])
 AM_CONDITIONAL([COMPILE_COMPRESS], [test "x${with_compress}" = "xyes"])
 
-AC_CONFIG_FILES([ Makefile pal.pc ])
+AC_CONFIG_FILES([ Makefile \
+pal.pc \
+stream/Makefile \
+session/Makefile \
+device/Makefile \
+stream/StreamSoundTrigger/Makefile \
+stream/StreamSoundTrigger/stream_soundtrigger.pc \
+stream/StreamPCM/Makefile \
+stream/StreamPCM/stream_pcm.pc \
+stream/StreamNonTunnel/Makefile \
+stream/StreamNonTunnel/stream_nontunnel.pc \
+stream/StreamInCall/Makefile \
+stream/StreamInCall/stream_incall.pc \
+stream/StreamHaptic/Makefile \
+stream/StreamHaptic/stream_haptics.pc \
+stream/StreamCompress/Makefile \
+stream/StreamCompress/stream_compress.pc \
+stream/StreamCommon/Makefile \
+stream/StreamCommon/stream_common.pc \
+stream/StreamCommon/StreamUltrasSound/Makefile \
+stream/StreamCommon/StreamUltrasSound/stream_ultrasound.pc \
+stream/StreamCommon/StreamSensorRenderer/Makefile \
+stream/StreamCommon/StreamSensorRenderer/stream_sensorrenderer.pc \
+stream/StreamCommon/StreamSensorPCMData/Makefile \
+stream/StreamCommon/StreamSensorPCMData/streamsensorpcmdata_headers.pc \
+stream/StreamCommon/StreamContextProxy/Makefile \
+stream/StreamCommon/StreamContextProxy/stream_contextproxy.pc \
+stream/StreamCommon/StreamCommonProxy/Makefile \
+stream/StreamCommon/StreamCommonProxy/stream_commonproxy.pc \
+stream/StreamASR/Makefile \
+stream/StreamASR/stream_asr.pc \
+stream/StreamACDB/Makefile \
+stream/StreamACDB/stream_acdb.pc \
+stream/StreamACD/Makefile \
+stream/StreamACD/stream_acd.pc \
+session/SessionAlsaPcm/Makefile \
+session/SessionAlsaPcm/session_pcm.pc \
+session/SessionAlsaVoice/Makefile \
+session/SessionAlsaVoice/session_voice.pc \
+session/SessionAlsaCompress/Makefile \
+session/SessionAlsaCompress/session_compress.pc \
+session/SessionAR/Makefile \
+session/SessionAR/session_ar.pc \
+session/SessionAgm/Makefile \
+session/SessionAgm/session_agm.pc \
+device/USBAudio/Makefile \
+device/USBAudio/dev_usb.pc \
+device/UltrasoundDevice/Makefile \
+device/UltrasoundDevice/dev_ultrasound.pc \
+device/SpeakerMic/Makefile \
+device/SpeakerMic/dev_speaker_mic.pc \
+device/Speaker/Makefile \
+device/Speaker/dev_speaker.pc \
+device/HeadsetVaMic/Makefile \
+device/HeadsetVaMic/dev_headset_va.pc \
+device/HeadsetMic/Makefile \
+device/HeadsetMic/dev_headset_mic.pc \
+device/Headphone/Makefile \
+device/Headphone/dev_headphone.pc \
+device/HapticsDev/Makefile \
+device/HapticsDev/dev_haptics.pc \
+device/HandsetVaMic/Makefile \
+device/HandsetVaMic/dev_handset_va.pc \
+device/HandsetMic/Makefile \
+device/HandsetMic/dev_handset_mic.pc \
+device/Handset/Makefile \
+device/Handset/dev_handset.pc \
+device/FMDevice/Makefile \
+device/FMDevice/dev_fm.pc \
+device/ExtEC/Makefile \
+device/ExtEC/dev_ext_ec.pc \
+device/ECRefDevice/Makefile \
+device/ECRefDevice/dev_ec_ref.pc \
+device/DummyDev/Makefile \
+device/DummyDev/dev_dummy.pc \
+device/DisplayPort/Makefile \
+device/DisplayPort/dev_display.pc \
+device/Bluetooth/Makefile \
+device/Bluetooth/dev_bt.pc \
+device/RTProxy/Makefile \
+device/RTProxy/dev_proxy.pc \
+plugins/Makefile plugins/plugins.pc \
+plugins/PluginManager/Makefile \
+plugins/PluginManager/plugin_manager.pc \
+plugins/hotword_intf/Makefile \
+plugins/hotword_intf/hotword_intf.pc \
+plugins/customva_intf/Makefile \
+plugins/customva_intf/customva_intf.pc \
+plugins/codecs/Makefile \
+plugins/codecs/codecs.pc \
+plugins/vui_interface/Makefile \
+plugins/vui_interface/vui_interface.pc ])
 AC_OUTPUT

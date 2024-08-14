@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: session_voice
+Description: session_voice library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/session_voice

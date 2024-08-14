@@ -266,8 +266,7 @@ int32_t  StreamPCM::close()
          * hence stop A2DP/BLE/Speaker device to match device start&stop count.
          */
         for (int32_t i=0; i < mDevices.size(); i++) {
-            if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
+            if (((rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())) ||
                  (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
                 status = mDevices[i]->stop();
                 if (0 != status) {

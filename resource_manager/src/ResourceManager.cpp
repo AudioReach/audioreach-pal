@@ -5476,6 +5476,7 @@ void ResourceManager::HandleConcurrencyForSoundTriggerStreams(pal_stream_type_t 
     bool do_st_stream_switch = false;
     bool use_lpi_temp = use_lpi_;
     bool st_stream_conc_en = true;
+    bool notify_resources_available = false;
 
     mActiveStreamMutex.lock();
     PAL_DBG(LOG_TAG, "Enter, stream type %d, direction %d, active %d", type, dir, active);
@@ -5499,6 +5500,9 @@ void ResourceManager::HandleConcurrencyForSoundTriggerStreams(pal_stream_type_t 
                            &st_stream_rx_conc, &st_stream_tx_conc, &st_stream_conc_en);
 
         if (!st_stream_conc_en) {
+            if (st_stream_type == PAL_STREAM_VOICE_UI &&
+                concurrencyDisableCount == 1 && !active)
+                notify_resources_available = true;
             HandleStreamPauseResume(st_stream_type, active);
             continue;
         }
@@ -5561,7 +5565,7 @@ void ResourceManager::HandleConcurrencyForSoundTriggerStreams(pal_stream_type_t 
      * The usecases using ST framework register the onResourcesAvailable callback.
      * Notify the framework upon concurrency is inactive.
      */
-    if (onResourceAvailCb && !st_stream_conc_en && !active) {
+    if (onResourceAvailCb && notify_resources_available) {
         onResourceAvailCb(onResourceAvailCookie);
     }
 

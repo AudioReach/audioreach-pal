@@ -1136,7 +1136,7 @@ public:
     adm_deregister_stream_t getAdmDeregisterStreamFn();
     std::shared_ptr<group_dev_config_t> getActiveGroupDevConfig();
     group_dev_config_t getCurrentGroupDevConfig();
-
+    void reconfigureScoStreams();
 };
 
 #endif

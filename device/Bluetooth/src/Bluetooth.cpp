@@ -72,7 +72,7 @@ extern "C" void CreateBtDevice(struct pal_device *device,
             case PAL_DEVICE_OUT_BLUETOOTH_SCO:
                 *dev = BtSco::getInstance(device, rm);
         }
-    } else if (id != NULL) {
+    } else if ((void*)id != NULL) {
         switch (id) {
             case PAL_DEVICE_IN_BLUETOOTH_A2DP:
             case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
@@ -1227,7 +1227,11 @@ BtA2dp::BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
     param_bt_a2dp.reconfig_supported = isA2dpOffloadSupported;
     param_bt_a2dp.latency = 0;
     codecLatency = 0;
+#ifdef FEATURE_IPQ_OPENWRT
+    a2dpLatencyMode = AUDIO_LATENCY_NORMAL;
+#else
     a2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
+#endif
 
     if (isA2dpOffloadSupported) {
         init();
@@ -1735,7 +1739,11 @@ int BtA2dp::stopPlayback()
             isConfigured = false;
         }
         a2dpState = A2DP_STATE_STOPPED;
-        a2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
+#ifdef FEATURE_IPQ_OPENWRT
+    a2dpLatencyMode = AUDIO_LATENCY_NORMAL;
+#else
+    a2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
+#endif
         codecInfo = NULL;
         param_bt_a2dp.latency = 0;
         codecLatency = 0;

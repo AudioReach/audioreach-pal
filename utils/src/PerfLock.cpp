@@ -12,12 +12,20 @@
 
 PerfLock::PerfLock(const std::string &caller) : mCaller(caller) {
     static bool isInit = init();
+#ifdef FEATURE_IPQ_OPENWRT
+    std::lock_guard<std::mutex> lock(sMutex);
+#else
     std::scoped_lock lock (sMutex);
+#endif
     acquire_l();
 }
 
 PerfLock::~PerfLock() {
+#ifdef FEATURE_IPQ_OPENWRT
+    std::lock_guard<std::mutex> lock(sMutex);
+#else
     std::scoped_lock lock (sMutex);
+#endif
     release_l();
 }
 

@@ -58,7 +58,7 @@ extern "C" void CreateRTProxyDevice(struct pal_device *device,
             case PAL_DEVICE_IN_TELEPHONY_RX:
                 *dev = RTProxyIn::getInstance(device, rm);
         }
-    } else if (id != NULL) {
+    } else if ((void *)id != NULL) {
         switch (id) {
             case PAL_DEVICE_OUT_PROXY:
             case PAL_DEVICE_OUT_RECORD_PROXY:

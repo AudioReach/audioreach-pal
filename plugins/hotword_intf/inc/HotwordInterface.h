@@ -9,6 +9,9 @@
 #include "VoiceUIInterface.h"
 #include "detection_cmn_api.h"
 #include "ar_osal_mem_op.h"
+#ifdef FEATURE_IPQ_OPENWRT
+#include <stdexcept>
+#endif
 
 class HotwordInterface: public VoiceUIInterface {
   public:

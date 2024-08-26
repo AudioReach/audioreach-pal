@@ -50,10 +50,11 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include <sstream>
 #include <string>
 #include <agm/agm_api.h>
-#include "audio_route/audio_route.h"
 #include <cutils/properties.h>
 #ifdef FEATURE_IPQ_OPENWRT
 #include "audio_route.h"
+#include <stdarg.h>
+#include <err.h>
 #else
 #include "audio_route/audio_route.h"
 #endif

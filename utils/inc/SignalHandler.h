@@ -63,9 +63,15 @@ struct SignalHandler {
     static std::shared_ptr<SignalHandler> getInstance();
     static void setClientCallback(std::function<void(int, pid_t, uid_t)> cb);
     static void asyncRegister(int signal);
+#ifndef FEATURE_IPQ_OPENWRT
     static void invokeDefaultHandler(std::shared_ptr<struct sigaction> sAct,
                               int code, struct siginfo *si, void *sc);
     static void customSignalHandler(int code, struct siginfo *si, void *sc);
+#else
+    static void invokeDefaultHandler(std::shared_ptr<struct sigaction> sAct,
+                              int code, siginfo_t *si, void *sc);
+    static void customSignalHandler(int code, siginfo_t *si, void *sc);
+#endif
     static std::vector<int> getRegisteredSignals();
     void registerSignalHandler(std::vector<int> signalsToRegister);
     static void setBuildDebuggable(bool debuggable) { sBuildDebuggable = debuggable;}

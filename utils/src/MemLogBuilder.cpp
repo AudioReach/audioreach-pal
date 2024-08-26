@@ -5,7 +5,15 @@
 
 #include "MemLogBuilder.h"
 #include "Device.h"
+#ifdef FEATURE_IPQ_OPENWRT
+#include <binder/IPCThreadState.h>
+#include <binder/ProcessState.h>
+#include <binder/IServiceManager.h>
+#include <mutex>
+using namespace android;
+#else
 #include <hwbinder/IPCThreadState.h>
+#endif
 
 #define LOG_TAG "PAL: memLoggerBuilder"
 
@@ -119,7 +127,11 @@ void kpiEnqueue(const char name[], bool isEnter)
     struct kpi_queue que;
 
     strlcpy(que.func_name, name, sizeof(que.func_name));
+#ifdef FEATURE_IPQ_OPENWRT
+    que.pid = IPCThreadState::self()->getCallingPid();
+#else
     que.pid = ::android::hardware::IPCThreadState::self()->getCallingPid();
+#endif
     que.timestamp = memLoggerFetchTimestamp();
     que.type = isEnter;
 

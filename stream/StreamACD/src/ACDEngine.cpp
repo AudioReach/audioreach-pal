@@ -643,7 +643,7 @@ void ACDEngine::AddEventInfoForStream(StreamACD *s, struct acd_recognition_cfg *
             context_info->threshold = context_cfg[i].threshold;
             context_info->step_size = context_cfg[i].step_size;
             stream_ctx_data->insert(std::make_pair(s, context_info));
-#ifndef LINUX_ENABLED
+#if !defined(LINUX_ENABLED) || !defined(FEATURE_IPQ_OPENWRT)
             contextinfo_stream_map_.insert(std::make_pair(context_cfg[i].context_id,
                 stream_ctx_data));
 #else
@@ -673,7 +673,8 @@ void ACDEngine::AddEventInfoForStream(StreamACD *s, struct acd_recognition_cfg *
 
             context_info->threshold = context_cfg[i].threshold;
             context_info->step_size = context_cfg[i].step_size;
-#ifndef LINUX_ENABLED
+
+#if !defined(LINUX_ENABLED) || !defined(FEATURE_IPQ_OPENWRT)
             cumulative_contextinfo_map_.insert(std::make_pair(context_cfg[i].context_id,
                 context_info));
 #else
@@ -764,7 +765,7 @@ void ACDEngine::UpdateEventInfoForStream(StreamACD *s, struct acd_recognition_cf
             context_info->threshold = context_cfg[i].threshold;
             context_info->step_size = context_cfg[i].step_size;
             stream_ctx_data->insert(std::make_pair(s, context_info));
-#ifndef LINUX_ENABLED
+#if !defined(LINUX_ENABLED) || !defined(FEATURE_IPQ_OPENWRT)
             contextinfo_stream_map_.insert(std::make_pair(context_cfg[i].context_id,
                 stream_ctx_data));
 #else
@@ -823,7 +824,7 @@ void ACDEngine::UpdateEventInfoForStream(StreamACD *s, struct acd_recognition_cf
 
                 context_info->threshold = context_cfg[i].threshold;
                 context_info->step_size = context_cfg[i].step_size;
-#ifndef LINUX_ENABLED
+#if !defined(LINUX_ENABLED) || !defined(FEATURE_IPQ_OPENWRT)
                 cumulative_contextinfo_map_.insert(std::make_pair(context_cfg[i].context_id,
                     context_info));
 #else

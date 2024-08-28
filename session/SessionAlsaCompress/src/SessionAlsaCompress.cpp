@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -668,6 +668,11 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
                     event_id = PAL_STREAM_CBK_EVENT_WRITE_READY;
                     compressObj->command = OFFLOAD_CMD_EXIT;
                 }
+                if (ret && (errno == -ECANCELED || errno == -ENETRESET)) {
+                    PAL_INFO(LOG_TAG, "No need of sending callback during SSR or internal unblock");
+                    lock.lock();
+                    continue;
+                }
             } else if (msg && msg->cmd == OFFLOAD_CMD_DRAIN) {
                 if (!is_drain_called) {
                     PAL_INFO(LOG_TAG, "calling compress_drain");
@@ -677,8 +682,8 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
                          PAL_INFO(LOG_TAG, "out of compress_drain, ret %d", ret);
                     }
                 }
-                if (ret == -ENETRESET) {
-                    PAL_ERR(LOG_TAG, "Block drain ready event during SSR");
+                if (ret && (errno == -ECANCELED || errno == -ENETRESET)) {
+                    PAL_INFO(LOG_TAG, "No need of sending callback during SSR or internal unblock");
                     lock.lock();
                     continue;
                 }
@@ -704,8 +709,8 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
                         event_id = PAL_STREAM_CBK_EVENT_DRAIN_READY;
                     }
                 }
-                if (ret == -ENETRESET) {
-                    PAL_ERR(LOG_TAG, "Block drain ready event during SSR");
+                if (ret && (errno == -ECANCELED || errno == -ENETRESET)) {
+                    PAL_INFO(LOG_TAG, "No need of sending callback during SSR or internal unblock");
                     lock.lock();
                     continue;
                 }

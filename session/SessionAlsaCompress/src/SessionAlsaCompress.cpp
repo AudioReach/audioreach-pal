@@ -421,7 +421,10 @@ void SessionAlsaCompress::updateCodecOptions(
         PAL_DBG(LOG_TAG, "capture compress format %x", audio_fmt);
         pal_snd_enc = (pal_snd_enc_t *)param_payload->payload;
         switch (audio_fmt) {
-            case PAL_AUDIO_FMT_AAC: {
+            case PAL_AUDIO_FMT_AAC:
+            case PAL_AUDIO_FMT_AAC_ADTS:
+            case PAL_AUDIO_FMT_AAC_ADIF:
+            case PAL_AUDIO_FMT_AAC_LATM: {
                 codec.format = pal_snd_enc->aac_enc.enc_cfg.aac_fmt_flag;
                 codec.profile = pal_snd_enc->aac_enc.enc_cfg.aac_enc_mode;
                 codec.bit_rate = pal_snd_enc->aac_enc.aac_bit_rate;

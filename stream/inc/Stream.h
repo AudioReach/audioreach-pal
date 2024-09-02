@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -252,6 +252,9 @@ public:
     int waitStreamSmph();
     bool checkStreamMatch(pal_device_id_t pal_device_id,
                                 pal_stream_type_t pal_stream_type);
+    bool checkStreamMatch(pal_device_id_t pal_device_id,
+                                pal_stream_type_t pal_stream_type,
+                                char *address);
     bool isStreamSSRDownFeasibile();
     stream_state_t getCurState() { return currentState; }
     virtual bool isActive() { return currentState == STREAM_STARTED; }

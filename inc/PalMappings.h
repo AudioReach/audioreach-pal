@@ -242,6 +242,8 @@ const std::map<std::string, uint32_t> usecaseIdLUT {
     {std::string{ "PAL_STREAM_HPCM" },                     PAL_STREAM_HPCM},
     {std::string{ "PAL_STREAM_DUMMY" },                    PAL_STREAM_DUMMY},
     {std::string{ "PAL_STREAM_CALL_TRANSLATION" },         PAL_STREAM_CALL_TRANSLATION},
+    {std::string{ "PAL_STREAM_PLAYBACK_BUS" },             PAL_STREAM_PLAYBACK_BUS},
+    {std::string{ "PAL_STREAM_CAPTURE_BUS" },              PAL_STREAM_CAPTURE_BUS},
 };
 
 /* Update the reverse mapping as well when new stream is added */
@@ -280,6 +282,8 @@ const std::map<uint32_t, std::string> streamNameLUT {
     {PAL_STREAM_HPCM,               std::string{ "PAL_STREAM_HPCM" } },
     {PAL_STREAM_DUMMY,              std::string{ "PAL_STREAM_DUMMY" } },
     {PAL_STREAM_CALL_TRANSLATION,   std::string{ "PAL_STREAM_CALL_TRANSLATION" } },
+    {PAL_STREAM_PLAYBACK_BUS,       std::string{ "PAL_STREAM_PLAYBACK_BUS" } },
+    {PAL_STREAM_CAPTURE_BUS,        std::string{ "PAL_STREAM_CAPTURE_BUS" } },
 };
 
 const std::map<uint32_t, std::string> vsidLUT {

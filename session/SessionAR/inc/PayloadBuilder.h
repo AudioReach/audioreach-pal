@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -118,6 +118,7 @@ typedef enum {
     CUSTOM_CONFIG_SEL,
     HOSTLESS_SEL,
     SIDETONE_MODE_SEL,
+    STREAM_ADDRESS_SEL,
 } selector_type_t;
 
 const std::map<std::string, selector_type_t> selectorstypeLUT {
@@ -137,6 +138,7 @@ const std::map<std::string, selector_type_t> selectorstypeLUT {
     {std::string{ "CustomConfig" },          CUSTOM_CONFIG_SEL},
     {std::string{ "Hostless" },              HOSTLESS_SEL},
     {std::string{ "SidetoneMode" },          SIDETONE_MODE_SEL},
+    {std::string{ "StreamAddress" },         STREAM_ADDRESS_SEL},
 };
 
 struct kvPairs {

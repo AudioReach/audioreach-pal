@@ -1704,7 +1704,7 @@ typedef struct custom_payload_uc_info_s {
     uint32_t sample_rate;              /**< sample rate of the stream to apply the payload param */
     uint32_t instance_id;              /**< instance id of the stream */
     bool streamless;                   /**< set to true to create a dummy stream to send command directly to framework */
-    char* address ;                    /**< Bus address */
+    char* address;                    /**< address */
 
 }custom_payload_uc_info_t;
 

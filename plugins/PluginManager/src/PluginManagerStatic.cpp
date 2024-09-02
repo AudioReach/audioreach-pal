@@ -86,6 +86,8 @@ int32_t getStreamFunc(void** func, std::string name) {
         case PAL_STREAM_LOOPBACK:
         case PAL_STREAM_ULTRA_LOW_LATENCY:
         case PAL_STREAM_PROXY:
+        case PAL_STREAM_PLAYBACK_BUS:
+        case PAL_STREAM_CAPTURE_BUS:
         case PAL_STREAM_RAW:
         case PAL_STREAM_VOICE_RECOGNITION:
             *reinterpret_cast<StreamCreate*>(func) = &CreatePCMStream;

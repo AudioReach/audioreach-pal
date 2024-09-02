@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1709,6 +1709,49 @@ bool Stream::checkStreamMatch(pal_device_id_t pal_device_id,
     return match;
 }
 
+bool Stream::checkStreamMatch(pal_device_id_t pal_device_id,
+                              pal_stream_type_t pal_stream_type,
+                              char *address)
+{
+    int status = 0;
+    struct pal_device dAttr;
+    bool match = false;
+
+    if (!mStreamAttr) {
+        PAL_ERR(LOG_TAG, "stream attribute is null");
+        return false;
+    }
+
+    if (pal_stream_type == mStreamAttr->type ||
+        pal_stream_type == PAL_STREAM_GENERIC)
+        match = true;
+    else
+        return false;
+
+    if (strncmp(address, mStreamAttr->address, strlen(address)) == 0)
+        match = true;
+    else
+        return false;
+
+    //device
+    for (int i = 0; i < mDevices.size(); i++) {
+        status = mDevices[i]->getDeviceAttributes(&dAttr);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "getDeviceAttributes Failed \n");
+            return false;
+        }
+        if (pal_device_id == dAttr.id || pal_device_id == PAL_DEVICE_NONE) {
+            match = true;
+            // as long as one device matches, it is enough.
+            break;
+        }
+        else
+            match = false;
+    }
+
+    return match;
+}
+
 bool Stream::checkStreamMatch(Stream *ref) {
     int32_t status = 0;
     bool is_match = false;
@@ -1735,7 +1778,6 @@ bool Stream::checkStreamMatch(Stream *ref) {
 exit:
     return is_match;
 }
-
 
 int Stream::initStreamSmph()
 {

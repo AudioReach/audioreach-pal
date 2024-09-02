@@ -379,6 +379,8 @@ const std::map<uint32_t, uint32_t> streamPriorityLUT {
     {PAL_STREAM_SPATIAL_AUDIO,      3},
     {PAL_STREAM_SENSOR_PCM_RENDERER,4},
     {PAL_STREAM_CALL_TRANSLATION,   2},
+    {PAL_STREAM_PLAYBACK_BUS,       3},
+    {PAL_STREAM_CAPTURE_BUS,        3},
 };
 
 const std::map<std::string, sidetone_mode_t> sidetoneModetoId {
@@ -7105,7 +7107,16 @@ int ResourceManager::getCustomParam(custom_payload_uc_info_t* uc_info,
     } else {
         lockActiveStream();
         for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end(); sIter++) {
-            match = (*sIter)->checkStreamMatch(uc_info->pal_device_id, uc_info->pal_stream_type);
+            if (((uc_info->pal_stream_type == PAL_STREAM_PLAYBACK_BUS) ||
+                 (uc_info->pal_stream_type == PAL_STREAM_CAPTURE_BUS)) &&
+                 (uc_info->address)){
+                match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
+                                                   uc_info->pal_stream_type,
+                                                   uc_info->address);
+            } else {
+                match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
+                                                   uc_info->pal_stream_type);
+            }
             if (match) {
                 if (increaseStreamUserCounter(*sIter) < 0)
                     continue;
@@ -7423,7 +7434,8 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                         ((sAttr.type == PAL_STREAM_LOW_LATENCY) ||
                         (sAttr.type == PAL_STREAM_DEEP_BUFFER) ||
                         (sAttr.type == PAL_STREAM_COMPRESSED) ||
-                        (sAttr.type == PAL_STREAM_PCM_OFFLOAD))) {
+                        (sAttr.type == PAL_STREAM_PCM_OFFLOAD) ||
+                        (sAttr.type == PAL_STREAM_PLAYBACK_BUS))) {
                         stream->setGainLevel(gain_lvl_cal->level);
                         stream->getAssociatedSession(&session);
                         status = session->setParameters(stream, param_id, nullptr);
@@ -7604,8 +7616,16 @@ int ResourceManager::setCustomParam(custom_payload_uc_info_t* uc_info,
         for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end();
                 sIter++) {
             if ((*sIter) != NULL) {
-                match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
-                                                uc_info->pal_stream_type);
+                if (((uc_info->pal_stream_type == PAL_STREAM_PLAYBACK_BUS) ||
+                     (uc_info->pal_stream_type == PAL_STREAM_CAPTURE_BUS)) &&
+                     (uc_info->address)){
+                    match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
+                                                       uc_info->pal_stream_type,
+                                                       uc_info->address);
+                } else {
+                    match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
+                                                       uc_info->pal_stream_type);
+                }
                 if (match) {
                     if (increaseStreamUserCounter(*sIter) < 0)
                         continue;
@@ -7771,7 +7791,8 @@ int ResourceManager::handleDeviceRotationChange (pal_param_device_rotation_t
                     (PAL_STREAM_COMPRESSED == streamType) ||
                     (PAL_STREAM_PCM_OFFLOAD == streamType) ||
                     (PAL_STREAM_ULTRA_LOW_LATENCY == streamType) ||
-                    (PAL_STREAM_LOW_LATENCY == streamType)) {
+                    (PAL_STREAM_LOW_LATENCY == streamType) ||
+                    (PAL_STREAM_PLAYBACK_BUS == streamType)) {
 
                     PAL_INFO(LOG_TAG, "Rotation for stream %d", streamType);
                     // Need to set the rotation now.
@@ -8163,6 +8184,7 @@ done:
         default: {
             status = str->getInstanceId();
             if (StrAttr.direction == PAL_AUDIO_INPUT && !status) {
+                PAL_DBG(LOG_TAG, "Did not find instance id %d for input stream", status);
                 if (in_stream_instances[StrAttr.type - 1] ==  -1) {
                     PAL_ERR(LOG_TAG, "All stream instances taken");
                     status = -EINVAL;
@@ -8175,6 +8197,13 @@ done:
                         break;
                     }
                 str->setInstanceId(status);
+            } else if (StrAttr.direction == PAL_AUDIO_INPUT && status) {
+                PAL_DBG(LOG_TAG, "Found instance id %d for input stream", status);
+                for (i = 0; i < MAX_STREAM_INSTANCES; ++i)
+                    if (!(in_stream_instances[StrAttr.type - 1] & (1 << (status - 1)))) {
+                        in_stream_instances[StrAttr.type - 1] |= (1 << (status - 1));
+                        break;
+                    }
             } else if (!status) {
                 if (stream_instances[StrAttr.type - 1] ==  -1) {
                     PAL_ERR(LOG_TAG, "All stream instances taken");

@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -2837,6 +2837,19 @@ std::vector<std::pair<selector_type_t, std::string>> PayloadBuilder::getSelector
                         dAttr->custom_config.custom_key);
                 }
                 break;
+            case STREAM_ADDRESS_SEL:
+                PAL_INFO(LOG_TAG, "STREAM_ADDRESS_SEL, sttr.type=%d\n", sattr->type);
+                if (sattr->type == PAL_STREAM_LOOPBACK) {
+                    PAL_INFO(LOG_TAG, "hfp loopback stream, skip stream_address_sel");
+                    break;
+                }
+                if (sattr && sattr->address && strlen(sattr->address)) {
+                    filled_selector_pairs.push_back(
+                        std::make_pair(STREAM_ADDRESS_SEL,
+                            sattr->address));
+                    PAL_INFO(LOG_TAG, "BUS address:%s", sattr->address);
+                }
+                break;
             default:
                 PAL_DBG(LOG_TAG, "Selector type %d not handled", selector_type);
                 break;
@@ -3355,6 +3368,7 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
             case PAL_STREAM_SPATIAL_AUDIO:
             case PAL_STREAM_PCM_OFFLOAD:
             case PAL_STREAM_COMPRESSED:
+            case PAL_STREAM_PLAYBACK_BUS:
                 if (dAttr.id == PAL_DEVICE_OUT_SPEAKER) {
                     PAL_INFO(LOG_TAG,"SpeakerProt Status[%d], RAS Status[%d]\n",
                             rm->IsSpeakerProtectionEnabled(), rm->IsRasEnabled());

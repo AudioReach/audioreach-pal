@@ -927,6 +927,54 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
                 PAL_INFO(LOG_TAG, "Orientation setConfig failed.");
             }
             break;
+        case PAL_PARAM_ID_DTMF_GEN_TONE_CFG:
+        {
+            pal_param_dtmf_gen_tone_cfg_t *dtmf_payload;
+            uint8_t* paramData = NULL;
+            size_t paramSize = 0;
+            uint32_t miid = 0;
+            int dev = 0;
+            struct mixer_ctl *mixer_ctl = NULL;
+            const char *control = "setParam";
+            param_payload = (pal_param_payload *)payload;
+            if (param_payload->payload_size > sizeof(pal_param_dtmf_gen_tone_cfg_t)) {
+                PAL_ERR(LOG_TAG, "Invalid payload size %d", param_payload->payload_size);
+                status = -EINVAL;
+                break;
+            }
+            dtmf_payload = ((pal_param_dtmf_gen_tone_cfg_t *)param_payload->payload);
+            if (dtmf_payload->dir == PAL_AUDIO_OUTPUT) {
+                if (!rxAifBackEnds.empty()) { /** search in RX GKV */
+                    mixer_ctl = getFEMixerCtl(control, &dev, PAL_AUDIO_OUTPUT);
+                    if (!mixer_ctl) {
+                        PAL_ERR(LOG_TAG, "Invalid mixer control\n");
+                        status = -ENOENT;
+                        break;
+                    }
+                }
+
+                status = SessionAlsaUtils::getModuleInstanceId(mixer, dev,
+                                   rxAifBackEnds[0].second.data(), DTMF_GENERATOR, &miid);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                    break;
+                }
+                builder->payloadDTMFGenConfig(&paramData, &paramSize, miid, dtmf_payload);
+                if (paramSize) {
+                    status = SessionAlsaUtils::setMixerParameter(mixer, dev,
+                                                    paramData, paramSize);
+                    if (status != 0) {
+                        PAL_ERR(LOG_TAG,"setMixerParameter failed");
+                        break;
+                    }
+                } else {
+                    PAL_ERR(LOG_TAG,"payloadDTMFGenConfig failed");
+                }
+            } else {
+                status = -EINVAL;
+            }
+            break;
+        }
         default:
             status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
             break;

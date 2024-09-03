@@ -271,6 +271,8 @@ public:
                           uint32_t miid, pal_param_playback_rate *playbackRate);
     void payloadDAMPortConfig(uint8_t** payload, size_t* size,
                           uint32_t miid, uint8_t numChannel);
+    void payloadDTMFGenConfig(uint8_t **payload, size_t *size, uint32_t moduleId,
+                    pal_param_dtmf_gen_tone_cfg_t *dtmf_payload);
 
     int populateStreamKV(Stream* s, std::vector <std::pair<int,int>> &keyVector);
     int populateStreamKV(Stream* s, std::vector <std::pair<int,int>> &keyVectorRx,

@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -55,7 +55,7 @@ void eventCallback(uint32_t session_id, struct agm_event_cb_params *event_params
 {
     struct pal_stream_attributes sAttr;
     SessionAgm *sessAgm = NULL;
-    uint32_t event_id = 0;
+    uint32_t event_id = PAL_STREAM_CBK_MAX;
     void *event_data = NULL;
     uint32_t event_size = 0;
     struct pal_event_read_write_done_payload *rw_done_payload = NULL;
@@ -138,12 +138,15 @@ void eventCallback(uint32_t session_id, struct agm_event_cb_params *event_params
             event_id = PAL_STREAM_CBK_EVENT_PARTIAL_DRAIN_READY;
 
         event_data = NULL;
+    } else if (event_params->event_id == AGM_EVENT_EARLY_EOS_INTERNAL) {
+        /* As it is internal event sent by AGM, don't call sessionCb */
+        goto done;
     }
 
-    if (sessAgm->sessionCb) {
+    if (sessAgm->sessionCb && event_id !=  PAL_STREAM_CBK_MAX) {
         sessAgm->sessionCb(sessAgm->cbCookie, event_id, event_data, event_size);
     } else {
-       PAL_INFO(LOG_TAG, "no session cb registerd");
+       PAL_INFO(LOG_TAG, "no session cb registerd or event not valid");
     }
 
     if (rw_done_payload && rw_done_payload->buff.ts)

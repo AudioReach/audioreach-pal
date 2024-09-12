@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -469,9 +469,10 @@ typedef enum {
     PAL_STREAM_CBK_EVENT_WRITE_READY, /* non blocking write completed */
     PAL_STREAM_CBK_EVENT_DRAIN_READY,  /* drain completed */
     PAL_STREAM_CBK_EVENT_PARTIAL_DRAIN_READY, /* partial drain completed */
-    PAL_STREAM_CBK_EVENT_READ_DONE, /* stream hit some error, let AF take action */
+    PAL_STREAM_CBK_EVENT_READ_DONE, /* non blocking read completed */
     PAL_STREAM_CBK_EVENT_ERROR, /* stream hit some error, let AF take action */
     PAL_STREAM_CBK_EVENT_DTMF_DETECTION, /* DTMF got detected in the stream */
+    PAL_STREAM_CBK_MAX = 0xFFFF,
 } pal_stream_callback_event_t;
 
 /* type of global callback events. */

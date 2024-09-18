@@ -202,20 +202,28 @@ int32_t pal_register_for_events(pal_audio_event_callback cb_event) {
     if (rm->getActiveStream(streams, NULL) == 0) {
         for (int i = 0; i < streams.size(); i++) {
             stream = static_cast<Stream *>(streams[i]);
-            stream->getPalDevices(palDevices);
+            stream->getAssociatedDevices(palDevices);
             stream->getStreamAttributes(&sAttr);
             config.streamAttributes = sAttr;
             if(!palDevices.empty()) {
                 config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+                if (!config.currentDevices) {
+                    PAL_ERR(LOG_TAG, "Memory alloc failed");
+                    return -ENOMEM;
+                }
                 int currentDeviceNumber = 0;
                 for (auto &dev : palDevices) {
                     config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
                     currentDeviceNumber++;
                 }
+                config.noOfCurrentDevices = currentDeviceNumber;
+                palDevices.clear();
             }
             rm->callback_event(&config, PAL_NOTIFY_START, true);
-            if (config.currentDevices)
+            if (config.currentDevices) {
                 free(config.currentDevices);
+            config.currentDevices = NULL;
+            }
         }
     }
     PAL_DBG(LOG_TAG, "Exit");
@@ -401,7 +409,7 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     rm->unlockActiveStream();
 
     s->getStreamAttributes(&sAttr);
-    s->getPalDevices(palDevices);
+    s->getAssociatedDevices(palDevices);
     if (sAttr.type == PAL_STREAM_VOICE_UI)
         rm->handleDeferredSwitch();
 
@@ -423,6 +431,7 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
             config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
         }
         if (!config.currentDevices) {
+            status = -ENOMEM;
             PAL_ERR(LOG_TAG, "Memory alloc failed");
             goto exit;
         }
@@ -432,8 +441,10 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
         }
         config.noOfCurrentDevices = currentDeviceNumber;
         rm->callback_event(&config, PAL_NOTIFY_START, false);
-        if (config.currentDevices)
+        if (config.currentDevices) {
             free(config.currentDevices);
+            config.currentDevices = NULL;
+        }
     }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
@@ -482,7 +493,7 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
     }
     rm->unlockActiveStream();
     s->getStreamAttributes(&sAttr);
-    s->getPalDevices(palDevices);
+    s->getAssociatedDevices(palDevices);
     s->setCachedState(STREAM_STOPPED);
     status = s->stop();
 
@@ -500,6 +511,7 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
         if(!palDevices.empty())
             config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
         if (!config.currentDevices) {
+            status = -ENOMEM;
             PAL_ERR(LOG_TAG, "Memory alloc failed");
             goto exit;
         }
@@ -510,8 +522,10 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
         config.noOfCurrentDevices = currentDeviceNumber;
         config.streamAttributes = sAttr;
         rm->callback_event(&config, PAL_NOTIFY_STOP, false);
-        if (config.currentDevices)
+        if (config.currentDevices) {
             free(config.currentDevices);
+            config.currentDevices = NULL;
+        }
     }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
@@ -1235,6 +1249,7 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
             int32_t prevDeviceNumber = 0;
             config.prevDevices = (pal_device_id_t *) calloc(aDevices.size(), sizeof(pal_device_id_t));
             if (!config.prevDevices) {
+                status = -ENOMEM;
                 PAL_ERR(LOG_TAG, "Memory alloc failed");
                 goto exit;
             }
@@ -1247,9 +1262,12 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
             config.noOfPrevDevices = prevDeviceNumber;
             config.currentDevices = (pal_device_id_t *) calloc(no_of_devices, sizeof(pal_device_id_t));
             if (!config.currentDevices) {
+                status = -ENOMEM;
                 PAL_ERR(LOG_TAG, "Memory alloc failed");
-                if (config.prevDevices)
+                if (config.prevDevices) {
                     free(config.prevDevices);
+                    config.prevDevices = NULL;
+                }
                 goto exit;
             }
             for (int currentDeviceNumber = 0; currentDeviceNumber < no_of_devices; currentDeviceNumber++) {
@@ -1257,10 +1275,14 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
             }
             config.noOfCurrentDevices = no_of_devices;
             rm->callback_event(&config, PAL_NOTIFY_DEVICESWITCH, false);
-            if (config.prevDevices)
+            if (config.prevDevices) {
                 free(config.prevDevices);
-            if (config.currentDevices)
+                config.prevDevices = NULL;
+            }
+            if (config.currentDevices) {
                 free(config.currentDevices);
+                config.currentDevices = NULL;
+            }
         }
     }
 

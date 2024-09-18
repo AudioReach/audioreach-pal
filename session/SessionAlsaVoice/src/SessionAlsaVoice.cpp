@@ -66,7 +66,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
             ((val) * ((max) - (min)) * 0.01 + (min) + .5)
 
 #define NUM_OF_CAL_KEYS 3
-#define MAX_RETRY 3
+#define MAX_RETRY 1
 #define POP_SUPPRESSOR_RAMP_DELAY (1*1000)
 
 static uint32_t retries = 0;
@@ -954,12 +954,14 @@ int SessionAlsaVoice::start(Stream * s)
         pcmRx = pcm_open(rm->getVirtualSndCard(), pcmDevRxIds.at(0), PCM_OUT, &config);
         if (!pcmRx) {
             PAL_ERR(LOG_TAG, "Exit pcm-rx open failed");
+            ssr_trigger_enable = true;
             status = -EINVAL;
             goto err_pcm_open;
         }
 
         if (!pcm_is_ready(pcmRx)) {
             PAL_ERR(LOG_TAG, "Exit pcm-rx open not ready");
+            ssr_trigger_enable = true;
             status = -EINVAL;
             goto err_pcm_open;
         }
@@ -978,12 +980,14 @@ int SessionAlsaVoice::start(Stream * s)
         pcmTx = pcm_open(rm->getVirtualSndCard(), pcmDevTxIds.at(0), PCM_IN, &config);
         if (!pcmTx) {
             PAL_ERR(LOG_TAG, "Exit pcm-tx open failed");
+            ssr_trigger_enable = true;
             status = -EINVAL;
             goto err_pcm_open;
         }
 
         if (!pcm_is_ready(pcmTx)) {
             PAL_ERR(LOG_TAG, "Exit pcm-tx open not ready");
+            ssr_trigger_enable = true;
             status = -EINVAL;
             goto err_pcm_open;
         }
@@ -1136,17 +1140,19 @@ err_pcm_open:
         pcm_close(pcmTx);
         pcmTx = NULL;
     }
-    retries++;
-    if (retries >= MAX_RETRY) {
-        if (status)
-            rm->voteSleepMonitor(s, false);
-        PAL_ERR(LOG_TAG,"graph open failure reach to max allowed value");
-        if (property_set("vendor.audio.ssr.trigger", "1")) {
-            PAL_ERR(LOG_TAG, "set property failed");
+    if (ssr_trigger_enable) {
+        retries++;
+        if (retries >= MAX_RETRY) {
+            if (status)
+                rm->voteSleepMonitor(s, false);
+            PAL_ERR(LOG_TAG,"graph open failure reach to max allowed value");
+            if (property_set("vendor.audio.ssr.trigger", "1")) {
+                PAL_ERR(LOG_TAG, "set property failed");
+            }
+            status = 0;
+            retries = 0;
         }
-        status = 0;
-        retries = 0;
-     }
+    }
 
     mState = SESSION_STARTED;
 

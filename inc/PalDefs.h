@@ -594,8 +594,10 @@ struct pal_stream_attributes {
 };
 
 typedef struct pal_callback_config {
-    int32_t noOfPrevDevices, noOfCurrentDevices;
-    pal_device_id_t *prevDevices, *currentDevices;
+    int32_t noOfPrevDevices;
+    int32_t noOfCurrentDevices;
+    pal_device_id_t *prevDevices;
+    pal_device_id_t *currentDevices;
     struct pal_stream_attributes streamAttributes;
 } pal_callback_config_t;
 

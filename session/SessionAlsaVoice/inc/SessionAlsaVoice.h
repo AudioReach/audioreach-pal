@@ -35,7 +35,7 @@
 
 /*
 Changes from Qualcomm Innovation Center are provided under the following license:
-Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -77,6 +77,7 @@ private:
     pal_device_mute_t dev_mute = {};
     int sideTone_cnt = 0;
     sessionState mState;
+    bool ssr_trigger_enable = false;
 
 public:
 

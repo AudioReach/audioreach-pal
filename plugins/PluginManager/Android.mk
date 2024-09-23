@@ -50,7 +50,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libarpal_internalheaders \
         libarmemlog_headers \
         libstream_acd_headers \
-        libstream_acdb_headers \
+        libstream_dummy_headers \
         libstream_common_headers \
         libstream_commonproxy_headers \
         libstream_compress_headers \

@@ -3,14 +3,14 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE := libstream_acdb
+LOCAL_MODULE := libstream_dummy
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_SRC_FILES := \
-    src/StreamACDB.cpp
+    src/StreamDummy.cpp
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/inc

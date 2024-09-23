@@ -85,6 +85,7 @@ private:
     bool RegisterForEvents = false;
     struct pal_param_haptics_cnfg_t *hpCnfg;
     bool isMixerEventCbRegd;
+    int getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info, size_t *size __unused, uint8_t *payload);
 public:
 
     SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm);
@@ -131,7 +132,6 @@ public:
     void requestAdmFocus(Stream *s, long ns);
     void releaseAdmFocus(Stream *s);
     void setEventPayload(uint32_t event_id, void *payload, size_t payload_size);
-    int getTagsWithModuleInfo(Stream *s, size_t *size __unused, uint8_t *payload);
     void retryOpenWithoutEC(Stream *s, unsigned int pcm_flags, struct pcm_config *config);
     int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
             us_tone_renderer_ep_media_format_status_t event);
@@ -143,6 +143,10 @@ public:
     int getEventId() { return eventId; };
     bool IsSilenceEventRegistered() { return silenceEventRegistered; };
     void setSilenceEventRegistered(bool newState) { silenceEventRegistered = newState; };
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s) override;
+    int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) override;
 };
 
 #endif //SESSION_ALSAPCM_H

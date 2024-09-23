@@ -496,6 +496,10 @@ private:
     int checkandEnableECForRXStream_l(std::shared_ptr<Device> rx_dev, Stream *rx_stream, bool ec_enable);
     int checkandEnableEC_l(std::shared_ptr<Device> d, Stream *s, bool enable);
     bool checkDeviceSwitchForHaptics(struct pal_device *inDevAttr, struct pal_device *curDevAttr);
+    int rwParameterDummyStream(custom_payload_uc_info_t* uc_info,
+                        char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                        void* param_payload, size_t* payload_size, bool isWrite);
+    uint64_t onResourceAvailCookie;
 
     static bool isQmpEnabled;
     static bool mixerClosed;
@@ -759,20 +763,16 @@ public:
 
     int setParameter(uint32_t param_id, void *param_payload,
                      size_t payload_size);
-    int setParameter(uint32_t param_id, void *param_payload,
-                     size_t payload_size, pal_device_id_t pal_device_id,
-                     pal_stream_type_t pal_stream_type);
+    int setCustomParam(custom_payload_uc_info_t* uc_info,
+                     char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                     void* param_payload, size_t payload_size);
     int setSessionParamConfig(uint32_t param_id, Stream *stream, bool enable);
     int handleChargerEvent(Stream *stream, bool enable);
-    int rwParameterACDB(uint32_t param_id, void *param_payload,
-                     size_t payload_size, pal_device_id_t pal_device_id,
-                     pal_stream_type_t pal_stream_type, uint32_t sample_rate,
-                     uint32_t instance_id, bool is_param_write, bool is_play);
     int getParameter(uint32_t param_id, void **param_payload,
                      size_t *payload_size, void *query = nullptr);
-    int getParameter(uint32_t param_id, void *param_payload,
-                     size_t payload_size, pal_device_id_t pal_device_id,
-                     pal_stream_type_t pal_stream_type);
+    int getCustomParam(custom_payload_uc_info_t* uc_info,
+                           char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                           void* param_payload, size_t* payload_size);
     int getVirtualSndCard();
     int getHwSndCard();
     int getPcmDeviceId(int deviceId);

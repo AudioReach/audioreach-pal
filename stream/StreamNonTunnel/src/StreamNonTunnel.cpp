@@ -429,22 +429,6 @@ int32_t  StreamNonTunnel::registerCallBack(pal_stream_callback cb, uint64_t cook
     return 0;  return 0;
 }
 
-int32_t StreamNonTunnel::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
-{
-    int32_t status = 0;
-
-    if (*size > 0 && !payload)
-    {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "wrong params");
-        goto exit;
-    }
-
-    status = (session)->getTagsWithModuleInfo(this, size, payload);
-exit:
-    return status;
-}
-
 int32_t  StreamNonTunnel::getCallBack(pal_stream_callback * /*cb*/)
 {
     return 0;

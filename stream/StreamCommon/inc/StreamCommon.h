@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -87,10 +87,9 @@ public:
     int32_t GetMmapPosition(struct pal_mmap_position *position __unused) override {return 0;}
     int32_t start_device();
     int32_t startSession();
-    int32_t getTagsWithModuleInfo(size_t *size, uint8_t *payload);
-    int32_t isBitWidthSupported(uint32_t bitWidth) override {return 0;};
-    int32_t isSampleRateSupported(uint32_t sampleRate) override {return 0;};
-    int32_t isChannelSupported(uint32_t numChannels) override {return 0;};
+    int32_t isSampleRateSupported(uint32_t sampleRate __unused) override {return 0;}
+    int32_t isChannelSupported(uint32_t numChannels __unused) override {return 0;}
+    int32_t isBitWidthSupported(uint32_t bitWidth __unused) override {return 0;}
 };
 
 #endif//STREAMCOMMON_H_

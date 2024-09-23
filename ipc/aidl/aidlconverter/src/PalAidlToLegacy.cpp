@@ -121,4 +121,14 @@ void AidlToLegacy::convertPalSessionTime(const PalSessionTime &aildSessTime,
     palSessTime->timestamp.value_lsw = aildSessTime.timestamp.valLsw;
     palSessTime->timestamp.value_msw = aildSessTime.timestamp.valMsw;
 }
+
+void AidlToLegacy::convertPalCustomPayloadInfo(const PalCustomPayloadInfo &aildCPInfo,
+                                               custom_payload_uc_info_t *palSessCPInfo){
+    palSessCPInfo->pal_stream_type = (pal_stream_type_t)aildCPInfo.streamType;
+    palSessCPInfo->pal_device_id= (pal_device_id_t)aildCPInfo.deviceId;
+    palSessCPInfo->sample_rate= aildCPInfo.sample_rate;
+    palSessCPInfo->instance_id= aildCPInfo.instanceId;
+    palSessCPInfo->streamless= aildCPInfo.streamless;
+}
+
 }

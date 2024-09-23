@@ -26,8 +26,8 @@
 #include "StreamSensorPCMData.h"
 #include "StreamSensorRenderer.h"
 #include "StreamUltraSound.h"
-#include "StreamACDB.h"
 #include "StreamASR.h"
+#include "StreamDummy.h"
 /*include all sessions*/
 #include "SessionAgm.h"
 #include "SessionAlsaCompress.h"
@@ -73,10 +73,6 @@ int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t typ
 int32_t getStreamFunc(void** func, std::string name) {
     int32_t status = 0;
 
-    if( name =="PAL_USE_ACDB_STREAM"){
-         *reinterpret_cast<StreamACDBCreate*>(func) = &CreateACDBStream;
-         goto exit;
-    }
     switch (usecaseIdLUT.at(name)) {
         case PAL_STREAM_LOW_LATENCY:
         case PAL_STREAM_DEEP_BUFFER:
@@ -129,6 +125,10 @@ int32_t getStreamFunc(void** func, std::string name) {
             break;
         case PAL_STREAM_ASR:
             *reinterpret_cast<StreamCreate*>(func) = &CreateASRStream;
+            break;
+        case PAL_STREAM_DUMMY:
+             *reinterpret_cast<StreamCreate*>(func) = &CreateDummyStream;
+            break;
         default:
             PAL_ERR(LOG_TAG, "unsupported stream type %s", name.c_str());
             break;

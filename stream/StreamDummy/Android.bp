@@ -1,6 +1,6 @@
 cc_library_headers {
 
-    name: "libstream_acdb_headers",
+    name: "libstream_dummy_headers",
     export_include_dirs: ["inc"],
     vendor: true,
 

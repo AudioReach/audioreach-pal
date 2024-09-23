@@ -16,6 +16,7 @@
 #include <aidl/vendor/qti/hardware/pal/PalSessionTime.h>
 #include <aidl/vendor/qti/hardware/pal/PalStreamAttributes.h>
 #include <aidl/vendor/qti/hardware/pal/PalVolumeData.h>
+#include <aidl/vendor/qti/hardware/pal/PalCustomPayloadInfo.h>
 
 namespace aidl::vendor::qti::hardware::pal {
 
@@ -46,5 +47,8 @@ struct AidlToLegacy {
 
     static void convertPalSessionTime(const PalSessionTime &aildSessTime,
                                       struct pal_session_time *palSessTime);
+
+    static void convertPalCustomPayloadInfo(const PalCustomPayloadInfo &aildCPInfo,
+                                            custom_payload_uc_info_t *palSessCPInfo);
 };
 }

@@ -2859,20 +2859,20 @@ bool SessionAlsaPcm::isActive()
     return mState == SESSION_STARTED;
 }
 
-int SessionAlsaPcm::getTagsWithModuleInfo(Stream *s, size_t *size __unused, uint8_t *payload)
+int SessionAlsaPcm::getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info,
+                                          size_t *size __unused, uint8_t *payload)
 {
     int status = 0;
     struct pal_stream_attributes sAttr = {};
     int DeviceId;
 
     PAL_DBG(LOG_TAG, "Enter");
-    status = s->getStreamAttributes(&sAttr);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+    if (!uc_info) {
+        PAL_ERR(LOG_TAG, "invalid info \n");
         return status;
     }
 
-    if(sAttr.type == PAL_STREAM_ULTRASOUND) {
+    if(uc_info->pal_stream_type == PAL_STREAM_ULTRASOUND) {
         if (pcmDevTxIds.size() > 0) {
             DeviceId = pcmDevTxIds.at(0);
         } else {
@@ -3482,6 +3482,32 @@ int SessionAlsaPcm::getEventPayload(void** evtPld, size_t* size)
         *evtPld = eventPayload;
         if (size)
             *size = eventPayloadSize;
+    }
+    return status;
+}
+
+int32_t SessionAlsaPcm::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s) {
+    int status = -EINVAL;
+    if(param_str == PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO) {
+        status = getTagsWithModuleInfo(uc_info, payload_size, (uint8_t*)param_payload);
+    } else {
+        status = SessionAR::getCustomParam(uc_info, param_str, param_payload, payload_size, s);
+    }
+    return status;
+}
+
+int32_t SessionAlsaPcm::setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) {
+    int status = -EINVAL;
+
+    if(param_str == PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG) {
+                 status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
+                                                              param_payload,
+                                                              payload_size);
+                 PAL_INFO(LOG_TAG, "mixer set module config status=%d\n", status);
+    } else {
+        status = SessionAR::setCustomParam(uc_info, param_str, param_payload, payload_size, s);
     }
     return status;
 }

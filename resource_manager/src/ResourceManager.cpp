@@ -7309,41 +7309,34 @@ exit:
 }
 
 
-int ResourceManager::getParameter(uint32_t param_id, void *param_payload,
-                                  size_t payload_size __unused,
-                                  pal_device_id_t pal_device_id,
-                                  pal_stream_type_t pal_stream_type)
+int ResourceManager::getCustomParam(custom_payload_uc_info_t* uc_info,
+                                        char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                        void* param_payload, size_t* payload_size)
 {
     int status = -EINVAL;
+    bool match = false;
+    std::list<Stream*>::iterator sIter;
 
-    PAL_DBG(LOG_TAG, "param_id=%d", param_id);
-    switch (param_id) {
-        case PAL_PARAM_ID_UIEFFECT:
-        {
-            bool match = false;
-            std::list<Stream*>::iterator sIter;
-            lockActiveStream();
-            for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end(); sIter++) {
-                match = (*sIter)->checkStreamMatch(pal_device_id, pal_stream_type);
-                if (match) {
-                    if (increaseStreamUserCounter(*sIter) < 0)
-                        continue;
-                    unlockActiveStream();
-                    status = (*sIter)->getEffectParameters(param_payload);
-                    lockActiveStream();
-                    decreaseStreamUserCounter(*sIter);
-                    break;
-                }
+    PAL_DBG(LOG_TAG, "param_id=%s", param_str);
+
+    if(uc_info->streamless) {
+        status = rwParameterDummyStream(uc_info,param_str, param_payload, payload_size, false);
+    } else {
+        lockActiveStream();
+        for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end(); sIter++) {
+            match = (*sIter)->checkStreamMatch(uc_info->pal_device_id, uc_info->pal_stream_type);
+            if (match) {
+                if (increaseStreamUserCounter(*sIter) < 0)
+                    continue;
+                unlockActiveStream();
+                status = (*sIter)->getCustomParam(uc_info, std::string(param_str),param_payload, payload_size);
+                lockActiveStream();
+                decreaseStreamUserCounter(*sIter);
+                break;
             }
-            unlockActiveStream();
-            break;
         }
-        default:
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "Unknown ParamID:%d", param_id);
-            break;
+        unlockActiveStream();
     }
-
     return status;
 }
 
@@ -7761,147 +7754,122 @@ exit_no_unlock:
 }
 
 
-int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
-                                  size_t payload_size __unused,
-                                  pal_device_id_t pal_device_id,
-                                  pal_stream_type_t pal_stream_type)
+int ResourceManager::setCustomParam(custom_payload_uc_info_t* uc_info,
+                                    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                    void* param_payload, size_t payload_size)
 {
     int status = -EINVAL;
+    bool match = false;
+    PAL_DBG(LOG_TAG, "Enter param: %s", param_str);
 
-    PAL_DBG(LOG_TAG, "Enter param id: %d", param_id);
-
-    switch (param_id) {
-        case PAL_PARAM_ID_UIEFFECT:
-        {
-            bool match = false;
-            lockActiveStream();
-            std::list<Stream*>::iterator sIter;
-            for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end();
-                    sIter++) {
-                if ((*sIter) != NULL) {
-                    match = (*sIter)->checkStreamMatch(pal_device_id,
-                                                       pal_stream_type);
-                    if (match) {
-                        if (increaseStreamUserCounter(*sIter) < 0)
-                            continue;
-                        unlockActiveStream();
-                        status = (*sIter)->setEffectParameters(param_payload);
-                        lockActiveStream();
-                        decreaseStreamUserCounter(*sIter);
-                        if (status) {
-                            PAL_ERR(LOG_TAG, "failed to set param for pal_device_id=%x stream_type=%x",
-                                   pal_device_id, pal_stream_type);
-                        }
+    if(uc_info->streamless){
+        status = rwParameterDummyStream(uc_info,param_str, param_payload, &payload_size, true);
+    } else {
+        lockActiveStream();
+        std::list<Stream*>::iterator sIter;
+        for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end();
+                sIter++) {
+            if ((*sIter) != NULL) {
+                match = (*sIter)->checkStreamMatch(uc_info->pal_device_id,
+                                                uc_info->pal_stream_type);
+                if (match) {
+                    if (increaseStreamUserCounter(*sIter) < 0)
+                        continue;
+                    unlockActiveStream();
+                    status = (*sIter)->setCustomParam(uc_info, std::string(param_str),
+                                                    param_payload, payload_size);
+                    lockActiveStream();
+                    decreaseStreamUserCounter(*sIter);
+                    if (status) {
+                        PAL_ERR(LOG_TAG, "failed to set param for pal_device_id=%x stream_type=%x",
+                            uc_info->pal_device_id, uc_info->pal_stream_type);
                     }
-                } else {
-                    PAL_ERR(LOG_TAG, "There is no active stream.");
                 }
+            } else {
+                PAL_ERR(LOG_TAG, "There is no active stream.");
             }
-            unlockActiveStream();
         }
-        break;
-        default:
-            PAL_ERR(LOG_TAG, "Unknown ParamID:%d", param_id);
-            break;
+        unlockActiveStream();
     }
 
     PAL_DBG(LOG_TAG, "Exit status: %d",status);
     return status;
 }
 
-
-int ResourceManager::rwParameterACDB(uint32_t paramId, void *paramPayload,
-                 size_t payloadSize  __unused, pal_device_id_t palDeviceId,
-                 pal_stream_type_t palStreamType, uint32_t sampleRate,
-                 uint32_t instanceId, bool isParamWrite, bool isPlay)
+int ResourceManager::rwParameterDummyStream(custom_payload_uc_info_t* uc_info,
+                        char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                        void* param_payload, size_t* payload_size, bool isWrite)
 {
     int status = -EINVAL;
     Stream *s = NULL;
     struct pal_stream_attributes sattr;
     struct pal_device dattr;
-    bool match = false;
-    uint32_t matchCount = 0;
-    std::list<Stream*>::iterator sIter;
     static std::shared_ptr<PluginManager> pm;
     void* plugin = nullptr;
-    StreamACDBCreate streamACDB = nullptr;
+    StreamDummyCreate streamDummy = nullptr;
     Session *session = nullptr;
 
-    PAL_DBG(LOG_TAG, "Enter: device=%d type=%d rate=%d instance=%d is_param_write=%d\n",
-            palDeviceId, palStreamType, sampleRate,
-            instanceId, isParamWrite);
+    PAL_DBG(LOG_TAG, "Enter: device=%d type=%d rate=%d instance=%d dir=%d is_param_write=%d\n",
+            uc_info->pal_device_id, uc_info->pal_stream_type, uc_info->sample_rate,
+            uc_info->instance_id, isWrite);
 
-    switch (paramId) {
-        case PAL_PARAM_ID_UIEFFECT:
-        {
-            /*
-             * set default stream type (low latency) for device-only effect.
-             * the instance is shared by streams.
-             */
-            if (palStreamType == PAL_STREAM_GENERIC) {
-                palStreamType = PAL_STREAM_LOW_LATENCY;
-                PAL_INFO(LOG_TAG, "change PAL stream from %d to %d for device effect",
-                            PAL_STREAM_GENERIC, palStreamType);
-            }
-
-            /*
-             * set default device (speaker) for stream-only effect.
-             * the instance is shared by devices.
-             */
-            if (palDeviceId == PAL_DEVICE_NONE) {
-                if (isPlay)
-                    palDeviceId = PAL_DEVICE_OUT_SPEAKER;
-                else
-                    palDeviceId = PAL_DEVICE_IN_HANDSET_MIC;
-
-                PAL_INFO(LOG_TAG, "change PAL device id from %d to %d for stream effect",
-                            PAL_DEVICE_NONE, palDeviceId);
-            }
-
-            sattr.type = palStreamType;
-            sattr.out_media_config.sample_rate = sampleRate;
-            sattr.direction = PAL_AUDIO_OUTPUT;
-            dattr.id = palDeviceId;
-
-            try {
-                pm = PluginManager::getInstance();
-                if(!pm){
-                    PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
-                    goto error;
-                }
-                status = pm->openPlugin(PAL_PLUGIN_MANAGER_STREAM, "PAL_USE_ACDB_STREAM", plugin);
-                if (plugin && !status) {
-                    streamACDB = reinterpret_cast<StreamACDBCreate>(plugin);
-                    s = streamACDB(&sattr,
-                                   &dattr,
-                                   instanceId,
-                                   getInstance());
-                } else {
-                    PAL_ERR(LOG_TAG, "unable to get plugin for ACDB Stream");
-                }
-            }
-            catch (const std::exception& e) {
-                PAL_ERR(LOG_TAG, "Stream create failed for ACDB Stream");
-                throw std::runtime_error(e.what());
-            }
-            if (!s) {
-                status = -EINVAL;
-                PAL_ERR(LOG_TAG, "stream creation failed status %d", status);
-                goto error;
-            }
-            status = s->getAssociatedSession(&session);
-            if(session){
-                status = session->rwACDBParamTunnel(paramPayload, palDeviceId, palStreamType, sampleRate,
-                                                    instanceId, isParamWrite, s); /*will fix onces this is more generic*/
-            }
-
-            delete s;
-        }
-        break;
-        default:
-            PAL_ERR(LOG_TAG, "Unknown ParamID:%d", paramId);
-            break;
+    if (uc_info->pal_stream_type == PAL_STREAM_GENERIC) {
+        uc_info->pal_stream_type = PAL_STREAM_LOW_LATENCY;
+        PAL_INFO(LOG_TAG, "change PAL stream from %d to %d for device effect",
+                    PAL_STREAM_GENERIC, uc_info->pal_stream_type);
     }
+
+    /*
+     * set default device (speaker) for stream-only effect.
+     * the instance is shared by devices.
+     */
+    if (uc_info->pal_device_id == PAL_DEVICE_NONE) {
+            uc_info->pal_device_id = PAL_DEVICE_OUT_SPEAKER;
+        PAL_INFO(LOG_TAG, "change PAL device id from %d to %d for stream effect",
+                    PAL_DEVICE_NONE, uc_info->pal_device_id);
+    }
+
+    sattr.type = uc_info->pal_stream_type;
+    sattr.out_media_config.sample_rate = uc_info->sample_rate;
+    if ((uc_info->pal_device_id > PAL_DEVICE_OUT_MIN) && (uc_info->pal_device_id < PAL_DEVICE_OUT_MAX))
+        sattr.direction = PAL_AUDIO_OUTPUT;
+    else
+        sattr.direction = PAL_AUDIO_INPUT;
+    dattr.id = uc_info->pal_device_id;
+
+    try {
+        pm = PluginManager::getInstance();
+        if(!pm){
+            PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+            goto error;
+        }
+        status = pm->openPlugin(PAL_PLUGIN_MANAGER_STREAM, "PAL_STREAM_DUMMY", plugin);
+        if (plugin && !status) {
+            streamDummy = reinterpret_cast<StreamDummyCreate>(plugin);
+            s = streamDummy(&sattr,
+                         &dattr,
+                         uc_info->instance_id,
+                         getInstance());
+        } else {
+            PAL_ERR(LOG_TAG, "unable to get plugin for DB Stream");
+        }
+    }
+    catch (const std::exception& e) {
+        PAL_ERR(LOG_TAG, "Stream create failed for DB Stream");
+        throw std::runtime_error(e.what());
+    }
+    if (!s) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "stream creation failed status %d", status);
+        goto error;
+    }
+    if(isWrite){
+        status = s->setCustomParam(uc_info, std::string(param_str), param_payload, *payload_size);
+    } else {
+        status = s->getCustomParam(uc_info, std::string(param_str), param_payload, payload_size);
+    }
+
+    delete s;
 
 error:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);

@@ -39,6 +39,7 @@ using ::aidl::vendor::qti::hardware::pal::PalStreamType;
 using ::aidl::vendor::qti::hardware::pal::SharedMemoryWrapper;
 using ::aidl::vendor::qti::hardware::pal::PalParamPayloadShmem;
 using ::ndk::ScopedFileDescriptor;
+using ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo;
 
 static std::shared_ptr<IPAL> gPalClient = nullptr;
 static bool gPalServiceDied = false;
@@ -606,4 +607,107 @@ int32_t pal_gef_rw_param_acdb(uint32_t param_id, void *param_payload, size_t pay
     auto aidlSampleRate = static_cast<int32_t>(sample_rate);
 
     return 0;
+}
+
+int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size) {
+
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+
+    if (handle == NULL || !(param_payload) || !(payload_size)) {
+        return -EINVAL;
+    }
+
+    int64_t aidlHandle = convertLegacyHandleToAidlHandle(handle);
+    std::vector<uint8_t> aidlPayload(payload_size, 0);
+    memcpy(aidlPayload.data(), param_payload, payload_size);
+    std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
+    memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
+    int32_t aidlPayloadSize = static_cast<int32_t>(payload_size);
+    auto status = client->ipc_pal_stream_set_custom_param(aidlHandle, paramID, aidlPayload, aidlPayloadSize);
+
+    return statusTFromBinderStatus(status);
+}
+
+int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t *payload_size) {
+
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+
+    if (handle == NULL || !(param_payload) || !(*payload_size)) {
+        return -EINVAL;
+    }
+
+    int64_t aidlHandle = convertLegacyHandleToAidlHandle(handle);
+    std::vector<uint8_t> aidlPayload(*payload_size, 0);
+    std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
+    memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
+
+    int32_t aidlPayloadSize = static_cast<int32_t>(*payload_size);
+    auto status = client->ipc_pal_stream_get_custom_param(aidlHandle, paramID, aidlPayloadSize, &aidlPayload);
+
+    if (status.isOk()) {
+        if (!(aidlPayload.data())) {
+            ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
+            return -ENOMEM;
+        } else {
+            memcpy(param_payload, aidlPayload.data(), aidlPayload.size());
+            *payload_size = aidlPayload.size();
+        }
+    }
+    return statusTFromBinderStatus(status);
+}
+
+int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size){
+
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+
+    if (!(uc_info) || !(param_payload) || !(payload_size)) {
+        return -EINVAL;
+    }
+
+    auto aidlPalUCInfo = LegacyToAidl::convertPalCustomPayloadInfoToAidl(uc_info);
+    std::vector<uint8_t> aidlPayload(payload_size, 0);
+    memcpy(aidlPayload.data(), param_payload, payload_size);
+    std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
+    memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
+
+    int32_t aidlPayloadSize = static_cast<int32_t>(payload_size);
+    auto status = client->ipc_pal_set_custom_param(aidlPalUCInfo, paramID, aidlPayload, aidlPayloadSize);
+
+    return statusTFromBinderStatus(status);
+}
+
+int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t *payload_size){
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+
+    if (!(uc_info) || !(param_payload) || !(*payload_size)) {
+        return -EINVAL;
+    }
+
+    std::vector<uint8_t> aidlPayload(*payload_size, 0);
+    auto aidlPalUCInfo = LegacyToAidl::convertPalCustomPayloadInfoToAidl(uc_info);
+    std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
+    memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
+
+    int32_t aidlPayloadSize = static_cast<int32_t>(*payload_size);
+
+    auto status = client->ipc_pal_get_custom_param(aidlPalUCInfo, paramID, aidlPayloadSize, &aidlPayload);
+
+    if (status.isOk()) {
+        if (!(aidlPayload.data())) {
+            ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
+            return -ENOMEM;
+        } else {
+            memcpy(param_payload, aidlPayload.data(), aidlPayload.size());
+            *payload_size = aidlPayload.size();
+        }
+    }
+    return statusTFromBinderStatus(status);
 }

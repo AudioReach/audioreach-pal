@@ -22,6 +22,7 @@ import vendor.qti.hardware.pal.PalStreamType;
 import vendor.qti.hardware.pal.PalVolumeData;
 import vendor.qti.hardware.pal.PalReadReturnData;
 import vendor.qti.hardware.pal.PalParamPayloadShmem;
+import vendor.qti.hardware.pal.PalCustomPayloadInfo;
 
 @VintfStability
 interface IPAL {
@@ -95,4 +96,12 @@ interface IPAL {
     void ipc_pal_stream_suspend(in long handle);
 
     int ipc_pal_stream_write(in long handle, in PalBuffer[] buffer);
+
+    byte[] ipc_pal_stream_get_custom_param(in long handle, in char[] paramId, in int size);
+
+    void ipc_pal_stream_set_custom_param(in long handle, in char[] paramId, in byte[] payload, in int size);
+
+    byte[] ipc_pal_get_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in int size);
+
+    void ipc_pal_set_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] payload, in int size);
 }

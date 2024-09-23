@@ -226,6 +226,22 @@ class PalServerWrapper : public BnPAL, public IStreamOps {
     void removeClient_l(int pid);
     void removeClientInfoData(int64_t handle);
 
+  ::ndk::ScopedAStatus ipc_pal_stream_get_custom_param(int64_t in_handle,
+                                                      const std::vector<char16_t>& in_paramId,
+                                                      int32_t in_size, std::vector<uint8_t>* _aidl_return) override;
+
+  ::ndk::ScopedAStatus ipc_pal_stream_set_custom_param(int64_t in_handle,
+                                                      const std::vector<char16_t>& in_paramId,
+                                                      const std::vector<uint8_t>& in_payload, int32_t in_size) override;
+
+  ::ndk::ScopedAStatus ipc_pal_get_custom_param(const ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo& in_ucInfo,
+                                                const std::vector<char16_t>& in_paramId,
+                                                int32_t in_size, std::vector<uint8_t>* _aidl_return) override;
+
+  ::ndk::ScopedAStatus ipc_pal_set_custom_param(const ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo& in_ucInfo,
+                                                const std::vector<char16_t>& in_paramId, const std::vector<uint8_t>& in_payload,
+                                                int32_t in_size) override;
+
     std::mutex mLock;
     // pid vs clientInfo
     std::unordered_map<int /*pid */, std::shared_ptr<ClientInfo>> mClients;

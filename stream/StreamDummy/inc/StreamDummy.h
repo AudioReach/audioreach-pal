@@ -26,12 +26,13 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
-#ifndef STREAMTUNNEL_H_
-#define STREAMTUNNEL_H_
+#ifndef STREAMDUMMY_H_
+#define STREAMDUMMY_H_
 
 #include "Stream.h"
 
@@ -39,52 +40,47 @@ class ResourceManager;
 class Device;
 class Session;
 
-extern "C" Stream* CreateACDBStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+extern "C" Stream* CreateDummyStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                uint32_t instance_id, const std::shared_ptr<ResourceManager> rm);
 
-class StreamACDB : public Stream
+class StreamDummy : public Stream
 {
 public:
-   StreamACDB(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
-             uint32_t instance_id, const std::shared_ptr<ResourceManager> rm); //make this just pass parameters to Stream and avoid duplicating code between STREAMTUNNEL and StreamCompress
-   //STREAMTUNNEL();
-   ~StreamACDB(){};
-   int32_t open() override;
-   int32_t close() override;
-   int32_t start() override;
-   int32_t stop() override;
-   int32_t prepare() override;
-   int32_t setVolume( struct pal_volume_data *volume) override;
-   int32_t mute(bool state) override;
-   int32_t mute_l(bool state) override;
-   int32_t pause() override;
-   int32_t pause_l() override;
-   int32_t resume() override;
-   int32_t resume_l() override;
-   int32_t flush() override;
+   StreamDummy(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+             uint32_t instance_id, const std::shared_ptr<ResourceManager> rm);
+   ~StreamDummy(){};
+   int32_t open() override {return 0;};
+   int32_t close() override {return 0;};
+   int32_t start() override {return 0;};
+   int32_t stop() override {return 0;};
+   int32_t prepare() override {return 0;};
+   int32_t setVolume( struct pal_volume_data *volume) override {return 0;};
+   int32_t mute(bool state) override {return 0;};
+   int32_t mute_l(bool state) override {return 0;};
+   int32_t pause() override {return 0;};
+   int32_t pause_l() override {return 0;};
+   int32_t resume() override {return 0;};
+   int32_t resume_l() override {return 0;};
+   int32_t flush() override {return 0;};
    int32_t drain(pal_drain_type_t type __unused) override { return 0; };
    int32_t suspend() override { return 0; };
-   int32_t addRemoveEffect(pal_audio_effect_t effect, bool enable) override;
-   int32_t read(struct pal_buffer *buf) override;
-   int32_t write(struct pal_buffer *buf) override;
-   int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) override;
-   int32_t getCallBack(pal_stream_callback *cb) override;
-   int32_t getParameters(uint32_t param_id, void **payload) override;
-   int32_t setParameters(uint32_t param_id, void *payload) override;
-   int32_t setECRef(std::shared_ptr<Device> dev, bool is_enable) override;
-   int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable) override;
-   int32_t ssrDownHandler() override;
-   int32_t ssrUpHandler() override;
+   int32_t addRemoveEffect(pal_audio_effect_t effect, bool enable) override {return 0;};
+   int32_t read(struct pal_buffer *buf) override {return 0;};
+   int32_t write(struct pal_buffer *buf) override {return 0;};
+   int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) override {return 0;};
+   int32_t getCallBack(pal_stream_callback *cb) override {return 0;};
+   int32_t getParameters(uint32_t param_id, void **payload) override {return 0;};
+   int32_t setParameters(uint32_t param_id, void *payload) override {return 0;};
+   int32_t setECRef(std::shared_ptr<Device> dev, bool is_enable) override {return 0;};
+   int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable) override {return 0;};
+   int32_t ssrDownHandler() override {return 0;};
+   int32_t ssrUpHandler() override {return 0;};
    int32_t createMmapBuffer(int32_t min_size_frames,
-                                   struct pal_mmap_buffer *info) override;
-   int32_t GetMmapPosition(struct pal_mmap_position *position) override;
-   int32_t rwACDBParam(pal_device_id_t palDeviceId,
-                 pal_stream_type_t palStreamType, uint32_t sampleRate,
-                 uint32_t instanceId,
-                 void *payload, bool isParamWrite);
+                                   struct pal_mmap_buffer *info) override {return 0;};
+   int32_t GetMmapPosition(struct pal_mmap_position *position) override {return 0;};
    int32_t isSampleRateSupported(uint32_t sampleRate __unused) override {return 0;}
    int32_t isChannelSupported(uint32_t numChannels __unused) override {return 0;}
    int32_t isBitWidthSupported(uint32_t bitWidth __unused) override {return 0;}
 };
 
-#endif//STREAMTUNNEL_H_
+#endif//STREAMDUMMY_H_

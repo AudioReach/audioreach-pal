@@ -513,11 +513,7 @@ int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK param_id %d", stream_handle,
             param_id);
     s =  reinterpret_cast<Stream *>(stream_handle);
-    if (PAL_PARAM_ID_UIEFFECT == param_id) {
-        status = s->setEffectParameters((void *)param_payload);
-    } else {
-        status = s->setParameters(param_id, (void *)param_payload);
-    }
+    status = s->setParameters(param_id, (void *)param_payload);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "set parameters failed status %d param_id %u", status, param_id);
         return status;
@@ -1357,4 +1353,93 @@ int32_t pal_get_mic_mute(bool *state){
 int32_t pal_set_mic_mute(bool state){
     PAL_ERR(LOG_TAG, "error: API: pal_set_mic_mute not implemented");
     return -ENOSYS;
+}
+
+int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
+                                    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                    void* param_payload, size_t payload_size){
+    int32_t status = 0;
+    Stream *s = nullptr;
+    custom_payload_uc_info_t info;
+
+    kpiEnqueue(__func__, true);
+    if (!handle) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid stream handle status %d", status);
+        goto exit;
+    }
+    s =  reinterpret_cast<Stream *>(handle);
+    status = s->getStreamType(&(info.pal_stream_type));
+    if (status) {
+        PAL_ERR(LOG_TAG, "could not get stream type ");
+        goto exit;
+    }
+    status = s->setCustomParam(&info,std::string(param_str),param_payload,payload_size);
+    exit:
+    kpiEnqueue(__func__, false);
+    return status;
+}
+
+int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
+                                    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                    void* param_payload, size_t *payload_size){
+    int32_t status = 0;
+    Stream *s = nullptr;
+    custom_payload_uc_info_t info;
+
+    kpiEnqueue(__func__, true);
+    if (!handle) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid stream handle status %d", status);
+        goto exit;
+    }
+    s =  reinterpret_cast<Stream *>(handle);
+    status = s->getStreamType(&(info.pal_stream_type));
+    if (status) {
+        PAL_ERR(LOG_TAG, "could not get stream type ");
+        goto exit;
+    }
+    PAL_ERR(LOG_TAG, "calling get");
+    status = s->getCustomParam(&info,std::string(param_str),param_payload,payload_size);
+    exit:
+    kpiEnqueue(__func__, false);
+    return status;
+}
+
+int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size){
+
+    int32_t status = 0;
+    std::shared_ptr<ResourceManager> rm = NULL;
+
+    kpiEnqueue(__func__, true);
+    rm = ResourceManager::getInstance();
+    if (!rm) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid resource manager");
+        goto exit;
+    }
+    status = rm->setCustomParam(uc_info,param_str,param_payload,payload_size);
+    exit:
+    kpiEnqueue(__func__, false);
+    return status;
+}
+
+int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t *payload_size){
+
+    int32_t status = 0;
+    std::shared_ptr<ResourceManager> rm = NULL;
+
+    kpiEnqueue(__func__, true);
+    rm = ResourceManager::getInstance();
+    if (!rm) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid resource manager");
+        goto exit;
+    }
+    status = rm->getCustomParam(uc_info,param_str,param_payload,payload_size);
+    exit:
+    kpiEnqueue(__func__, false);
+    return status;
 }

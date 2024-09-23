@@ -18,6 +18,7 @@
 #include <aidl/vendor/qti/hardware/pal/PalSessionTime.h>
 #include <aidl/vendor/qti/hardware/pal/PalStreamAttributes.h>
 #include <aidl/vendor/qti/hardware/pal/PalVolumeData.h>
+#include <aidl/vendor/qti/hardware/pal/PalCustomPayloadInfo.h>
 
 namespace aidl::vendor::qti::hardware::pal {
 
@@ -54,5 +55,7 @@ struct LegacyToAidl {
     static PalSessionTime convertPalSessionTimeToAidl(struct pal_session_time *palSessTime);
 
     static std::vector<uint8_t> convertRawPalParamPayloadToVector(void *payload, size_t size);
+
+    static PalCustomPayloadInfo convertPalCustomPayloadInfoToAidl(custom_payload_uc_info_t *palSessCPInfo);
 };
 }

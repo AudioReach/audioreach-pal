@@ -660,17 +660,33 @@ int SessionAgm::drain(pal_drain_type_t type)
     return status;
 }
 
-int SessionAgm::getTagsWithModuleInfo(Stream *s __unused, size_t *size, uint8_t *payload)
-{
-    int status = 0;
-    status = agm_session_aif_get_tag_module_info(sessionId, 0, payload, size);
-    if (0 != status)
-        PAL_ERR(LOG_TAG,"getTagsWithModuleInfo Failed");
+int32_t SessionAgm::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s) {
+    int status = -EINVAL;
 
+    if(param_str == PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO) {
+        status = agm_session_aif_get_tag_module_info(sessionId, 0, param_payload, payload_size);
+        if (0 != status)
+            PAL_ERR(LOG_TAG,"getTagsWithModuleInfo Failed");
+    }
+    else {
+        status = SessionAR::getCustomParam(uc_info, param_str, param_payload, payload_size, s);
+    }
     return status;
 }
 
-int SessionAgm::getParamWithTag(Stream *s __unused, int tagId __unused, uint32_t param_id __unused, void **payload __unused)
-{
-    return 0;
+int32_t SessionAgm::setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) {
+    int status = -EINVAL;
+
+    if(param_str == PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG) {
+        pal_param_payload *payload = (pal_param_payload *)param_payload;
+        status = agm_session_set_params(sessionId, payload->payload, payload->payload_size);
+        if (0 != status)
+            PAL_ERR(LOG_TAG,"setTagsWithModuleInfo Failed");
+    }
+    else {
+        status = SessionAR::setCustomParam(uc_info, param_str, param_payload, payload_size, s);
+    }
+    return status;
 }

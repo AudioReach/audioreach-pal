@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -261,7 +261,7 @@ public:
         void *payload);
     int32_t process_close_all();
 
-    int32_t send_asps_response(uint32_t param_id, pal_param_payload *payload);
+    int32_t send_asps_response(std::string param_str, pal_param_payload *payload);
     int32_t send_asps_basic_response(int32_t status, uint32_t event_id, uint32_t see_id);
 
     static ACDUUID GetUUID();

@@ -32,7 +32,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <stream name="PAL_STREAM_SENSOR_PCM_DATA" lib="libstream_sensorpcmdata.so" entryFunction="CreateSensorPCMDataStream"/>
         <stream name="PAL_STREAM_COMMON_PROXY" lib="libstream_commonproxy.so" entryFunction="CreateCommonProxyStream"/>
         <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libstream_sensorrenderer.so" entryFunction="CreateSensorRendererStream"/>
-        <stream name="PAL_USE_ACDB_STREAM" lib="libstream_acdb.so" entryFunction="CreateACDBStream"/>
+        <stream name="PAL_STREAM_DUMMY" lib="libstream_dummy.so" entryFunction="CreateDummyStream"/>
         <stream name="PAL_STREAM_ASR" lib="libstream_asr.so" entryFunction="CreateASRStream"/>
     </streams>
     <sessions>
@@ -62,6 +62,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <session name="PAL_STREAM_VOICE_CALL" lib="libsession_voice.so" entryFunction="CreateVoiceSession"/>
         <session name="PAL_STREAM_COMPRESSED" lib="libsession_compress.so" entryFunction="CreateCompressSession"/>
         <session name="PAL_STREAM_NON_TUNNEL" lib="libsession_agm.so" entryFunction="CreateAgmSession"/>
+        <session name="PAL_STREAM_DUMMY" lib="libsession_agm.so" entryFunction="CreateAgmSession"/>
     </sessions>
     <devices>
         <!--Handset-->

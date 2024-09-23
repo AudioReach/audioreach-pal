@@ -660,81 +660,15 @@ exit:
     return status;
 }
 
-int SessionAR::rwACDBParameters(void *payload, uint32_t sampleRate,
-                                bool isParamWrite)
-{
-    int status = 0;
-    uint8_t *payloadData = NULL;
-    size_t payloadSize = 0;
-    uint32_t miid = 0;
-    char const *control = "setParamTagACDB";
-    struct mixer_ctl *ctl = NULL;
-    pal_effect_custom_payload_t *effectCustomPayload = nullptr;
-    PayloadBuilder builder;
-    pal_param_payload *paramPayload = nullptr;
-    agm_acdb_param *effectACDBPayload = nullptr;
-
-    paramPayload = (pal_param_payload *)payload;
-    if (!paramPayload)
-        return -EINVAL;
-
-    effectACDBPayload = (agm_acdb_param *)(paramPayload->payload);
-    if (!effectACDBPayload)
-        return -EINVAL;
-
-    PAL_DBG(LOG_TAG, "Enter.");
-
-    status = getModuleInfo(control, effectACDBPayload->tag, &miid, &ctl, NULL);
-    if (status || !miid) {
-        PAL_ERR(LOG_TAG, "failed to look for module with tagID 0x%x, status = %d",
-                    effectACDBPayload->tag, status);
-        status = -EINVAL;
-        goto exit;
-    }
-
-    effectCustomPayload =
-        (pal_effect_custom_payload_t *)(effectACDBPayload->blob);
-
-    status = builder.payloadACDBParam(&payloadData, &payloadSize,
-                            (uint8_t *)effectACDBPayload,
-                            miid, sampleRate);
-    if (!payloadData) {
-        PAL_ERR(LOG_TAG, "failed to create payload data.");
-        goto exit;
-    }
-
-   if (isParamWrite) {
-        status = mixer_ctl_set_array(ctl, payloadData, payloadSize);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "Set custom config failed, status = %d", status);
-            goto exit;
-        }
-    }
-
-exit:
-    ctl = NULL;
-    free(payloadData);
-    PAL_ERR(LOG_TAG, "Exit. status %d", status);
-    return status;
-}
-
-int SessionAR::rwACDBParamTunnel(void *payload, pal_device_id_t palDeviceId,
-                        pal_stream_type_t palStreamType, uint32_t sampleRate,
-                        uint32_t instanceId, bool isParamWrite, Stream * s)
+int SessionAR::rwACDBParamTunnel(custom_payload_uc_info_t* uc_info, void *payload,
+                                  Stream * s, bool isWrite)
 {
     int status = -EINVAL;
-    struct pal_stream_attributes sAttr = {};
 
     PAL_DBG(LOG_TAG, "Enter");
-    status = s->getStreamAttributes(&sAttr);
-    streamHandle = s;
-    if (0 != status) {
-        PAL_ERR(LOG_TAG,"getStreamAttributes Failed \n");
-        goto exit;
-    }
 
-    PAL_INFO(LOG_TAG, "PAL device id=0x%x", palDeviceId);
-    status = SessionAlsaUtils::rwACDBTunnel(s, rm, palDeviceId, payload, isParamWrite, instanceId);
+    PAL_INFO(LOG_TAG, "PAL device id=0x%x", uc_info->pal_device_id);
+    status = SessionAlsaUtils::rwACDBTunnel(s, rm, uc_info->pal_device_id, payload, isWrite, uc_info->instance_id);
     if (status) {
         PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
     }
@@ -974,6 +908,14 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             }
             break;
         }
+        /* will remove once deprecation of feature concludes*/
+        case PAL_PARAM_ID_UIEFFECT:
+            param_payload = (pal_param_payload *)payload;
+            status = setEffectParameters(s, (effect_pal_payload_t *)param_payload->payload);
+            if (status) {
+                PAL_ERR(LOG_TAG, "setEffectParameters failed with %d", status);
+            }
+            break;
         default:
             status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
             break;
@@ -1012,6 +954,43 @@ int SessionAR::setVolume(Stream *s)
         status = this->setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
     } else {
         status = this->setConfig(s, CALIBRATION, VOLUME_LVL);
+    }
+    return status;
+}
+
+int32_t SessionAR::setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s)
+{
+    int32_t status = 0;
+    if(param_str == PAL_CUSTOM_PARAM_AR_UI_EFFECT) {
+        if(uc_info->streamless) {
+            status = rwACDBParamTunnel(uc_info, param_payload, s, true);
+        } else {
+            pal_param_payload *pal_param = (pal_param_payload *)param_payload;
+            effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
+            status = setEffectParameters(s,effectPayload);
+        }
+    } else {
+        PAL_ERR(LOG_TAG,"unsupported set param %s", param_str.c_str());
+    }
+
+    return status;
+}
+
+int32_t SessionAR::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s)
+{
+    int status = -EINVAL;
+    if(param_str == PAL_CUSTOM_PARAM_AR_UI_EFFECT) {
+        if(uc_info->streamless) {
+            status = rwACDBParamTunnel(uc_info, param_payload, s, false);
+        } else {
+            pal_param_payload *pal_param = (pal_param_payload *)param_payload;
+            effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
+            status = getEffectParameters(s,effectPayload);
+        }
+    } else {
+        PAL_ERR(LOG_TAG,"unsupported get param %s", param_str.c_str());
     }
     return status;
 }

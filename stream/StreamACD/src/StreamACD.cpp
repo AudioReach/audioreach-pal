@@ -191,26 +191,6 @@ StreamACD::~StreamACD()
     PAL_DBG(LOG_TAG, "Exit");
 }
 
-int32_t StreamACD::getTagsWithModuleInfo(size_t *size, uint8_t *payload)
-{
-    int32_t status = 0;
-
-    if (!payload) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Error:%d, Invalid payload", status);
-        goto exit;
-    }
-
-    if (!engine_) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Error:%d, Engine not initialized yet", status);
-        goto exit;
-    }
-    status = engine_->getTagsWithModuleInfo(this, size, payload);
-exit:
-    return status;
-}
-
 int32_t StreamACD::close()
 {
     int32_t status = 0;
@@ -1966,4 +1946,24 @@ int32_t StreamACD::ssrUpHandler() {
     status = cur_state_->ProcessEvent(ev_cfg);
 
     return status;
+}
+
+int32_t StreamACD::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                           void* param_payload, size_t* payload_size){
+    int32_t status = 0;
+    if (!param_payload) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Error:%d, Invalid payload", status);
+        goto exit;
+    }
+
+    if (!engine_) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Error:%d, Engine not initialized yet", status);
+        goto exit;
+    }
+    status = engine_->getCustomParam(uc_info, param_str, param_payload, payload_size, this);
+exit:
+    return status;
+
 }

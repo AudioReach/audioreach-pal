@@ -129,6 +129,9 @@ protected:
     pal_device_id_t ecRefDevId;
     bool isPauseRegistrationDone = false;
     int32_t setInitialVolume();
+    int rwACDBParamTunnel(custom_payload_uc_info_t* uc_info, void *payload, Stream *s, bool isWrite);
+    int getEffectParameters(Stream *s, effect_pal_payload_t *effectPayload);
+    int setEffectParameters(Stream *s, effect_pal_payload_t *effectPayload);
 public:
     SessionAR();
     static void handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id, void *data, uint32_t event_size);
@@ -139,6 +142,10 @@ public:
     virtual int setParameters(Stream *s, uint32_t param_id, void *payload) override;
     virtual int setParamWithTag(Stream *s, int tagId __unused, uint32_t param_id, void *payload) = 0;
     virtual int setConfig(Stream * s, configType type, int tag) = 0;
+    virtual int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) override;
+    virtual int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s) override;
     virtual int pause(Stream * s) override;
     virtual int suspend(Stream * s) override {return 0;};
     virtual int resume(Stream * s) override;
@@ -156,20 +163,12 @@ public:
     virtual uint32_t getMIID(const char *backendName __unused, uint32_t tagId __unused, uint32_t *miid __unused) { return -EINVAL; }
     virtual void setEventPayload(uint32_t event_id __unused, void *payload __unused, size_t payload_size __unused) {  };
     virtual struct mixer_ctl* getFEMixerCtl(const char *controlName __unused, int *device __unused, pal_stream_direction_t dir __unused) {return nullptr;}
-    int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
-                                      uint8_t *payload __unused) override {return -EINVAL;}; //Revert this later
     virtual int checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                                  Stream *s, bool is_enable);
     virtual void AdmRoutingChange(Stream *s __unused) { };
     virtual int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir = RX_HOSTLESS) const {return -EINVAL;}
     int NotifyChargerConcurrency(std::shared_ptr<ResourceManager>rm, bool state);
     int EnableChargerConcurrency(std::shared_ptr<ResourceManager>rm, Stream *s);
-    int getEffectParameters(Stream *s, effect_pal_payload_t *effectPayload) override;
-    int setEffectParameters(Stream *s, effect_pal_payload_t *effectPayload) override;
-    int rwACDBParameters(void *payload, uint32_t sampleRate, bool isParamWrite) override;
-    int rwACDBParamTunnel(void *payload, pal_device_id_t palDeviceId,
-        pal_stream_type_t palStreamType, uint32_t sampleRate, uint32_t instanceId,
-        bool isParamWrite, Stream *s) override;
     std::vector<std::pair<int32_t, std::string>>& getRxBEVecRef() { return rxAifBackEnds; };
     std::vector<std::pair<int32_t, std::string>>& getTxBEVecRef() { return txAifBackEnds; };
     bool getIsPauseRegistrationDone() { return isPauseRegistrationDone; };
@@ -178,6 +177,7 @@ private:
     uint32_t getModuleInfo(const char *control, uint32_t tagId, uint32_t *miid, struct mixer_ctl **ctl, int *device);
     int setEffectParametersTKV(Stream *s, effect_pal_payload_t *effectPayload);
     int setEffectParametersNonTKV(Stream *s, effect_pal_payload_t *effectPayload);
+
 };
 
 #endif //SESSION_AR_H

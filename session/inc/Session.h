@@ -108,6 +108,10 @@ public:
     virtual int write(Stream *s __unused, struct pal_buffer *buf __unused, int * size __unused) = 0;
     virtual int32_t getParameters(Stream *s, uint32_t param_id, void **payload) = 0;
     virtual int setParameters(Stream *s, uint32_t param_id, void *payload) = 0;
+    virtual int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) = 0;
+    virtual int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s) = 0;
     virtual int getTimestamp(struct pal_session_time *stime __unused) = 0;
     virtual int setupSessionDevice(Stream* streamHandle, pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToCconnect) = 0;
@@ -115,26 +119,16 @@ public:
         std::shared_ptr<Device> deviceToCconnect) = 0;
     virtual int disconnectSessionDevice(Stream* streamHandle, pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToDisconnect) = 0;
-
     /*Virtual functions*/
     virtual int registerCallBack(session_callback cb __unused, uint64_t cookie __unused) {return 0;};
     virtual int setECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable) {return -EINVAL; };
     virtual int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir) const {return -EINVAL;}
-    virtual int getEffectParameters(Stream *s, effect_pal_payload_t *effectPayload){return -EINVAL;}; /*need to move */
-    virtual int setEffectParameters(Stream *s, effect_pal_payload_t *effectPayload){return -EINVAL;}; /*need to move */
-    virtual int rwACDBParameters(void *payload, uint32_t sampleRate, bool isParamWrite){return -EINVAL;}; /*look into */
-    virtual int rwACDBParamTunnel(void *payload, pal_device_id_t palDeviceId,
-        pal_stream_type_t palStreamType, uint32_t sampleRate, uint32_t instanceId,
-        bool isParamWrite, Stream *s){return -EINVAL;}; /*/*look into */
-
     virtual int createMmapBuffer(Stream *s __unused, int32_t min_size_frames __unused,
                                    struct pal_mmap_buffer *info __unused) {return -EINVAL;}
     virtual int GetMmapPosition(Stream *s __unused, struct pal_mmap_position *position __unused) {return -EINVAL;}
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
-    virtual int getTagsWithModuleInfo(Stream *s __unused, size_t *size __unused,
-                                      uint8_t *payload __unused) {return -EINVAL;}; //Revert this later
 };
 
 #endif //SESSION_H

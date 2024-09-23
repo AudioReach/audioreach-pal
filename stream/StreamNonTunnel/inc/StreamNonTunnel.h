@@ -38,7 +38,6 @@ public:
    int32_t drain(pal_drain_type_t type) override;
    int32_t flush();
    int32_t suspend() override;
-   int32_t getTagsWithModuleInfo(size_t *size , uint8_t *payload) override;
    int32_t setBufInfo(size_t *in_buf_size, size_t in_buf_count,
                        size_t *out_buf_size, size_t out_buf_count);
 

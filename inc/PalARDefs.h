@@ -35,6 +35,54 @@
 #define PAL_AR_DEFS_H
 
 
+ /*
+  * Description: used to get list of ar modules info associated to usecase
+  * Payload For this custom param string is pal_tag_module_info
+ */
+#define PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO "PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO"
+
+ /*
+  * Description: used to set custom configurations to specifed modules
+  * Payload For this custom param string is apm_module_param_data_t
+ */
+#define PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG "PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG"
+
+ /*
+  * Description: used to get/set the custom effect param to AR modules
+  * Payload For this custom param string is gef_payload_s
+ */
+#define PAL_CUSTOM_PARAM_AR_UI_EFFECT "PAL_CUSTOM_PARAM_AR_UI_EFFECT"
+
+
+ /**
+  * Maps the modules instance id to module id for a single module
+  */
+struct module_info {
+    uint32_t module_id; /**< module id */
+    uint32_t module_iid; /**< globally unique module instance id */
+};
+
+/**
+ * Structure mapping the tag_id to module info (mid and miid)
+ */
+struct pal_tag_module_mapping {
+    uint32_t tag_id; /**< tag id of the module */
+    uint32_t num_modules; /**< number of modules matching the tag_id */
+    struct module_info mod_list[]; /**< module list */
+};
+
+
+/* Payload For param str: PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO
+ * Description   : Used to return tags and module info data to client given a graph key vector
+ */
+struct pal_tag_module_info {
+    /**< number of tags */
+    uint32_t num_tags;
+    /**< variable payload of type struct pal_tag_module_mapping*/
+    uint8_t pal_tag_module_list[];
+};
+
+
 typedef struct pal_key_value_pair_s {
     uint32_t key; /**< key */
     uint32_t value; /**< value */
@@ -62,42 +110,18 @@ typedef struct effect_pal_payload_s {
     uint32_t  payload[]; /* TKV uses pal_key_vector_t, while nonTKV uses pal_effect_custom_payload_t */
 } effect_pal_payload_t;
 
-typedef enum {
-    GEF_PARAM_READ = 0,
-    GEF_PARAM_WRITE,
-} gef_param_rw_t;
-
+/* Payload for param str: PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO
+ * Description   : Used to set/get custom effect parameters to Audioreach Specific UC definition/Modules
+ */
 typedef struct gef_payload_s {
     pal_key_vector_t *graph;
     bool persist;
     effect_pal_payload_t data;
 } gef_payload_t;
 
-/**
- * Maps the modules instance id to module id for a single module
- */
-struct module_info {
-    uint32_t module_id; /**< module id */
-    uint32_t module_iid; /**< globally unique module instance id */
-};
-
-/**
- * Structure mapping the tag_id to module info (mid and miid)
- */
-struct pal_tag_module_mapping {
-    uint32_t tag_id; /**< tag id of the module */
-    uint32_t num_modules; /**< number of modules matching the tag_id */
-    struct module_info mod_list[]; /**< module list */
-};
-
-/**
- * Used to return tags and module info data to client given a graph key vector
- */
-struct pal_tag_module_info {
-    /**< number of tags */
-    uint32_t num_tags;
-    /**< variable payload of type struct pal_tag_module_mapping*/
-    uint8_t pal_tag_module_list[];
-};
+typedef enum {
+    GEF_PARAM_READ = 0,
+    GEF_PARAM_WRITE,
+} gef_param_rw_t;
 
 #endif /*PAL_AR_DEFS_H*/

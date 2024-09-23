@@ -297,77 +297,7 @@ const std::string& Stream::getDevicePPSelector() const {
     return mDevPPSelector;
 }
 
-int32_t Stream::getEffectParameters(void *effect_query)
-{
-    int32_t status = 0;
-
-    if (!effect_query) {
-        PAL_ERR(LOG_TAG, "invalid query");
-        return -EINVAL;
-    }
-
-    mStreamMutex.lock();
-    if (currentState == STREAM_IDLE) {
-        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE");
-        mStreamMutex.unlock();
-        return -EINVAL;
-    }
-    pal_param_payload *pal_param = (pal_param_payload *)effect_query;
-    effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
-    status = session->getEffectParameters(this, effectPayload);
-    if (status) {
-       PAL_ERR(LOG_TAG, "getParameters failed with %d", status);
-    }
-    mStreamMutex.unlock();
-
-    return status;
-}
-
-int32_t Stream::setEffectParameters(void *effect_param)
-{
-    int32_t status = 0;
-
-    if (!effect_param) {
-        PAL_ERR(LOG_TAG, "invalid query");
-        return -EINVAL;
-    }
-
-    mStreamMutex.lock();
-    if (currentState == STREAM_IDLE) {
-        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE");
-        mStreamMutex.unlock();
-        return -EINVAL;
-    }
-
-    pal_param_payload *pal_param = (pal_param_payload *)effect_param;
-    effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
-    status = session->setEffectParameters(this, effectPayload);
-    if (status) {
-       PAL_ERR(LOG_TAG, "setEffectParameters failed with %d", status);
-    }
-
-    mStreamMutex.unlock();
-
-    return status;
-}
-int32_t Stream::rwACDBParameters(void *payload, uint32_t sampleRate,
-                                    bool isParamWrite)
-{
-    int32_t status = 0;
-
-    mStreamMutex.lock();
-    if (currentState == STREAM_IDLE) {
-        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE");
-        mStreamMutex.unlock();
-        return -EINVAL;
-    }
-    status = session->rwACDBParameters(payload, sampleRate, isParamWrite);
-    mStreamMutex.unlock();
-
-    return status;
-}
-
-int32_t Stream::getStreamType(pal_stream_type_t* streamType)
+int32_t Stream::getStreamType (pal_stream_type_t* streamType)
 {
     int32_t status = 0;
 
@@ -1901,4 +1831,43 @@ bool Stream::isStreamSupported()
     }
     PAL_DBG(LOG_TAG, "Exit. rc %d", rc);
     return result;
+}
+
+int32_t Stream::setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                       void* param_payload, size_t payload_size){
+    int32_t status = 0;
+
+    mStreamMutex.lock();
+    if (currentState == STREAM_IDLE) {
+        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE");
+        mStreamMutex.unlock();
+        return -EINVAL;
+    }
+    status = session->setCustomParam(uc_info, param_str, param_payload, payload_size, this);
+    if (status) {
+       PAL_ERR(LOG_TAG, "setCustomParam failed with %d", status);
+    }
+    mStreamMutex.unlock();
+
+    return status;
+}
+
+int32_t Stream::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                       void* param_payload, size_t* payload_size){
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "param id is %s", param_str.c_str())
+    mStreamMutex.lock();
+    if (currentState == STREAM_IDLE) {
+        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE");
+        mStreamMutex.unlock();
+        return -EINVAL;
+    }
+    status = session->getCustomParam(uc_info, param_str, param_payload, payload_size, this);
+    if (status) {
+       PAL_ERR(LOG_TAG, "getCustomParam failed with %d", status);
+    }
+    mStreamMutex.unlock();
+
+    return status;
 }

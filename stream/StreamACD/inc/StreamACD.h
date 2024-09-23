@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -106,7 +106,6 @@ class StreamACD : public Stream {
     int32_t prepare() override { return 0; }
     int32_t start() override;
     int32_t stop() override;
-    int32_t getTagsWithModuleInfo(size_t *size, uint8_t *payload) override;
     int32_t setVolume(struct pal_volume_data * volume __unused) { return 0; }
     int32_t mute(bool state __unused) override { return 0; }
     int32_t mute_l(bool state __unused) override { return 0; }
@@ -129,6 +128,8 @@ class StreamACD : public Stream {
     int32_t registerCallBack(pal_stream_callback cb,  uint64_t cookie) override;
     int32_t getCallBack(pal_stream_callback *cb) override;
     int32_t getParameters(uint32_t param_id, void **payload) override;
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                           void* param_payload, size_t* payload_size) override;
     int32_t setParameters(uint32_t param_id, void *payload) override;
     int32_t addRemoveEffect(pal_audio_effect_t effec __unused,
                             bool enable __unused) {

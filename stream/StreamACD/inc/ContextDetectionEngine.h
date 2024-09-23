@@ -91,7 +91,8 @@ public:
         StreamACD *s,
         std::shared_ptr<Device> dev,
         bool is_enable);
-    int32_t getTagsWithModuleInfo(StreamACD *s, size_t *size, uint8_t *payload);
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s);
 
 private:
     virtual int32_t LoadSoundModel() = 0;

@@ -52,6 +52,7 @@
 #define PAL_MAX_CHANNELS_SUPPORTED 64
 #define MAX_KEYWORD_SUPPORTED 8
 #define PAL_MAX_LATENCY_MODES 8
+#define PAL_CUSTOM_PARAM_MAX_STRING_LENGTH 64
 
 #define PAL_VERSION "1.0"
 
@@ -347,6 +348,7 @@ typedef enum {
     PAL_STREAM_SENSOR_PCM_RENDERER = 29,  /**< Sensor Pcm Rendering Stream */
     PAL_STREAM_ASR = 30,                  /**< ASR Stream */
     PAL_STREAM_HPCM = 31,                 /**< hpcm usecase */
+    PAL_STREAM_DUMMY = 32,                /**< Dummy stream used to directly push configurations without a stream instance */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -721,7 +723,7 @@ typedef enum {
     PAL_PARAM_ID_RECOGNITION_CONFIG = 1,
     PAL_PARAM_ID_ECNS_ON_OFF = 2,
     PAL_PARAM_ID_DIRECTION_OF_ARRIVAL = 3,
-    PAL_PARAM_ID_UIEFFECT = 4,
+    PAL_PARAM_ID_UIEFFECT = 4, /*deprecated please dont use*/
     PAL_PARAM_ID_STOP_BUFFERING = 5,
     PAL_PARAM_ID_CODEC_CONFIGURATION = 6,
     /* Non-Stream Specific Parameters*/
@@ -754,7 +756,7 @@ typedef enum {
     PAL_PARAM_ID_WAKEUP_MODULE_VERSION = 33,
     PAL_PARAM_ID_WAKEUP_CUSTOM_CONFIG = 34,
     PAL_PARAM_ID_UNLOAD_SOUND_MODEL = 35,
-    PAL_PARAM_ID_MODULE_CONFIG = 36, /*Clients directly configure DSP modules*/
+    PAL_PARAM_ID_MODULE_CONFIG = 36, /*Deprecated: Clients directly configure DSP modules*/
     PAL_PARAM_ID_BT_A2DP_LC3_CONFIG = 37,
     PAL_PARAM_ID_PROXY_CHANNEL_CONFIG = 38,
     PAL_PARAM_ID_CONTEXT_LIST = 39,
@@ -1502,5 +1504,15 @@ typedef struct pal_buffer_config {
 #define PAL_SPATIAL_AUDIO_PLAYBACK_PERIOD_COUNT 2
 #define PAL_VOIP_PLAYBACK_PERIOD_COUNT 2
 #define PAL_ULL_PLAYBACK_PERIOD_COUNT 2
+
+
+typedef struct custom_payload_uc_info_s {
+    pal_stream_type_t pal_stream_type; /**< type of stream to apply the payload param */
+    pal_device_id_t pal_device_id;     /**< type of device to apply the payload param */
+    uint32_t sample_rate;              /**< sample rate of the stream to apply the payload param */
+    uint32_t instance_id;              /**< instance id of the stream */
+    bool streamless;                  /** set to true to create a dummy stream to send command directly to framework */
+
+}custom_payload_uc_info_t;
 
 #endif /*PAL_DEFS_H*/

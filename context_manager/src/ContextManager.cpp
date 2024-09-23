@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -195,7 +195,7 @@ int32_t ContextManager::build_and_send_register_ack(Usecase *uc, uint32_t see_id
 
     pal_param->payload_size = payload_size;
 
-    rc = send_asps_response(PAL_PARAM_ID_MODULE_CONFIG, pal_param);
+    rc = send_asps_response(PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG, pal_param);
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d sending register ack opcode %x",
             rc, PARAM_ID_ASPS_SENSOR_REGISTER_ACK);
@@ -263,14 +263,17 @@ int32_t ContextManager::process_close_all()
     return 0;
 }
 
-int32_t ContextManager::send_asps_response(uint32_t param_id, pal_param_payload* payload)
+int32_t ContextManager::send_asps_response(std::string param_str, pal_param_payload* payload)
 {
     int32_t rc = 0;
     PAL_VERBOSE(LOG_TAG, "Enter:");
+    Stream * s = nullptr;
 
-    rc = pal_stream_set_param(this->proxy_stream, param_id, payload);
+    s =  reinterpret_cast<Stream *>(this->proxy_stream);
+
+    rc = s->setCustomParam(nullptr,param_str, (void*)payload->payload, payload->payload_size);
     if (rc) {
-        PAL_ERR(LOG_TAG, "Error:%d setting params on proxy stream for param %d", rc, param_id);
+        PAL_ERR(LOG_TAG, "Error:%d setting params on proxy stream for param %s", rc, param_str.c_str());
     }
 
     PAL_VERBOSE(LOG_TAG, "Exit: rc:%d", rc);
@@ -284,9 +287,10 @@ int32_t ContextManager::send_asps_basic_response(int32_t status, uint32_t event_
     pal_param_payload *pal_param;
     apm_module_param_data_t *param_data;
     struct param_id_asps_basic_ack_t *ack;
+    Stream * s = nullptr;
 
     PAL_VERBOSE(LOG_TAG, "Enter:");
-
+    s =  reinterpret_cast<Stream *>(this->proxy_stream);
     pal_param = (pal_param_payload *) calloc (1, sizeof(pal_param_payload) + sizeof(struct apm_module_param_data_t)
         + sizeof(struct param_id_asps_basic_ack_t));
     if (!pal_param) {
@@ -307,7 +311,7 @@ int32_t ContextManager::send_asps_basic_response(int32_t status, uint32_t event_
 
     pal_param->payload_size = PAL_ALIGN_8BYTE(sizeof(struct param_id_asps_basic_ack_t) + sizeof(struct apm_module_param_data_t));
 
-    rc = pal_stream_set_param(this->proxy_stream, PAL_PARAM_ID_MODULE_CONFIG, pal_param);
+    rc = s->setCustomParam(nullptr, PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG, (void*)pal_param->payload, pal_param->payload_size);
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d setting params on proxy stream for basick ack", rc);
     }
@@ -732,7 +736,7 @@ int32_t CommandGetContextIDs::Process(ContextManager& cm)
     memcpy((void *)response->supported_context_ids, context_ids.data(),
         sizeof(uint32_t) * num_contexts);
 
-    rc = cm.send_asps_response(PAL_PARAM_ID_MODULE_CONFIG, pal_param);
+    rc = cm.send_asps_response(PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG, pal_param);
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d sending supported context IDs response opcode %x ",
             rc, PARAM_ID_ASPS_SUPPORTED_CONTEXT_IDS);
@@ -1057,19 +1061,22 @@ int32_t Usecase::GetModuleIIDs(std::vector<int32_t> tags,
     int32_t rc = 0;
     size_t tag_module_size = TAG_MODULE_DEFAULT_SIZE;
     std::vector<uint8_t> tag_module_info(tag_module_size);
+    void* data = tag_module_info.data();
     struct pal_tag_module_info* tag_info;
     struct pal_tag_module_mapping* tag_entry;
     std::vector<uint32_t> miid_list;
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
-
-    rc = pal_stream_get_tags_with_module_info(this->pal_stream,
-        &tag_module_size, (uint8_t*)(tag_module_info.data()));
+    rc = pal_stream_get_custom_param(this->pal_stream,
+                                    PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
+                                    data, &tag_module_size);
     if (rc == ENODATA) {
         tag_module_info.resize(tag_module_size);
+        rc = pal_stream_get_custom_param(this->pal_stream,
+                                        PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
+                                        data,
+                                        &tag_module_size);
 
-        rc = pal_stream_get_tags_with_module_info(this->pal_stream,
-            &tag_module_size, (uint8_t*)tag_module_info.data());
     }
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d Could not retrieve tag module info from PAL", rc);

@@ -28,11 +28,12 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
-#define LOG_TAG "PAL: StreamACDB"
+#define LOG_TAG "PAL: StreamDummy"
 
-#include "StreamACDB.h"
+#include "StreamDummy.h"
 #include "SessionAR.h"
 #include "kvh2xml.h"
 #include "ResourceManager.h"
@@ -42,12 +43,12 @@
 #include <unistd.h>
 #include <chrono>
 
-extern "C" Stream* CreateACDBStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+extern "C" Stream* CreateDummyStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                uint32_t instance_id, const std::shared_ptr<ResourceManager> rm) {
-    return new StreamACDB(sattr, dattr, instance_id, rm);
+    return new StreamDummy(sattr, dattr, instance_id, rm);
 }
 
-StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
+StreamDummy::StreamDummy(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
         uint32_t instance_id, const std::shared_ptr<ResourceManager> rm)
 {
     mStreamMutex.lock();
@@ -63,9 +64,7 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
     std::shared_ptr<Device> dev = nullptr;
     mStreamAttr = (struct pal_stream_attributes *)nullptr;
     mDevices.clear();
-    currentState = STREAM_IDLE;
-    //Modify cached values only at time of SSR down.
-    cachedState = STREAM_IDLE;
+    currentState = STREAM_INIT;
     bool isDeviceConfigUpdated = false;
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -90,7 +89,7 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
 
     ar_mem_cpy(mStreamAttr, sizeof(pal_stream_attributes), sattr, sizeof(pal_stream_attributes));
 
-    PAL_INFO(LOG_TAG, "Create new ACDBSession");
+    PAL_INFO(LOG_TAG, "Create new DBSession");
     try {
         pm = PluginManager::getInstance();
         if (!pm) {
@@ -100,7 +99,7 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
              * plugin manager to open an AGM session.
              */
             status = pm->openPlugin(PAL_PLUGIN_MANAGER_SESSION,
-                                    "PAL_STREAM_NON_TUNNEL", plugin);
+                                    "PAL_STREAM_DB", plugin);
             if (plugin && !status) {
                 sessionCreate = reinterpret_cast<SessionCreate>(plugin);
                 session = sessionCreate(rm);
@@ -120,147 +119,5 @@ StreamACDB::StreamACDB(const struct pal_stream_attributes *sattr, struct pal_dev
     PAL_DBG(LOG_TAG, "Exit. state %d", currentState);
 
     return;
-}
-
-int32_t  StreamACDB::open()
-{
-    return 0;
-}
-
-int32_t  StreamACDB::close()
-{
-    return 0;
-}
-
-int32_t StreamACDB::start()
-{
-    return 0;
-}
-
-int32_t StreamACDB::stop()
-{
-    return 0;
-}
-
-int32_t StreamACDB::prepare()
-{
-    return 0;
-}
-
-//TBD: move this to Stream, why duplicate code?
-int32_t  StreamACDB::setVolume(struct pal_volume_data *volume)
-{
-    return 0;
-}
-
-int32_t  StreamACDB::read(struct pal_buffer* buf)
-{
-    return 0;
-}
-
-int32_t StreamACDB::write(struct pal_buffer* buf)
-{
-    return 0;
-}
-
-int32_t  StreamACDB::registerCallBack(pal_stream_callback /*cb*/, uint64_t /*cookie*/)
-{
-    return 0;
-}
-
-int32_t  StreamACDB::getCallBack(pal_stream_callback * /*cb*/)
-{
-    return 0;
-}
-
-int32_t StreamACDB::getParameters(uint32_t /*param_id*/, void ** /*payload*/)
-{
-    return 0;
-}
-
-int32_t  StreamACDB::setParameters(uint32_t param_id, void *payload)
-{
-    return 0;
-}
-
-int32_t StreamACDB::mute_l(bool state)
-{
-    return 0;
-}
-
-int32_t StreamACDB::mute(bool state)
-{
-    return 0;
-}
-
-int32_t StreamACDB::pause_l()
-{
-    return 0;
-}
-
-int32_t StreamACDB::pause()
-{
-    return 0;
-}
-
-int32_t StreamACDB::resume_l()
-{
-    return 0;
-}
-
-int32_t StreamACDB::resume()
-{
-    return 0;
-}
-
-int32_t StreamACDB::flush()
-{
-    return 0;
-}
-
-
-int32_t StreamACDB::addRemoveEffect(pal_audio_effect_t effect, bool enable)
-{
-    return 0;
-}
-
-int32_t StreamACDB::setECRef(std::shared_ptr<Device> dev, bool is_enable)
-{
-    return 0;
-}
-
-int32_t StreamACDB::setECRef_l(std::shared_ptr<Device> dev, bool is_enable)
-{
-    return 0;
-}
-
-int32_t StreamACDB::ssrDownHandler()
-{
-    return 0;
-}
-
-int32_t StreamACDB::ssrUpHandler()
-{
-    return 0;
-}
-
-int32_t StreamACDB::createMmapBuffer(int32_t min_size_frames,
-                                   struct pal_mmap_buffer *info)
-{
-    return 0;
-}
-
-int32_t StreamACDB::GetMmapPosition(struct pal_mmap_position *position)
-{
-    return 0;
-}
-
-int32_t StreamACDB::rwACDBParam(pal_device_id_t palDeviceId,
-                 pal_stream_type_t palStreamType, uint32_t sampleRate,
-                 uint32_t instanceId,
-                 void *payload, bool isParamWrite)
-{
-    return session->rwACDBParamTunnel(payload, palDeviceId,
-        palStreamType, sampleRate, instanceId, isParamWrite, this);
 }
 

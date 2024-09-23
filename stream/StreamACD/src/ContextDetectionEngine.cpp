@@ -199,12 +199,13 @@ int32_t ContextDetectionEngine::setECRef(StreamACD *s, std::shared_ptr<Device> d
     return session_->setECRef(s, dev, is_enable);
 }
 
-int32_t ContextDetectionEngine::getTagsWithModuleInfo(StreamACD *s, size_t *size, uint8_t *payload)
+int32_t ContextDetectionEngine::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t* payload_size, Stream *s)
 {
     if (!session_) {
         PAL_ERR(LOG_TAG, "Invalid session");
         return -EINVAL;
     }
 
-    return dynamic_cast<SessionAR*>(session_)->getTagsWithModuleInfo(s, size, payload);
+    return session_->getCustomParam(uc_info, param_str, param_payload, payload_size, s);
 }

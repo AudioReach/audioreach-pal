@@ -95,7 +95,7 @@ public:
     int pause(Stream * s) override;
     int resume(Stream * s) override;
     int setParamWithTag(Stream *s, int tagId, uint32_t param_id, void *payload) override;
-    int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override;
+    int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override {return 0;};
     int read(Stream *s, struct pal_buffer *buf, int * size) override;
     int write(Stream *s, struct pal_buffer *buf, int * size) override;
     int setECRef(Stream *s __unused, std::shared_ptr<Device> rx_dev __unused, bool is_enable __unused) override {return 0;};
@@ -103,7 +103,6 @@ public:
     int drain(pal_drain_type_t type);
     int flush();
     int suspend(Stream * s);
-    int getTagsWithModuleInfo(Stream *s, size_t *size, uint8_t *payload) override;
     int getTimestamp(struct pal_session_time *stime __unused) {return 0;};
     int setupSessionDevice(Stream* streamHandle __unused, pal_stream_type_t streamType __unused,
         std::shared_ptr<Device> deviceToConnect __unused) override {return 0;};
@@ -114,6 +113,10 @@ public:
     uint32_t getMIID(const char *backendName __unused, uint32_t tagId __unused, uint32_t *miid __unused)
                      {return 0;};
     struct mixer_ctl* getFEMixerCtl(const char *controlName __unused, int *device __unused, pal_stream_direction_t dir __unused) {return 0;}
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                           void* param_payload, size_t* payload_size, Stream *s) override;
+    int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                                    void* param_payload, size_t payload_size, Stream *s) override;
     session_callback sessionCb;
     uint64_t cbCookie;
     int32_t sessionId;

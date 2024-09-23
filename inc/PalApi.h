@@ -26,41 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
- */
-/* Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
  */
 
 /** \file pal_api.h
@@ -76,7 +44,6 @@
 #define PAL_API_H
 
 #include "PalDefs.h"
-#include "PalAR.h" /*may not be needed after phase 2 refactoring*/
 #include "PalMappings.h"
 #ifdef __cplusplus
 extern "C" {
@@ -546,6 +513,77 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
   */
 int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie);
 
+/**
+  * \brief Stream set parameters for generic/custom param
+  *
+  * \param[in] handle - stream handle to which the param is set/get.
+  *
+  * \param[in] param_str - param str that mention the type of setparam.
+  *
+  * \param[in/out] param_payload - param data applicable to the param_str
+  *
+  * \param[in] payload_size - size of payload passed in
+  *
+  * \return 0 on success, error code otherwise
+  */
+int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size);
+
+
+/**
+  * \brief Stream set parameters for generic/custom param
+  *
+  * \param[in] handle - stream handle to which the param is set/get.
+  *
+  * \param[in] param_str - param str that mention the type of getparam.
+  *
+  * \param[in/out] param_payload - param data applicable to the param_str
+  *
+  * \param[in/out] payload_size - as input max size of the allocated/memory passed by the client.
+                           If it is not enough to copy the get_param payload - a error is returned
+                           with the size set to the expected size of the memory to be passed.
+                           If the memory is more/enough - api will return actual size
+                           copied for the response as a ouput.
+  *
+  * \return 0 on success, error code otherwise
+  */
+int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t* payload_size);
+
+/**
+  * \brief Stream get parameters for generic/custom param
+  *
+  * \param[in] param_str - param str that mention the type of getparam.
+  *
+  * \param[in/out] param_payload - param data applicable to the param_str
+  *
+  * \param[in] payload_size - size of the payload passed by the client.
+  *
+  * \return 0 on success, error code otherwise
+  */
+int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size);
+
+
+/**
+  * \brief Get pal parameters for generic/custom param
+  *
+  * \param[in] uc_info - info of the usecase to which custom/param need to get/set.
+  *
+  * \param[in] param_str - param str that mention the type of getparam.
+  *
+  * \param[in/out] param_payload - param data applicable to the param_str
+  *
+  * \param[in/out] payload_size - as input max size of the allocated/memory passed by the client.
+                           If it is not enough to copy the get_param payload - a error is returned
+                           with the size set to the expected size of the memory to be passed.
+                           If the memory is more/enough - api will return actual size
+                           copied for the response as a ouput.
+  *
+  * \return 0 on success, error code otherwise
+  */
+int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
+    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t* payload_size);
 
 #ifdef __cplusplus
 }  /* extern "C" */

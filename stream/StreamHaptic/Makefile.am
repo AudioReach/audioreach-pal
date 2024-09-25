@@ -22,14 +22,13 @@ library_includedir = $(includedir)/stream_haptics
 lib_LTLIBRARIES     = libstream_haptics.la
 libstream_haptics_la_SOURCES   = $(stream_haptics_sources)
 libstream_haptics_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat
+libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/stream/StreamPCM/.libs -lstream_pcm
 libstream_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_haptics_la_CPPFLAGS += -std=c++14
 libstream_haptics_la_LDFLAGS   = -shared -avoid-version
 libstream_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libstream_haptics_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_haptics_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libstream_haptics_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libstream_haptics_la_LIBADD += -lglib-2.0

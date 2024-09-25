@@ -25,14 +25,13 @@ library_includedir = $(includedir)/dev_haptics
 lib_LTLIBRARIES     = libdev_haptics.la
 libdev_haptics_la_SOURCES   = $(dev_haptics_sources)
 libdev_haptics_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
+libdev_haptics_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_haptics_la_CPPFLAGS += -std=c++14
 libdev_haptics_la_LDFLAGS   = -shared -avoid-version
 libdev_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libdev_haptics_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_haptics_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libdev_haptics_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libdev_haptics_la_LIBADD += -lglib-2.0

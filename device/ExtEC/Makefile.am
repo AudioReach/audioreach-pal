@@ -29,8 +29,6 @@ libdev_ext_ec_la_LDFLAGS   = -shared -avoid-version
 libdev_ext_ec_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libdev_ext_ec_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_ext_ec_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libdev_ext_ec_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libdev_ext_ec_la_LIBADD += -lglib-2.0

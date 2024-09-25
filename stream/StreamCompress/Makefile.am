@@ -29,8 +29,6 @@ libstream_compress_la_LDFLAGS   = -shared -avoid-version
 libstream_compress_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libstream_compress_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_compress_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libstream_compress_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libstream_compress_la_LIBADD += -lglib-2.0

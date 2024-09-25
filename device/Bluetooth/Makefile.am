@@ -23,14 +23,14 @@ library_includedir = $(includedir)/dev_bt
 lib_LTLIBRARIES     = libdev_bt.la
 libdev_bt_la_SOURCES   = $(dev_bt_sources)
 libdev_bt_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
+libdev_bt_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_bt_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_bt_la_CPPFLAGS += -std=c++14
 libdev_bt_la_LDFLAGS   = -shared -avoid-version
 libdev_bt_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libdev_bt_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_bt_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libdev_bt_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
+
 
 if BUILDSYSTEM_OPENWRT
 libdev_bt_la_LIBADD += -lglib-2.0

@@ -22,16 +22,14 @@ library_includedir = $(includedir)/dev_headset_mic
 
 lib_LTLIBRARIES     = libdev_headset_mic.la
 libdev_headset_mic_la_SOURCES   = $(dev_headset_mic_sources)
-libdev_headset_mic_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
-libdev_headset_mic_la_LIBADD    += -L../../plugins/vui_interface/.libs -lvui_intf
+libdev_headset_mic_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress -lagmclientwrapper
+libdev_headset_mic_la_LIBADD    += -L${abs_top_builddir}/plugins/vui_interface/.libs -lvui_intf
 libdev_headset_mic_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_headset_mic_la_CPPFLAGS += -std=c++14
 libdev_headset_mic_la_LDFLAGS   = -shared -avoid-version
 libdev_headset_mic_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libdev_headset_mic_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_headset_mic_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libdev_headset_mic_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libdev_headset_mic_la_LIBADD += -lglib-2.0

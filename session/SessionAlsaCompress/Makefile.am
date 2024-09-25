@@ -23,15 +23,14 @@ library_includedir = $(includedir)/session_compress
 lib_LTLIBRARIES     = libsession_compress.la
 libsession_compress_la_SOURCES   = $(session_compress_sources)
 libsession_compress_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
-libsession_compress_la_LIBADD    += -L../../plugins/vui_interface/.libs -lvui_intf
+libsession_compress_la_LIBADD    += -L${abs_top_builddir}/plugins/vui_interface/.libs -lvui_intf
+libsession_compress_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar -L${abs_top_builddir}/.libs -lpal
 libsession_compress_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_compress_la_CPPFLAGS += -std=c++14
 libsession_compress_la_LDFLAGS   = -shared -avoid-version
 libsession_compress_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libsession_compress_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_compress_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
-libsession_compress_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                                 ../../configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libsession_compress_la_LIBADD += -lglib-2.0

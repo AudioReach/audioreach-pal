@@ -114,6 +114,7 @@ int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t typ
         }
         if (!foundLib){
             PAL_ERR(LOG_TAG, "%s registered", item.libName.c_str());
+            item.refCount = 0;
             pluginList->push_back(item);
         }
 
@@ -150,7 +151,7 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
                                 goto exit;
                             }
                         } else {
-                            PAL_ERR(LOG_TAG, "dlopen failed for lib %s", item.libName.c_str());
+                            PAL_ERR(LOG_TAG, "dlopen failed : %s", dlerror());
                         }
                     } catch (const std::exception& e) {
                         PAL_ERR(LOG_TAG, "Dll loading of %s failed", key.c_str());

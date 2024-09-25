@@ -2,6 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pal.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
+
 if BUILDSYSTEM_OPENWRT
 
 AM_CPPFLAGS := -I ./stream/inc
@@ -37,7 +38,7 @@ pal_sources = ./stream/src/Stream.cpp \
               ./utils/src/VoiceUIPlatformInfo.cpp \
               ./utils/src/AudioHapticsInterface.cpp \
               ./utils/src/ACDPlatformInfo.cpp \
-	      ./utils/src/ASRPlatformInfo.cpp \
+              ./utils/src/ASRPlatformInfo.cpp \
               ./utils/src/STUtils.cpp
 else
 AM_CPPFLAGS := -I $(top_srcdir)/stream/inc
@@ -72,7 +73,7 @@ pal_sources = $(top_srcdir)/stream/src/Stream.cpp \
               $(top_srcdir)/utils/src/VoiceUIPlatformInfo.cpp \
               $(top_srcdir)/utils/src/AudioHapticsInterface.cpp \
               $(top_srcdir)/utils/src/ACDPlatformInfo.cpp \
-	      $(top_srcdir)/utils/src/ASRPlatformInfo.cpp \
+              $(top_srcdir)/utils/src/ASRPlatformInfo.cpp \
               $(top_srcdir)/utils/src/STUtils.cpp
 
 endif
@@ -99,10 +100,6 @@ libpal_la_CPPFLAGS += -std=c++14
 libpal_la_LDFLAGS   = -shared -avoid-version
 libpal_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libpal_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
-libpal_la_list      = ./configs/$(MACHINE_ENABLED)/kvh2xml.xml \
-                      ./configs/$(MACHINE_ENABLED)/mixer_paths_kona_mtp.xml \
-                      ./configs/$(MACHINE_ENABLED)/resourcemanager_kona_mtp.xml \
-                      ./configs/$(MACHINE_ENABLED)/usecaseKvManager.xml
 
 if BUILDSYSTEM_OPENWRT
 libpal_la_LIBADD += -lglib-2.0
@@ -110,21 +107,7 @@ endif
 if COMPILE_COMPRESS
 libpal_la_CPPFLAGS += -DSND_COMPRESS_DEC_HDR
 endif
-libpal_la_LIBADD   += -L./plugins/vui_interface/.libs -lvui_intf
-libpal_la_LIBADD   += ./plugins/PluginManager/.libs/libplugin_manager.a
+libpal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs -lvui_intf
+libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.a
 
-SUBDIRS = plugins stream session device
-
-#lib_LTLIBRARIES     += libaudiocl.la
-#libaudiocl_la_SOURCES   = $(acl_sources)
-#libaudiocl_la_LIBADD    = @GLIB_LIBS@
-#libaudiocl_la_CPPFLAGS := $(AM_CPPFLAGS)
-#libaudiocl_la_LDFLAGS   = -shared -avoid-version -lcutils -llog
-# install essential xml files under /etc
-#root_etcdir      = "/etc"
-#root_etc_SCRIPTS = $(libpal_la_list)
-#install-data-hook:
-#	chmod  go+r $(DESTDIR)$(root_etcdir)/kvh2xml.xml
-#	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_kona_mtp.xml
-#	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_kona_mtp.xml
-#	chmod  go+r $(DESTDIR)$(root_etcdir)/usecaseKvManager.xml
+SUBDIRS = plugins . session stream device

@@ -37,7 +37,7 @@ LOCAL_CFLAGS        += -DVENDOR_SKU=\"$(TARGET_CODEC_NAME)\"
 ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
 LOCAL_CFLAGS        += -DSOC_PERIPHERAL_PROT
 endif
-LOCAL_CPPFLAGS      += -fexceptions -frtti
+LOCAL_CPPFLAGS      += -fexceptions -frtti -Wno-ignored-attributes
 
 LOCAL_C_INCLUDES := \
     $(TOP)/system/media/audio_route/include \

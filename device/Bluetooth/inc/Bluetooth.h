@@ -43,6 +43,7 @@
 #include <mutex>
 #include <system/audio.h>
 #include "Session.h"
+#include "SoundDoseUtility.h"
 
 #define DISALLOW_COPY_AND_ASSIGN(name) \
     name(const name &); \
@@ -199,6 +200,7 @@ protected:
     static std::shared_ptr<Device> objBleBroadcastRx;
     BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
     pal_param_bta2dp_t param_bt_a2dp;
+    pal_sound_dose_info_t sound_dose_info;
 
 private:
     /* BT IPC related members */
@@ -252,6 +254,7 @@ private:
     bool            support_bt_audio_pre_init;
     uint32_t        a2dpLatencyMode;
     uint32_t        codecLatency;
+    std::unique_ptr<SoundDoseUtility> soundDoseUtility;
 
     uint32_t getLatency(uint32_t slatency);
     int startPlayback();

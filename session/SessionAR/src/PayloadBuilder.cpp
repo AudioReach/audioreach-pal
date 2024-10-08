@@ -521,6 +521,34 @@ void PayloadBuilder::payloadDpAudioConfig(uint8_t** payload, size_t* size,
     PAL_DBG(LOG_TAG, "Exit:");
 }
 
+int PayloadBuilder::payloadSoundDoseInfo(uint8_t **payload, size_t *size, uint32_t moduleId)
+{
+    struct apm_module_param_data_t* header;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0;
+
+    payloadSize = sizeof(struct apm_module_param_data_t) +
+                  sizeof(param_id_sounddose_flush_mel_values) +
+                  sizeof(float) * 10 + sizeof(uint32_t) * 20;
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+        return -ENOMEM;
+    }
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    header->module_instance_id = moduleId;
+    header->param_id = PARAM_ID_SOUND_DOSE_FLUSH_MEL_VALUES;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+    PAL_DBG(LOG_TAG, "payload %pK size %zu", *payload, *size);
+    return 0;
+}
+
 #define PLAYBACK_VOLUME_MAX 0x2000
 void PayloadBuilder::payloadVolumeConfig(uint8_t** payload, size_t* size,
         uint32_t miid, struct pal_volume_data* voldata)

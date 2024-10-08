@@ -204,8 +204,60 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/utils/inc
 
 include $(BUILD_SHARED_LIBRARY)
 
+#-------------------------------------------
+#            Build libpal_sounddose
+#-------------------------------------------
 include $(CLEAR_VARS)
-LOCAL_USE_VNDK := true
+
+LOCAL_MODULE := libpal_sounddose
+LOCAL_MODULE_OWNER := qti
+LOCAL_MODULE_TAGS := optional
+LOCAL_VENDOR_MODULE := true
+
+LOCAL_SRC_FILES:= sounddose/src/SoundDoseUtility.cpp
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/sounddose/inc
+
+LOCAL_C_INCLUDES := \
+    $(LOCAL_PATH)/sounddose/inc \
+    $(TOP)/system/media/audio_route/include \
+    $(TOP)/system/media/audio/include
+
+LOCAL_SHARED_LIBRARIES := \
+    libcutils \
+    liblog \
+    libaudioroute \
+    libsession_ar \
+    libsession_agm \
+    libexpat \
+    libar-pal
+
+LOCAL_HEADER_LIBRARIES := \
+    libarpal_headers \
+    libspf-headers \
+    libagm_headers \
+    libacdb_headers \
+    liblisten_headers \
+    libarosal_headers \
+    libaudiofeaturestats_headers \
+    libarvui_intf_headers \
+    libarmemlog_headers \
+    libarpal_internalheaders \
+    libagm_headers \
+    libsession_agm_headers \
+    libsession_ar_headers
+
+# Use flag based selection to use QTI vs open source tinycompress project
+
+ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
+LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
+else
+LOCAL_SHARED_LIBRARIES += libtinyalsa
+endif
+
+include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
 
 LOCAL_CFLAGS += -Wno-tautological-compare
 LOCAL_CFLAGS += -Wno-macro-redefined

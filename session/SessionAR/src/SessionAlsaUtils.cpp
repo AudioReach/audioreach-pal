@@ -3057,7 +3057,7 @@ int32_t SessionAlsaUtils::reconfigureInCallMusicStream(struct pal_media_config c
     std::list<Stream*>::iterator it;
     Session *session = nullptr;
     struct pal_stream_attributes sAttr;
-    std::vector<Stream*> activeStreams;
+    std::list<Stream*> activeStreams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);
@@ -3096,7 +3096,7 @@ int32_t SessionAlsaUtils::resumeInCallMusic() {
     std::list<Stream*>::iterator it;
     struct pal_stream_attributes sAttr;
     bool_t found = false;
-    std::vector<Stream*> activeStreams;
+    std::list<Stream*> activeStreams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);
@@ -3129,7 +3129,7 @@ int32_t SessionAlsaUtils::pauseInCallMusic() {
     bool_t found = false;
     std::list<Stream*>::iterator it;
     struct pal_stream_attributes sAttr;
-    std::vector<Stream*> activeStreams;
+    std::list<Stream*> activeStreams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     status = rm->getActiveStreamByType_l(activeStreams, PAL_STREAM_VOICE_CALL_MUSIC);

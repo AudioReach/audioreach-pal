@@ -103,3 +103,61 @@ int32_t FMDevice::isBitWidthSupported(uint32_t bitWidth)
     }
     return rc;
 }
+
+int32_t FMDevice::getDeviceConfig(struct pal_device *deviceattr,
+                                  struct pal_stream_attributes *sAttr) {
+    int32_t status = 0;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    if (deviceattr->id == PAL_DEVICE_IN_FM_TUNER) {
+        /* For PAL_DEVICE_IN_FM_TUNER, copy all config from stream attributes */
+        if (!sAttr) {
+            PAL_ERR(LOG_TAG, "Invalid parameter.");
+            return -EINVAL;
+        }
+
+        struct pal_media_config *candidateConfig = &sAttr->in_media_config;
+        PAL_DBG(LOG_TAG, "sattr chn=0x%x fmt id=0x%x rate = 0x%x width=0x%x",
+            sAttr->in_media_config.ch_info.channels,
+            sAttr->in_media_config.aud_fmt_id,
+            sAttr->in_media_config.sample_rate,
+            sAttr->in_media_config.bit_width);
+
+        if (!rm->ifVoiceorVoipCall(sAttr->type) && rm->isDeviceAvailable(PAL_DEVICE_OUT_PROXY)) {
+            PAL_DBG(LOG_TAG, "This is NOT voice call. out proxy is available");
+            std::shared_ptr<Device> devOut = nullptr;
+            struct pal_device proxyOut_dattr;
+            proxyOut_dattr.id = PAL_DEVICE_OUT_PROXY;
+            devOut = Device::getInstance(&proxyOut_dattr, rm);
+            if (devOut) {
+                status = devOut->getDeviceAttributes(&proxyOut_dattr);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "getDeviceAttributes for OUT_PROXY failed %d", status);
+                    return status;
+                }
+
+                if (proxyOut_dattr.config.ch_info.channels &&
+                        proxyOut_dattr.config.sample_rate) {
+                    PAL_INFO(LOG_TAG, "proxy out attr is used");
+                    candidateConfig = &proxyOut_dattr.config;
+                }
+            }
+        }
+        deviceattr->config.ch_info = candidateConfig->ch_info;
+        if (isPalPCMFormat(candidateConfig->aud_fmt_id))
+            deviceattr->config.bit_width =
+                      rm->palFormatToBitwidthLookup(candidateConfig->aud_fmt_id);
+        else
+            deviceattr->config.bit_width = candidateConfig->bit_width;
+
+        deviceattr->config.aud_fmt_id = candidateConfig->aud_fmt_id;
+        deviceattr->config.sample_rate = candidateConfig->sample_rate;
+
+        PAL_INFO(LOG_TAG, "in proxy chn=0x%x fmt id=0x%x rate = 0x%x width=0x%x",
+                    deviceattr->config.ch_info.channels,
+                    deviceattr->config.aud_fmt_id,
+                    deviceattr->config.sample_rate,
+                    deviceattr->config.bit_width);
+    }
+    return status;
+}

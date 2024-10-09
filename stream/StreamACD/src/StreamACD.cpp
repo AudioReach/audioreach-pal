@@ -39,6 +39,7 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include "kvh2xml.h"
+#include "STUtils.h"
 
 extern "C" Stream* CreateACDStream(const struct pal_stream_attributes *sattr,
                                     struct pal_device *dattr,
@@ -159,7 +160,7 @@ StreamACD::StreamACD(const struct pal_stream_attributes *sattr,
         acd_info_->GetConcurrentVoipCallEnable());
 
     // check concurrency count from rm
-    rm->GetSoundTriggerConcurrencyCount(PAL_STREAM_ACD, &enable_concurrency_count,
+    GetSoundTriggerConcurrencyCount(PAL_STREAM_ACD, &enable_concurrency_count,
         &disable_concurrency_count);
 
     /*
@@ -423,7 +424,7 @@ int32_t StreamACD::setECRef(std::shared_ptr<Device> dev, bool is_enable)
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (rm->getLPIUsage()) {
+    if (getLPIUsage()) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -613,7 +614,7 @@ std::shared_ptr<CaptureProfile> StreamACD::GetCurrentCaptureProfile()
     if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;
 
-    if (rm->getLPIUsage())
+    if (getLPIUsage())
         operating_mode = ST_OPERATING_MODE_LOW_POWER;
 
     cap_prof = sm_cfg_->GetCaptureProfile(
@@ -1083,7 +1084,7 @@ int32_t StreamACD::ACDIdle::ProcessEvent(
                 (ACDDeviceConnectedEventConfigData *)ev_cfg->data_.get();
             pal_device_id_t dev_id = data->dev_id_;
 
-            dev = acd_stream_.GetPalDevice(&acd_stream_, dev_id);
+            dev = GetPalDevice(&acd_stream_, dev_id);
             if (!dev) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "Error:%d Device creation failed", status);
@@ -1155,15 +1156,15 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
             // Do not update capture profile when resuming stream
             if (ev_cfg->id_ == ACD_EV_START_RECOGNITION ||
                (ev_cfg->id_ == ACD_EV_RESUME &&
-                !acd_stream_.rm->GetSoundTriggerCaptureProfile())) {
-                backend_update = acd_stream_.rm->UpdateSoundTriggerCaptureProfile(
+                !GetSoundTriggerCaptureProfile())) {
+                backend_update = UpdateSoundTriggerCaptureProfile(
                     &acd_stream_, true);
                 if (backend_update) {
-                    status = rm->StopOtherDetectionStreams(&acd_stream_);
+                    status = StopOtherDetectionStreams(&acd_stream_);
                     if (status)
                         PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
 
-                    status = rm->StartOtherDetectionStreams(&acd_stream_);
+                    status = StartOtherDetectionStreams(&acd_stream_);
                     if (status)
                         PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
                 }
@@ -1171,7 +1172,7 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
 
             dev->getDeviceAttributes(&dattr);
 
-            cap_prof = acd_stream_.rm->GetSoundTriggerCaptureProfile();
+            cap_prof = GetSoundTriggerCaptureProfile();
             if (!cap_prof) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "Error:%d Invalid capture profile", status);
@@ -1276,7 +1277,7 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
                 (ACDDeviceConnectedEventConfigData *)ev_cfg->data_.get();
             pal_device_id_t dev_id = data->dev_id_;
 
-            dev = acd_stream_.GetPalDevice(&acd_stream_, dev_id);
+            dev = GetPalDevice(&acd_stream_, dev_id);
             if (!dev) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "Error:%d Dev creation failed", status);
@@ -1469,10 +1470,10 @@ int32_t StreamACD::ACDActive::ProcessEvent(
             bool backend_update = false;
             if (ev_cfg->id_ == ACD_EV_STOP_RECOGNITION ||
                 ev_cfg->id_ == ACD_EV_UNLOAD_SOUND_MODEL) {
-                backend_update = acd_stream_.rm->UpdateSoundTriggerCaptureProfile(
+                backend_update = UpdateSoundTriggerCaptureProfile(
                     &acd_stream_, false);
                 if (backend_update) {
-                    status = rm->StopOtherDetectionStreams(&acd_stream_);
+                    status = StopOtherDetectionStreams(&acd_stream_);
                     if (status)
                         PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
                 }
@@ -1498,7 +1499,7 @@ int32_t StreamACD::ACDActive::ProcessEvent(
             acd_stream_.device_opened_ = false;
 
             if (backend_update) {
-                status = rm->StartOtherDetectionStreams(&acd_stream_);
+                status = StartOtherDetectionStreams(&acd_stream_);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
             }
@@ -1551,7 +1552,7 @@ int32_t StreamACD::ACDActive::ProcessEvent(
             pal_device_id_t dev_id = data->dev_id_;
             std::shared_ptr<Device> dev = nullptr;
 
-            dev = acd_stream_.GetPalDevice(&acd_stream_, dev_id);
+            dev = GetPalDevice(&acd_stream_, dev_id);
             if (!dev) {
                 PAL_ERR(LOG_TAG, "Error:%d Device creation failed", -EINVAL);
                 status = -EINVAL;
@@ -1965,66 +1966,4 @@ int32_t StreamACD::ssrUpHandler() {
     status = cur_state_->ProcessEvent(ev_cfg);
 
     return status;
-}
-
-std::shared_ptr<Device> StreamACD::GetPalDevice(StreamACD *streamHandle, pal_device_id_t dev_id)
-{
-    std::shared_ptr<CaptureProfile> cap_prof = nullptr;
-    std::shared_ptr<CaptureProfile> common_cap_prof = nullptr;
-    std::shared_ptr<Device> device = nullptr;
-    struct pal_device dev;
-
-    if (!streamHandle) {
-        PAL_ERR(LOG_TAG, "Stream is invalid");
-        goto exit;
-    }
-
-    if (!mStreamAttr) {
-        PAL_ERR(LOG_TAG, "Stream attribute is null");
-        goto exit;
-    }
-
-    PAL_DBG(LOG_TAG, "Enter, stream: %d, device_id: %d", mStreamAttr->type, dev_id);
-
-    cap_prof = streamHandle->GetCurrentCaptureProfile();
-
-    if (!cap_prof && !rm->GetSoundTriggerCaptureProfile() &&
-        !rm->GetTXMacroCaptureProfile()) {
-        PAL_ERR(LOG_TAG, "Failed to get local and common cap_prof for stream: %d",
-                mStreamAttr->type);
-        goto exit;
-    }
-
-    common_cap_prof = (dev_id == PAL_DEVICE_IN_ULTRASOUND_MIC) ?
-                       rm->GetTXMacroCaptureProfile(): rm->GetSoundTriggerCaptureProfile();
-    if (common_cap_prof) {
-        /* Use the rm's common capture profile if local capture profile is not
-         * available, or the common capture profile has the highest priority.
-         */
-        if (!cap_prof ||
-            common_cap_prof->ComparePriority(cap_prof) >= CAPTURE_PROFILE_PRIORITY_HIGH) {
-            PAL_DBG(LOG_TAG, "common cap_prof %s has the highest priority.",
-                    common_cap_prof->GetName().c_str());
-            cap_prof = common_cap_prof;
-        }
-    }
-
-    dev.id = dev_id;
-    dev.config.bit_width = cap_prof->GetBitWidth();
-    dev.config.ch_info.channels = cap_prof->GetChannels();
-    dev.config.sample_rate = cap_prof->GetSampleRate();
-    dev.config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
-
-    device = Device::getInstance(&dev, rm);
-    if (!device) {
-        PAL_ERR(LOG_TAG, "Failed to get device instance");
-        goto exit;
-    }
-
-    device->setDeviceAttributes(dev);
-    device->setSndName(cap_prof->GetSndName());
-
-exit:
-    PAL_DBG(LOG_TAG, "Exit");
-    return device;
 }

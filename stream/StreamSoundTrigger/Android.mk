@@ -1,5 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
+ifneq ($(TARGET_DISABLE_PAL_ST),true)
+
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := optional
@@ -49,4 +51,6 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)
 else
     include $(BUILD_SHARED_LIBRARY)
+endif
+
 endif

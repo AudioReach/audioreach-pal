@@ -46,6 +46,7 @@
 #include "SoundTriggerPlatformInfo.h"
 #include "VoiceUIInterface.h"
 #include "sh_mem_pull_push_mode_api.h"
+#include "STUtils.h"
 
 // TODO: find another way to print debug logs by default
 #define ST_DBG_LOGS
@@ -513,7 +514,7 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
         PAL_ERR(LOG_TAG, "Failed to get ResourceManager instance");
         throw std::runtime_error("Failed to get ResourceManager instance");
     }
-    use_lpi_ = rm->getLPIUsage();
+    use_lpi_ = getLPIUsage();
     session_ = Session::makeSession(rm, &sAttr);
     if (!session_) {
         PAL_ERR(LOG_TAG, "Failed to create session");
@@ -1136,7 +1137,7 @@ int32_t SoundTriggerEngineGsl::ReconfigureDetectionGraph(StreamSoundTrigger *s) 
             mmap_buffer_.fd = -1;
             mmap_buffer_.buffer = nullptr;
         }
-        use_lpi_ = rm->getLPIUsage();
+        use_lpi_ = getLPIUsage();
     }
 
     /* Delete sound model of stream s from merged sound model */

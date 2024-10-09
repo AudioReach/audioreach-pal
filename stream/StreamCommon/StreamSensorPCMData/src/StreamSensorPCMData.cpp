@@ -41,6 +41,7 @@
 #include "Device.h"
 #include <unistd.h>
 #include "MemLogBuilder.h"
+#include "STUtils.h"
 
 extern "C" Stream* CreateSensorPCMDataStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -77,9 +78,9 @@ StreamSensorPCMData::StreamSensorPCMData(const struct pal_stream_attributes *sat
              acd_info_->GetConcurrentVoipCallEnable());
 
     /* check concurrency count from rm */
-    rm->GetSoundTriggerConcurrencyCount(PAL_STREAM_SENSOR_PCM_DATA,
-                                        &enable_concurrency_count,
-                                        &disable_concurrency_count);
+    GetSoundTriggerConcurrencyCount(PAL_STREAM_SENSOR_PCM_DATA,
+                                    &enable_concurrency_count,
+                                    &disable_concurrency_count);
 
     /*
      * When voice/voip/record is active and concurrency is not
@@ -97,7 +98,6 @@ StreamSensorPCMData::StreamSensorPCMData(const struct pal_stream_attributes *sat
 StreamSensorPCMData::~StreamSensorPCMData()
 {
     PAL_DBG(LOG_TAG, "Enter");
-    rm->resetStreamInstanceID(this);
     rm->deregisterStream(this);
     PAL_DBG(LOG_TAG, "Exit");
 }
@@ -221,13 +221,13 @@ int32_t StreamSensorPCMData::start()
             PAL_DBG(LOG_TAG, "session open successful");
 
             /* Do not update capture profile when resuming stream */
-            backend_update = rm->UpdateSoundTriggerCaptureProfile(this, true);
+            backend_update = UpdateSoundTriggerCaptureProfile(this, true);
             if (backend_update) {
-                status = rm->StopOtherDetectionStreams(this);
+                status = StopOtherDetectionStreams(this);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
 
-                status = rm->StartOtherDetectionStreams(this);
+                status = StartOtherDetectionStreams(this);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
             }
@@ -286,9 +286,9 @@ int32_t StreamSensorPCMData::stop()
     if (currentState == STREAM_STARTED || currentState == STREAM_PAUSED) {
         /* Do not update capture profile when pausing stream */
         if (false == paused_) {
-            backend_update = rm->UpdateSoundTriggerCaptureProfile(this, false);
+            backend_update = UpdateSoundTriggerCaptureProfile(this, false);
             if (backend_update) {
-                status = rm->StopOtherDetectionStreams(this);
+                status = StopOtherDetectionStreams(this);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
             }
@@ -315,7 +315,7 @@ int32_t StreamSensorPCMData::stop()
         }
 
         if (backend_update) {
-            status = rm->StartOtherDetectionStreams(this);
+            status = StartOtherDetectionStreams(this);
             if (status)
                 PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
         }
@@ -445,21 +445,21 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
     /* Check lpi here again to determine the actual operating_mode */
     if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
         DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
-        && rm->getLPIUsage())
+        && getLPIUsage())
         operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
                           ST_OPERATING_MODE_LOW_POWER_TX_MACRO : ST_OPERATING_MODE_LOW_POWER);
     else if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
              DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
-             && !rm->getLPIUsage())
+             && !getLPIUsage())
         operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
                           ST_OPERATING_MODE_HIGH_PERF_TX_MACRO : ST_OPERATING_MODE_HIGH_PERF);
     else if ((DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
              DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect)
-             && rm->getLPIUsage())
+             && getLPIUsage())
         operating_mode = ST_OPERATING_MODE_LOW_POWER_NS;
     else if ((DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
              DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect)
-             && !rm->getLPIUsage())
+             && !getLPIUsage())
         operating_mode = ST_OPERATING_MODE_HIGH_PERF_NS;
 
     if (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC) {
@@ -477,7 +477,7 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
             channels = dev_config.config.ch_info.channels;
         }
 
-        cap_prof = rm->GetTXMacroCaptureProfile();
+        cap_prof = GetTXMacroCaptureProfile();
         if (cap_prof) {
             channels = (channels >= cap_prof->GetChannels()) ?
                         channels : cap_prof->GetChannels();
@@ -536,13 +536,13 @@ int32_t StreamSensorPCMData::addRemoveEffect(pal_audio_effect_t effect, bool ena
 
     /* Check lpi here to determine if EC is needed */
     if (enable) {
-        if (PAL_AUDIO_EFFECT_NONE == effect && rm->getLPIUsage()) {
+        if (PAL_AUDIO_EFFECT_NONE == effect && getLPIUsage()) {
            pcm_data_stream_effect = DEVICEPP_TX_RAW_LPI;
-        } else if (PAL_AUDIO_EFFECT_NS == effect && rm->getLPIUsage()) {
+        } else if (PAL_AUDIO_EFFECT_NS == effect && getLPIUsage()) {
            pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFNS;
-        } else if (PAL_AUDIO_EFFECT_NONE == effect && !rm->getLPIUsage()) {
+        } else if (PAL_AUDIO_EFFECT_NONE == effect && !getLPIUsage()) {
            pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFEC;
-        } else if (PAL_AUDIO_EFFECT_NS == effect && !rm->getLPIUsage()) {
+        } else if (PAL_AUDIO_EFFECT_NS == effect && !getLPIUsage()) {
            pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFECNS;
         } else {
             PAL_ERR(LOG_TAG, "Invalid effect ID %d", effect);
@@ -814,7 +814,7 @@ int32_t StreamSensorPCMData::setECRef(std::shared_ptr<Device> dev, bool is_enabl
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (!rm->getLPIUsage())
+    if (!getLPIUsage())
         status = setECRef_l(dev, is_enable);
     else
         PAL_DBG(LOG_TAG, "set EC Ref will be handled in LPI/NLPI switch");
@@ -871,45 +871,4 @@ int32_t StreamSensorPCMData::getParameters(uint32_t param_id, void **payload)
             break;
     }
     return status;
-}
-
-std::shared_ptr<Device> StreamSensorPCMData::GetPalDevice(StreamSensorPCMData *streamHandle, pal_device_id_t dev_id)
-{
-    std::shared_ptr<CaptureProfile> cap_prof = nullptr;
-    std::shared_ptr<CaptureProfile> common_cap_prof = nullptr;
-    std::shared_ptr<Device> device = nullptr;
-    struct pal_device dev;
-
-    if (!streamHandle) {
-        PAL_ERR(LOG_TAG, "Stream is invalid");
-        goto exit;
-    }
-
-    if (!mStreamAttr) {
-        PAL_ERR(LOG_TAG, "Stream attribute is null");
-        goto exit;
-    }
-
-    PAL_DBG(LOG_TAG, "Enter, stream: %d, device_id: %d", mStreamAttr->type, dev_id);
-
-    cap_prof = streamHandle->GetCurrentCaptureProfile();
-
-    dev.id = dev_id;
-    dev.config.bit_width = cap_prof->GetBitWidth();
-    dev.config.ch_info.channels = cap_prof->GetChannels();
-    dev.config.sample_rate = cap_prof->GetSampleRate();
-    dev.config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
-
-    device = Device::getInstance(&dev, rm);
-    if (!device) {
-        PAL_ERR(LOG_TAG, "Failed to get device instance");
-        goto exit;
-    }
-
-    device->setDeviceAttributes(dev);
-    device->setSndName(cap_prof->GetSndName());
-
-exit:
-    PAL_DBG(LOG_TAG, "Exit");
-    return device;
 }

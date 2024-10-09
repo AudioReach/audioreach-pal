@@ -160,3 +160,16 @@ int32_t HeadsetMic::checkAndUpdateSampleRate(uint32_t *sampleRate)
 
     return rc;
 }
+
+int32_t HeadsetMic::getDeviceConfig(struct pal_device *deviceattr,
+                                struct pal_stream_attributes *sAttr) {
+
+    int32_t status = 0;
+    status = this->checkAndUpdateSampleRate(&deviceattr->config.sample_rate);
+
+    if (status) {
+        PAL_ERR(LOG_TAG, "failed to update samplerate/bitwidth");
+        status = -EINVAL;
+    }
+    return status;
+}

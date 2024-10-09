@@ -66,6 +66,7 @@ public:
     int32_t DisconnectDevice(pal_device_id_t device_id) override;
     int32_t ConnectDevice(pal_device_id_t device_id) override;
     pal_device_id_t GetAvailCaptureDevice();
+    bool isStreamSupported() override {return true;}
 
 private:
     void GetUUID(class SoundTriggerUUID *uuid, const struct st_uuid *vendor_uuid);
@@ -76,13 +77,13 @@ private:
     int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable);
     int32_t setParameters(uint32_t param_id, void *payload);
     int32_t getParameters(uint32_t param_id, void **payload) override;
-    std::shared_ptr<Device> GetPalDevice(StreamSensorPCMData *streamHandle, pal_device_id_t dev_id);
     std::shared_ptr<ACDStreamConfig> sm_cfg_;
     std::shared_ptr<ACDPlatformInfo> acd_info_;
     std::shared_ptr<CaptureProfile> cap_prof_;
     uint32_t pcm_data_stream_effect;
     uint32_t pcm_data_buffering;
     bool paused_;
+    std::map<int, bool> PCMDataInstances;
 };
 
 #endif//StreamSensorPCMData_H_

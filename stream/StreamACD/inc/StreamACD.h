@@ -137,6 +137,7 @@ class StreamACD : public Stream {
     int32_t isSampleRateSupported(uint32_t sampleRate __unused) override {return 0;}
     int32_t isChannelSupported(uint32_t numChannels __unused) override {return 0;}
     int32_t isBitWidthSupported(uint32_t bitWidth __unused) override {return 0;}
+    bool isStreamSupported() override {return true;};
 
     int32_t Resume(bool is_internal __unused) override;
     int32_t Pause(bool is_internal __unused) override;
@@ -447,7 +448,6 @@ class StreamACD : public Stream {
     int32_t GenerateCallbackEvent(struct pal_acd_recognition_event **event,
                                   uint32_t *event_size);
     static void EventNotificationThread(StreamACD *stream);
-    std::shared_ptr<Device> GetPalDevice(StreamACD *streamHandle, pal_device_id_t dev_id);
 
     std::shared_ptr<ACDStreamConfig> sm_cfg_;
     std::shared_ptr<ACDPlatformInfo> acd_info_;

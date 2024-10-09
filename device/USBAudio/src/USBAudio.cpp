@@ -1240,6 +1240,36 @@ bool USB::isDeviceConnected(struct pal_usb_device_address addr)
     return false;
 }
 
+int32_t USB::getDeviceConfig(struct pal_device *deviceattr,
+                             struct pal_stream_attributes *sAttr) {
+
+    int32_t status = 0;
+    struct pal_device_info devinfo = {};
+
+    if (!sAttr) {
+        PAL_ERR(LOG_TAG, "Invalid parameter.");
+        return -EINVAL;
+    }
+    // config.ch_info memory is allocated in selectBestConfig below
+    status = this->selectBestConfig(deviceattr, sAttr, true, &devinfo);
+    deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
+    if (deviceattr->config.bit_width == BITWIDTH_24) {
+        if (devinfo.bitFormatSupported == PAL_AUDIO_FMT_PCM_S24_LE)
+            deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_LE;
+        else
+            deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_3LE;
+    }
+    return status;
+}
+
+bool USB::isPluginPlaybackDevice(pal_device_id_t id) {
+    if (id == PAL_DEVICE_OUT_USB_DEVICE ||
+        id == PAL_DEVICE_OUT_USB_HEADSET)
+        return true;
+    else
+        return false;
+}
+
 bool USBCardConfig::getJackConnectionStatus(int usb_card, const char* suffix)
 {
     int i = 0, value = 0;

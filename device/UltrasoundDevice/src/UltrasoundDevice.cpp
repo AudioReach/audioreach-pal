@@ -76,6 +76,27 @@ std::shared_ptr<Device> UltrasoundDevice::getInstance(struct pal_device *device,
     }
 }
 
+int32_t UltrasoundDevice::getDeviceConfig(struct pal_device *deviceattr,
+                                            struct pal_stream_attributes *sAttr) {
+
+    int32_t status = 0;
+    /* copy all config from stream attributes for sensor renderer */
+    if (!sAttr) {
+        PAL_ERR(LOG_TAG, "Invalid parameter.");
+        return -EINVAL;
+    }
+    if (sAttr->type != PAL_STREAM_SENSOR_PCM_RENDERER)
+        return status;
+
+    deviceattr->config.sample_rate = sAttr->out_media_config.sample_rate;
+    deviceattr->config.ch_info = sAttr->out_media_config.ch_info;
+    deviceattr->config.bit_width = sAttr->out_media_config.bit_width;
+    deviceattr->config.aud_fmt_id = bitWidthToFormat.at(sAttr->out_media_config.bit_width);
+    PAL_DBG(LOG_TAG, "devcie %d sample rate %d bitwidth %d",
+            deviceattr->id, deviceattr->config.sample_rate,
+            deviceattr->config.bit_width);
+    return status;
+}
 
 UltrasoundDevice::UltrasoundDevice(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)

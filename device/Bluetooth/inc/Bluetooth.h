@@ -274,9 +274,11 @@ private:
 public:
     int start();
     int stop();
-    bool isDeviceReady() override;
+    bool isDeviceReady(pal_device_id_t id) override;
     int32_t setDeviceParameter(uint32_t param_id, void *param) override;
     int32_t getDeviceParameter(uint32_t param_id, void **param) override;
+    int32_t getDeviceConfig(struct pal_device *deviceattr,
+                            struct pal_stream_attributes *sAttr) override;
 
     static std::shared_ptr<Device> getObject(pal_device_id_t id);
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
@@ -303,11 +305,13 @@ protected:
 public:
     int start();
     int stop();
-    bool isDeviceReady() override;
+    bool isDeviceReady(pal_device_id_t id) override;
     int32_t setDeviceParameter(uint32_t param_id, void *param) override;
     void convertCodecInfo(audio_lc3_codec_cfg_t &lc3CodecInfo, btsco_lc3_cfg_t &lc3Cfg);
     bool isScoNbWbActive() override;
     int32_t checkAndUpdateSampleRate(uint32_t *sampleRate) override;
+    int32_t getDeviceConfig(struct pal_device *deviceattr,
+                            struct pal_stream_attributes *sAttr) override;
 
     static std::shared_ptr<Device> getObject(pal_device_id_t id);
     static std::shared_ptr<Device> getInstance(struct pal_device *device,

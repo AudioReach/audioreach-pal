@@ -1162,27 +1162,6 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
                 break;
         }
 
-        /*
-        * When headset is disconnected the music playback pauses
-        * and the policy manager sends routing=0. But if the headset is connected
-        * back before the standby time, it can not switch device to headset any more
-        * because current pal device is headset which equals new device when resuming playback.
-        * So routing to default device first during handling routing = 0 msg will guarantee
-        * the device switch to headset can be executed once headset is connected again.
-        */
-        if (devices[0].id == PAL_DEVICE_NONE &&
-            (rm->isDisconnectedDeviceStillActive(curPalDevices,activeDevices,
-            PAL_DEVICE_OUT_USB_DEVICE) ||
-            rm->isDisconnectedDeviceStillActive(curPalDevices,activeDevices,
-            PAL_DEVICE_OUT_USB_HEADSET) ||
-            rm->isDisconnectedDeviceStillActive(curPalDevices,activeDevices,
-            PAL_DEVICE_OUT_WIRED_HEADPHONE) ||
-            rm->isDisconnectedDeviceStillActive(curPalDevices,activeDevices,
-            PAL_DEVICE_OUT_WIRED_HEADSET)))
-        {
-            devices[0].id = PAL_DEVICE_OUT_SPEAKER;
-        }
-
         if (!force_switch) {
             for (int i = 0; i < no_of_devices; i++) {
                 newDevices.insert(devices[i].id);
@@ -1192,6 +1171,17 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
                     PAL_DBG(LOG_TAG, "always switch device for bt device");
                     force_switch = true;
                     break;
+                }
+                if ((devices[i].id == PAL_DEVICE_OUT_USB_DEVICE) ||
+                    (devices[i].id == PAL_DEVICE_OUT_USB_HEADSET) ||
+                    (devices[i].id == PAL_DEVICE_OUT_WIRED_HEADSET) ||
+                    (devices[i].id == PAL_DEVICE_OUT_WIRED_HEADPHONE) ||
+                    (devices[i].id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
+                    (devices[i].id == PAL_DEVICE_OUT_AUX_DIGITAL_1) ||
+                    (devices[i].id == PAL_DEVICE_OUT_HDMI)) {
+                        PAL_DBG(LOG_TAG, "always switch device for plugin and DP device");
+                        force_switch = true;
+                        break;
                 }
             }
         }

@@ -467,3 +467,106 @@ skip_up_handling :
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
+
+int32_t StreamHaptics::isSampleRateSupported(uint32_t sampleRate)
+{
+    int32_t rc = 0;
+    PAL_DBG(LOG_TAG, "sampleRate %u", sampleRate);
+    switch(sampleRate) {
+        case SAMPLINGRATE_8K:
+        case SAMPLINGRATE_16K:
+        case SAMPLINGRATE_22K:
+        case SAMPLINGRATE_32K:
+        case SAMPLINGRATE_44K:
+        case SAMPLINGRATE_48K:
+        case SAMPLINGRATE_96K:
+        case SAMPLINGRATE_192K:
+        case SAMPLINGRATE_384K:
+            break;
+       default:
+            rc = 0;
+            PAL_VERBOSE(LOG_TAG, "sample rate received %d rc %d", sampleRate, rc);
+            break;
+    }
+    return rc;
+}
+
+int32_t StreamHaptics::isChannelSupported(uint32_t numChannels)
+{
+    int32_t rc = 0;
+    PAL_DBG(LOG_TAG, "numChannels %u", numChannels);
+    switch(numChannels) {
+        case CHANNELS_1:
+        case CHANNELS_2:
+        case CHANNELS_3:
+        case CHANNELS_4:
+        case CHANNELS_5:
+        case CHANNELS_5_1:
+        case CHANNELS_7:
+        case CHANNELS_8:
+            break;
+        default:
+            rc = -EINVAL;
+            PAL_ERR(LOG_TAG, "channels not supported %d rc %d", numChannels, rc);
+            break;
+    }
+    return rc;
+}
+
+int32_t StreamHaptics::isBitWidthSupported(uint32_t bitWidth)
+{
+    int32_t rc = 0;
+    PAL_DBG(LOG_TAG, "bitWidth %u", bitWidth);
+    switch(bitWidth) {
+        case BITWIDTH_16:
+        case BITWIDTH_24:
+        case BITWIDTH_32:
+            break;
+        default:
+            rc = -EINVAL;
+            PAL_ERR(LOG_TAG, "bit width not supported %d rc %d", bitWidth, rc);
+            break;
+    }
+    return rc;
+}
+
+bool StreamHaptics::isStreamSupported(){
+    bool result = true;
+    int32_t rc = 0;
+    struct pal_device hapticsDattr;
+    std::shared_ptr<Device> hapticsDev = nullptr;
+    std::vector <Stream *> activeStreams;
+    struct pal_stream_attributes ActivesAttr;
+    Stream *stream = NULL;
+    uint16_t channels;
+    uint32_t samplerate, bitwidth;
+
+    hapticsDattr.id = PAL_DEVICE_OUT_HAPTICS_DEVICE;
+    hapticsDev = Device::getInstance(&hapticsDattr, rm);
+    rm->getActiveStream_l(activeStreams, hapticsDev);
+    for (int i = 0; i < activeStreams.size(); i++) {
+         stream = static_cast<Stream *>(activeStreams[i]);
+         stream->getStreamAttributes(&ActivesAttr);
+         if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE) {
+             PAL_INFO(LOG_TAG, "Ringtone Haptics is Active skipping Touch Haptics");
+             result = false;
+             goto exit;
+         }
+    }
+    if (mStreamAttr->info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
+        result = true;
+    } else {
+        channels = mStreamAttr->out_media_config.ch_info.channels;
+        samplerate = mStreamAttr->out_media_config.sample_rate;
+        bitwidth = mStreamAttr->out_media_config.bit_width;
+        rc = (this->isBitWidthSupported(bitwidth) |
+              this->isSampleRateSupported(samplerate) |
+              this->isChannelSupported(channels));
+        if (0 != rc) {
+            PAL_ERR(LOG_TAG, "config not supported rc %d", rc);
+            result = false;
+        }
+    }
+    exit:
+    return result;
+}

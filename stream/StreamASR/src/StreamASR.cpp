@@ -40,6 +40,7 @@
 #include "Device.h"
 #include "kvh2xml.h"
 #include "MemLogBuilder.h"
+#include "STUtils.h"
 
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                    const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -355,7 +356,7 @@ int32_t StreamASR::setECRef(std::shared_ptr<Device> dev, bool isEnable)
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (rm->getLPIUsage()) {
+    if (getLPIUsage()) {
         PAL_INFO(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -419,9 +420,9 @@ std::shared_ptr<CaptureProfile> StreamASR::GetCurrentCaptureProfile()
         inputMode = ST_INPUT_MODE_HEADSET;
 
     if (!UseLpiCaptureProfile())
-        rm->setForceNLPI(true);
+        setForceNLPI(true);
 
-    if (rm->getLPIUsage())
+    if (getLPIUsage())
         operatingMode = ST_OPERATING_MODE_LOW_POWER;
 
     capProf = smCfg->GetCaptureProfile(
@@ -583,11 +584,11 @@ int32_t StreamASR::SetupDetectionEngine()
         }
     }
 
-    if (rm->getLPIUsage() &&
-        !UseLpiCaptureProfile()) {
+    if (getLPIUsage() &&
+       !UseLpiCaptureProfile()) {
         mStreamMutex.unlock();
-        rm->setForceNLPI(true);
-        rm->forceSwitchSoundTriggerStreams(true);
+        setForceNLPI(true);
+        forceSwitchSoundTriggerStreams(true);
         mStreamMutex.lock();
     }
 
@@ -763,14 +764,13 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
             bool backendUpdate = false;
             std::shared_ptr<CaptureProfile> capProf = nullptr;
 
-            backendUpdate = asrStream.rm->UpdateSoundTriggerCaptureProfile(
-                                             &asrStream, true);
+            backendUpdate = UpdateSoundTriggerCaptureProfile(&asrStream, true);
             if (backendUpdate ) {
-                status = rm->StopOtherDetectionStreams(&asrStream);
+                status = StopOtherDetectionStreams(&asrStream);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
 
-                status = rm->StartOtherDetectionStreams(&asrStream);
+                status = StartOtherDetectionStreams(&asrStream);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
             }
@@ -780,7 +780,7 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
             asrStream.capProf = asrStream.GetCurrentCaptureProfile();
             asrStream.mDevPPSelector = asrStream.capProf->GetName();
 
-            capProf = asrStream.rm->GetSoundTriggerCaptureProfile();
+            capProf = GetSoundTriggerCaptureProfile();
             if (!capProf) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "Error:%d Invalid capture profile", status);
@@ -864,7 +864,7 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
             std::shared_ptr<Device> dev = nullptr;
             pal_device_id_t devId = data->devId;
 
-            dev = asrStream.GetPalDevice(&asrStream, devId);
+            dev = GetPalDevice(&asrStream, devId);
             if (!dev) {
                 status = -EINVAL;
                 PAL_ERR(LOG_TAG, "Error:%d Device creation failed", status);
@@ -915,13 +915,12 @@ int32_t StreamASR::ASRActive::ProcessEvent(
         case ASR_EV_STOP_SPEECH_RECOGNITION: {
             bool backendUpdate = false;
 
-            rm->setForceNLPI(false);
+            setForceNLPI(false);
 
-            backendUpdate = asrStream.rm->UpdateSoundTriggerCaptureProfile(
-                                             &asrStream, false);
+            backendUpdate = UpdateSoundTriggerCaptureProfile(&asrStream, false);
 
             if (backendUpdate) {
-                status = rm->StopOtherDetectionStreams(&asrStream);
+                status = StopOtherDetectionStreams(&asrStream);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to stop other Detection streams", status);
             }
@@ -945,15 +944,15 @@ int32_t StreamASR::ASRActive::ProcessEvent(
                 PAL_ERR(LOG_TAG, "Error:%d Device close failed", status);
             asrStream.deviceOpened = false;
 
-            if (rm->getLPIUsage() &&
+            if (getLPIUsage() &&
                 !asrStream.UseLpiCaptureProfile()) {
                 asrStream.mStreamMutex.unlock();
-                rm->forceSwitchSoundTriggerStreams(false);
+                forceSwitchSoundTriggerStreams(false);
                 asrStream.mStreamMutex.lock();
             }
 
             if (backendUpdate) {
-                status = rm->StartOtherDetectionStreams(&asrStream);
+                status = StartOtherDetectionStreams(&asrStream);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to start other Detection streams", status);
             }
@@ -1010,7 +1009,7 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             pal_device_id_t devId = data->devId;
             std::shared_ptr<Device> dev = nullptr;
 
-            dev = asrStream.GetPalDevice(&asrStream, devId);
+            dev = GetPalDevice(&asrStream, devId);
             if (!dev) {
                 PAL_ERR(LOG_TAG, "Error:%d Device creation failed", -EINVAL);
                 status = -EINVAL;

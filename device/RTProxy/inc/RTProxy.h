@@ -56,6 +56,8 @@ class RTProxyIn : public Device
         int32_t isSampleRateSupported(uint32_t sampleRate);
         int32_t isChannelSupported(uint32_t numChannels);
         int32_t isBitWidthSupported(uint32_t bitWidth) override;
+        int32_t getDeviceConfig(struct pal_device *deviceattr,
+                                struct pal_stream_attributes *sAttr) override;
         int start();
         virtual ~RTProxyIn();
 };
@@ -75,6 +77,8 @@ class RTProxyOut : public Device
         int32_t isSampleRateSupported(uint32_t sampleRate);
         int32_t isChannelSupported(uint32_t numChannels);
         int32_t isBitWidthSupported(uint32_t bitWidth) override;
+        int32_t getDeviceConfig(struct pal_device *deviceattr,
+                                struct pal_stream_attributes *sAttr) override;
         int start();
 };
 

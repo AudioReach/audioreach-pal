@@ -199,6 +199,10 @@ public:
     int32_t checkAndUpdateSampleRate(unsigned int *sampleRate) override;
     int32_t getParameter(uint32_t param_id, void **param) override;
     static bool isUSBOutDevice(pal_device_id_t);
+    int32_t getDeviceConfig(struct pal_device *deviceattr,
+                            struct pal_stream_attributes *sAttr) override;
+    bool isPluginDevice(pal_device_id_t id) override { return true; };
+    bool isPluginPlaybackDevice(pal_device_id_t id) override;
     static std::shared_ptr<Device> getObject(pal_device_id_t id);
     ~USB();
 };

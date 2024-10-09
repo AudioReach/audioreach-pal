@@ -53,6 +53,7 @@ public:
              const std::shared_ptr<ResourceManager> rm);
    virtual ~StreamCommonProxy();
    int32_t getParameters(uint32_t param_id, void **payload);
+   bool isStreamSupported() override {return true;}
 };
 
 #endif//StreamCommonProxy_H_

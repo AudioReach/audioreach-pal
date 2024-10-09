@@ -135,7 +135,7 @@ public:
     virtual int32_t setParameter(uint32_t param_id, void *param);
     virtual int32_t getDeviceParameter(uint32_t param_id, void **param);
     virtual int32_t getParameter(uint32_t param_id, void **param);
-    virtual bool isDeviceReady() { return true;}
+    virtual bool isDeviceReady(pal_device_id_t id) { return true;}
     virtual bool isScoNbWbActive() { return false;}
     virtual int32_t checkAndUpdateSampleRate(uint32_t *sampleRate);
     virtual int32_t checkAndUpdateBitWidth(uint32_t *bitWidth);
@@ -149,6 +149,8 @@ public:
     virtual int getHighestSupportedBps();
     virtual bool isDeviceConnected(struct pal_usb_device_address addr);
     virtual int32_t checkDeviceStatus();
+    virtual int32_t getDeviceConfig(struct pal_device *deviceattr,
+                                    struct pal_stream_attributes *sAttr);
     static unsigned int palToSndDriverFormat(uint32_t fmt_id);
     unsigned int bitsToAlsaFormat(unsigned int bits);
     struct mixer_ctl *getBeMixerControl(struct mixer *am, std::string beName,
@@ -174,6 +176,9 @@ public:
     void removeStreamDeviceAttr(Stream* streamHandle);
     int getTopPriorityDeviceAttr(struct pal_device *deviceAttr, uint32_t *streamPrio);
     static int32_t initHdrRoutine(const char *hdr_custom_key);
+    virtual bool isPluginDevice(pal_device_id_t id) { return false; }
+    virtual bool isDpDevice(pal_device_id_t id) { return false; }
+    virtual bool isPluginPlaybackDevice(pal_device_id_t id) { return false; }
 
     static std::shared_ptr<PluginManager> pm;
 };

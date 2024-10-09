@@ -44,6 +44,8 @@
 #include "detection_cmn_api.h"
 #include "mma_api.h"
 
+using InstanceListNode_t = std::vector<std::pair<int32_t, bool>>;
+
 enum {
     ENGINE_IDLE  = 0x0,
     GMM_DETECTED = 0x1,
@@ -526,6 +528,7 @@ private:
         int32_t ProcessEvent(std::shared_ptr<StEventConfig> ev_cfg) override;
     };
 
+    std::vector<std::pair<std::string, InstanceListNode_t>> STInstancesLists;
     pal_device_id_t GetAvailCaptureDevice();
     std::shared_ptr<SoundTriggerEngine> HandleEngineLoad(uint8_t *sm_data,
                          int32_t sm_size, listen_model_indicator_enum type,
@@ -569,7 +572,6 @@ private:
     void GetUUID(class SoundTriggerUUID *uuid, struct pal_st_sound_model *sound_model);
     void UpdateCaptureHandleInfo(bool start);
     bool IsSameDeviceType(pal_device_id_t dev_id, pal_device_id_t curr_dev_id);
-    std::shared_ptr<Device> GetPalDevice(StreamSoundTrigger *streamHandle, pal_device_id_t dev_id);
     std::shared_ptr<VoiceUIPlatformInfo> vui_ptfm_info_;
     std::shared_ptr<VUIStreamConfig> sm_cfg_;
     SoundModelInfo* sm_info_;

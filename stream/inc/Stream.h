@@ -182,6 +182,7 @@ public:
     virtual int32_t isBitWidthSupported(uint32_t bitWidth) = 0;
     virtual int32_t isSampleRateSupported(uint32_t sampleRate) = 0;
     virtual int32_t isChannelSupported(uint32_t numChannels) = 0;
+    virtual bool isStreamSupported();
     virtual int32_t createMmapBuffer(int32_t min_size_frames __unused,
                                    struct pal_mmap_buffer *info __unused) {return -EINVAL;}
     virtual int32_t GetMmapPosition(struct pal_mmap_position *position __unused) {return -EINVAL;}
@@ -227,8 +228,6 @@ public:
     static int32_t destroy(Stream* s);
     bool isStreamAudioOutFmtSupported(pal_audio_fmt_t format);
     int32_t getTimestamp(struct pal_session_time *stime);
-    int32_t handleBTDeviceNotReadyToDummy(bool& a2dpSuspend);
-    int32_t handleBTDeviceNotReady(bool& a2dpSuspend);
     int disconnectStreamDevice(Stream* streamHandle,  pal_device_id_t dev_id);
     virtual int disconnectStreamDevice_l(Stream* streamHandle,  pal_device_id_t dev_id);
     int connectStreamDevice(Stream* streamHandle, struct pal_device *dattr);
@@ -270,8 +269,6 @@ public:
         mStreamMutex.unlock();
     };
     bool isMutexLockedbyRm() { return mutexLockedbyRm; }
-    /* GetPalDevice only applies to Sound Trigger streams */
-    std::shared_ptr<Device> GetPalDevice(Stream *streamHandle, pal_device_id_t dev_id);
     void setCachedState(stream_state_t state);
     void clearmDevices();
     void removemDevice(int palDevId);

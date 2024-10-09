@@ -40,6 +40,7 @@
 #include "Session.h"
 #include "SessionAlsaUtils.h"
 #include "Device.h"
+#include "BTUtils.h"
 #include "kvh2xml.h"
 #include <dlfcn.h>
 #include <unistd.h>
@@ -221,7 +222,7 @@ int Bluetooth::getPluginPayload(void **libHandle, bt_codec_t **btCodec,
     bt_codec_t *codec = NULL;
     void *handle = NULL;
 
-    lib_path = rm->getBtCodecLib(codecFormat, (codecType == ENC ? "enc" : "dec"));
+    lib_path = getBtCodecLib(codecFormat, (codecType == ENC ? "enc" : "dec"));
     if (lib_path.empty()) {
         PAL_ERR(LOG_TAG, "fail to get BT codec library");
         return -ENOSYS;
@@ -1152,7 +1153,7 @@ free_fe:
 int32_t Bluetooth::configureSlimbusClockSrc(void)
 {
     return configureDeviceClockSrc(BT_SLIMBUS_CLK_STR,
-                rm->getBtSlimClockSrc(codecFormat));
+                getBtSlimClockSrc(codecFormat));
 }
 
 
@@ -1770,9 +1771,12 @@ int BtA2dp::stopPlayback()
     return 0;
 }
 
-bool BtA2dp::isDeviceReady()
+bool BtA2dp::isDeviceReady(pal_device_id_t id)
 {
     bool ret = false;
+
+    if (!rm->isDeviceAvailable(id))
+        return ret;
 
     if (a2dpRole == SOURCE) {
         if (param_bt_a2dp.a2dp_suspended)
@@ -2058,9 +2062,9 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
             if (a2dpState == A2DP_STATE_DISCONNECTED)
                 goto exit;
             if (rm->IsDummyDevEnabled()) {
-                status = rm->a2dpSuspendToDummy(param_a2dp->dev_id);
+                status = a2dpSuspendToDummy(param_a2dp->dev_id);
             } else {
-                status = rm->a2dpSuspend(param_a2dp->dev_id);
+                status = a2dpSuspend(param_a2dp->dev_id);
             }
             if (audio_source_suspend_api)
                 audio_source_suspend_api(get_session_type());
@@ -2090,9 +2094,9 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
 
             if (!skip_switch) {
                 if (rm->IsDummyDevEnabled()) {
-                    status = rm->a2dpResumeFromDummy(param_a2dp->dev_id);
+                    status = a2dpResumeFromDummy(param_a2dp->dev_id);
                 } else {
-                    status = rm->a2dpResume(param_a2dp->dev_id);
+                    status = a2dpResume(param_a2dp->dev_id);
                 }
             }
         }
@@ -2161,9 +2165,9 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
                 goto exit;
 
             if (rm->IsDummyDevEnabled()) {
-                rm->a2dpCaptureSuspendToDummy(param_a2dp->dev_id);
+                a2dpCaptureSuspendToDummy(param_a2dp->dev_id);
             } else {
-                rm->a2dpCaptureSuspend(param_a2dp->dev_id);
+                a2dpCaptureSuspend(param_a2dp->dev_id);
             }
             if (audio_sink_suspend_api)
                 audio_sink_suspend_api(get_session_type());
@@ -2195,9 +2199,9 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
 
             if (!skip_switch) {
                 if (rm->IsDummyDevEnabled()) {
-                    rm->a2dpCaptureResumeFromDummy(param_a2dp->dev_id);
+                    a2dpCaptureResumeFromDummy(param_a2dp->dev_id);
                 } else {
-                    rm->a2dpCaptureResume(param_a2dp->dev_id);
+                    a2dpCaptureResume(param_a2dp->dev_id);
                 }
             }
         }
@@ -2434,6 +2438,13 @@ int32_t BtA2dp::checkDeviceStatus() {
     return a2dpState;
 }
 
+int32_t BtA2dp::getDeviceConfig(struct pal_device *deviceattr,
+                                struct pal_stream_attributes *sAttr) {
+
+    deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_DEFAULT_COMPRESSED;
+    return 0;
+}
+
 /* Scope of BtScoRX/Tx class */
 // definition of static BtSco member variables
 std::shared_ptr<Device> BtSco::objRx = nullptr;
@@ -2461,8 +2472,13 @@ BtSco::~BtSco()
         delete [] lc3CodecInfo.dec_cfg.streamMapIn;
 }
 
-bool BtSco::isDeviceReady()
+bool BtSco::isDeviceReady(pal_device_id_t id)
 {
+    bool ret = false;
+
+    if (!rm->isDeviceAvailable(id))
+        return ret;
+
     return isScoOn;
 }
 
@@ -2779,5 +2795,14 @@ std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
         }
         return objTx;
     }
+}
+
+int32_t BtSco::getDeviceConfig(struct pal_device *deviceattr,
+                                struct pal_stream_attributes *sAttr) {
+
+    this->checkAndUpdateSampleRate(&deviceattr->config.sample_rate);
+    PAL_DBG(LOG_TAG, "BT SCO device samplerate %d, bitwidth %d",
+            deviceattr->config.sample_rate, deviceattr->config.bit_width);
+    return 0;
 }
 /* BtSco class end */

@@ -127,7 +127,6 @@ StreamNonTunnel::StreamNonTunnel(const struct pal_stream_attributes *sattr, stru
 
 StreamNonTunnel::~StreamNonTunnel()
 {
-    rm->resetStreamInstanceID(this);
     rm->deregisterStream(this);
 }
 
@@ -648,4 +647,15 @@ int32_t StreamNonTunnel::ssrDownHandler()
 int32_t StreamNonTunnel::ssrUpHandler()
 {
     return 0;
+}
+
+bool StreamNonTunnel::isStreamSupported()
+{
+    bool result = true;
+
+    if (mStreamAttr->direction != PAL_AUDIO_INPUT_OUTPUT) {
+        result = false;
+        PAL_ERR(LOG_TAG, "config dir %d not supported", mStreamAttr->direction);
+    }
+    return result;
 }

@@ -50,6 +50,8 @@ public:
     int32_t isBitWidthSupported(uint32_t bitWidth) override;
     int32_t checkAndUpdateBitWidth(uint32_t *bitWidth) override;
     int32_t checkAndUpdateSampleRate(uint32_t *sampleRate) override;
+    int32_t getDeviceConfig(struct pal_device *deviceattr,
+                            struct pal_stream_attributes *sAttr) override;
     static std::shared_ptr<Device> getObject();
     virtual ~HeadsetMic();
 };

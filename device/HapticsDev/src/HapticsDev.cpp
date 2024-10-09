@@ -157,3 +157,22 @@ int32_t HapticsDev::isBitWidthSupported(uint32_t bitWidth)
     }
     return rc;
 }
+
+int32_t HapticsDev::getDeviceConfig(struct pal_device *deviceattr,
+                                    struct pal_stream_attributes *sAttr) {
+    /* For PAL_DEVICE_OUT_HAPTICS_DEVICE, copy all config from stream attributes */
+    if (!sAttr) {
+        PAL_ERR(LOG_TAG, "Invalid parameter.");
+        return -EINVAL;
+    }
+    if (ResourceManager::IsHapticsThroughWSA())
+        return 0;
+
+    deviceattr->config.ch_info = sAttr->out_media_config.ch_info;
+    deviceattr->config.bit_width = sAttr->out_media_config.bit_width;
+    deviceattr->config.aud_fmt_id = sAttr->out_media_config.aud_fmt_id;
+    PAL_DBG(LOG_TAG, "device %d sample rate %d bitwidth %d",
+            deviceattr->id,deviceattr->config.sample_rate,
+            deviceattr->config.bit_width);
+    return 0;
+}

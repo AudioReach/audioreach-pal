@@ -47,6 +47,7 @@
 #include "VoiceUIInterface.h"
 #include "VUIInterfaceProxy.h"
 #include "MemLogBuilder.h"
+#include "STUtils.h"
 
 // TODO: find another way to print debug logs by default
 #define ST_DBG_LOGS
@@ -108,6 +109,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     sm_cfg_ = nullptr;
     ec_rx_dev_ = nullptr;
     mDevices.clear();
+    std::list<Stream*> activeSTStreams;
 
     // Setting default volume to unity
     mVolumeData = (struct pal_volume_data *)malloc(sizeof(struct pal_volume_data)
@@ -187,6 +189,9 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     }
 
     rm->registerStream(this);
+    rm->getActiveStreamByType(activeSTStreams, PAL_STREAM_VOICE_UI);
+    if(activeSTStreams.size() <= 1)
+        onVUIStreamRegistered();
 
     // Print the concurrency feature flags supported
     PAL_INFO(LOG_TAG, "capture conc enable %d,voice conc enable %d,voip conc enable %d",
@@ -194,7 +199,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
         vui_ptfm_info_->GetConcurrentVoipCallEnable());
 
     // check concurrency count from rm
-    rm->GetSoundTriggerConcurrencyCount(PAL_STREAM_VOICE_UI, &enable_concurrency_count,
+    GetSoundTriggerConcurrencyCount(PAL_STREAM_VOICE_UI, &enable_concurrency_count,
         &disable_concurrency_count);
 
     /*
@@ -215,7 +220,9 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
 }
 
 StreamSoundTrigger::~StreamSoundTrigger() {
+    std::list<Stream*> activeSTStreams;
     mStreamMutex.lock();
+    STInstancesLists.clear();
     {
         std::lock_guard<std::mutex> lck(timer_mutex_);
         exit_timer_thread_ = true;
@@ -236,6 +243,9 @@ StreamSoundTrigger::~StreamSoundTrigger() {
     mStreamMutex.unlock();
 
     rm->deregisterStream(this);
+    rm->getActiveStreamByType(activeSTStreams, PAL_STREAM_VOICE_UI);
+    if(!activeSTStreams.size())
+        onVUIStreamDeregistered();
 
     if (sm_config_) {
         free(sm_config_);
@@ -308,7 +318,7 @@ void StreamSoundTrigger::UpdateCaptureHandleInfo(bool start) {
     pal_param_st_capture_info_t stCaptureInfo;
     stCaptureInfo.capture_handle = rec_config_->capture_handle;
     stCaptureInfo.pal_handle = reinterpret_cast<pal_stream_handle_t *>(this);
-    rm->RegisterSTCaptureHandle(stCaptureInfo, start);
+    RegisterSTCaptureHandle(stCaptureInfo, start);
 }
 
 int32_t StreamSoundTrigger::start() {
@@ -634,7 +644,7 @@ int32_t StreamSoundTrigger::HandleConcurrentStream(bool active) {
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 transit_end_time_ - transit_start_time_).count();
         common_cp_update_disable_ = false;
-        if (rm->getLPIUsage()) {
+        if (getLPIUsage()) {
             PAL_INFO(LOG_TAG, "NLPI->LPI switch takes %llums",
                 (long long)transit_duration);
         } else {
@@ -653,7 +663,7 @@ int32_t StreamSoundTrigger::setECRef(std::shared_ptr<Device> dev, bool is_enable
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (rm->getLPIUsage()) {
+    if (getLPIUsage()) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -721,7 +731,7 @@ int32_t StreamSoundTrigger::DisconnectDevice(pal_device_id_t device_id) {
             }
             mPalDevices.clear();
         }
-        if (rm->isTxConcurrencyActive()) {
+        if (isTxConcurrencyActive()) {
             PAL_DBG(LOG_TAG, "Switch device until concurrent Tx stream switches");
             goto exit;
         }
@@ -745,7 +755,7 @@ int32_t StreamSoundTrigger::ConnectDevice(pal_device_id_t device_id) {
     std::shared_ptr<StEventConfig> ev_cfg(
         new StDeviceConnectedEventConfig(device_id));
 
-    if (is_backend_shared_ && rm->isTxConcurrencyActive()) {
+    if (is_backend_shared_ && isTxConcurrencyActive()) {
         PAL_DBG(LOG_TAG, "Switch device until concurrent Tx stream switches");
         goto exit;
     }
@@ -974,7 +984,7 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
 
     if (det_type == USER_VERIFICATION_REJECT ||
         det_type == KEYWORD_DETECTION_REJECT)
-        rm->handleDeferredSwitch();
+        stHandleDeferredSwitch();
 
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
@@ -1940,14 +1950,14 @@ std::shared_ptr<CaptureProfile> StreamSoundTrigger::GetCurrentCaptureProfile() {
             (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC);
     }
 
-    is_transit_to_nlpi = rm->CheckForForcedTransitToNonLPI();
+    is_transit_to_nlpi = CheckForForcedTransitToNonLPI();
 
     if (use_headset_profile) {
         if (is_transit_to_nlpi) {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING,
                     ST_INPUT_MODE_HEADSET));
-        } else if (rm->getLPIUsage()) {
+        } else if (getLPIUsage()) {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_LOW_POWER,
                     ST_INPUT_MODE_HEADSET));
@@ -1961,7 +1971,7 @@ std::shared_ptr<CaptureProfile> StreamSoundTrigger::GetCurrentCaptureProfile() {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING,
                     ST_INPUT_MODE_HANDSET));
-        } else if (rm->getLPIUsage()) {
+        } else if (getLPIUsage()) {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_LOW_POWER,
                     ST_INPUT_MODE_HANDSET));
@@ -2329,16 +2339,16 @@ int32_t StreamSoundTrigger::StLoaded::ProcessEvent(
                 !st_stream_.common_cp_update_disable_ &&
                 (ev_cfg->id_ == ST_EV_START_RECOGNITION ||
                 (ev_cfg->id_ == ST_EV_RESUME &&
-                !st_stream_.rm->GetSoundTriggerCaptureProfile()))) {
-                backend_update = st_stream_.rm->UpdateSoundTriggerCaptureProfile(
+                !GetSoundTriggerCaptureProfile()))) {
+                backend_update = UpdateSoundTriggerCaptureProfile(
                     &st_stream_, true);
                 if (backend_update) {
-                    status = rm->StopOtherDetectionStreams(&st_stream_);
+                    status = StopOtherDetectionStreams(&st_stream_);
                     if (status) {
                         PAL_ERR(LOG_TAG, "Failed to stop other SVA streams");
                     }
 
-                    status = rm->StartOtherDetectionStreams(&st_stream_);
+                    status = StartOtherDetectionStreams(&st_stream_);
                     if (status) {
                         PAL_ERR(LOG_TAG, "Failed to start other SVA streams");
                     }
@@ -2350,7 +2360,7 @@ int32_t StreamSoundTrigger::StLoaded::ProcessEvent(
 
                 if (!st_stream_.is_backend_shared_) {
                     dev->getDeviceAttributes(&dattr);
-                    cap_prof = st_stream_.rm->GetSoundTriggerCaptureProfile();
+                    cap_prof = GetSoundTriggerCaptureProfile();
                     if (!cap_prof) {
                         PAL_ERR(LOG_TAG, "Invalid capture profile");
                         goto err_exit;
@@ -2720,10 +2730,10 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
                 !st_stream_.common_cp_update_disable_ &&
                 (ev_cfg->id_ == ST_EV_STOP_RECOGNITION ||
                 ev_cfg->id_ == ST_EV_UNLOAD_SOUND_MODEL)) {
-                backend_update = st_stream_.rm->UpdateSoundTriggerCaptureProfile(
+                backend_update = UpdateSoundTriggerCaptureProfile(
                     &st_stream_, false);
                 if (backend_update) {
-                    status = rm->StopOtherDetectionStreams(&st_stream_);
+                    status = StopOtherDetectionStreams(&st_stream_);
                     if (status) {
                         PAL_ERR(LOG_TAG, "Failed to stop other SVA streams");
                     }
@@ -2762,7 +2772,7 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
             }
 
             if (backend_update) {
-                status = rm->StartOtherDetectionStreams(&st_stream_);
+                status = StartOtherDetectionStreams(&st_stream_);
                 if (status) {
                     PAL_ERR(LOG_TAG, "Failed to start other SVA streams");
                 }
@@ -4002,68 +4012,4 @@ bool StreamSoundTrigger::IsSameDeviceType(
              (curr_dev_id == PAL_DEVICE_IN_HEADSET_VA_MIC ||
               curr_dev_id == PAL_DEVICE_IN_WIRED_HEADSET));
     }
-}
-
-
-std::shared_ptr<Device> StreamSoundTrigger::GetPalDevice(StreamSoundTrigger *streamHandle, pal_device_id_t dev_id)
-{
-    std::shared_ptr<CaptureProfile> cap_prof = nullptr;
-    std::shared_ptr<CaptureProfile> common_cap_prof = nullptr;
-    std::shared_ptr<Device> device = nullptr;
-
-    struct pal_device dev;
-
-    if (!streamHandle) {
-        PAL_ERR(LOG_TAG, "Stream is invalid");
-        goto exit;
-    }
-
-    if (!mStreamAttr) {
-        PAL_ERR(LOG_TAG, "Stream attribute is null");
-        goto exit;
-    }
-
-    PAL_DBG(LOG_TAG, "Enter, stream: %d, device_id: %d", mStreamAttr->type, dev_id);
-
-    cap_prof = streamHandle->GetCurrentCaptureProfile();
-
-    if (!cap_prof && !rm->GetSoundTriggerCaptureProfile() &&
-        !rm->GetTXMacroCaptureProfile()) {
-        PAL_ERR(LOG_TAG, "Failed to get local and common cap_prof for stream: %d",
-                mStreamAttr->type);
-        goto exit;
-    }
-
-    common_cap_prof = (dev_id == PAL_DEVICE_IN_ULTRASOUND_MIC) ?
-                       rm->GetTXMacroCaptureProfile(): rm->GetSoundTriggerCaptureProfile();
-    if (common_cap_prof) {
-        /* Use the rm's common capture profile if local capture profile is not
-         * available, or the common capture profile has the highest priority.
-         */
-        if (!cap_prof ||
-            common_cap_prof->ComparePriority(cap_prof) >= CAPTURE_PROFILE_PRIORITY_HIGH) {
-            PAL_DBG(LOG_TAG, "common cap_prof %s has the highest priority.",
-                    common_cap_prof->GetName().c_str());
-            cap_prof = common_cap_prof;
-        }
-    }
-
-    dev.id = dev_id;
-    dev.config.bit_width = cap_prof->GetBitWidth();
-    dev.config.ch_info.channels = cap_prof->GetChannels();
-    dev.config.sample_rate = cap_prof->GetSampleRate();
-    dev.config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
-
-    device = Device::getInstance(&dev, rm);
-    if (!device) {
-        PAL_ERR(LOG_TAG, "Failed to get device instance");
-        goto exit;
-    }
-
-    device->setDeviceAttributes(dev);
-    device->setSndName(cap_prof->GetSndName());
-
-exit:
-    PAL_DBG(LOG_TAG, "Exit");
-    return device;
 }

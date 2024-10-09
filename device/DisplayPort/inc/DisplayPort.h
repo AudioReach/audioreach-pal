@@ -158,6 +158,9 @@ public:
     int updateAudioAckState(int node_value, int controller, int stream);
     int getDeviceAttributes (struct pal_device *dattr,
                             Stream* streamHandle = NULL) override;
+    int32_t getDeviceConfig(struct pal_device *deviceattr,
+                            struct pal_stream_attributes *sAttr) override;
+    bool isDpDevice(pal_device_id_t id) override;
 };
 
 

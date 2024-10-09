@@ -789,6 +789,84 @@ int32_t DisplayPort::checkAndUpdateSampleRate(uint32_t *sampleRate)
     return rc;
 }
 
+int32_t DisplayPort::getDeviceConfig(struct pal_device *deviceattr,
+                                     struct pal_stream_attributes *sAttr) {
+
+    int32_t status = 0;
+    struct pal_channel_info dev_ch_info;
+    struct pal_device_info devinfo = {};
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    if (!sAttr) {
+        PAL_ERR(LOG_TAG, "Invalid parameter.");
+        return -EINVAL;
+    }
+    /**
+     * Comparision of stream channel and device supported max channel.
+     * If stream channel is less than or equal to device supported
+     * channel then the channel of stream is taken othewise it is of
+     * device
+     */
+    int channels = this->getMaxChannel();
+
+    if (channels > sAttr->out_media_config.ch_info.channels)
+        channels = sAttr->out_media_config.ch_info.channels;
+
+    /**
+     * According to HDMI spec CEA-861-E, 1 channel is not
+     * supported, thus converting 1 channel to 2 channels.
+     */
+    if (channels == 1)
+        channels = 2;
+
+    dev_ch_info.channels = channels;
+
+    rm->getChannelMap(&(dev_ch_info.ch_map[0]), channels);
+    deviceattr->config.ch_info = dev_ch_info;
+
+    if (!this->isSupportedSR(deviceattr->config.sample_rate)) {
+        deviceattr->config.sample_rate = this->getHighestSupportedSR();
+
+        if (sAttr->out_media_config.sample_rate < SAMPLINGRATE_32K &&
+            (sAttr->out_media_config.sample_rate % 11025) == 0 &&
+            this->isSupportedSR(SAMPLINGRATE_44K)) {
+                deviceattr->config.sample_rate = SAMPLINGRATE_44K;
+        }
+    }
+
+    if (this->isBitWidthSupported(deviceattr->config.bit_width) != 0) {
+        int bps = this->getHighestSupportedBps();
+        if (sAttr->out_media_config.bit_width > bps)
+            deviceattr->config.bit_width = bps;
+        else
+            deviceattr->config.bit_width = BITWIDTH_16;
+    }
+    if ((deviceattr->config.bit_width == BITWIDTH_32) &&
+                (devinfo.bitFormatSupported != PAL_AUDIO_FMT_PCM_S32_LE)) {
+        PAL_DBG(LOG_TAG, "32 bit is not supported; update with supported bit format");
+        deviceattr->config.aud_fmt_id = devinfo.bitFormatSupported;
+        deviceattr->config.bit_width =
+                rm->palFormatToBitwidthLookup(devinfo.bitFormatSupported);
+    } else {
+        if (deviceattr->config.bit_width == 32) {
+            deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S32_LE;
+        } else if (deviceattr->config.bit_width == 24) {
+            if (sAttr->out_media_config.aud_fmt_id == PAL_AUDIO_FMT_PCM_S24_LE)
+                deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_LE;
+            else
+                deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_3LE;
+        } else {
+            deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
+        }
+    }
+
+    PAL_DBG(LOG_TAG, "device %d sample rate %d bitwidth %d",
+            deviceattr->id, deviceattr->config.sample_rate,
+            deviceattr->config.bit_width);
+
+    return status;
+}
+
 
 
 /* ----------------------------------------------------------------------------------
@@ -1834,4 +1912,12 @@ int DisplayPort::getHighestSupportedBps()
         highestBps = 16;
     }
     return highestBps;
+}
+
+bool DisplayPort::isDpDevice(pal_device_id_t id) {
+    if (id == PAL_DEVICE_OUT_AUX_DIGITAL || id == PAL_DEVICE_OUT_AUX_DIGITAL_1 ||
+        id == PAL_DEVICE_OUT_HDMI)
+        return true;
+    else
+        return false;
 }

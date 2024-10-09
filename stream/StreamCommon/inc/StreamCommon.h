@@ -88,9 +88,9 @@ public:
     int32_t start_device();
     int32_t startSession();
     int32_t getTagsWithModuleInfo(size_t *size, uint8_t *payload);
-    int32_t isSampleRateSupported(uint32_t sampleRate __unused) override {return 0;}
-    int32_t isChannelSupported(uint32_t numChannels __unused) override {return 0;}
-    int32_t isBitWidthSupported(uint32_t bitWidth __unused) override {return 0;}
+    int32_t isBitWidthSupported(uint32_t bitWidth) override {return 0;};
+    int32_t isSampleRateSupported(uint32_t sampleRate) override {return 0;};
+    int32_t isChannelSupported(uint32_t numChannels) override {return 0;};
 };
 
 #endif//STREAMCOMMON_H_

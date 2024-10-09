@@ -217,6 +217,63 @@ error:
     return status;
 }
 
+int32_t RTProxyIn::getDeviceConfig(struct pal_device *deviceattr,
+                                  struct pal_stream_attributes *sAttr) {
+   int32_t status = 0;
+   std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+   /* For PAL_DEVICE_IN_PROXY, copy all config from stream attributes */
+   if (!sAttr) {
+       PAL_ERR(LOG_TAG, "Invalid parameter.");
+       return -EINVAL;
+   }
+
+   struct pal_media_config *candidateConfig = &sAttr->in_media_config;
+   PAL_DBG(LOG_TAG, "sattr chn=0x%x fmt id=0x%x rate = 0x%x width=0x%x",
+       sAttr->in_media_config.ch_info.channels,
+       sAttr->in_media_config.aud_fmt_id,
+       sAttr->in_media_config.sample_rate,
+       sAttr->in_media_config.bit_width);
+
+   if (!rm->ifVoiceorVoipCall(sAttr->type) && rm->isDeviceAvailable(PAL_DEVICE_OUT_PROXY)) {
+       PAL_DBG(LOG_TAG, "This is NOT voice call. out proxy is available");
+       std::shared_ptr<Device> devOut = nullptr;
+       struct pal_device proxyOut_dattr;
+       proxyOut_dattr.id = PAL_DEVICE_OUT_PROXY;
+       devOut = Device::getInstance(&proxyOut_dattr, rm);
+       if (devOut) {
+           status = devOut->getDeviceAttributes(&proxyOut_dattr);
+           if (status) {
+               PAL_ERR(LOG_TAG, "getDeviceAttributes for OUT_PROXY failed %d", status);
+               return 0;
+           }
+
+           if (proxyOut_dattr.config.ch_info.channels &&
+                   proxyOut_dattr.config.sample_rate) {
+               PAL_INFO(LOG_TAG, "proxy out attr is used");
+               candidateConfig = &proxyOut_dattr.config;
+           }
+       }
+   }
+   deviceattr->config.ch_info = candidateConfig->ch_info;
+   if (isPalPCMFormat(candidateConfig->aud_fmt_id))
+       deviceattr->config.bit_width =
+                 rm->palFormatToBitwidthLookup(candidateConfig->aud_fmt_id);
+   else
+       deviceattr->config.bit_width = candidateConfig->bit_width;
+
+   deviceattr->config.aud_fmt_id = candidateConfig->aud_fmt_id;
+   deviceattr->config.sample_rate = candidateConfig->sample_rate;
+
+   PAL_INFO(LOG_TAG, "in proxy chn=0x%x fmt id=0x%x rate = 0x%x width=0x%x",
+               deviceattr->config.ch_info.channels,
+               deviceattr->config.aud_fmt_id,
+               deviceattr->config.sample_rate,
+               deviceattr->config.bit_width);
+
+    return status;
+}
+
 
 std::shared_ptr<Device> RTProxyOut::objPlay = nullptr;
 std::shared_ptr<Device> RTProxyOut::objRecord = nullptr;
@@ -293,6 +350,77 @@ int RTProxyOut::start() {
     customPayloadSize = 0;
 
     return Device::start();
+}
+
+int32_t RTProxyOut::getDeviceConfig(struct pal_device *deviceattr,
+                                    struct pal_stream_attributes *sAttr) {
+   int32_t status = 0;
+   struct pal_stream_attributes tx_attr;
+   bool is_wfd_in_progress = false;
+   std::list <Stream*> activeStreams;
+   std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+   if (!sAttr) {
+       PAL_ERR(LOG_TAG, "Invalid parameter.");
+       return -EINVAL;
+   }
+
+   if (deviceattr->id == PAL_DEVICE_OUT_HEARING_AID) {
+        deviceattr->config.ch_info = sAttr->out_media_config.ch_info;
+        deviceattr->config.bit_width = sAttr->out_media_config.bit_width;
+        deviceattr->config.aud_fmt_id = sAttr->out_media_config.aud_fmt_id;
+        PAL_DBG(LOG_TAG, "device %d sample rate %d bitwidth %d",
+                deviceattr->id,deviceattr->config.sample_rate,
+                deviceattr->config.bit_width);
+    }
+    else {
+        activeStreams = rm->getActiveStreamList();
+        // check if wfd session in progress
+        for (auto& tx_str: activeStreams) {
+            tx_str->getStreamAttributes(&tx_attr);
+            if (tx_attr.direction == PAL_AUDIO_INPUT &&
+                tx_attr.info.opt_stream_info.tx_proxy_type == PAL_STREAM_PROXY_TX_WFD) {
+                is_wfd_in_progress = true;
+                break;
+            }
+        }
+
+        if (is_wfd_in_progress) {
+            PAL_INFO(LOG_TAG, "wfd TX is in progress");
+            std::shared_ptr<Device> dev = nullptr;
+            struct pal_device proxyIn_dattr;
+            proxyIn_dattr.id = PAL_DEVICE_IN_PROXY;
+            dev = Device::getInstance(&proxyIn_dattr, rm);
+            if (dev) {
+                status = dev->getDeviceAttributes(&proxyIn_dattr);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "OUT_PROXY getDeviceAttributes failed %d", status);
+                    return status;
+                }
+                deviceattr->config.ch_info = proxyIn_dattr.config.ch_info;
+                deviceattr->config.sample_rate = proxyIn_dattr.config.sample_rate;
+                if (isPalPCMFormat(proxyIn_dattr.config.aud_fmt_id))
+                    deviceattr->config.bit_width =
+                          rm->palFormatToBitwidthLookup(proxyIn_dattr.config.aud_fmt_id);
+                else
+                    deviceattr->config.bit_width = proxyIn_dattr.config.bit_width;
+
+                deviceattr->config.aud_fmt_id = proxyIn_dattr.config.aud_fmt_id;
+            }
+        }
+        else {
+            PAL_INFO(LOG_TAG, "wfd TX is not in progress");
+            if (rm->getProxyChannels()) {
+                PAL_INFO(LOG_TAG, "proxy device channel number: %d", rm->getProxyChannels());
+                deviceattr->config.ch_info.channels = rm->getProxyChannels();
+            }
+        }
+        PAL_INFO(LOG_TAG, "PAL_DEVICE_OUT_PROXY sample rate %d bitwidth %d ch:%d",
+                deviceattr->config.sample_rate, deviceattr->config.bit_width,
+                deviceattr->config.ch_info.channels);
+    }
+
+   return status;
 }
 
 RTProxyOut::~RTProxyOut()

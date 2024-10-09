@@ -55,6 +55,7 @@ public:
    virtual ~StreamContextProxy();
    int32_t setParameters(uint32_t param_id, void *payload);
    int32_t setVolume( struct pal_volume_data *volume __unused) {return 0;}
+   bool isStreamSupported() override {return true;}
 private:
    void ParseASPSEventPayload(uint32_t event_id,
                               uint32_t event_size, void *data);

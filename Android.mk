@@ -84,8 +84,7 @@ LOCAL_SRC_FILES := \
     utils/src/AudioHapticsInterface.cpp \
     utils/src/MetadataParser.cpp \
     utils/src/MemLogBuilder.cpp \
-    utils/src/PerfLock.cpp \
-    utils/src/STUtils.cpp
+    utils/src/PerfLock.cpp
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \
@@ -174,6 +173,18 @@ LOCAL_SHARED_LIBRARIES += libqti-tinyalsa libqti-tinycompress
 else
 LOCAL_C_INCLUDES       += $(TOP)/external/tinycompress/include
 LOCAL_SHARED_LIBRARIES += libtinyalsa libtinycompress
+endif
+
+ifeq ($(TARGET_DISABLE_PAL_ST),true)
+LOCAL_CFLAGS        += -DSOUND_TRIGGER_FEATURES_DISABLED
+else
+LOCAL_SRC_FILES     += utils/src/STUtils.cpp
+endif
+
+ifeq ($(TARGET_DISABLE_PAL_BT),true)
+LOCAL_CFLAGS        += -DBLUETOOTH_FEATURES_DISABLED
+else
+LOCAL_SRC_FILES     += utils/src/BTUtils.cpp
 endif
 
 include $(BUILD_SHARED_LIBRARY)

@@ -1000,13 +1000,16 @@ exit:
     return status;
 }
 
-int32_t  StreamPCM::registerCallBack(pal_stream_callback /*cb*/, uint64_t /*cookie*/)
+int32_t  StreamPCM::registerCallBack(pal_stream_callback cb, uint64_t cookie)
 {
+    streamCb = cb;
+    this->cookie = cookie;
     return 0;
 }
 
-int32_t  StreamPCM::getCallBack(pal_stream_callback * /*cb*/)
+int32_t  StreamPCM::getCallBack(pal_stream_callback *cb)
 {
+    *cb = streamCb;
     return 0;
 }
 

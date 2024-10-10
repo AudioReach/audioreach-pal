@@ -916,6 +916,24 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
                 PAL_ERR(LOG_TAG, "setEffectParameters failed with %d", status);
             }
             break;
+        case PAL_PARAM_ID_DTMF_DETECTION_CFG:
+        {
+            pal_param_dtmf_detection_cfg* dtmf_detect_payload;
+
+            PAL_ERR(LOG_TAG, "Enter PAL_PARAM_ID_DTMF_DETECTION_CFG");
+            dtmf_detect_payload = (pal_param_dtmf_detection_cfg*) payload;
+
+            int tag = dtmf_detect_payload->enable ? DTMF_DETECT_ENABLE
+                      : DTMF_DETECT_DISABLE;
+
+            status = this->setParamWithTag(s, tag, param_id, payload);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to set Dtmf detect params status = %d",
+                        status);
+            }
+            PAL_ERR(LOG_TAG, "Exit Detection case");
+            break;
+        }
         default:
             status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
             break;

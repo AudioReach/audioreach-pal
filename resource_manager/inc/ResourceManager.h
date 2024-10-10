@@ -935,6 +935,7 @@ public:
     int32_t streamDevSwitch(std::vector <std::tuple<Stream *, uint32_t>> streamDevDisconnectList,
                             std::vector <std::tuple<Stream *, struct pal_device *>> streamDevConnectList);
     char* getDeviceNameFromID(uint32_t id);
+    uint32_t getDeviceIDFromName(char* name);
     int getPalValueFromGKV(pal_key_vector_t *gkv, int key);
     pal_speaker_rotation_type getCurrentRotationType();
     void ssrHandler(card_status_t state);

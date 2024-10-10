@@ -42,6 +42,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include "vcpm_api.h"
 #include <tinyalsa/asoundlib.h>
 #include <thread>
+#include "dtmf_detection_api.h"
 
 class Stream;
 class Session;
@@ -72,6 +73,10 @@ private:
     int sideTone_cnt = 0;
     sessionState mState;
     bool ssr_trigger_enable = false;
+    session_callback sessionRxCb;
+    session_callback sessionTxCb;
+    uint64_t rxCbCookie;
+    uint64_t txCbCookie;
 
 public:
 
@@ -104,6 +109,8 @@ public:
     int32_t getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) override { return 0; };
     uint32_t getVSID() { return vsid; };
     int32_t getFrontEndIds(std::vector<int>& devices, uint32_t ldir) const override;
+    int registerRxCallBack(session_callback cb, uint64_t cookie);
+    int registerTxCallBack(session_callback cb, uint64_t cookie);
 private:
     int payloadCalKeys(Stream * s, uint8_t **payload, size_t *size);
     int payloadTaged(Stream * s, configType type, int tag, int device, int dir);
@@ -117,6 +124,11 @@ private:
     int populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsDevice);
     int setExtECRef(Stream *s, std::shared_ptr<Device> rx_dev, bool is_enable);
     int getRXDevice(Stream *s, std::shared_ptr<Device> &rx_dev);
+    int registerDtmfEvent(int tagId, int dir);
+    static void HandleRxDtmfCallBack(uint64_t hdl, uint32_t event_id,
+                                          void *data, uint32_t event_size);
+    static void HandleTxDtmfCallBack(uint64_t hdl, uint32_t event_id,
+                                          void *data, uint32_t event_size);
 };
 
 #endif //SESSION_ALSAVOICE_H

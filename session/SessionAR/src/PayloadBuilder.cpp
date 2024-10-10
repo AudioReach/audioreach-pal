@@ -3626,6 +3626,14 @@ int PayloadBuilder::populateTagKeyVector(Stream *s, std::vector <std::pair<int,i
        tkv.push_back(std::make_pair(TAG_KEY_SLOW_TALK, TAG_VALUE_SLOW_TALK_ON));
        *gsltag = TAG_STREAM_SLOW_TALK;
        break;
+    case DTMF_DETECT_ENABLE:
+       tkv.push_back(std::make_pair(TAG_KEY_DTMF_SWITCH, TAG_VALUE_MODULE_ENABLE));
+       *gsltag = DTMF_DETECTOR;
+       break;
+    case DTMF_DETECT_DISABLE:
+       tkv.push_back(std::make_pair(TAG_KEY_DTMF_SWITCH, TAG_VALUE_MODULE_DISABLE));
+       *gsltag = DTMF_DETECTOR;
+       break;
     case CHARGE_CONCURRENCY_ON_TAG:
        tkv.push_back(std::make_pair(ICL, ICL_ON));
        *gsltag = TAG_DEVICE_AL;

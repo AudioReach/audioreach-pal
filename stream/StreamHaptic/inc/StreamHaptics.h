@@ -56,6 +56,7 @@ public:
                      const uint32_t no_of_modifiers, const std::shared_ptr<ResourceManager> rm);
     ~StreamHaptics();
     uint64_t cookie_;
+    uint32_t event_type[2];
     pal_stream_callback callback_= 0;
     int32_t setParameters(uint32_t param_id, void *payload);
     int32_t start();

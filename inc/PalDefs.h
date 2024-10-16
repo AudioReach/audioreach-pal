@@ -983,7 +983,7 @@ typedef struct  pal_param_haptics_cnfg_t {
     pal_stream_haptics_type_t mode;
     int16_t  effect_id;
     float    amplitude;
-    int16_t  strength;
+    int16_t strength;
     int32_t time;
     int16_t ch_mask;
     bool isCompose;

@@ -2367,6 +2367,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
             pal_param_haptics_cnfg_t *HapticsCnfg = (pal_param_haptics_cnfg_t *)param_payload->payload;
 
             PAL_DBG(LOG_TAG, "Store Haptics configuration for future use");
+
             hpCnfg = (pal_param_haptics_cnfg_t *) calloc(1, sizeof(pal_param_haptics_cnfg_t));
             if (hpCnfg == NULL) {
                 PAL_ERR(LOG_TAG, "Haptics config memory allocation failed.");
@@ -2374,6 +2375,11 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
             }
 
             memcpy(hpCnfg, HapticsCnfg, sizeof(pal_param_haptics_cnfg_t ));
+            if(HapticsCnfg->buffer_size) {
+                hpCnfg->buffer_ptr = (uint8_t*) calloc(1, HapticsCnfg->buffer_size);
+                memcpy(hpCnfg->buffer_ptr, (uint8_t*)HapticsCnfg + sizeof(pal_param_haptics_cnfg_t),
+                         HapticsCnfg->buffer_size);
+            }
             if (isActive()) {
                 status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
                                       rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, &miid);
@@ -2382,7 +2388,19 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                     free(hpCnfg);
                     return status;
                 }
-                if (hpCnfg!=NULL) {
+                if (hpCnfg != NULL) {
+                    if (hpCnfg->mode == PAL_STREAM_HAPTICS_PCM) {
+                        builder->payloadHapticsDevPConfig(&paramData, &paramSize,
+                            miid, PARAM_ID_HAPTICS_RX_PCMV_PLAYBACK,(void *)hpCnfg);
+
+                        if (paramSize) {
+                            status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                         paramData, paramSize);
+                            if (status)
+                                PAL_ERR(LOG_TAG, "setMixerParam for haptics PCM Failed\n");
+                            builder->freeCustomPayload(&paramData, &paramSize);
+                        }
+                    }
                     builder->payloadHapticsDevPConfig(&paramData, &paramSize,
                                miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG,(void *)hpCnfg);
                     if (paramSize) {

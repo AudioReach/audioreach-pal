@@ -6505,6 +6505,8 @@ exit:
     PAL_DBG(LOG_TAG,"Exit, status %d", ret);
     if(value != NULL)
         free(value);
+    if (kv_pairs != NULL)
+        free(kv_pairs);
     return ret;
 }
 
@@ -7011,7 +7013,7 @@ int ResourceManager::getParameter(uint32_t param_id, void **param_payload,
         {
             PAL_VERBOSE(LOG_TAG, "get parameter for sndcard state");
             *param_payload = (uint8_t*)&rm->cardState;
-            *payload_size = sizeof(rm->cardState);
+            *payload_size = sizeof(card_status_t);
             break;
         }
         case PAL_PARAM_ID_HIFI_PCM_FILTER:
@@ -8012,6 +8014,11 @@ int ResourceManager::resetStreamInstanceID(Stream *str, uint32_t sInstanceID) {
         return status;
     }
 
+    if (StrAttr.type >= PAL_STREAM_MAX) {
+        PAL_ERR(LOG_TAG, "invalid streamtype \n");
+        return -EINVAL;
+    }
+
     mResourceManagerMutex.lock();
 
     switch (StrAttr.type) {
@@ -8089,6 +8096,11 @@ int ResourceManager::getStreamInstanceID(Stream *str) {
     if (status != 0) {
         PAL_ERR(LOG_TAG,"getStreamAttributes Failed \n");
         return status;
+    }
+
+    if (StrAttr.type >= PAL_STREAM_MAX) {
+        PAL_ERR(LOG_TAG, "invalid streamtype \n");
+        return -EINVAL;
     }
 
     mResourceManagerMutex.lock();

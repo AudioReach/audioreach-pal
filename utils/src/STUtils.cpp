@@ -1121,22 +1121,23 @@ exit:
 
 void forceSwitchSoundTriggerStreams(bool active) {
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
-    if (!PAL_CARD_STATUS_DOWN(rm->getSoundCardState()))
+    if (!PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
         rm->lockActiveStream();
+        std::vector<pal_stream_type_t> st_streams;
 
-    std::vector<pal_stream_type_t> st_streams;
+        if (rm->getActiveStreamMap().count(PAL_STREAM_VOICE_UI))
+            st_streams.push_back(PAL_STREAM_VOICE_UI);
+        if (rm->getActiveStreamMap().count(PAL_STREAM_ACD))
+            st_streams.push_back(PAL_STREAM_ACD);
+        if (rm->getActiveStreamMap().count(PAL_STREAM_SENSOR_PCM_DATA))
+            st_streams.push_back(PAL_STREAM_SENSOR_PCM_DATA);
 
-    if (rm->getActiveStreamMap().count(PAL_STREAM_VOICE_UI))
-        st_streams.push_back(PAL_STREAM_VOICE_UI);
-    if (rm->getActiveStreamMap().count(PAL_STREAM_ACD))
-        st_streams.push_back(PAL_STREAM_ACD);
-    if (rm->getActiveStreamMap().count(PAL_STREAM_SENSOR_PCM_DATA))
-        st_streams.push_back(PAL_STREAM_SENSOR_PCM_DATA);
-
-    if (checkAndUpdateDeferSwitchState(active)) {
-        PAL_DBG(LOG_TAG, "Switch is deferred");
-    } else {
-        handleConcurrentStreamSwitch(st_streams);
+        if (checkAndUpdateDeferSwitchState(active)) {
+            PAL_DBG(LOG_TAG, "Switch is deferred");
+        } else {
+            handleConcurrentStreamSwitch(st_streams);
+        }
+        rm->unlockActiveStream();
     }
 }
 

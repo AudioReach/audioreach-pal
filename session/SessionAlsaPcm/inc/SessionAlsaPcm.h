@@ -137,7 +137,7 @@ public:
             us_tone_renderer_ep_media_format_status_t event);
     uint32_t getsvaMiid() { return svaMiid; };
     uint32_t getAsrMiid() { return asrMiid; };
-    int getEventPayload(void* evtPld, size_t* size);
+    int getEventPayload(void** evtPld, size_t* size);
     bool getRegisterForEvents() { return RegisterForEvents; };
     void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
     int getEventId() { return eventId; };

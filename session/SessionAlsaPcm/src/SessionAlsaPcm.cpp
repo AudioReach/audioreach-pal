@@ -3472,14 +3472,14 @@ exit:
     return status;
 }
 
-int SessionAlsaPcm::getEventPayload(void* evtPld, size_t* size)
+int SessionAlsaPcm::getEventPayload(void** evtPld, size_t* size)
 {
     int32_t status = 0;
     if (!eventPayload) {
         PAL_ERR(LOG_TAG,"eventPayload is NULL!!!");
         status = -EINVAL;
     } else {
-        evtPld = eventPayload;
+        *evtPld = eventPayload;
         if (size)
             *size = eventPayloadSize;
     }

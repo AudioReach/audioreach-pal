@@ -252,7 +252,7 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         void *eventPayload = nullptr;
         size_t eventPayloadSize = 0;
         uint32_t asrMiid = session->getAsrMiid();
-        session->getEventPayload(eventPayload, &eventPayloadSize);
+        session->getEventPayload(&eventPayload, &eventPayloadSize);
         payload_size = sizeof(struct agm_event_reg_cfg) + eventPayloadSize;
         asr_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
         memset(&event_cfg, 0, sizeof(event_cfg));
@@ -517,7 +517,7 @@ set_mixer:
         } else if (sAttr.type == PAL_STREAM_ACD) {
             size_t eventPayloadSize;
             void* eventPayload = nullptr;
-            status = session->getEventPayload(eventPayload, &eventPayloadSize);
+            status = session->getEventPayload(&eventPayload, &eventPayloadSize);
             if (status) {
                 PAL_ERR(LOG_TAG, "getEventPayload failure");
                 goto exit;
@@ -1309,7 +1309,7 @@ int32_t pcmPluginConfigSetConfigStop(Stream* s, void* pluginPayload)
     } else if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_ASR) {
         uint32_t eventId;
         void* eventPayload = nullptr;
-        session->getEventPayload(eventPayload, nullptr);
+        session->getEventPayload(&eventPayload, nullptr);
 
         if (eventPayload == nullptr) {
             PAL_INFO(LOG_TAG, "eventPayload is NULL");

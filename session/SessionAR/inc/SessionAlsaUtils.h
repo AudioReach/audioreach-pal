@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *  Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ *  Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *  SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -169,6 +169,7 @@ public:
     static std::shared_ptr<Device> getDeviceObj(int32_t beDevId,
         std::vector<std::shared_ptr<Device>> &associatedDevices);
     static pcm_format palToAlsaFormat(uint32_t fmt_id);
+    static unsigned int palToSndDriverFormat(uint32_t fmt_id);
     static int setDeviceMetadata(std::shared_ptr<ResourceManager> rmHandle,
                                 std::string backEndName,
                                 std::vector <std::pair<int, int>> &deviceKV);

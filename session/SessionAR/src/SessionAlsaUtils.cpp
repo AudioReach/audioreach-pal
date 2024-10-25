@@ -28,7 +28,7 @@
 *
 * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 *
-* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 *
 */
@@ -119,7 +119,7 @@ unsigned int SessionAlsaUtils::bitsToAlsaFormat(unsigned int bits)
     };
 }
 
-static unsigned int palToSndDriverFormat(uint32_t fmt_id)
+unsigned int SessionAlsaUtils::palToSndDriverFormat(uint32_t fmt_id)
 {
     switch (fmt_id) {
         case PAL_AUDIO_FMT_PCM_S32_LE:

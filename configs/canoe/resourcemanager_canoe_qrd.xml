@@ -751,7 +751,7 @@
             <channels>2</channels>
             <samplerate>48000</samplerate>
             <snd_device_name>speaker</snd_device_name>
-            <speaker_protection_enabled>1</speaker_protection_enabled>
+            <speaker_protection_enabled>0</speaker_protection_enabled>
             <fractional_sr>0</fractional_sr>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
@@ -814,7 +814,7 @@
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
             <samplerate>48000</samplerate>
             <fractional_sr>0</fractional_sr>
-            <snd_device_name>handset</snd_device_name>
+            <snd_device_name>handset-wsa</snd_device_name>
             <handset_protection_enabled>0</handset_protection_enabled>
           <usecase>
               <name>PAL_STREAM_VOICE_CALL</name>
@@ -1102,7 +1102,7 @@
             <back_end_name>CODEC_DMA-LPAIF_WSA-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <snd_device_name>ultrasound-handset</snd_device_name>
+            <snd_device_name>ultrasound-handset-wsa</snd_device_name>
             <samplerate>96000</samplerate>
             <bit_width>16</bit_width>
         </out-device>
@@ -1111,7 +1111,7 @@
             <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <snd_device_name>handset</snd_device_name>
+            <snd_device_name>handset-wsa</snd_device_name>
             <samplerate>96000</samplerate>
             <bit_width>16</bit_width>
             <usecase>
@@ -1121,7 +1121,7 @@
                     <channels>2</channels>
                 </custom-config>
                 <custom-config key="top-spkr">
-                    <snd_device_name>handset</snd_device_name>
+                    <snd_device_name>handset-wsa</snd_device_name>
                 </custom-config>
                 <custom-config key="bottom-spkr">
                     <snd_device_name>speaker-mono-2</snd_device_name>

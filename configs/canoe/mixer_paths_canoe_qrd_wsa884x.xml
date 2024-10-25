@@ -244,6 +244,10 @@
     <path name="play-fm">
     </path>
 
+    <path name="speaker-mic">
+        <path name="qmp2"/>
+    </path>
+
     <path name="speaker-mic-sbc">
     </path>
 

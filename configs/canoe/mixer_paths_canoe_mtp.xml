@@ -38,22 +38,10 @@
     <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
 
     <!-- WSA controls -->
-    <ctl name="WSA RX0 MUX" value="ZERO" />
-    <ctl name="WSA RX1 MUX" value="ZERO" />
-    <ctl name="WSA_RX0 INP0" value="ZERO" />
-    <ctl name="WSA_RX1 INP0" value="ZERO" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-    <ctl name="Idle Detect" value="0" />
-    <ctl name="WSA SPKRRECV" value="0" />
-    <ctl name="SpkrLeft COMP Switch" value="0" />
-    <ctl name="SpkrRight COMP Switch" value="0" />
-    <ctl name="SpkrLeft VISENSE Switch" value="0" />
-    <ctl name="SpkrRight VISENSE Switch" value="0" />
-    <ctl name="SpkrLeft SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrRight SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrLeft WSA MODE" value="0" />
-    <ctl name="SpkrRight WSA MODE" value="0" />
+    <ctl name="WSA PCM CH1 MUX" value="ZERO" />
+    <ctl name="WSA PCM CH2 MUX" value="ZERO" />
+    <ctl name="SA1 FU21 Stereo Volume DB" value="0" />
+    <ctl name="SA1 Rx Channel Select" value="CH_Stereo" />
 
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
@@ -158,8 +146,6 @@
     <ctl name="TX SMIC MUX7" value="ZERO" />
 
     <!-- Volume controls -->
-    <ctl name="WSA_RX0 Digital Volume" value="84" />
-    <ctl name="WSA_RX1 Digital Volume" value="84" />
     <ctl name="RX_RX0 Digital Volume" value="84" />
     <ctl name="RX_RX1 Digital Volume" value="84" />
     <ctl name="RX_RX2 Digital Volume" value="84" />
@@ -184,10 +170,6 @@
     <ctl name="VA_DEC1 Volume" value="84" />
     <ctl name="VA_DEC2 Volume" value="84" />
     <ctl name="VA_DEC3 Volume" value="84" />
-
-    <!-- Compander controls -->
-    <ctl name="WSA_COMP1 Switch" value="0" />
-    <ctl name="WSA_COMP2 Switch" value="0" />
 
     <!-- defaults for mmap record -->
 
@@ -1118,6 +1100,130 @@
 
     <path name="unprocessed-headset-mic">
         <path name="headset-mic" />
+    </path>
+
+<!-- WSA File Contents  -->
+    <path name="speaker">
+        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
+        <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 OT23 Usage Mode" value="0" />
+        <ctl name="SA1 Rx Channel Select" value="CH_Stereo" />
+    </path>
+
+    <path name="speaker-prot">
+        <path name="speaker" />
+    </path>
+
+    <path name="haptics-dev">
+        <ctl name="SWR DAC_Port Switch" value="1" />
+    </path>
+
+    <path name="haptics-dev-wsa">
+    </path>
+
+    <path name="haptics-vi-feedback-mono">
+        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
+        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
+    </path>
+
+    <path name="haptics-vi-feedback">
+        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_1" value="1" />
+        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
+        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
+    </path>
+
+    <path name="speaker-mono">
+        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 Rx Channel Select" value="CH1" />
+        <ctl name="SA1 OT23 Usage Mode" value="0" />
+    </path>
+
+    <path name="speaker-mono-prot">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="speaker-mono-2">
+        <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 Rx Channel Select" value="CH2" />
+        <ctl name="SA1 OT23 Usage Mode" value="0" />
+    </path>
+
+    <path name="speaker-mono-2-prot">
+        <path name="speaker-mono-2" />
+    </path>
+
+   <path name="speaker-mono-vbat">
+       <path name="speaker-mono" />
+   </path>
+
+   <path name="speaker-mono-2-vbat">
+       <path name="speaker-mono-2" />
+   </path>
+
+    <path name="speaker-mono-vbat-prot">
+       <path name="speaker-mono-prot" />
+    </path>
+
+    <path name="speaker-mono-2-vbat-prot">
+       <path name="speaker-mono-2-prot" />
+    </path>
+
+   <path name="speaker-vbat">
+       <path name="speaker" />
+   </path>
+
+   <path name="speaker-vbat-prot">
+       <path name="speaker-prot" />
+   </path>
+
+    <path name="sidetone-handset">
+        <path name="sidetone-iir" />
+        <ctl name="IIR0 INP0 Volume" value="0" />
+        <ctl name="IIR0 INP0 MUX" value="DEC2" />
+        <ctl name="RX INT2 MIX2 INP" value="SRC0" />
+        <ctl name="WSA_RX0 INT0 SIDETONE MIX" value="SRC0" />
+    </path>
+
+    <path name="vi-feedback">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+    </path>
+
+    <path name="vi-feedback-mono-1">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+    </path>
+
+    <path name="vi-feedback-mono-2">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+    </path>
+
+    <path name="cps-feedback">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
+    </path>
+
+    <path name="cps-feedback-mono-1">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
+    </path>
+
+    <path name="cps-feedback-mono-2">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
+    </path>
+
+    <path name="handset-wsa">
+        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 Rx Channel Select" value="CH1" />
+        <ctl name="SA1 OT23 Usage Mode" value="8" />
+    </path>
+
+    <path name="ultrasound-handset-wsa">
+        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 Rx Channel Select" value="CH1" />
+        <ctl name="SA1 OT23 Usage Mode" value="4" />
+    </path>
+
+    <path name="ultrasound-handset-wsa-vbat">
+        <path name="ultrasound-handset-wsa" />
     </path>
 
 </mixer>

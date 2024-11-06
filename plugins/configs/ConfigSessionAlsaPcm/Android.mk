@@ -47,7 +47,7 @@ LOCAL_STATIC_LIBRARIES := \
 ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
+LOCAL_SHARED_LIBRARIES += liboss_tinyalsa
 endif
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

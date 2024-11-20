@@ -15,6 +15,10 @@ LOCAL_VENDOR_MODULE := true
 
 LOCAL_CPPFLAGS += -fexceptions -frtti
 
+ifneq ($(TARGET_BOARD_PLATFORM), anorak)
+LOCAL_CFLAGS        += -DA2DP_SINK_SUPPORTED
+endif
+
 LOCAL_SRC_FILES := \
     src/Bluetooth.cpp
 

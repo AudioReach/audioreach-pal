@@ -2183,6 +2183,207 @@ int setBTParameter(uint32_t param_id, void *param_payload,
             }
         }
         break;
+        case PAL_PARAM_ID_BT_A2DP_SUSPENDED:
+        {
+            std::shared_ptr<Device> a2dp_dev = nullptr;
+            struct pal_device a2dp_dattr;
+            pal_param_bta2dp_t *current_param_bt_a2dp = nullptr;
+            pal_param_bta2dp_t *param_bt_a2dp = nullptr;
+            bool skip_switch = false;
+
+            rm->unlockResourceManagerMutex();
+            param_bt_a2dp = (pal_param_bta2dp_t*)param_payload;
+            a2dp_dattr.id = param_bt_a2dp->dev_id;
+
+            a2dp_dev = Device::getInstance(&a2dp_dattr , rm);
+            if (!a2dp_dev) {
+                PAL_ERR(LOG_TAG, "Failed to get A2DP/BLE instance");
+                status = -ENODEV;
+                goto exit_no_unlock;
+            }
+
+            a2dp_dev->getDeviceParameter(param_id, (void **)&current_param_bt_a2dp);
+            /* If device is already suspended from framework, ignore suspend/resume
+             * which is sent via reconfig_cb. Honouring the param in such scenario
+             * will lead to incorrect stream state.
+             */
+            if (current_param_bt_a2dp->a2dp_suspended &&
+                current_param_bt_a2dp->is_suspend_setparam &&
+                !param_bt_a2dp->is_suspend_setparam) {
+                PAL_INFO(LOG_TAG, "suspend/resume from reconfig_cb ignored");
+                goto exit_no_unlock;
+            }
+
+            if (current_param_bt_a2dp->a2dp_suspended ==
+                    param_bt_a2dp->a2dp_suspended) {
+                PAL_INFO(LOG_TAG, "A2DP/BLE already in requested state, ignoring");
+                goto exit_no_unlock;
+            }
+
+            if ((!rm->isDeviceAvailable(param_bt_a2dp->dev_id)) ||
+                 (param_bt_a2dp->is_suspend_setparam && param_bt_a2dp->is_in_call))
+                skip_switch = true;
+
+            if (rm->IsDummyDevEnabled()) {
+                if (!skip_switch && param_bt_a2dp->a2dp_suspended == false) {
+                    struct pal_device sco_tx_dattr = {};
+                    struct pal_device sco_rx_dattr = {};
+                    std::shared_ptr<Device> sco_tx_dev = nullptr;
+                    std::shared_ptr<Device> sco_rx_dev = nullptr;
+                    struct pal_device in_dummy_dattr = {};
+                    std::vector<Stream *> activestreams;
+                    std::vector<Stream *>::iterator sIter;
+                    pal_stream_type_t streamType;
+
+                    /* Handle bt sco mic running usecase */
+                    sco_tx_dattr.id = PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
+                    if (rm->isDeviceAvailable(sco_tx_dattr.id)) {
+                        in_dummy_dattr.id = PAL_DEVICE_IN_DUMMY;
+                        sco_tx_dev = Device::getInstance(&sco_tx_dattr, rm);
+                        rm->lockActiveStream();
+                        rm->getActiveStream_l(activestreams, sco_tx_dev);
+                        rm->unlockActiveStream();
+                        if (activestreams.size() > 0) {
+                            /* Mark streams over IN_SCO, so as to give them chance
+                             * to resume over A2DP/BLE if a2dpCatureSuspend=false is
+                             * received at later stage.
+                             */
+                            for (sIter = activestreams.begin();
+                                     sIter != activestreams.end(); sIter++) {
+                                (*sIter)->suspendedInDevIds.clear();
+                                if (rm->isDeviceAvailable(PAL_DEVICE_IN_BLUETOOTH_A2DP))
+                                    (*sIter)->suspendedInDevIds.
+                                                  push_back(PAL_DEVICE_IN_BLUETOOTH_A2DP);
+                                else if (rm->isDeviceAvailable(PAL_DEVICE_IN_BLUETOOTH_BLE))
+                                    (*sIter)->suspendedInDevIds.
+                                                  push_back(PAL_DEVICE_IN_BLUETOOTH_BLE);
+                            }
+                            PAL_DBG(LOG_TAG, "a2dp resumed, switch bt sco mic to in_dummy device");
+                            rm->getDeviceConfig(&in_dummy_dattr, NULL);
+                            rm->forceDeviceSwitch(sco_tx_dev, &in_dummy_dattr);
+                        }
+                    }
+
+                    /* Handle bt sco out running usecase */
+                    rm->lockActiveStream();
+                    sco_rx_dattr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
+                    if (rm->isDeviceAvailable(sco_rx_dattr.id)) {
+                        sco_rx_dev = Device::getInstance(&sco_rx_dattr, rm);
+                        rm->getActiveStream_l(activestreams, sco_rx_dev);
+                        for (sIter = activestreams.begin(); sIter != activestreams.end(); sIter++) {
+                            status = (*sIter)->getStreamType(&streamType);
+                            if (0 != status) {
+                                PAL_ERR(LOG_TAG, "getStreamType failed with status = %d", status);
+                                continue;
+                            }
+                            if ((streamType == PAL_STREAM_LOW_LATENCY) ||
+                                (streamType == PAL_STREAM_ULTRA_LOW_LATENCY) ||
+                                (streamType == PAL_STREAM_VOIP_RX) ||
+                                (streamType == PAL_STREAM_PCM_OFFLOAD) ||
+                                (streamType == PAL_STREAM_DEEP_BUFFER) ||
+                                (streamType == PAL_STREAM_SPATIAL_AUDIO) ||
+                                (streamType == PAL_STREAM_COMPRESSED) ||
+                                (streamType == PAL_STREAM_GENERIC)) {
+                                if ((*sIter)->suspendedOutDevIds.empty()) {
+                                    (*sIter)->suspendedOutDevIds.
+                                        push_back(PAL_DEVICE_OUT_BLUETOOTH_SCO);
+                                    PAL_DBG(LOG_TAG, "a2dp resumed, \
+                                        mark sco streams as to route them later");
+                                }
+                            }
+                        }
+                    }
+                    rm->unlockActiveStream();
+                }
+            } else {
+                if (!skip_switch && param_bt_a2dp->a2dp_suspended == false) {
+                    struct pal_device sco_tx_dattr;
+                    struct pal_device sco_rx_dattr;
+                    std::shared_ptr<Device> sco_tx_dev = nullptr;
+                    std::shared_ptr<Device> sco_rx_dev = nullptr;
+                    struct pal_device handset_tx_dattr = {};
+                    struct pal_device_info devInfo = {};
+                    struct pal_stream_attributes sAttr;
+                    std::vector<Stream*> activestreams;
+                    std::vector<Stream*>::iterator sIter;
+                    Stream *stream = NULL;
+                    pal_stream_type_t streamType;
+
+                    rm->lockActiveStream();
+                    /* Handle bt sco mic running usecase */
+                    sco_tx_dattr.id = PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
+                    if (rm->isDeviceAvailable(sco_tx_dattr.id)) {
+                        handset_tx_dattr.id = PAL_DEVICE_IN_HANDSET_MIC;
+                        sco_tx_dev = Device::getInstance(&sco_tx_dattr, rm);
+                        rm->getActiveStream_l(activestreams, sco_tx_dev);
+                        if (activestreams.size() > 0) {
+                            /* Mark streams over IN_SCO, so as to give them chance
+                             * to resume over A2DP/BLE if a2dpCatureSuspend=false is
+                             * received at later stage.
+                             */
+                            for (sIter = activestreams.begin();
+                                     sIter != activestreams.end(); sIter++) {
+                                (*sIter)->suspendedInDevIds.clear();
+                                if (rm->isDeviceAvailable(PAL_DEVICE_IN_BLUETOOTH_A2DP))
+                                    (*sIter)->suspendedInDevIds.
+                                                  push_back(PAL_DEVICE_IN_BLUETOOTH_A2DP);
+                                else if (rm->isDeviceAvailable(PAL_DEVICE_IN_BLUETOOTH_BLE))
+                                    (*sIter)->suspendedInDevIds.
+                                                  push_back(PAL_DEVICE_IN_BLUETOOTH_BLE);
+                            }
+                            PAL_DBG(LOG_TAG, "a2dp resumed, switch bt sco mic to handset mic");
+                            stream = static_cast<Stream *>(activestreams[0]);
+                            stream->getStreamAttributes(&sAttr);
+                            rm->getDeviceConfig(&handset_tx_dattr, &sAttr);
+                            rm->getDeviceInfo(handset_tx_dattr.id, sAttr.type,
+                                    handset_tx_dattr.custom_config.custom_key, &devInfo);
+                            rm->updateSndName(handset_tx_dattr.id, devInfo.sndDevName);
+                            rm->unlockActiveStream();
+                            rm->forceDeviceSwitch(sco_tx_dev, &handset_tx_dattr);
+                            rm->lockActiveStream();
+                        }
+                    }
+
+                    /* Handle bt sco running usecase */
+                    sco_rx_dattr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
+                    if (rm->isDeviceAvailable(sco_rx_dattr.id)) {
+                        sco_rx_dev = Device::getInstance(&sco_rx_dattr, rm);
+                        rm->getActiveStream_l(activestreams, sco_rx_dev);
+                        for (sIter = activestreams.begin(); sIter != activestreams.end(); sIter++) {
+                            status = (*sIter)->getStreamType(&streamType);
+                            if (0 != status) {
+                                PAL_ERR(LOG_TAG, "getStreamType failed with status = %d", status);
+                                continue;
+                            }
+                            if ((streamType == PAL_STREAM_LOW_LATENCY) ||
+                                (streamType == PAL_STREAM_ULTRA_LOW_LATENCY) ||
+                                (streamType == PAL_STREAM_VOIP_RX) ||
+                                (streamType == PAL_STREAM_PCM_OFFLOAD) ||
+                                (streamType == PAL_STREAM_DEEP_BUFFER) ||
+                                (streamType == PAL_STREAM_SPATIAL_AUDIO) ||
+                                (streamType == PAL_STREAM_COMPRESSED) ||
+                                (streamType == PAL_STREAM_GENERIC)) {
+                                if ((*sIter)->suspendedOutDevIds.empty()) {
+                                    (*sIter)->suspendedOutDevIds.
+                                        push_back(PAL_DEVICE_OUT_BLUETOOTH_SCO);
+                                    PAL_DBG(LOG_TAG, "a2dp resumed, \
+                                        mark sco streams as to route them later");
+                                }
+                            }
+                        }
+                    }
+                    rm->unlockActiveStream();
+                }
+            }
+
+            status = a2dp_dev->setDeviceParameter(param_id, param_payload);
+            rm->lockResourceManagerMutex();
+            if (status) {
+                PAL_ERR(LOG_TAG, "set Parameter %d failed\n", param_id);
+                goto exit;
+            }
+        }
+        break;
         case PAL_PARAM_ID_BT_A2DP_CAPTURE_SUSPENDED:
         {
             std::shared_ptr<Device> a2dp_dev = nullptr;
@@ -2476,8 +2677,8 @@ int getBTParameter(uint32_t param_id, void **param_payload,
                 *param_payload = param_bt_a2dp;
                 *payload_size = sizeof(pal_param_bta2dp_t);
             }
-            break;
         }
+        break;
         default:
             status = -ENOENT;
     }

@@ -126,11 +126,11 @@
         <stream name="PAL_STREAM_VOIP" max_size="8" />
         <stream name="PAL_STREAM_VOIP_RX" max_size="8" />
         <stream name="PAL_STREAM_VOIP_TX" max_size="8" />
-        <stream name="PAL_STREAM_VOICE_CALL_MUSIC" max_size="1" />
+        <stream name="PAL_STREAM_VOICE_CALL_MUSIC" max_size="2" />
         <stream name="PAL_STREAM_GENERIC" max_size="2" />
         <stream name="PAL_STREAM_RAW" max_size="1" />
         <stream name="PAL_STREAM_VOICE_RECOGNITION" max_size="1" />
-        <stream name="PAL_STREAM_VOICE_CALL_RECORD" max_size="1" />
+        <stream name="PAL_STREAM_VOICE_CALL_RECORD" max_size="2" />
         <stream name="PAL_STREAM_VOICE_CALL_TX" max_size="1" />
         <stream name="PAL_STREAM_VOICE_CALL_RX_TX" max_size="1" />
         <stream name="PAL_STREAM_VOICE_CALL" max_size="1" />

@@ -128,9 +128,17 @@
         </stream>
         <!-- Voice Call Music stream -->
         <stream type="PAL_STREAM_VOICE_CALL_MUSIC">
-            <keys_and_values>
+            <keys_and_values Instance="1">
                 <!-- STREAMRX - INCALL_MUSIC-->
                 <graph_kv key="0xA1000000" value="0xA1000013"/>
+                <!-- INSTANCE - INSTANCE_1 -->
+                <graph_kv key="0xAB000000" value="0x1"/>
+            </keys_and_values>
+            <keys_and_values Instance="2">
+                <!-- STREAMRX - INCALL_MUSIC-->
+                <graph_kv key="0xA1000000" value="0xA1000013"/>
+                <!-- INSTANCE - INSTANCE_2 -->
+                <graph_kv key="0xAB000000" value="0x2"/>
             </keys_and_values>
             <keys_and_values CustomConfig="icmd_plus">
                 <!-- STREAMRX - INCALL_MUSIC PLUS-->
@@ -155,9 +163,17 @@
         </stream>
         <!-- Voice Call Record stream -->
         <stream type="PAL_STREAM_VOICE_CALL_RECORD">
-            <keys_and_values>
+            <keys_and_values Instance="1">
                 <!-- STREAMTX - INCALL_RECORD -->
                 <graph_kv key="0xB1000000" value="0xB100000C"/>
+                <!-- INSTANCE - INSTANCE_1 -->
+                <graph_kv key="0xAB000000" value="0x1"/>
+            </keys_and_values>
+            <keys_and_values Instance="2">
+                <!-- STREAMTX - INCALL_RECORD -->
+                <graph_kv key="0xB1000000" value="0xB100000C"/>
+                <!-- INSTANCE - INSTANCE_2 -->
+                <graph_kv key="0xAB000000" value="0x2"/>
             </keys_and_values>
         </stream>
         <!-- Voice stream -->

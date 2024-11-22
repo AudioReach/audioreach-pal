@@ -236,7 +236,7 @@ class PalServerWrapper : public BnPAL, public IStreamOps {
 
   ::ndk::ScopedAStatus ipc_pal_get_custom_param(const ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo& in_ucInfo,
                                                 const std::vector<char16_t>& in_paramId,
-                                                int32_t in_size, std::vector<uint8_t>* _aidl_return) override;
+                                                const std::vector<uint8_t> &paramPayload, std::vector<uint8_t>* _aidl_return) override;
 
   ::ndk::ScopedAStatus ipc_pal_set_custom_param(const ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo& in_ucInfo,
                                                 const std::vector<char16_t>& in_paramId, const std::vector<uint8_t>& in_payload,

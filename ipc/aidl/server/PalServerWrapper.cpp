@@ -1048,17 +1048,21 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
 
   ::ndk::ScopedAStatus PalServerWrapper::ipc_pal_get_custom_param(const ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo& in_ucInfo,
                                         const std::vector<char16_t>& in_paramId,
-                                        int32_t in_size, std::vector<uint8_t>* _aidl_return){
+                                        const std::vector<uint8_t> &paramPayload, std::vector<uint8_t>* _aidl_return){
     uint8_t *payload;
     char *paramID = (char*)in_paramId.data();
     custom_payload_uc_info_t ucInfo;
+    size_t in_size = paramPayload.size() * sizeof(uint8_t);
     size_t size = in_size;
+
+    ALOGV("%s: enter", __func__);
     if (in_size > 0) {
         payload = (uint8_t*)calloc(1, in_size);
         if (payload == NULL) {
             ALOGE("%s: Cannot allocate memory for pal payload ", __func__);
             return status_tToBinderResult(-ENOMEM);
         }
+        memcpy(payload, paramPayload.data(), size);
     }  else {
         ALOGE("%s: invalid size provided ", __func__);
         return status_tToBinderResult(-EINVAL);
@@ -1071,6 +1075,7 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
         memcpy(_aidl_return->data(), payload, size);
     }
     free(payload);
+    ALOGV("%s, Exit: ret %d", __func__, ret);
     return status_tToBinderResult(ret);
 }
 
@@ -1079,6 +1084,8 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
                                         int32_t in_size){
     char *paramID = (char*)in_paramId.data();
     custom_payload_uc_info_t ucInfo;
+
+    ALOGV("%s: enter", __func__);
     if(!in_size){
         ALOGE("%s: payload size is %d failure", __func__, in_size);
         return status_tToBinderResult(-EINVAL);
@@ -1091,6 +1098,7 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
     int32_t ret = pal_set_custom_param(&ucInfo, paramID,
                                       (void *)palParamPayload.get(),
                                       in_size);
+    ALOGV("%s, Exit: ret %d", __func__, ret);
     return status_tToBinderResult(ret);
 }
 

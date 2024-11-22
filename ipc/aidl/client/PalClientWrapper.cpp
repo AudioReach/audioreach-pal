@@ -692,21 +692,22 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
     }
 
     std::vector<uint8_t> aidlPayload(*payload_size, 0);
+    memcpy(aidlPayload.data(), param_payload, *payload_size);
     auto aidlPalUCInfo = LegacyToAidl::convertPalCustomPayloadInfoToAidl(uc_info);
     std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
     memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
 
+    std::vector<uint8_t> aidlReturn;
     int32_t aidlPayloadSize = static_cast<int32_t>(*payload_size);
 
-    auto status = client->ipc_pal_get_custom_param(aidlPalUCInfo, paramID, aidlPayloadSize, &aidlPayload);
-
+    auto status = client->ipc_pal_get_custom_param(aidlPalUCInfo, paramID, aidlPayload, &aidlReturn);
     if (status.isOk()) {
-        if (!(aidlPayload.data())) {
+        if (!(aidlReturn.data())) {
             ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
             return -ENOMEM;
         } else {
-            memcpy(param_payload, aidlPayload.data(), aidlPayload.size());
-            *payload_size = aidlPayload.size();
+            memcpy(param_payload, aidlReturn.data(), aidlReturn.size());
+            *payload_size = aidlReturn.size();
         }
     }
     return statusTFromBinderStatus(status);

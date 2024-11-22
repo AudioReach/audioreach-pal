@@ -101,7 +101,7 @@ interface IPAL {
 
     void ipc_pal_stream_set_custom_param(in long handle, in char[] paramId, in byte[] payload, in int size);
 
-    byte[] ipc_pal_get_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in int size);
+    byte[] ipc_pal_get_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] paramPayload);
 
     void ipc_pal_set_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] payload, in int size);
 }

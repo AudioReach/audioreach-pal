@@ -57,6 +57,6 @@ interface IPAL {
   int ipc_pal_stream_write(in long handle, in vendor.qti.hardware.pal.PalBuffer[] buffer);
   byte[] ipc_pal_stream_get_custom_param(in long handle, in char[] paramId, in int size);
   void ipc_pal_stream_set_custom_param(in long handle, in char[] paramId, in byte[] payload, in int size);
-  byte[] ipc_pal_get_custom_param(in vendor.qti.hardware.pal.PalCustomPayloadInfo ucInfo, in char[] paramId, in int size);
+  byte[] ipc_pal_get_custom_param(in vendor.qti.hardware.pal.PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] paramPayload);
   void ipc_pal_set_custom_param(in vendor.qti.hardware.pal.PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] payload, in int size);
 }

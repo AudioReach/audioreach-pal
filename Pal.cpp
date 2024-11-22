@@ -1528,6 +1528,7 @@ int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
     int32_t status = 0;
     std::shared_ptr<ResourceManager> rm = NULL;
 
+    PAL_DBG(LOG_TAG, "Enter.");
     kpiEnqueue(__func__, true);
     rm = ResourceManager::getInstance();
     if (!rm) {
@@ -1536,8 +1537,13 @@ int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
         goto exit;
     }
     status = rm->setCustomParam(uc_info,param_str,param_payload,payload_size);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to set Custom parameter %s, status %d",
+                param_str, status);
+    }
     exit:
     kpiEnqueue(__func__, false);
+    PAL_DBG(LOG_TAG, "Exit:");
     return status;
 }
 
@@ -1547,6 +1553,7 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
     int32_t status = 0;
     std::shared_ptr<ResourceManager> rm = NULL;
 
+    PAL_DBG(LOG_TAG, "Enter.");
     kpiEnqueue(__func__, true);
     rm = ResourceManager::getInstance();
     if (!rm) {
@@ -1555,7 +1562,12 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
         goto exit;
     }
     status = rm->getCustomParam(uc_info,param_str,param_payload,payload_size);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to get Custom parameter %s, status %d",
+                param_str, status);
+    }
     exit:
     kpiEnqueue(__func__, false);
+    PAL_DBG(LOG_TAG, "Exit:");
     return status;
 }

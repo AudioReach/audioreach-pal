@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -28,6 +28,7 @@
 #include "StreamUltraSound.h"
 #include "StreamASR.h"
 #include "StreamDummy.h"
+#include "StreamCallTranslation.h"
 /*include all sessions*/
 #include "SessionAgm.h"
 #include "SessionAlsaCompress.h"
@@ -98,6 +99,9 @@ int32_t getStreamFunc(void** func, std::string name) {
         case PAL_STREAM_VOICE_CALL_RECORD:
         case PAL_STREAM_VOICE_CALL_MUSIC:
             *reinterpret_cast<StreamCreate*>(func) = &CreateInCallStream;
+            break;
+        case PAL_STREAM_CALL_TRANSLATION:
+            *reinterpret_cast<StreamCreate*>(func) = &CreateCallTranslationStream;
             break;
         case PAL_STREAM_NON_TUNNEL:
             *reinterpret_cast<StreamCreate*>(func) = &CreateNonTunnelStream;

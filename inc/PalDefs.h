@@ -363,6 +363,7 @@ typedef enum {
     PAL_STREAM_ASR = 30,                  /**< ASR Stream */
     PAL_STREAM_HPCM = 31,                 /**< hpcm usecase */
     PAL_STREAM_DUMMY = 32,                /**< Dummy stream used to directly push configurations without a stream instance */
+    PAL_STREAM_CALL_TRANSLATION = 33,     /**< Translation usecase for Voice & Voip Calls */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -1220,16 +1221,6 @@ typedef enum {
     PAL_ULTRASOUND_GAIN_LOW,
     PAL_ULTRASOUND_GAIN_HIGH,
 } pal_ultrasound_gain_t;
-
-/**< PAL device */
-#define DEVICE_NAME_MAX_SIZE 128
-struct pal_device {
-    pal_device_id_t id;                     /**<  device id */
-    struct pal_media_config config;         /**<  media config of the device */
-    struct pal_usb_device_address address;
-    char sndDevName[DEVICE_NAME_MAX_SIZE];
-    pal_device_custom_config_t custom_config;        /**<  Optional */
-};
 
 enum BeCtrlsIndex {
     BE_METADATA,

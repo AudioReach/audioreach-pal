@@ -145,6 +145,8 @@ stream/StreamCommon/StreamContextProxy/Makefile \
 stream/StreamCommon/StreamContextProxy/stream_contextproxy.pc \
 stream/StreamCommon/StreamCommonProxy/Makefile \
 stream/StreamCommon/StreamCommonProxy/stream_commonproxy.pc \
+stream/StreamCommon/StreamCallTranslation/Makefile \
+stream/StreamCommon/StreamCallTranslation/stream_calltranslation.pc \
 stream/StreamASR/Makefile \
 stream/StreamASR/stream_asr.pc \
 stream/StreamACDB/Makefile \

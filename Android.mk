@@ -119,6 +119,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libstream_dummy \
         libstream_common \
         libstream_commonproxy \
+        libstream_calltranslation \
         libstream_compress \
         libstream_contextproxy \
         libstream_haptics \

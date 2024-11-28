@@ -4503,6 +4503,31 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 memcpy(hpConf, data,  sizeof(param_id_haptics_ex_vi_persistent));
             }
          break;
+      case PARAM_ID_HAPTICS_EX_VI_DYNAMIC_PARAM:
+            {
+                wsa_haptics_ex_lra_param_t *data;
+                wsa_haptics_ex_lra_param_t *VIConf;
+                param_id_haptics_ex_vi_dynamic_param_t *hpConf;
+                data = (wsa_haptics_ex_lra_param_t *) param;
+                payloadSize = sizeof(struct apm_module_param_data_t) +
+                                    sizeof(param_id_haptics_ex_vi_dynamic_param_t) +
+                                    sizeof(wsa_haptics_ex_lra_param_t);
+                padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+                payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+                if (!payloadInfo) {
+                    PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+                    return;
+                }
+                header = (struct apm_module_param_data_t*) payloadInfo;
+                hpConf = (param_id_haptics_ex_vi_dynamic_param_t *) (payloadInfo +
+                                  sizeof(struct apm_module_param_data_t));
+                hpConf->num_channels = 1;
+                VIConf = (wsa_haptics_ex_lra_param_t *) (payloadInfo +
+                                  sizeof(struct apm_module_param_data_t) +
+                sizeof(param_id_haptics_ex_vi_dynamic_param_t));
+                memcpy(VIConf, data, sizeof(wsa_haptics_ex_lra_param_t));
+            }
+        break;
       case PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG:
             {
                 pal_param_haptics_cnfg_t *data;

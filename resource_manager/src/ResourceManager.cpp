@@ -367,6 +367,7 @@ const std::map<uint32_t, uint32_t> streamPriorityLUT {
     {PAL_STREAM_ULTRASOUND,         4},
     {PAL_STREAM_SPATIAL_AUDIO,      3},
     {PAL_STREAM_SENSOR_PCM_RENDERER,4},
+    {PAL_STREAM_CALL_TRANSLATION,   2},
 };
 
 const std::map<std::string, sidetone_mode_t> sidetoneModetoId {
@@ -2711,7 +2712,7 @@ bool ResourceManager::isStreamSupported(Stream *s, struct pal_device *devices, i
     }
 
     if (((no_of_devices > 0) && !devices && (attributes.type != PAL_STREAM_VOICE_CALL_MUSIC)
-                         && (attributes.type != PAL_STREAM_VOICE_CALL_RECORD))) {
+                         && (attributes.type != PAL_STREAM_VOICE_CALL_RECORD) && (attributes.type != PAL_STREAM_CALL_TRANSLATION))) {
         PAL_ERR(LOG_TAG, "Invalid input parameter, noOfDevices %d devices %p",
                 no_of_devices, devices);
         goto exit;

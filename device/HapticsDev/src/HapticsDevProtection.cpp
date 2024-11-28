@@ -155,6 +155,7 @@ int HapticsDevProtection::numberOfRequest;
 bool HapticsDevProtection::mDspCallbackRcvd;
 std::shared_ptr<Device> HapticsDevFeedback::obj = nullptr;
 int HapticsDevFeedback::numDevice;
+static const char HAPTICS_SYSFS[] = "/sys/class/qcom-haptics";
 
 std::string getDefaultHapticsDevTempCtrl(uint8_t haptics_dev_pos)
 {
@@ -606,7 +607,7 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
     }
 
     enableDevice(audioRoute, mSndDeviceName_vi);
-
+    getAndsetVIScalingParameter(pcmDevIdsTx.at(0), miid);
     PAL_DBG(LOG_TAG, "pcm start for TX path");
     if (pcm_start(txPcm) < 0) {
         PAL_ERR(LOG_TAG, "pcm start failed for TX path");
@@ -1347,7 +1348,7 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             PAL_ERR(LOG_TAG, "txPcm open not ready");
             goto err_pcm_open;
         }
-
+        getAndsetVIScalingParameter(pcmDevIdTx.at(0), miid);
         rm->getBackendName(mDeviceAttr.id, backEndNameRx);
         if (!strlen(backEndNameRx.c_str())) {
             PAL_ERR(LOG_TAG, "Failed to obtain rx backend name for %d", mDeviceAttr.id);
@@ -1517,6 +1518,172 @@ exit:
     }
     return;
 }
+
+int32_t HapticsDevProtection::getAndsetVIScalingParameter(uint32_t pcmid, uint32_t miid)
+{
+    int size = 0, status = 0, ret = 0;
+    const char *getParamControl = "getParam";
+    char *pcmDeviceName = NULL;
+    uint8_t* payload = NULL;
+    uint8_t* SetPayload = NULL;
+    size_t payloadSize = 0;
+    struct mixer_ctl *ctl;
+    std::ostringstream cntrlName;
+    std::ostringstream resString;
+    std::string backendName;
+    wsa_haptics_ex_lra_param_t ViPe;
+    PayloadBuilder* builder = new PayloadBuilder();
+    param_id_haptics_ex_vi_dynamic_param_t *VIpeValue = nullptr;
+    wsa_haptics_ex_lra_param_t *VIConf = nullptr;
+
+    if (VIscale)
+       goto SetParam;
+
+    PAL_DBG(LOG_TAG," getVIScalingParameter Enter %d\n",pcmid);
+    pcmDeviceName = rm->getDeviceNameFromID(pcmid);
+
+    if (pcmDeviceName) {
+        cntrlName << pcmDeviceName << " " << getParamControl;
+    } else {
+        PAL_ERR(LOG_TAG, "Error: %d Unable to get Device name\n", -EINVAL);
+        goto exit;
+    }
+
+    ctl = mixer_get_ctl_by_name(virtMixer, cntrlName.str().data());
+    if (!ctl) {
+        status = -ENOENT;
+        PAL_ERR(LOG_TAG, "Error: %d Invalid mixer control: %s\n", status,cntrlName.str().data());
+        goto exit;
+    }
+    rm->getBackendName(PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK, backendName);
+    if (!strlen(backendName.c_str())) {
+        status = -ENOENT;
+        PAL_ERR(LOG_TAG, "Error: %d Failed to obtain VI backend name", status);
+        goto exit;
+    }
+    builder->payloadHapticsDevPConfig (&payload, &payloadSize, miid,
+                        PARAM_ID_HAPTICS_EX_VI_DYNAMIC_PARAM, &ViPe);
+    status = mixer_ctl_set_array(ctl, payload, payloadSize);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Set failed status = %d", status);
+        goto exit;
+    }
+
+    memset(payload, 0, payloadSize);
+
+    status = mixer_ctl_get_array(ctl, payload, payloadSize);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Get failed status = %d", status);
+    }
+    else {
+        VIpeValue = (param_id_haptics_ex_vi_dynamic_param_t *) (payload +
+                        sizeof(struct apm_module_param_data_t));
+        VIConf = (wsa_haptics_ex_lra_param_t *) (payload +
+                        sizeof(struct apm_module_param_data_t) +
+                        sizeof(param_id_haptics_ex_vi_dynamic_param_t));
+        PMICHapticsVIScaling(VIConf);
+        VIscale = (wsa_haptics_ex_lra_param_t *) calloc(1, sizeof(wsa_haptics_ex_lra_param_t));
+        memcpy(VIscale, VIConf, sizeof(wsa_haptics_ex_lra_param_t));
+        free(payload);
+           PAL_DBG(LOG_TAG,"updated Vsense_Scale %x, Isense_Scale %x",VIConf->vsens_scale_q24,
+                                                VIConf->isens_scale_q24);
+    }
+
+SetParam:
+    PAL_DBG(LOG_TAG," SetVIScalingParameter Enter %d\n",pcmid);
+    payloadSize = 0;
+    builder->payloadHapticsDevPConfig(&SetPayload, &payloadSize, miid,
+               PARAM_ID_HAPTICS_EX_VI_DYNAMIC_PARAM,(void *)VIscale);
+    if (payloadSize) {
+        ret = SessionAlsaUtils::setMixerParameter(virtMixer, pcmid,
+                                            SetPayload, payloadSize);
+        free(SetPayload);
+        if (0 != ret) {
+            PAL_ERR(LOG_TAG," updateCustomPayload Failed\n");
+            ret = 0;
+        }
+    }
+    exit :
+    if(builder) {
+       delete builder;
+       builder = NULL;
+    }
+    return ret;
+}
+
+void HapticsDevProtection::PMICHapticsVIScaling(wsa_haptics_ex_lra_param_t *VIpeValue)
+{
+    char vgain_sysfs[50];
+    char igain_sysfs[50];
+    std::stringstream vi;
+    char vgain[8];
+    char igain[8];
+    int fd, ret;
+    int32_t Vscale_err_trim, Iscale_err_trim;
+    float Vscale = 0, Iscale = 0;
+    std::shared_ptr<ResourceManager> rm;
+    char payload[80];
+
+    ret = snprintf(vgain_sysfs, sizeof(vgain_sysfs), "%s%s", HAPTICS_SYSFS, "/v_gain_error");
+    if (ret < 0) {
+        ALOGE("Failed to generate v_gain_error path name, ret = %d\n", ret);
+        goto exit;
+    }
+
+    fd = TEMP_FAILURE_RETRY(::open(vgain_sysfs, O_RDONLY));
+    if (fd < 0) {
+        ALOGE("Open %s failed, fd = %d\n", vgain_sysfs, fd);
+        goto exit;
+    }
+
+    ret = TEMP_FAILURE_RETRY(::read(fd, vgain, sizeof(vgain)));
+    ::close(fd);
+    if (ret < 0) {
+        ALOGE("Failed to read %s, errno = %d\n", vgain_sysfs, errno);
+        goto exit;
+    }
+
+    vi << std::hex << vgain;
+    vi >> Vscale_err_trim;
+
+    ret = snprintf(igain_sysfs, sizeof(igain_sysfs), "%s%s", HAPTICS_SYSFS, "/i_gain_error");
+    if (ret < 0) {
+        ALOGE("Failed to generate i_gain_error path name, ret = %d\n", ret);
+        goto exit;
+    }
+
+    fd = TEMP_FAILURE_RETRY(::open(igain_sysfs, O_RDONLY));
+    if (fd < 0) {
+        ALOGE("Open %s failed, fd = %d\n", igain_sysfs, fd);
+        goto exit;
+    }
+
+    ret = TEMP_FAILURE_RETRY(::read(fd, igain, sizeof(igain)));
+    ::close(fd);
+    if (ret < 0) {
+        ALOGE("Failed to read %s, errno = %d\n", igain_sysfs, errno);
+        goto exit;
+    }
+
+    vi << std::hex << igain;
+    vi >> Iscale_err_trim;
+
+    if (Vscale_err_trim > 512)
+        Vscale = (float)((Vscale_err_trim - 1024)/2048.0f);
+    else
+        Vscale = (float)(Vscale_err_trim / 2048.0f);
+
+    if (Iscale_err_trim > 512)
+        Iscale = (float)((Iscale_err_trim - 1024) /2048.0f);
+    else
+        Iscale = (float)(Iscale_err_trim/2048.0f);
+
+    VIpeValue->vsens_scale_q24 = (uint32_t)((21.74 * (1 + Vscale)) * (1 << 24));
+    VIpeValue->isens_scale_q24 = (uint32_t)((3.56 * (1 + Iscale)) * (1 << 24));
+exit:
+    PAL_DBG(LOG_TAG, "Vscale %x Iscale %x",VIpeValue->vsens_scale_q24, VIpeValue->isens_scale_q24);
+}
+
 
 int32_t HapticsDevProtection::getFTMParameter(void **param)
 {

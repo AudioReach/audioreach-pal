@@ -2050,6 +2050,30 @@ void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t pa
     memcpy(eventPayload, payload, payload_size);
 }
 
+int SessionAlsaPcm::getHapticsConfig(struct pal_param_haptics_cnfg_t *config)
+{
+    int status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    if (config == nullptr) {
+        PAL_ERR(LOG_TAG, "Invalid Argument");
+        status = -EINVAL;
+        goto exit;
+    }
+
+    if (hpCnfg != nullptr) {
+        memcpy(config, hpCnfg, sizeof(struct pal_param_haptics_cnfg_t));
+    } else {
+        PAL_ERR(LOG_TAG, "No cached haptics data");
+        status = -ENOENT;
+        goto exit;
+    }
+
+exit:
+    PAL_DBG(LOG_TAG, "Exit status = %d", status);
+    return status;
+}
+
 int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id, void *payload)
 {
     int status = 0;
@@ -2061,11 +2085,6 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
     struct pal_stream_attributes sAttr = {};
 
     PAL_DBG(LOG_TAG, "Enter. param id: %d", param_id);
-    status = streamHandle->getStreamAttributes(&sAttr);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
-        goto exit;
-    }
 
     if (pcmDevIds.size() > 0)
         device = pcmDevIds.at(0);
@@ -2176,6 +2195,12 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         {
             pal_param_payload *param_payload = (pal_param_payload *)payload;
             pal_volume_data *vdata = (struct pal_volume_data *)param_payload->payload;
+
+            status = streamHandle->getStreamAttributes(&sAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+                goto exit;
+            }
             if (sAttr.direction == PAL_AUDIO_OUTPUT) {
                 status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
                         rxAifBackEnds[0].second.data(), TAG_STREAM_VOLUME, &miid);
@@ -2255,6 +2280,11 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
             struct agm_tag_config* tagConfig = NULL;
             int tkv_size = 0;
 
+            status = streamHandle->getStreamAttributes(&sAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+                goto exit;
+            }
             tkv.push_back(std::make_pair(TAG_KEY_DUTY_CYCLE, *(int*)payload));
             tagConfig = (struct agm_tag_config*)malloc(sizeof(struct agm_tag_config) +
                     (tkv.size() * sizeof(agm_key_value)));
@@ -2465,6 +2495,12 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         {
             pal_param_payload *param_payload = (pal_param_payload *)payload;
             pal_gain_data *gdata = (struct pal_gain_data *)param_payload->payload;
+
+            status = streamHandle->getStreamAttributes(&sAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+                goto exit;
+            }
             if (sAttr.direction == PAL_AUDIO_OUTPUT &&
                (sAttr.type == PAL_STREAM_DEEP_BUFFER || PAL_STREAM_PCM_OFFLOAD)) {
                 status = SessionAlsaUtils::getModuleInstanceId(mixer, device,

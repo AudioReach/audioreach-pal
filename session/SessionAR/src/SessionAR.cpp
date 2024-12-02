@@ -734,7 +734,7 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
     PluginConfig pluginConfig = nullptr;
 
     PAL_DBG(LOG_TAG, "set parameter %u", param_id);
-    status = s->getStreamAttributes(&sAttr);
+
     switch (param_id) {
         case PAL_PARAM_ID_VOLUME_USING_SET_PARAM:
             status = this->setParamWithTag(s, TAG_STREAM_VOLUME, param_id, payload);
@@ -757,6 +757,7 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
         case PAL_PARAM_ID_DEVICE_ROTATION:
         {
             try {
+                status = s->getStreamAttributes(&sAttr);
                 pm = PluginManager::getInstance();
                 if(!pm) {
                     PAL_ERR(LOG_TAG, "unable to get plugin manager instance");

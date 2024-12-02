@@ -75,7 +75,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <device name="PAL_DEVICE_IN_CPS_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
         <device name="PAL_DEVICE_IN_CPS2_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
         <device name="PAL_DEVICE_IN_VI_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
-        <device name="PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK" lib="libdev_haptics.so" entryFunction="CreateHapticsDevice"/>
         <!--Headphone -->
         <device name="PAL_DEVICE_OUT_WIRED_HEADSET" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>
         <device name="PAL_DEVICE_OUT_WIRED_HEADPHONE" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>

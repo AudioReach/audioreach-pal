@@ -145,6 +145,7 @@ public:
     int getEventId() { return eventId; };
     bool IsSilenceEventRegistered() { return silenceEventRegistered; };
     void setSilenceEventRegistered(bool newState) { silenceEventRegistered = newState; };
+    int getHapticsConfig(struct pal_param_haptics_cnfg_t *config);
     int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
                                     void* param_payload, size_t* payload_size, Stream *s) override;
     int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,

@@ -801,8 +801,10 @@ silence_ev_setup_done:
             pal_param_haptics_cnfg_t* hpCnfg = new pal_param_haptics_cnfg_t;
             if (sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE) {
                 hpCnfg->mode = PAL_STREAM_HAPTICS_RINGTONE;
+            } else if(sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
+                status = session->getHapticsConfig(hpCnfg);
             }
-            if (hpCnfg != nullptr) {
+            if (hpCnfg != nullptr && status == 0) {
                 builder->payloadHapticsDevPConfig(&payload, &payloadSize,
                             miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG,(void *)hpCnfg);
                 if (payloadSize && payload) {

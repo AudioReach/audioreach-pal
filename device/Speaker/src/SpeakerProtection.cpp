@@ -445,7 +445,7 @@ int SpeakerProtection::spkrStartCalibration()
     struct agm_event_reg_cfg event_cfg;
     struct agmMetaData deviceMetaData(nullptr, 0);
     struct mixer_ctl *beMetaDataMixerCtrl = nullptr;
-    int ret = 0, status = 0, dir = 0, i = 0, flags = 0, payload_size = 0;
+    int ret = 0, status = 0, dir = 0, i = 0, flags = 0, payload_size = 0, id = 0;
     uint32_t miid = 0;
     char mSndDeviceName_rx[128] = {0};
     char mSndDeviceName_vi[128] = {0};
@@ -595,12 +595,13 @@ int SpeakerProtection::spkrStartCalibration()
     sAttr.type = PAL_STREAM_LOW_LATENCY;
     sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
     dir = TX_HOSTLESS;
-    pcmDevIdsTx = rm->allocateFrontEndIds(sAttr, dir);
-    if (pcmDevIdsTx.size() == 0) {
+    id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+    if (id < 0) {
         PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
         ret = -ENOSYS;
         goto exit;
     }
+    pcmDevIdsTx.push_back(id);
 
     connectCtrlName << "PCM" << pcmDevIdsTx.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(virtMixer, connectCtrlName.str().data());
@@ -863,12 +864,13 @@ int SpeakerProtection::spkrStartCalibration()
     sAttr.type = PAL_STREAM_LOW_LATENCY;
     sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
     dir = RX_HOSTLESS;
-    pcmDevIdsRx = rm->allocateFrontEndIds(sAttr, dir);
-    if (pcmDevIdsRx.size() == 0) {
+    id = rm->allocateFrontEndIds(PCM_PLAYBACK_HOSTLESS);
+    if (id < 0) {
         PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
         ret = -ENOSYS;
         goto err_pcm_open;
     }
+    pcmDevIdsRx.push_back(id);
 
     connectCtrlNameRx << "PCM" << pcmDevIdsRx.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(virtMixer, connectCtrlNameRx.str().data());
@@ -1034,14 +1036,14 @@ free_fe:
         if (isRxFeandBeConnected) {
             disconnectFeandBe(pcmDevIdsRx, backEndNameRx);
         }
-        rm->freeFrontEndIds(pcmDevIdsRx, sAttr, RX_HOSTLESS);
+        rm->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, pcmDevIdsRx);
     }
 
     if (pcmDevIdsTx.size() != 0) {
         if (isTxFeandBeConnected) {
             disconnectFeandBe(pcmDevIdsTx, backEndNameTx);
         }
-        rm->freeFrontEndIds(pcmDevIdsTx, sAttr, TX_HOSTLESS);
+        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdsTx);
     }
     pcmDevIdsRx.clear();
     pcmDevIdsTx.clear();
@@ -1460,6 +1462,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
     struct agm_event_reg_cfg event_cfg;
     session_callback sessionCb;
     pal_spkr_prot_payload spkrProtPayload;
+    int id;
 
     PAL_DBG(LOG_TAG, "Flag %d", flag);
     deviceMutex.lock();
@@ -1636,12 +1639,13 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
         sAttr.type = PAL_STREAM_LOW_LATENCY;
         sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
         dir = TX_HOSTLESS;
-        pcmDevIdTx = rm->allocateFrontEndIds(sAttr, dir);
-        if (pcmDevIdTx.size() == 0) {
+        id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+        if (id < 0) {
             PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
             ret = -ENOSYS;
             goto exit;
         }
+        pcmDevIdTx.push_back(id);
 
         connectCtrlName << "PCM" << pcmDevIdTx.at(0) << " connect";
         connectCtrl = mixer_get_ctl_by_name(virtMixer, connectCtrlName.str().data());
@@ -2093,12 +2097,13 @@ cps_dev_setup:
         sAttr.type = PAL_STREAM_LOW_LATENCY;
         sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
         dir = TX_HOSTLESS;
-        pcmDevIdCPS = rm->allocateFrontEndIds(sAttr, dir);
-        if (pcmDevIdCPS.size() == 0) {
+        id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+        if (id < 0) {
             PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
             ret = -ENOSYS;
             goto err_pcm_open;
         }
+        pcmDevIdCPS.push_back(id);
 
         connectCtrlNameCPS << "PCM" << pcmDevIdCPS.at(0) << " connect";
         connectCtrl2 = mixer_get_ctl_by_name(virtMixer, connectCtrlNameCPS.str().data());
@@ -2227,7 +2232,7 @@ cps_dev_setup:
                 }
                 sAttr.type = PAL_STREAM_LOW_LATENCY;
                 sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
-                rm->freeFrontEndIds(pcmDevIdTx, sAttr, dir);
+                rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdTx);
                 pcmDevIdTx.clear();
             }
             pcm_close(txPcm);
@@ -2258,7 +2263,7 @@ cps_dev_setup:
                 }
                 sAttr.type = PAL_STREAM_LOW_LATENCY;
                 sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
-                rm->freeFrontEndIds(pcmDevIdCPS, sAttr, dir);
+                rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS);
                 pcmDevIdCPS.clear();
             }
             pcm_close(cpsPcm);
@@ -2286,14 +2291,14 @@ free_fe:
         if (isTxFeandBeConnected) {
             disconnectFeandBe(pcmDevIdTx, backEndName);
         }
-        rm->freeFrontEndIds(pcmDevIdTx, sAttr, dir);
+        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdTx);
         pcmDevIdTx.clear();
     }
     if (pcmDevIdCPS.size() != 0) {
         if (isCPSFeandBeConnected) {
             disconnectFeandBe(pcmDevIdCPS, backEndNameCPS);
         }
-        rm->freeFrontEndIds(pcmDevIdCPS, sAttr, dir);
+        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS);
         pcmDevIdCPS.clear();
     }
 exit:

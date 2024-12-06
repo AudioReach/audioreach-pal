@@ -259,10 +259,9 @@ int SessionAlsaPcm::open(Stream * s)
                 sAttr.type == PAL_STREAM_ASR)
                 ldir = TX_HOSTLESS;
 
-            pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
-            if (pcmDevIds.size() == 0) {
+            status = allocateFrontEndIds(sAttr, ldir);
+            if (status == -EINVAL) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-                status = -EINVAL;
                 goto exit;
             }
         } else if (sAttr.direction == PAL_AUDIO_OUTPUT) {
@@ -274,66 +273,66 @@ int SessionAlsaPcm::open(Stream * s)
             if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER) {
                 ldir = RX_HOSTLESS;
             }
-            pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
-            if (pcmDevIds.size() == 0) {
+            status = allocateFrontEndIds(sAttr, ldir);
+            if (status == -EINVAL) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-                status = -EINVAL;
                 goto exit;
             }
         } else {
-            pcmDevRxIds = rm->allocateFrontEndIds(sAttr, RX_HOSTLESS);
-            pcmDevTxIds = rm->allocateFrontEndIds(sAttr, TX_HOSTLESS);
-            if (!pcmDevRxIds.size() || !pcmDevTxIds.size()) {
+            status = allocateFrontEndIds(sAttr, RX_HOSTLESS);
+            if (status == -EINVAL) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-                status = -EINVAL;
                 goto exit;
             }
-        }
-    } else {
-        if (sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY) {
-            // Loopback for RX path
-            pcmDevIds = rm->allocateFrontEndIds(sAttr, RX_HOSTLESS);
-            if (!pcmDevIds.size()) {
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds for RX loopback failed");
-                status = -EINVAL;
-                goto exit;
-            }
-        }
-        else if (sAttr.info.opt_stream_info.loopback_type ==
-                  PAL_STREAM_LOOPBACK_CAPTURE_ONLY) {
-            // Loopback for TX path
-            pcmDevTxIds = rm->allocateFrontEndIds(sAttr, TX_HOSTLESS);
-            if (!pcmDevTxIds.size()) {
+            status = allocateFrontEndIds(sAttr, TX_HOSTLESS);
+            if (status == -EINVAL) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-                status = -EINVAL;
                 goto exit;
             }
         }
-        else {
-            pcmDevRxIds = rm->allocateFrontEndIds(sAttr, RX_HOSTLESS);
-            pcmDevTxIds = rm->allocateFrontEndIds(sAttr, TX_HOSTLESS);
-            if (!pcmDevRxIds.size() || !pcmDevTxIds.size()) {
-                if (pcmDevRxIds.size()) {
-                    PAL_ERR(LOG_TAG, "freeFrontEndIds Rx called as failed");
-                    rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
-                }
-                if (pcmDevTxIds.size()) {
-                    PAL_ERR(LOG_TAG, "freeFrontEndIds Tx called as failed");
-                    rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
-                }
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-                status = -EINVAL;
-                goto exit;
-            }
-        }
-    }
+     } else {
+         if (sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY) {
+             // Loopback for RX path
+             status = allocateFrontEndIds(sAttr, RX_HOSTLESS);
+             if (status == -EINVAL) {
+                 PAL_ERR(LOG_TAG, "allocateFrontEndIds for RX loopback failed");
+                 goto exit;
+             }
+         }
+         else if (sAttr.info.opt_stream_info.loopback_type ==
+                   PAL_STREAM_LOOPBACK_CAPTURE_ONLY) {
+             // Loopback for TX path
+             status = allocateFrontEndIds(sAttr, TX_HOSTLESS);
+             if (status == -EINVAL) {
+                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                 goto exit;
+             }
+         }
+         else {
+             status = allocateFrontEndIds(sAttr, RX_HOSTLESS);
+             status = allocateFrontEndIds(sAttr, TX_HOSTLESS);
+             if (!pcmDevRxIds.size() || !pcmDevTxIds.size()) {
+                 if (pcmDevRxIds.size()) {
+                     PAL_ERR(LOG_TAG, "freeFrontEndIds Rx called as failed");
+                     freeFrontEndIds(sAttr, RX_HOSTLESS);
+                 }
+                 if (pcmDevTxIds.size()) {
+                     PAL_ERR(LOG_TAG, "freeFrontEndIds Tx called as failed");
+                     freeFrontEndIds(sAttr, TX_HOSTLESS);
+                 }
+                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                 status = -EINVAL;
+                 goto exit;
+             }
+         }
+     }
     frontEndIdAllocated = true;
     switch (sAttr.direction) {
         case PAL_AUDIO_INPUT:
             status = SessionAlsaUtils::open(s, rm, pcmDevIds, txAifBackEnds);
             if (status) {
                 PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-                rm->freeFrontEndIds(pcmDevIds, sAttr, ldir);
+                freeFrontEndIds(sAttr, ldir);
                 frontEndIdAllocated = false;
             }
             break;
@@ -341,7 +340,7 @@ int SessionAlsaPcm::open(Stream * s)
             status = SessionAlsaUtils::open(s, rm, pcmDevIds, rxAifBackEnds);
             if (status) {
                 PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-                rm->freeFrontEndIds(pcmDevIds, sAttr, ldir);
+                freeFrontEndIds(sAttr, ldir);
                 frontEndIdAllocated = false;
             }
             else if ((sAttr.type == PAL_STREAM_PCM_OFFLOAD) ||
@@ -369,7 +368,7 @@ int SessionAlsaPcm::open(Stream * s)
                 status = SessionAlsaUtils::open(s, rm, pcmDevTxIds, txAifBackEnds);
                 if (status) {
                     PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-                    rm->freeFrontEndIds(pcmDevIds, sAttr, TX_HOSTLESS);
+                    freeFrontEndIds(sAttr, TX_HOSTLESS);
                     frontEndIdAllocated = false;
                 }
             }
@@ -378,7 +377,7 @@ int SessionAlsaPcm::open(Stream * s)
                 status = SessionAlsaUtils::open(s, rm, pcmDevRxIds, rxAifBackEnds);
                 if (status) {
                     PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-                    rm->freeFrontEndIds(pcmDevIds, sAttr, RX_HOSTLESS);
+                    freeFrontEndIds(sAttr, RX_HOSTLESS);
                     frontEndIdAllocated = false;
                 }
             }
@@ -393,8 +392,8 @@ int SessionAlsaPcm::open(Stream * s)
                 }
                 if (status) {
                     PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-                    rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
-                    rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+                    freeFrontEndIds(sAttr, RX_HOSTLESS);
+                    freeFrontEndIds(sAttr, TX_HOSTLESS);
                     frontEndIdAllocated = false;
                 }
             }
@@ -1500,7 +1499,7 @@ int SessionAlsaPcm::close(Stream * s)
                 sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
                 ldir = TX_HOSTLESS;
 
-            rm->freeFrontEndIds(pcmDevIds, sAttr, ldir);
+            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_OUTPUT:
@@ -1571,7 +1570,7 @@ int SessionAlsaPcm::close(Stream * s)
                 (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
                 ldir = RX_HOSTLESS;
 
-            rm->freeFrontEndIds(pcmDevIds, sAttr, ldir);
+            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
@@ -1622,9 +1621,9 @@ int SessionAlsaPcm::close(Stream * s)
             }
 
             if (pcmDevRxIds.size())
-                rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
+                freeFrontEndIds(sAttr, RX_HOSTLESS);
             if (pcmDevTxIds.size())
-                rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+                freeFrontEndIds(sAttr, TX_HOSTLESS);
             pcmRx = NULL;
             pcmTx = NULL;
             break;
@@ -2805,6 +2804,113 @@ int SessionAlsaPcm::registerCallBack(session_callback cb, uint64_t cookie)
     cbCookie = cookie;
     return 0;
 }
+
+int32_t SessionAlsaPcm::allocateFrontEndIds(const struct pal_stream_attributes &sAttr,
+                                            int lDirection) {
+    int32_t status = 0;
+    int id;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    if (sAttr.type == PAL_STREAM_VOICE_CALL_RECORD) {
+        id = rm->allocateFrontEndIds(PCM_RECORD_NONTUNNEL);
+        if (id < 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+            status = -EINVAL;
+            goto exit;
+        }
+        pcmDevIds.push_back(id);
+    } else if (sAttr.type == PAL_STREAM_VOICE_CALL_MUSIC) {
+        id = rm->allocateFrontEndIds(PCM_PLAYBACK_NONTUNNEL);
+        if (id < 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+            status = -EINVAL;
+            goto exit;
+        }
+        pcmDevIds.push_back(id);
+    } else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY || sAttr.type == PAL_STREAM_COMMON_PROXY) {
+        id = rm->allocateFrontEndIds(PCM_RECORD_NOCONFIG);
+        if (id < 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+            status = -EINVAL;
+            goto exit;
+        }
+        pcmDevIds.push_back(id);
+    } else {
+        if (sAttr.direction == PAL_AUDIO_OUTPUT) {
+            if (lDirection == RX_HOSTLESS)
+                id = rm->allocateFrontEndIds(PCM_PLAYBACK_HOSTLESS);
+            else
+                id = rm->allocateFrontEndIds(PCM_PLAYBACK);
+            if (id < 0) {
+                PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                goto exit;
+            }
+            pcmDevIds.push_back(id);
+        } else if (sAttr.direction == PAL_AUDIO_INPUT) {
+            if (lDirection == TX_HOSTLESS)
+                id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+            else
+                id = rm->allocateFrontEndIds(PCM_RECORD);
+            if (id < 0) {
+                PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                status = -EINVAL;
+                goto exit;
+            }
+            pcmDevIds.push_back(id);
+        } else {
+            if (lDirection == RX_HOSTLESS) {
+                id = rm->allocateFrontEndIds(PCM_PLAYBACK_HOSTLESS);
+                if (id < 0) {
+                    PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                    status = -EINVAL;
+                    goto exit;
+                }
+                pcmDevRxIds.push_back(id);
+            } else {
+                id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+                if (id < 0) {
+                    PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                    status = -EINVAL;
+                    goto exit;
+                }
+                pcmDevTxIds.push_back(id);
+            }
+        }
+    }
+exit:
+    PAL_DBG(LOG_TAG, "Exit status %d", status);
+    return status;
+}
+
+void SessionAlsaPcm::freeFrontEndIds(const struct pal_stream_attributes &sAttr, int lDirection) {
+
+    if (sAttr.type == PAL_STREAM_VOICE_CALL_RECORD)
+        rm->freeFrontEndIds(PCM_RECORD_NONTUNNEL, pcmDevIds);
+    else if (sAttr.type == PAL_STREAM_VOICE_CALL_MUSIC)
+        rm->freeFrontEndIds(PCM_PLAYBACK_NONTUNNEL, pcmDevIds);
+    else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY || sAttr.type == PAL_STREAM_COMMON_PROXY)
+        rm->freeFrontEndIds(PCM_RECORD_NOCONFIG, pcmDevIds);
+    else {
+        if (sAttr.direction == PAL_AUDIO_OUTPUT) {
+            if (lDirection == RX_HOSTLESS)
+                rm->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, pcmDevIds);
+            else
+                rm->freeFrontEndIds(PCM_PLAYBACK, pcmDevIds);
+        } else if (sAttr.direction == PAL_AUDIO_INPUT) {
+            if (lDirection == TX_HOSTLESS)
+                rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIds);
+            else
+                rm->freeFrontEndIds(PCM_RECORD, pcmDevIds);
+        } else {
+            if (lDirection == RX_HOSTLESS)
+                rm->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, pcmDevRxIds);
+            else
+                rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevTxIds);
+        }
+    }
+    return;
+}
+
 
 int SessionAlsaPcm::getTimestamp(struct pal_session_time *stime)
 {

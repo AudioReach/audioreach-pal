@@ -395,20 +395,20 @@ int SessionAlsaVoice::open(Stream * s)
         }
     }
 
- if (sAttr.direction != (PAL_AUDIO_INPUT|PAL_AUDIO_OUTPUT)) {
+    if (sAttr.direction != (PAL_AUDIO_INPUT|PAL_AUDIO_OUTPUT)) {
         PAL_ERR(LOG_TAG,"Voice session dir must be input and output");
         goto exit;
     }
 
-    pcmDevRxIds = rm->allocateFrontEndIds(sAttr, RX_HOSTLESS);
-    pcmDevTxIds = rm->allocateFrontEndIds(sAttr, TX_HOSTLESS);
+    status = allocateFrontEndIds(sAttr, RX_HOSTLESS);
+    status = allocateFrontEndIds(sAttr, TX_HOSTLESS);
     if (!pcmDevRxIds.size() || !pcmDevTxIds.size()) {
         if (pcmDevRxIds.size()) {
-            rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
+            freeFrontEndIds(sAttr, RX_HOSTLESS);
             pcmDevRxIds.clear();
         }
         if (pcmDevTxIds.size()) {
-            rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+            freeFrontEndIds(sAttr, TX_HOSTLESS);
             pcmDevTxIds.clear();
         }
         PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
@@ -436,8 +436,8 @@ int SessionAlsaVoice::open(Stream * s)
     status = rm->getVirtualAudioMixer(&mixer);
     if (status) {
         PAL_ERR(LOG_TAG,"mixer error");
-        rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
-        rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+        freeFrontEndIds(sAttr, RX_HOSTLESS);
+        freeFrontEndIds(sAttr, TX_HOSTLESS);
         pcmDevRxIds.clear();
         pcmDevTxIds.clear();
         goto exit;
@@ -448,8 +448,8 @@ int SessionAlsaVoice::open(Stream * s)
 
     if (status) {
         PAL_ERR(LOG_TAG, "session alsa open failed with %d", status);
-        rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
-        rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+        freeFrontEndIds(sAttr, RX_HOSTLESS);
+        freeFrontEndIds(sAttr, TX_HOSTLESS);
         pcmDevRxIds.clear();
         pcmDevTxIds.clear();
         goto exit;
@@ -931,12 +931,12 @@ int SessionAlsaVoice::close(Stream * s)
 
 exit:
     if (pcmDevRxIds.size()) {
-        rm->freeFrontEndIds(pcmDevRxIds, sAttr, RX_HOSTLESS);
+        freeFrontEndIds(sAttr, RX_HOSTLESS);
         pcmDevRxIds.clear();
         pcmRx = NULL;
     }
     if (pcmDevTxIds.size()) {
-        rm->freeFrontEndIds(pcmDevTxIds, sAttr, TX_HOSTLESS);
+        freeFrontEndIds(sAttr, TX_HOSTLESS);
         pcmDevTxIds.clear();
         pcmTx = NULL;
     }
@@ -1819,6 +1819,64 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
 exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
+}
+
+int32_t SessionAlsaVoice::allocateFrontEndIds(const struct pal_stream_attributes &sAttr,
+                                              int lDirection) {
+    uint32_t status = 0;
+    int id;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    if (lDirection == RX_HOSTLESS) {
+        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
+            sAttr.info.voice_call_info.VSID == VOICELBMMODE1)
+            id = rm->allocateFrontEndIds(VOICE1_PLAYBACK_HOSTLESS);
+        else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
+                 sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
+            id = rm->allocateFrontEndIds(VOICE2_PLAYBACK_HOSTLESS);
+        if (id < 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+            status = -EINVAL;
+            goto exit;
+        }
+        pcmDevRxIds.push_back(id);
+    } else {
+        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
+            sAttr.info.voice_call_info.VSID == VOICELBMMODE1)
+            id = rm->allocateFrontEndIds(VOICE1_RECORD_HOSTLESS);
+        else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
+                 sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
+            id = rm->allocateFrontEndIds(VOICE2_RECORD_HOSTLESS);
+        if (id < 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+            status = -EINVAL;
+            goto exit;
+        }
+        pcmDevTxIds.push_back(id);
+    }
+
+exit:
+    PAL_DBG(LOG_TAG, "Exit status %d", status);
+    return status;
+}
+
+void SessionAlsaVoice::freeFrontEndIds(const struct pal_stream_attributes &sAttr, int lDirection) {
+    if (lDirection == RX_HOSTLESS) {
+        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
+            sAttr.info.voice_call_info.VSID == VOICELBMMODE1)
+            rm->freeFrontEndIds(VOICE1_PLAYBACK_HOSTLESS, pcmDevRxIds);
+        else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
+                 sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
+            rm->freeFrontEndIds(VOICE2_PLAYBACK_HOSTLESS, pcmDevRxIds);
+    } else {
+        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
+            sAttr.info.voice_call_info.VSID == VOICELBMMODE1)
+            rm->freeFrontEndIds(VOICE1_RECORD_HOSTLESS, pcmDevTxIds);
+        else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
+                 sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
+            rm->freeFrontEndIds(VOICE2_RECORD_HOSTLESS, pcmDevTxIds);
+    }
+    return;
 }
 
 int SessionAlsaVoice::setVoiceMixerParameter(Stream * s, struct mixer *mixer,

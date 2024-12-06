@@ -272,12 +272,12 @@ int SessionAgm::open(Stream * strm)
 
     audio_fmt = sAttr.out_media_config.aud_fmt_id;
 
-    sessionIds = rm->allocateFrontEndIds(sAttr, 0);
-    if (sessionIds.size() == 0) {
-        PAL_ERR(LOG_TAG, "no more FE vailable");
+    sessionId = rm->allocateFrontEndIds(NONTUNNEL);
+    if (sessionId < 0) {
+        PAL_ERR(LOG_TAG, "no more FE available");
         return -EINVAL;
     }
-    sessionId = sessionIds.at(0);
+    sessionIds.push_back(sessionId);
 
     // get streamKV
     if ((status = builder->populateStreamKV(strm, streamKV)) != 0) {
@@ -392,7 +392,7 @@ int SessionAgm::close(Stream * s)
     agm_session_close(agmSessHandle);
     PAL_DBG(LOG_TAG, "out of agmSessHandle close");
 
-    rm->freeFrontEndIds(sessionIds, sAttr, 0);
+    rm->freeFrontEndIds(NONTUNNEL, sessionIds);
 
     return 0;
 }

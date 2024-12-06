@@ -378,6 +378,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
     int32_t extEcbackendId;
     std::vector <std::string> extEcbackendNames;
     struct pal_device device = {};
+    int id;
 
     PAL_DBG(LOG_TAG, "Enter.");
 
@@ -415,7 +416,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                 }
                 dev->close();
 
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 pcmEcTx = NULL;
                 ecRefDevId = PAL_DEVICE_OUT_MIN;
                 extECMutex.unlock();
@@ -430,24 +431,25 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
             rm->disableInternalECRefs(s);
             extECMutex.lock();
             extEcTxDeviceList.push_back(dev);
-            pcmDevEcTxIds = rm->allocateFrontEndExtEcIds();
-            if (pcmDevEcTxIds.size() == 0) {
+            id = rm->allocateFrontEndIds(EXTEC_RECORD_HOSTLESS);
+            if (id < 0) {
                 PAL_ERR(LOG_TAG, "ResourceManger::getBackEndNames returned no EXT_EC device Ids");
                 status = -EINVAL;
                 goto exit;
             }
+            pcmDevEcTxIds.push_back(id);
             status = dev->open();
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "dev open failed");
                 status = -EINVAL;
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 goto exit;
             }
             status = dev->start();
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "dev start failed");
                 dev->close();
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 status = -EINVAL;
                 goto exit;
             }
@@ -460,7 +462,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                 PAL_ERR(LOG_TAG, "SessionAlsaUtils::openDev failed");
                 dev->stop();
                 dev->close();
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 status = -EINVAL;
                 goto exit;
             }
@@ -469,7 +471,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                 PAL_ERR(LOG_TAG, "Exit pcm-ec-tx open failed");
                 dev->stop();
                 dev->close();
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 status = -EINVAL;
                 goto exit;
             }
@@ -479,7 +481,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                 pcmEcTx = NULL;
                 dev->stop();
                 dev->close();
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 status = -EINVAL;
                 goto exit;
             }
@@ -491,7 +493,7 @@ int SessionAR::checkAndSetExtEC(const std::shared_ptr<ResourceManager>& rm,
                 pcmEcTx = NULL;
                 dev->stop();
                 dev->close();
-                rm->freeFrontEndEcTxIds(pcmDevEcTxIds);
+                rm->freeFrontEndIds(EXTEC_RECORD_HOSTLESS, pcmDevEcTxIds);
                 status = -EINVAL;
                 goto exit;
             }

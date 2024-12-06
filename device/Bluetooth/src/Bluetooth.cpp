@@ -728,7 +728,7 @@ int Bluetooth::getCodecConfig(struct pal_media_config *config)
 
 void Bluetooth::startAbr()
 {
-    int ret = 0, dir;
+    int ret = 0, dir, id;
     struct pal_device fbDevice;
     struct pal_channel_info ch_info;
     struct pal_stream_attributes sAttr;
@@ -835,12 +835,16 @@ void Bluetooth::startAbr()
     /* Retrieve Hostless PCM device id */
     sAttr.type = PAL_STREAM_LOW_LATENCY;
     sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
-    fbpcmDevIds = rm->allocateFrontEndIds(sAttr, dir);
-    if (fbpcmDevIds.size() == 0) {
+    if (dir == RX_HOSTLESS)
+        id = rm->allocateFrontEndIds(PCM_PLAYBACK_HOSTLESS);
+    else
+        id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+    if (id < 0) {
         PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
         ret = -ENOSYS;
         goto done;
     }
+    fbpcmDevIds.push_back(id);
 
     connectCtrlName << "PCM" << fbpcmDevIds.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(virtualMixerHandle, connectCtrlName.str().data());
@@ -1037,7 +1041,10 @@ disconnect_fe:
        mixer_ctl_set_enum_by_string(disconnectCtrl, backEndName.c_str());
     }
 free_fe:
-    rm->freeFrontEndIds(fbpcmDevIds, sAttr, dir);
+    if (dir == RX_HOSTLESS)
+        rm->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, fbpcmDevIds);
+    else
+       rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, fbpcmDevIds);
     fbpcmDevIds.clear();
 done:
     if (isDeviceLocked) {
@@ -1132,7 +1139,10 @@ void Bluetooth::stopAbr()
 free_fe:
     dir = ((codecType == DEC) ? RX_HOSTLESS : TX_HOSTLESS);
     if (fbpcmDevIds.size()) {
-        rm->freeFrontEndIds(fbpcmDevIds, sAttr, dir);
+        if (dir == RX_HOSTLESS)
+            rm->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, fbpcmDevIds);
+        else
+            rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, fbpcmDevIds);
         fbpcmDevIds.clear();
     }
 

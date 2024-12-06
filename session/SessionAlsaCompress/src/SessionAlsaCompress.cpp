@@ -757,6 +757,7 @@ int SessionAlsaCompress::open(Stream * s)
     struct pal_stream_attributes sAttr = {};
     std::vector<std::shared_ptr<Device>> associatedDevices;
     std::vector<std::pair<int32_t, std::string>> emptyBackEnds;
+    int id;
 
     PAL_DBG(LOG_TAG, "Enter");
     status = s->getStreamAttributes(&sAttr);
@@ -772,11 +773,15 @@ int SessionAlsaCompress::open(Stream * s)
         goto exit;
     }
 
-    compressDevIds = rm->allocateFrontEndIds(sAttr, 0);
-    if (compressDevIds.size() == 0) {
-        PAL_ERR(LOG_TAG, "no more FE vailable");
+    if (sAttr.direction == PAL_AUDIO_OUTPUT)
+        id = rm->allocateFrontEndIds(COMPRESS_PLAYBACK);
+    else
+        id = rm->allocateFrontEndIds(COMPRESS_RECORD);
+    if (id < 0) {
+        PAL_ERR(LOG_TAG, "no more FE available");
         return -EINVAL;
     }
+    compressDevIds.push_back(id);
     frontEndIdAllocated = true;
 
     registerCallBack(handleSessionCallBack, (uint64_t)s);
@@ -809,7 +814,7 @@ int SessionAlsaCompress::open(Stream * s)
             if (status) {
                 PAL_ERR(LOG_TAG, "session alsa utils open failed with %d",
                         status);
-                rm->freeFrontEndIds(compressDevIds, sAttr, 0);
+                rm->freeFrontEndIds(COMPRESS_PLAYBACK, compressDevIds);
                 frontEndIdAllocated = false;
             }
             audio_fmt = sAttr.out_media_config.aud_fmt_id;
@@ -833,7 +838,7 @@ int SessionAlsaCompress::open(Stream * s)
             if (status) {
                 PAL_ERR(LOG_TAG, "session alsa utils open failed with %d",
                         status);
-                rm->freeFrontEndIds(compressDevIds, sAttr, 0);
+                rm->freeFrontEndIds(COMPRESS_RECORD, compressDevIds);
                 frontEndIdAllocated = false;
             }
             audio_fmt = sAttr.in_media_config.aud_fmt_id;
@@ -1605,7 +1610,7 @@ int SessionAlsaCompress::close(Stream * s)
                 }
             }
 
-            rm->freeFrontEndIds(compressDevIds, sAttr, 0);
+            rm->freeFrontEndIds(COMPRESS_PLAYBACK, compressDevIds);
             compress = NULL;
             builder->freeCustomPayload();
             break;
@@ -1633,7 +1638,7 @@ int SessionAlsaCompress::close(Stream * s)
             if (compress)
                 compress_close(compress);
 
-            rm->freeFrontEndIds(compressDevIds, sAttr, 0);
+            rm->freeFrontEndIds(COMPRESS_RECORD, compressDevIds);
             compress = NULL;
             break;
 

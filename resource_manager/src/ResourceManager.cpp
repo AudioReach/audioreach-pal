@@ -406,22 +406,7 @@ std::mutex ResourceManager::mActiveStreamMutex;
 std::mutex ResourceManager::mSleepMonitorMutex;
 std::mutex ResourceManager::mListFrontEndsMutex;
 std::vector <int> ResourceManager::listAllFrontEndIds = {0};
-std::vector <int> ResourceManager::listFreeFrontEndIds = {0};
-std::vector <int> ResourceManager::listAllPcmPlaybackFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmRecordFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmHostlessRxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmHostlessTxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmExtEcTxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllCompressPlaybackFrontEnds = {0};
-std::vector <int> ResourceManager::listAllCompressRecordFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmVoice1RxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmVoice1TxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmVoice2RxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmVoice2TxFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmInCallRecordFrontEnds = {0};
-std::vector <int> ResourceManager::listAllPcmInCallMusicFrontEnds = {0};
-std::vector <int> ResourceManager::listAllNonTunnelSessionIds = {0};
-std::vector <int> ResourceManager::listAllPcmContextProxyFrontEnds = {0};
+std::map<std::string, std::vector <int>> ResourceManager::frontEndIdMap;
 std::vector <std::string> ResourceManager::usb_vendor_uuid_list = {""};
 struct audio_mixer* ResourceManager::audio_virt_mixer = NULL;
 struct audio_mixer* ResourceManager::audio_hw_mixer = NULL;
@@ -748,10 +733,83 @@ void ResourceManager::sendCrashSignal(int signal, pid_t pid, uid_t uid)
     agm_dump(&dump_info);
 }
 
+void ResourceManager::constructFrontEndIdMap() {
+    std::string key;
+    std::map<std::string, std::vector <int>>::iterator it;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    //Construct the key value for the frontEndIdMap using the devInfo
+    for (int i = 0; i < devInfo.size(); i++) {
+        key = devInfo[i].name;
+        if (devInfo[i].playback != 1 && devInfo[i].record != 1) {
+            PAL_INFO(LOG_INFO, "devInfo is invalid");
+        } else {
+            switch (devInfo[i].type) {
+                case PCM:
+                    key = "Pcm";
+                    break;
+                case COMPRESS:
+                    key = "Compress";
+                    break;
+                case VOICE1:
+                    key = "Voice1";
+                    break;
+                case VOICE2:
+                    key = "Voice2";
+                    break;
+                case ExtEC:
+                    key = "ExtEC";
+                    break;
+            }
+            if (devInfo[i].playback == 1)
+                key += "Playback";
+            else if (devInfo[i].record == 1)
+                key += "Record";
+            else
+                key += "PlaybackRecord";
+
+            if (devInfo[i].sess_mode == HOSTLESS)
+                key += "Hostless";
+            else if (devInfo[i].sess_mode == NON_TUNNEL)
+                key += "NonTunnel";
+            else if (devInfo[i].sess_mode == NO_CONFIG)
+                key += "NoConfig";
+
+            //Check if the key value exists in the map already; if not add it to the map
+            it = frontEndIdMap.find(key);
+            if (it != frontEndIdMap.end()) {
+                it->second.push_back(devInfo[i].deviceId);
+            }
+            else {
+                frontEndIdMap.insert({key, {devInfo[i].deviceId}});
+            }
+            listAllFrontEndIds.push_back(devInfo[i].deviceId);
+        }
+    }
+
+    /*
+     *Arrange all the FrontendIds in descending order, this gives the
+     *largest deviceId being used for ALSA usecases.
+     *For NON-TUNNEL usecases the sessionIds to be used are formed by incrementing the largest used deviceID
+     *with number of non-tunnel sessions supported on a platform. This way we avoid any conflict of deviceIDs.
+     */
+     sort(listAllFrontEndIds.rbegin(), listAllFrontEndIds.rend());
+     int maxDeviceIdInUse = listAllFrontEndIds.at(0);
+     frontEndIdMap.insert({"NonTunnel", {}});
+     it = frontEndIdMap.find("NonTunnel");
+     for (int i = 0; i < max_nt_sessions; i++) {
+          it->second.push_back(maxDeviceIdInUse + i);
+     }
+
+     PAL_DBG(LOG_TAG, "Exit");
+
+}
+
 ResourceManager::ResourceManager()
 {
     PAL_INFO(LOG_TAG, "Enter: %p", this);
     int ret = 0;
+    std::map<std::string, std::vector <int>>::iterator it;
     // Init audio_route and audio_mixer
     na_props.rm_na_prop_enabled = false;
     na_props.ui_na_prop_enabled = false;
@@ -761,6 +819,7 @@ ResourceManager::ResourceManager()
     streamTag.clear();
     deviceTag.clear();
     usb_vendor_uuid_list.clear();
+    listAllFrontEndIds.clear();
 
 #ifndef BLUETOOTH_FEATURES_DISABLED
     BTUtilsInit();
@@ -843,82 +902,10 @@ ResourceManager::ResourceManager()
     if (sleepmon_fd_ == -1)
         PAL_ERR(LOG_TAG, "Failed to open ADSP sleep monitor file");
 #endif
-    listAllFrontEndIds.clear();
-    listFreeFrontEndIds.clear();
-    listAllPcmPlaybackFrontEnds.clear();
-    listAllPcmRecordFrontEnds.clear();
-    listAllPcmHostlessRxFrontEnds.clear();
-    listAllNonTunnelSessionIds.clear();
-    listAllPcmHostlessTxFrontEnds.clear();
-    listAllCompressPlaybackFrontEnds.clear();
-    listAllCompressRecordFrontEnds.clear();
-    listAllPcmVoice1RxFrontEnds.clear();
-    listAllPcmVoice1TxFrontEnds.clear();
-    listAllPcmVoice2RxFrontEnds.clear();
-    listAllPcmVoice2TxFrontEnds.clear();
-    listAllPcmInCallRecordFrontEnds.clear();
-    listAllPcmInCallMusicFrontEnds.clear();
-    listAllPcmContextProxyFrontEnds.clear();
-    listAllPcmExtEcTxFrontEnds.clear();
     memset(stream_instances, 0, PAL_STREAM_MAX * sizeof(uint64_t));
     memset(in_stream_instances, 0, PAL_STREAM_MAX * sizeof(uint64_t));
 
-    for (int i=0; i < devInfo.size(); i++) {
-
-        if (devInfo[i].type == PCM) {
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].playback == 1) {
-                listAllPcmHostlessRxFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].record == 1) {
-                listAllPcmHostlessTxFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].playback == 1 && devInfo[i].sess_mode == DEFAULT) {
-                listAllPcmPlaybackFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].record == 1 && devInfo[i].sess_mode == DEFAULT) {
-                listAllPcmRecordFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].sess_mode == NON_TUNNEL && devInfo[i].record == 1) {
-                listAllPcmInCallRecordFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].sess_mode == NON_TUNNEL && devInfo[i].playback == 1) {
-                listAllPcmInCallMusicFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].sess_mode == NO_CONFIG && devInfo[i].record == 1) {
-                listAllPcmContextProxyFrontEnds.push_back(devInfo[i].deviceId);
-            }
-        } else if (devInfo[i].type == COMPRESS) {
-            if (devInfo[i].playback == 1) {
-                listAllCompressPlaybackFrontEnds.push_back(devInfo[i].deviceId);
-            } else if (devInfo[i].record == 1) {
-                listAllCompressRecordFrontEnds.push_back(devInfo[i].deviceId);
-            }
-        } else if (devInfo[i].type == VOICE1) {
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].playback == 1) {
-                listAllPcmVoice1RxFrontEnds.push_back(devInfo[i].deviceId);
-            }
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].record == 1) {
-                listAllPcmVoice1TxFrontEnds.push_back(devInfo[i].deviceId);
-            }
-        } else if (devInfo[i].type == VOICE2) {
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].playback == 1) {
-                listAllPcmVoice2RxFrontEnds.push_back(devInfo[i].deviceId);
-            }
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].record == 1) {
-                listAllPcmVoice2TxFrontEnds.push_back(devInfo[i].deviceId);
-            }
-        } else if (devInfo[i].type == ExtEC) {
-            if (devInfo[i].sess_mode == HOSTLESS && devInfo[i].record == 1) {
-                listAllPcmExtEcTxFrontEnds.push_back(devInfo[i].deviceId);
-            }
-        }
-        /*We create a master list of all the frontends*/
-        listAllFrontEndIds.push_back(devInfo[i].deviceId);
-    }
-    /*
-     *Arrange all the FrontendIds in descending order, this gives the
-     *largest deviceId being used for ALSA usecases.
-     *For NON-TUNNEL usecases the sessionIds to be used are formed by incrementing the largest used deviceID
-     *with number of non-tunnel sessions supported on a platform. This way we avoid any conflict of deviceIDs.
-     */
-     sort(listAllFrontEndIds.rbegin(), listAllFrontEndIds.rend());
-     int maxDeviceIdInUse = listAllFrontEndIds.at(0);
-     for (int i = 0; i < max_nt_sessions; i++)
-          listAllNonTunnelSessionIds.push_back(maxDeviceIdInUse + i);
+    constructFrontEndIdMap();
 
 #ifndef LINUX_ENABLED
     // Get AGM service handle
@@ -965,6 +952,8 @@ ResourceManager::ResourceManager()
 }
 ResourceManager::~ResourceManager()
 {
+    std::map<std::string, std::vector <int>>::iterator it;
+
     // Dump memory logger queues
     int ret = memLoggerDumpAllToFile();
     if (ret)
@@ -989,20 +978,6 @@ ResourceManager::~ResourceManager()
     devicePpTag.clear();
     deviceTag.clear();
 
-    listAllFrontEndIds.clear();
-    listAllPcmPlaybackFrontEnds.clear();
-    listAllPcmRecordFrontEnds.clear();
-    listAllPcmHostlessRxFrontEnds.clear();
-    listAllPcmHostlessTxFrontEnds.clear();
-    listAllCompressPlaybackFrontEnds.clear();
-    listAllCompressRecordFrontEnds.clear();
-    listFreeFrontEndIds.clear();
-    listAllPcmVoice1RxFrontEnds.clear();
-    listAllPcmVoice1TxFrontEnds.clear();
-    listAllPcmVoice2RxFrontEnds.clear();
-    listAllPcmVoice2TxFrontEnds.clear();
-    listAllNonTunnelSessionIds.clear();
-    listAllPcmExtEcTxFrontEnds.clear();
     usb_vendor_uuid_list.clear();
     devInfo.clear();
     txEcInfo.clear();
@@ -1010,6 +985,10 @@ ResourceManager::~ResourceManager()
     STInstancesLists.clear();
     devicePcmId.clear();
     PCMDataInstances.clear();
+
+    for (auto it: frontEndIdMap) {
+        it.second.clear();
+    }
 
     if (admLibHdl) {
         if (admDeInitFn)
@@ -1484,21 +1463,8 @@ int ResourceManager::init_audio()
                 PAL_INFO(LOG_TAG, "mixer_open success. snd_card_num = %d, snd_card_name %s",
                 snd_hw_card, snd_card_name);
 
-                /* TODO: Needs to extend for new targets */
-                if (strstr(snd_card_name, "kona") ||
-                    strstr(snd_card_name, "sm8150") ||
-                    strstr(snd_card_name, "sdx")||
-                    strstr(snd_card_name, "lahaina") ||
-                    strstr(snd_card_name, "waipio") ||
-                    strstr(snd_card_name, "kalama") ||
-                    strstr(snd_card_name, "pineapple") ||
-                    strstr(snd_card_name, "cliffs") ||
-                    strstr(snd_card_name, "anorak") ||
-                    strstr(snd_card_name, "diwali") ||
-                    strstr(snd_card_name, "bengal") ||
-                    strstr(snd_card_name, "monaco") ||
-                    strstr(snd_card_name, "sun")) {
-                    PAL_VERBOSE(LOG_TAG, "Found Codec sound card");
+                if (strstr(snd_card_name, VENDOR_SKU)) {
+                    PAL_DBG(LOG_TAG, "Found Codec sound card, %s", VENDOR_SKU);
                     snd_card_found = true;
                     audio_hw_mixer = tmp_mixer;
                     break;
@@ -4963,56 +4929,6 @@ void ResourceManager::getSpViChannelMapCfg(int32_t *channelMap, uint32_t numOfCh
     }
 }
 
-int ResourceManager::getNumFEs(const pal_stream_type_t sType) const
-{
-    int n = 1;
-
-    switch (sType) {
-        case PAL_STREAM_LOOPBACK:
-        case PAL_STREAM_TRANSCODE:
-            n = 1;
-            break;
-        default:
-            n = 1;
-            break;
-    }
-
-    return n;
-}
-
-const std::vector<int> ResourceManager::allocateFrontEndExtEcIds()
-{
-    std::vector<int> f;
-    f.clear();
-    const int howMany = 1;
-    int id = 0;
-    std::vector<int>::iterator it;
-    if (howMany > listAllPcmExtEcTxFrontEnds.size()) {
-        PAL_ERR(LOG_TAG, "allocateFrontEndExtEcIds: requested for %d external ec front ends, have only %zu error",
-                        howMany, listAllPcmExtEcTxFrontEnds.size());
-        return f;
-    }
-    id = (listAllPcmExtEcTxFrontEnds.size() - 1);
-    it =  (listAllPcmExtEcTxFrontEnds.begin() + id);
-    for (int i = 0; i < howMany; i++) {
-        f.push_back(listAllPcmExtEcTxFrontEnds.at(id));
-        listAllPcmExtEcTxFrontEnds.erase(it);
-        PAL_INFO(LOG_TAG, "allocateFrontEndExtEcIds: front end %d", f[i]);
-        it -= 1;
-        id -= 1;
-    }
-    return f;
-}
-
-void ResourceManager::freeFrontEndEcTxIds(const std::vector<int> frontend)
-{
-    for (int i = 0; i < frontend.size(); i++) {
-        PAL_INFO(LOG_TAG, "freeing ext ec dev %d\n", frontend.at(i));
-        listAllPcmExtEcTxFrontEnds.push_back(frontend.at(i));
-    }
-    return;
-}
-
 template <typename T>
 void removeDuplicates(std::vector<T> &vec)
 {
@@ -5021,475 +4937,52 @@ void removeDuplicates(std::vector<T> &vec)
     return;
 }
 
-const std::vector<int> ResourceManager::allocateFrontEndIds(const struct pal_stream_attributes &sAttr, int lDirection)
+int ResourceManager::allocateFrontEndIds(std::string key)
 {
-    //TODO: lock resource manager
-    std::vector<int> f;
-    f.clear();
-    const int howMany = getNumFEs(sAttr.type);
-    int id = 0;
-    std::vector<int>::iterator it;
+    int id = -1;
+    std::map<std::string, std::vector <int>>::iterator it;
 
     mListFrontEndsMutex.lock();
-    switch(sAttr.type) {
-        case PAL_STREAM_NON_TUNNEL:
-            if (howMany > listAllNonTunnelSessionIds.size()) {
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                howMany, listAllPcmRecordFrontEnds.size());
-                 goto error;
-            }
-            id = (listAllNonTunnelSessionIds.size() - 1);
-            it =  (listAllNonTunnelSessionIds.begin() + id);
-            for (int i = 0; i < howMany; i++) {
-                f.push_back(listAllNonTunnelSessionIds.at(id));
-                listAllNonTunnelSessionIds.erase(it);
-                PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                it -= 1;
-                id -= 1;
-            }
-            break;
-        case PAL_STREAM_LOW_LATENCY:
-        case PAL_STREAM_ULTRA_LOW_LATENCY:
-        case PAL_STREAM_GENERIC:
-        case PAL_STREAM_DEEP_BUFFER:
-        case PAL_STREAM_SPATIAL_AUDIO:
-        case PAL_STREAM_VOIP:
-        case PAL_STREAM_VOIP_RX:
-        case PAL_STREAM_VOIP_TX:
-        case PAL_STREAM_VOICE_UI:
-        case PAL_STREAM_ACD:
-        case PAL_STREAM_ASR:
-        case PAL_STREAM_PCM_OFFLOAD:
-        case PAL_STREAM_LOOPBACK:
-        case PAL_STREAM_PROXY:
-        case PAL_STREAM_HAPTICS:
-        case PAL_STREAM_ULTRASOUND:
-        case PAL_STREAM_RAW:
-        case PAL_STREAM_SENSOR_PCM_DATA:
-        case PAL_STREAM_VOICE_RECOGNITION:
-        case PAL_STREAM_SENSOR_PCM_RENDERER:
-            switch (sAttr.direction) {
-                case PAL_AUDIO_INPUT:
-                    if (lDirection == TX_HOSTLESS) {
-                        if (howMany > listAllPcmHostlessTxFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                              howMany, listAllPcmHostlessTxFrontEnds.size());
-                            goto error;
-                        }
-                        id = (listAllPcmHostlessTxFrontEnds.size() - 1);
-                        it = (listAllPcmHostlessTxFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                           f.push_back(listAllPcmHostlessTxFrontEnds.at(id));
-                           listAllPcmHostlessTxFrontEnds.erase(it);
-                           PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                           it -= 1;
-                           id -= 1;
-                        }
-                    } else {
-                        if (howMany > listAllPcmRecordFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                              howMany, listAllPcmRecordFrontEnds.size());
-                            goto error;
-                        }
-                        id = (listAllPcmRecordFrontEnds.size() - 1);
-                        it = (listAllPcmRecordFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                            f.push_back(listAllPcmRecordFrontEnds.at(id));
-                            listAllPcmRecordFrontEnds.erase(it);
-                            PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                            it -= 1;
-                            id -= 1;
-                        }
-                    }
-                    break;
-                case PAL_AUDIO_OUTPUT:
-                    if (lDirection == RX_HOSTLESS) {
-                        if (howMany > listAllPcmHostlessRxFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                            howMany, listAllPcmHostlessRxFrontEnds.size());
-                            goto error;
-                        }
-                        id = (listAllPcmHostlessRxFrontEnds.size() - 1);
-                        it = (listAllPcmHostlessRxFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                            f.push_back(listAllPcmHostlessRxFrontEnds.at(id));
-                            listAllPcmHostlessRxFrontEnds.erase(it);
-                            PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                            it -= 1;
-                            id -= 1;
-                        }
-                    } else {
-                        if (howMany > listAllPcmPlaybackFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                            howMany, listAllPcmPlaybackFrontEnds.size());
-                            goto error;
-                        }
-                        if (!listAllPcmPlaybackFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, but we dont have any (%zu) !!!!!!! ",
-                                    howMany, listAllPcmPlaybackFrontEnds.size());
-                            goto error;
-                        }
-                        id = (int)(((int)listAllPcmPlaybackFrontEnds.size()) - 1);
-                        if (id < 0) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: negative iterator id %d !!!!! ", id);
-                            goto error;
-                        }
-                        it =  (listAllPcmPlaybackFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                            f.push_back(listAllPcmPlaybackFrontEnds.at(id));
-                            listAllPcmPlaybackFrontEnds.erase(it);
-                            PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                            it -= 1;
-                            id -= 1;
-                        }
-                    }
-                    break;
-                case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
-                    if (lDirection == RX_HOSTLESS) {
-                        if (howMany > listAllPcmHostlessRxFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                              howMany, listAllPcmHostlessRxFrontEnds.size());
-                            goto error;
-                        }
-                        id = (listAllPcmHostlessRxFrontEnds.size() - 1);
-                        it = (listAllPcmHostlessRxFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                           f.push_back(listAllPcmHostlessRxFrontEnds.at(id));
-                           listAllPcmHostlessRxFrontEnds.erase(it);
-                           PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                           it -= 1;
-                           id -= 1;
-                        }
-                    } else {
-                        if (howMany > listAllPcmHostlessTxFrontEnds.size()) {
-                            PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                              howMany, listAllPcmHostlessTxFrontEnds.size());
-                            goto error;
-                        }
-                        id = (listAllPcmHostlessTxFrontEnds.size() - 1);
-                        it = (listAllPcmHostlessTxFrontEnds.begin() + id);
-                        for (int i = 0; i < howMany; i++) {
-                           f.push_back(listAllPcmHostlessTxFrontEnds.at(id));
-                           listAllPcmHostlessTxFrontEnds.erase(it);
-                           PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                           it -= 1;
-                           id -= 1;
-                        }
-                    }
-                    break;
-                default:
-                    PAL_ERR(LOG_TAG,"direction unsupported");
-                    break;
-            }
-            break;
-        case PAL_STREAM_COMPRESSED:
-            switch (sAttr.direction) {
-                case PAL_AUDIO_INPUT:
-                    if (howMany > listAllCompressRecordFrontEnds.size()) {
-                        PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                          howMany, listAllCompressRecordFrontEnds.size());
-                        goto error;
-                    }
-                    id = (listAllCompressRecordFrontEnds.size() - 1);
-                    it = (listAllCompressRecordFrontEnds.begin() + id);
-                    for (int i = 0; i < howMany; i++) {
-                        f.push_back(listAllCompressRecordFrontEnds.at(id));
-                        listAllCompressRecordFrontEnds.erase(it);
-                        PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                        it -= 1;
-                        id -= 1;
-                    }
-                    break;
-                case PAL_AUDIO_OUTPUT:
-                    if (howMany > listAllCompressPlaybackFrontEnds.size()) {
-                        PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                          howMany, listAllCompressPlaybackFrontEnds.size());
-                        goto error;
-                    }
-                    id = (listAllCompressPlaybackFrontEnds.size() - 1);
-                    it = (listAllCompressPlaybackFrontEnds.begin() + id);
-                    for (int i = 0; i < howMany; i++) {
-                        f.push_back(listAllCompressPlaybackFrontEnds.at(id));
-                        listAllCompressPlaybackFrontEnds.erase(it);
-                        PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                        it -= 1;
-                        id -= 1;
-                    }
-                    break;
-                default:
-                    PAL_ERR(LOG_TAG,"direction unsupported");
-                    break;
-                }
-                break;
-        case PAL_STREAM_VOICE_CALL:
-            switch (sAttr.direction) {
-              case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
-                    if (lDirection == RX_HOSTLESS) {
-                        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
-                            sAttr.info.voice_call_info.VSID == VOICELBMMODE1) {
-                            f = allocateVoiceFrontEndIds(listAllPcmVoice1RxFrontEnds, howMany);
-                        } else if(sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
-                            sAttr.info.voice_call_info.VSID == VOICELBMMODE2){
-                            f = allocateVoiceFrontEndIds(listAllPcmVoice2RxFrontEnds, howMany);
-                        } else {
-                            PAL_ERR(LOG_TAG,"invalid VSID 0x%x provided",
-                                    sAttr.info.voice_call_info.VSID);
-                        }
-                    } else {
-                        if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
-                            sAttr.info.voice_call_info.VSID == VOICELBMMODE1) {
-                            f = allocateVoiceFrontEndIds(listAllPcmVoice1TxFrontEnds, howMany);
-                        } else if(sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
-                            sAttr.info.voice_call_info.VSID == VOICELBMMODE2){
-                            f = allocateVoiceFrontEndIds(listAllPcmVoice2TxFrontEnds, howMany);
-                        } else {
-                            PAL_ERR(LOG_TAG,"invalid VSID 0x%x provided",
-                                    sAttr.info.voice_call_info.VSID);
-                        }
-                    }
-                    break;
-              default:
-                  PAL_ERR(LOG_TAG,"direction unsupported voice must be RX and TX");
-                  break;
-            }
-            break;
-        case PAL_STREAM_VOICE_CALL_RECORD:
-            if (howMany > listAllPcmInCallRecordFrontEnds.size()) {
-                    PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                      howMany, listAllPcmInCallRecordFrontEnds.size());
-                    goto error;
-                }
-            id = (listAllPcmInCallRecordFrontEnds.size() - 1);
-            it = (listAllPcmInCallRecordFrontEnds.begin() + id);
-            for (int i = 0; i < howMany; i++) {
-                f.push_back(listAllPcmInCallRecordFrontEnds.at(id));
-                listAllPcmInCallRecordFrontEnds.erase(it);
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                it -= 1;
-                id -= 1;
-            }
-            break;
-        case PAL_STREAM_VOICE_CALL_MUSIC:
-            if (howMany > listAllPcmInCallMusicFrontEnds.size()) {
-                    PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                      howMany, listAllPcmInCallMusicFrontEnds.size());
-                    goto error;
-                }
-            id = (listAllPcmInCallMusicFrontEnds.size() - 1);
-            it = (listAllPcmInCallMusicFrontEnds.begin() + id);
-            for (int i = 0; i < howMany; i++) {
-                f.push_back(listAllPcmInCallMusicFrontEnds.at(id));
-                listAllPcmInCallMusicFrontEnds.erase(it);
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                it -= 1;
-                id -= 1;
-            }
-            break;
-       case PAL_STREAM_CONTEXT_PROXY:
-       case PAL_STREAM_COMMON_PROXY:
-            if (howMany > listAllPcmContextProxyFrontEnds.size()) {
-                    PAL_ERR(LOG_TAG, "allocateFrontEndIds: requested for %d front ends, have only %zu error",
-                                      howMany, listAllPcmContextProxyFrontEnds.size());
-                    goto error;
-                }
-            id = (listAllPcmContextProxyFrontEnds.size() - 1);
-            it = (listAllPcmContextProxyFrontEnds.begin() + id);
-            for (int i = 0; i < howMany; i++) {
-                f.push_back(listAllPcmContextProxyFrontEnds.at(id));
-                listAllPcmContextProxyFrontEnds.erase(it);
-                PAL_ERR(LOG_TAG, "allocateFrontEndIds: front end %d", f[i]);
-                it -= 1;
-                id -= 1;
-            }
-            break;
-        default:
-            break;
+    it = frontEndIdMap.find(key);
+    if (it != frontEndIdMap.end()) {
+        if (it->second.size() == 0) {
+            PAL_ERR(LOG_TAG, "allocateFrontEndIds: no front end ids available");
+            goto end;
+        }
+        id = (it->second.back());
+        it->second.pop_back();
+        PAL_INFO(LOG_TAG, "allocateFrontEndIds: front end %d", id);
+    } else {
+        PAL_ERR(LOG_TAG, "allocateFrontEndIds: key %s not found in frontEndIdMap",
+                              key.c_str());
     }
 
-error:
+end:
     mListFrontEndsMutex.unlock();
-    return f;
+    return id;
 }
 
-
-const std::vector<int> ResourceManager::allocateVoiceFrontEndIds(std::vector<int> listAllPcmVoiceFrontEnds, const int howMany)
+void ResourceManager::freeFrontEndIds(std::string key, const std::vector<int> frontend)
 {
-    std::vector<int> f;
-    f.clear();
-    if ( howMany > listAllPcmVoiceFrontEnds.size()) {
-        PAL_ERR(LOG_TAG, "allocate voice FrontEndIds: requested for %d front ends, have only %zu error",
-                howMany, listAllPcmVoiceFrontEnds.size());
-        return f;
-    }
-    for (int i = 0; i < howMany; i++) {
-        f.push_back(listAllPcmVoiceFrontEnds.back());
-        listAllPcmVoiceFrontEnds.pop_back();
-        PAL_INFO(LOG_TAG, "allocate VoiceFrontEndIds: front end %d", f[i]);
-    }
+    std::map<std::string, std::vector <int>>::iterator it;
 
-    return f;
-}
-void ResourceManager::freeFrontEndIds(const std::vector<int> frontend,
-                                      const struct pal_stream_attributes &sAttr,
-                                      int lDirection)
-{
     mListFrontEndsMutex.lock();
     if (frontend.size() <= 0) {
         PAL_ERR(LOG_TAG,"frontend size is invalid");
         mListFrontEndsMutex.unlock();
         return;
     }
-    PAL_INFO(LOG_TAG, "stream type %d, freeing %d\n", sAttr.type,
-             frontend.at(0));
-
-    switch(sAttr.type) {
-        case PAL_STREAM_NON_TUNNEL:
-            for (int i = 0; i < frontend.size(); i++) {
-                 listAllNonTunnelSessionIds.push_back(frontend.at(i));
-            }
-            removeDuplicates(listAllNonTunnelSessionIds);
-            break;
-        case PAL_STREAM_LOW_LATENCY:
-        case PAL_STREAM_ULTRA_LOW_LATENCY:
-        case PAL_STREAM_GENERIC:
-        case PAL_STREAM_PROXY:
-        case PAL_STREAM_DEEP_BUFFER:
-        case PAL_STREAM_SPATIAL_AUDIO:
-        case PAL_STREAM_VOIP:
-        case PAL_STREAM_VOIP_RX:
-        case PAL_STREAM_VOIP_TX:
-        case PAL_STREAM_VOICE_UI:
-        case PAL_STREAM_LOOPBACK:
-        case PAL_STREAM_ACD:
-        case PAL_STREAM_ASR:
-        case PAL_STREAM_PCM_OFFLOAD:
-        case PAL_STREAM_HAPTICS:
-        case PAL_STREAM_ULTRASOUND:
-        case PAL_STREAM_SENSOR_PCM_DATA:
-        case PAL_STREAM_RAW:
-        case PAL_STREAM_VOICE_RECOGNITION:
-        case PAL_STREAM_SENSOR_PCM_RENDERER:
-            switch (sAttr.direction) {
-                case PAL_AUDIO_INPUT:
-                    if (lDirection == TX_HOSTLESS) {
-                        for (int i = 0; i < frontend.size(); i++) {
-                            listAllPcmHostlessTxFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmHostlessTxFrontEnds);
-                    } else {
-                        for (int i = 0; i < frontend.size(); i++) {
-                            listAllPcmRecordFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmRecordFrontEnds);
-                    }
-                    break;
-                case PAL_AUDIO_OUTPUT:
-                    if (lDirection == RX_HOSTLESS) {
-                        for (int i = 0; i < frontend.size(); i++) {
-                            listAllPcmHostlessRxFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmHostlessRxFrontEnds);
-                    } else {
-                        for (int i = 0; i < frontend.size(); i++) {
-                             listAllPcmPlaybackFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmPlaybackFrontEnds);
-                    }
-                    break;
-                case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
-                    if (lDirection == RX_HOSTLESS) {
-                        for (int i = 0; i < frontend.size(); i++) {
-                            listAllPcmHostlessRxFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmHostlessRxFrontEnds);
-                    } else {
-                        for (int i = 0; i < frontend.size(); i++) {
-                            listAllPcmHostlessTxFrontEnds.push_back(frontend.at(i));
-                        }
-                        removeDuplicates(listAllPcmHostlessTxFrontEnds);
-                    }
-                    break;
-                default:
-                    PAL_ERR(LOG_TAG,"direction unsupported");
-                    break;
-            }
-            break;
-
-        case PAL_STREAM_VOICE_CALL:
-            if (lDirection == RX_HOSTLESS) {
-                for (int i = 0; i < frontend.size(); i++) {
-                    if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
-                        sAttr.info.voice_call_info.VSID == VOICELBMMODE1) {
-                        listAllPcmVoice1RxFrontEnds.push_back(frontend.at(i));
-                    } else {
-                        listAllPcmVoice2RxFrontEnds.push_back(frontend.at(i));
-                    }
-
-                }
-                removeDuplicates(listAllPcmVoice1RxFrontEnds);
-                removeDuplicates(listAllPcmVoice2RxFrontEnds);
-            } else {
-                for (int i = 0; i < frontend.size(); i++) {
-                    if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
-                        sAttr.info.voice_call_info.VSID == VOICELBMMODE1) {
-                        listAllPcmVoice1TxFrontEnds.push_back(frontend.at(i));
-                    } else {
-                        listAllPcmVoice2TxFrontEnds.push_back(frontend.at(i));
-                    }
-                }
-                removeDuplicates(listAllPcmVoice1TxFrontEnds);
-                removeDuplicates(listAllPcmVoice2TxFrontEnds);
-            }
-            break;
-
-        case PAL_STREAM_COMPRESSED:
-            switch (sAttr.direction) {
-                case PAL_AUDIO_INPUT:
-                    for (int i = 0; i < frontend.size(); i++) {
-                        listAllCompressRecordFrontEnds.push_back(frontend.at(i));
-                    }
-                    removeDuplicates(listAllCompressRecordFrontEnds);
-                    break;
-                case PAL_AUDIO_OUTPUT:
-                    for (int i = 0; i < frontend.size(); i++) {
-                        listAllCompressPlaybackFrontEnds.push_back(frontend.at(i));
-                    }
-                    removeDuplicates(listAllCompressPlaybackFrontEnds);
-                    break;
-                default:
-                    PAL_ERR(LOG_TAG,"direction unsupported");
-                    break;
-                }
-            break;
-        case PAL_STREAM_VOICE_CALL_RECORD:
-        case PAL_STREAM_VOICE_CALL_MUSIC:
-            switch (sAttr.direction) {
-              case PAL_AUDIO_INPUT:
-                for (int i = 0; i < frontend.size(); i++) {
-                    listAllPcmInCallRecordFrontEnds.push_back(frontend.at(i));
-                }
-                removeDuplicates(listAllPcmInCallRecordFrontEnds);
-                break;
-              case PAL_AUDIO_OUTPUT:
-                for (int i = 0; i < frontend.size(); i++) {
-                    listAllPcmInCallMusicFrontEnds.push_back(frontend.at(i));
-                }
-                removeDuplicates(listAllPcmInCallMusicFrontEnds);
-                break;
-              default:
-                break;
-            }
-            break;
-       case PAL_STREAM_CONTEXT_PROXY:
-       case PAL_STREAM_COMMON_PROXY:
-            for (int i = 0; i < frontend.size(); i++) {
-                 listAllPcmContextProxyFrontEnds.push_back(frontend.at(i));
-            }
-            removeDuplicates(listAllPcmContextProxyFrontEnds);
-            break;
-        default:
-            break;
+    it = frontEndIdMap.find(key);
+    if (it != frontEndIdMap.end()) {
+        for (int i = 0; i < frontend.size(); i++) {
+            it->second.push_back(frontend.at(i));
+        }
+        removeDuplicates(it->second);
+    } else {
+        PAL_ERR(LOG_TAG, "freeFrontEndIds: key %s not found in frontEndIdMap",
+                              key.c_str());
     }
+
     mListFrontEndsMutex.unlock();
     return;
 }
@@ -8594,6 +8087,7 @@ void ResourceManager::processDeviceIdProp(struct xml_userdata *data, const XML_C
 {
     int device, size = -1;
     struct deviceCap dev;
+    memset(&dev, 0, sizeof(dev));
 
     memset(&dev, 0, sizeof(struct deviceCap));
     if (!strcmp(tag_name, "pcm-device") ||

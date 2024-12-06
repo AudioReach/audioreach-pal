@@ -102,6 +102,8 @@ public:
     int connectSessionDevice(Stream* streamHandle,
                              pal_stream_type_t streamType,
                              std::shared_ptr<Device> deviceToConnect);
+    int32_t allocateFrontEndIds(const struct pal_stream_attributes &sAttr, int lDirection);
+    void freeFrontEndIds(const struct pal_stream_attributes &sAttr, int lDirection);
     bool isActive();
     int getDeviceChannelInfo(Stream *s, uint16_t *channels); //made public to adapt to config plugin
     uint32_t getMIID(const char *backendName, uint32_t tagId, uint32_t *miid) override;

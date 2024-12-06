@@ -133,6 +133,26 @@ extern "C" {
 }
 #endif
 
+#ifndef VENDOR_SKU
+    #define VENDOR_SKU "invalid"
+#endif
+
+#define PCM_PLAYBACK "PcmPlayback"
+#define PCM_PLAYBACK_HOSTLESS "PcmPlaybackHostless"
+#define PCM_RECORD "PcmRecord"
+#define PCM_RECORD_HOSTLESS "PcmRecordHostless"
+#define PCM_PLAYBACK_NONTUNNEL "PcmPlaybackNonTunnel"
+#define PCM_RECORD_NONTUNNEL "PcmRecordNonTunnel"
+#define PCM_RECORD_NOCONFIG "PcmRecordNoConfig"
+#define VOICE1_PLAYBACK_HOSTLESS "Voice1PlaybackHostless"
+#define VOICE2_PLAYBACK_HOSTLESS "Voice2PlaybackHostless"
+#define VOICE1_RECORD_HOSTLESS "Voice1RecordHostless"
+#define VOICE2_RECORD_HOSTLESS "Voice2RecordHostless"
+#define COMPRESS_PLAYBACK "CompressPlayback"
+#define COMPRESS_RECORD "CompressRecord"
+#define EXTEC_RECORD_HOSTLESS "ExtECRecordHostless"
+#define NONTUNNEL "NonTunnel"
+
 typedef enum {
     TAG_ROOT,
     TAG_CARD,
@@ -462,7 +482,6 @@ private:
     //both of the below are update on register and deregister stream
     int mPriorityHighestPriorityActiveStream; //priority of the highest priority active stream
     Stream* mHighestPriorityActiveStream; //pointer to the highest priority active stream
-    int getNumFEs(const pal_stream_type_t sType) const;
     int getCallPriority(bool ifVoiceCall) const;
     int getStreamAttrPriority (const pal_stream_attributes* sAttr) const;
     template <class T>
@@ -491,6 +510,7 @@ private:
     static bool isBitWidthSupported(uint32_t bitWidth);
     uint32_t getNTPathForStreamAttr(const pal_stream_attributes &attr);
     ssize_t getAvailableNTStreamInstance(const pal_stream_attributes &attr);
+    void constructFrontEndIdMap();
     int getECEnableSetting(std::shared_ptr<Device> tx_dev, Stream * streamHandle, bool *ec_enable);
     int checkandEnableECForTXStream_l(std::shared_ptr<Device> tx_dev, Stream *tx_stream, bool ec_enable);
     int checkandEnableECForRXStream_l(std::shared_ptr<Device> rx_dev, Stream *rx_stream, bool ec_enable);
@@ -621,23 +641,8 @@ protected:
     static std::vector <int> deviceTag;
     static std::vector<std::pair<int32_t, int32_t>> devicePcmId;
     static std::vector<std::pair<int32_t, std::string>> deviceLinkName;
+    static std::map<std::string, std::vector <int>> frontEndIdMap;
     static std::vector<int> listAllFrontEndIds;
-    static std::vector<int> listAllPcmPlaybackFrontEnds;
-    static std::vector<int> listAllPcmRecordFrontEnds;
-    static std::vector<int> listAllPcmHostlessRxFrontEnds;
-    static std::vector<int> listAllNonTunnelSessionIds;
-    static std::vector<int> listAllPcmHostlessTxFrontEnds;
-    static std::vector<int> listAllCompressPlaybackFrontEnds;
-    static std::vector<int> listAllCompressRecordFrontEnds;
-    static std::vector<int> listFreeFrontEndIds;
-    static std::vector<int> listAllPcmVoice1RxFrontEnds;
-    static std::vector<int> listAllPcmVoice1TxFrontEnds;
-    static std::vector<int> listAllPcmVoice2RxFrontEnds;
-    static std::vector<int> listAllPcmVoice2TxFrontEnds;
-    static std::vector<int> listAllPcmExtEcTxFrontEnds;
-    static std::vector<int> listAllPcmInCallRecordFrontEnds;
-    static std::vector<int> listAllPcmInCallMusicFrontEnds;
-    static std::vector<int> listAllPcmContextProxyFrontEnds;
     static std::vector<std::pair<int32_t, std::string>> listAllBackEndIds;
     static std::vector<std::pair<int32_t, std::string>> sndDeviceNameLUT;
     static std::vector<deviceCap> devInfo;
@@ -798,13 +803,9 @@ public:
     int getDevicePpTag(std::vector <int> &tag);
     int getDeviceDirection(uint32_t beDevId);
     void getSpViChannelMapCfg(int32_t *channelMap, uint32_t numOfChannels);
-    const std::vector<int> allocateFrontEndIds (const struct pal_stream_attributes &,
-                                                int lDirection);
+    int allocateFrontEndIds (std::string key);
     const std::vector<int> allocateFrontEndExtEcIds ();
-    void freeFrontEndEcTxIds (const std::vector<int> f);
-    void freeFrontEndIds (const std::vector<int> f,
-                          const struct pal_stream_attributes &,
-                          int lDirection);
+    void freeFrontEndIds (std::string key, const std::vector<int> f);
     const std::vector<std::string> getBackEndNames(const std::vector<std::shared_ptr<Device>> &deviceList) const;
     void getSharedBEDevices(std::vector<std::shared_ptr<Device>> &deviceList, std::shared_ptr<Device> inDevice) const;
     static std::vector <std::string> usb_vendor_uuid_list;

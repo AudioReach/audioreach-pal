@@ -70,8 +70,6 @@ ASREngine::ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg)
     rxEcDev = nullptr;
     asrInfo = nullptr;
     smCfg = smCfg;
-    speechCfg = nullptr;
-    outputCfg = nullptr;
     engState = ASR_ENG_IDLE;
     streamHandle = s;
 
@@ -196,17 +194,10 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             if (config == nullptr) {
                 PAL_ERR(LOG_TAG, "No config available, can't start the engine!!!");
                 goto exit;
-            } else if (speechCfg != nullptr && speechCfg == config) {
-                PAL_INFO(LOG_TAG, "Same config, no need to set it again!!!");
-                goto exit;
             }
-
             data = (uint8_t *)config;
             dataSize = sizeof(param_id_asr_config_t);
             sesParamId = PAL_PARAM_ID_ASR_CONFIG;
-            if (speechCfg)
-                speechCfg = nullptr;
-            speechCfg = config;
             break;
         }
         case ASR_FORCE_OUTPUT : {
@@ -223,16 +214,10 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             if (opConfig == nullptr) {
                 PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
                 goto exit;
-            } else if (outputCfg != nullptr && outputCfg == opConfig) {
-                PAL_INFO(LOG_TAG, "Same config, no need to set it again!!!");
-                goto exit;
             }
             data = (uint8_t *)opConfig;
             dataSize = sizeof(param_id_asr_output_config_t);
             sesParamId = PAL_PARAM_ID_ASR_OUTPUT;
-            if (outputCfg)
-                outputCfg = nullptr;
-            outputCfg = opConfig;
             break;
         }
         case ASR_INPUT_BUF_DURATON: {
@@ -240,16 +225,10 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             if (ipConfig == nullptr) {
                 PAL_ERR(LOG_TAG, "No input config available, can't start the engine!!!");
                 goto exit;
-            } else if (inputCfg != nullptr && inputCfg == ipConfig) {
-                PAL_INFO(LOG_TAG, "Same config, no need to set it again!!!");
-                goto exit;
             }
             data = (uint8_t *)ipConfig;
             dataSize = sizeof(param_id_asr_input_threshold_t);
             sesParamId = PAL_PARAM_ID_ASR_SET_PARAM;
-            if (inputCfg)
-                inputCfg = nullptr;
-            inputCfg = ipConfig;
             break;
         }
         default : {

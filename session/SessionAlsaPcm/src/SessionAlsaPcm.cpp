@@ -1037,6 +1037,7 @@ void SessionAlsaPcm::releaseAdmFocus(Stream *s)
 int SessionAlsaPcm::start(Stream * s)
 {
     int32_t status = 0;
+    int ret = 0;
     struct pcm_config config = {};
     struct pal_stream_attributes sAttr = {};
     struct pal_device dAttr = {};
@@ -1212,7 +1213,10 @@ int SessionAlsaPcm::start(Stream * s)
             PluginPayload ppld;
             ppld.session = this;
             ppld.builder = reinterpret_cast<void*>(builder);
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(PluginPayload));
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(PluginPayload));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
         }
@@ -1360,6 +1364,7 @@ exit:
 int SessionAlsaPcm::stop(Stream * s)
 {
     int status = 0;
+    int ret = 0;
     struct pal_stream_attributes sAttr = {};
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
@@ -1414,10 +1419,13 @@ int SessionAlsaPcm::stop(Stream * s)
             PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
             goto exit;
         }
-        status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
-        if (plugin && !status) {
+        ret = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
+        if (plugin && !ret) {
             pluginConfig = reinterpret_cast<PluginConfig>(plugin);
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, reinterpret_cast<void*>(this), 0);
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, reinterpret_cast<void*>(this), 0);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
         }

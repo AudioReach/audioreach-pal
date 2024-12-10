@@ -1658,6 +1658,7 @@
                             <context id="0x08001338" /> <!-- AMBIENCE_SILENT_SPL -->
                             <context id="0x08001339" /> <!-- AMBIENCE_NOISY_SFLUX -->
                             <context id="0x0800133A" /> <!-- AMBIENCE_SILENT_SFLUX -->
+                            <context id="0x08001AE2" /> <!-- AMBIENCE_SPL_METER -->
                         </contexts>
                     </sound_model>
                 </sound_model_info>

@@ -2150,6 +2150,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
     struct mixer *mixerHandle = nullptr;
     bool is_compress = false;
     int status = 0;
+    int ret = 0;
     std::ostringstream connectCtrlName;
     struct pal_stream_attributes sAttr = {};
     int sub = 1;
@@ -2204,10 +2205,9 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
             ppld.dAttr = dAttr;
             ppld.pcmDevIds = pcmDevIds;
             ppld.aifBackEnds = aifBackEndsToConnect;
-            status = pluginConfig(streamHandle, PAL_PLUGIN_RECONFIG, reinterpret_cast<void*>(&ppld), sizeof(ppld));
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "pluginConfig failed");
-                goto exit;
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_RECONFIG, reinterpret_cast<void*>(&ppld), sizeof(ppld));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
@@ -2244,6 +2244,7 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
 {
     std::ostringstream connectCtrlName;
     int status = 0;
+    int ret = 0;
     struct mixer *mixerHandle = nullptr;
     struct mixer_ctl *connectCtrl = nullptr;
     struct mixer_ctl *txFeMixerCtrls[FE_MAX_NUM_MIXER_CONTROLS] = { nullptr };
@@ -2290,10 +2291,9 @@ int SessionAlsaUtils::connectSessionDevice(Session* sess, Stream* streamHandle, 
             ppld.dAttr = dAttr;
             ppld.pcmDevIds = pcmRxDevIds;
             ppld.aifBackEnds = aifBackEndsToConnect;
-            status = pluginConfig(streamHandle, PAL_PLUGIN_RECONFIG, reinterpret_cast<void*>(&ppld), sizeof(ppld));
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "pluginConfig failed");
-                goto exit;
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_RECONFIG, reinterpret_cast<void*>(&ppld), sizeof(ppld));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());

@@ -539,6 +539,7 @@ exit:
 int SessionAlsaVoice::start(Stream * s)
 {
     int32_t status = 0;
+    int ret = 0;
     struct pcm_config config;
     struct pal_stream_attributes sAttr;
     std::shared_ptr<Device> rxDevice = nullptr;
@@ -673,17 +674,15 @@ int SessionAlsaVoice::start(Stream * s)
         if (plugin && !status) {
             pluginConfig = reinterpret_cast<PluginConfig>(plugin);
             uint32_t vsidCopy = vsid;
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&vsidCopy), sizeof(vsidCopy));
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&vsidCopy), sizeof(vsidCopy));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
         }
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
-    }
-
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"setMixerParameter failed");
-        goto err_pcm_open;
     }
 
     if (ResourceManager::isLpiLoggingEnabled()) {
@@ -728,7 +727,10 @@ int SessionAlsaVoice::start(Stream * s)
         ppld.builder = reinterpret_cast<void*>(builder);
         ppld.payload = reinterpret_cast<void*>(&rxDevice);
         ppld.pcmDevIds = pcmDevRxIds;
-        status = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+        ret = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+        if (ret) {
+            PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+        }
     } else {
         PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
     }
@@ -797,6 +799,7 @@ exit:
 int SessionAlsaVoice::stop(Stream * s)
 {
     int status = 0;
+    int ret = 0;
     int txDevId = PAL_DEVICE_NONE;
     std::shared_ptr<Device> rxDevice = nullptr;
     pal_stream_attributes sAttr = {};
@@ -837,7 +840,10 @@ int SessionAlsaVoice::stop(Stream * s)
         status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
         if (plugin && !status) {
             pluginConfig = reinterpret_cast<PluginConfig>(plugin);
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
         }
@@ -1579,6 +1585,7 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
     std::vector<std::string> aifBackEndsToDisconnect;
     struct pal_device dAttr;
     int status = 0;
+    int ret = 0;
     int txDevId = PAL_DEVICE_NONE;
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
@@ -1610,7 +1617,10 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
         /*config mute on pop suppressor*/
         if (streamHandle->getCurState() != STREAM_INIT) {
             //pop suppressor call now in plugin config.
-            pluginConfig(streamHandle, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         }
 
         /*if HW sidetone is enable disable it */
@@ -1709,6 +1719,7 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
     struct pal_device dAttr;
     struct pal_stream_attributes sAttr;
     int status = 0;
+    int ret = 0;
     int txDevId = PAL_DEVICE_NONE;
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
@@ -1780,8 +1791,11 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
         //if CRSCall enabled, populate rx mfc coeff payload, in plugin.
         if (rm->IsCRSCallEnabled()) {
             ppld.payload = reinterpret_cast<void*>(&deviceToConnect);
-            status = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
                                     reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         }
     } else if (txAifBackEnds.size() > 0) {
         status = SessionAlsaUtils::connectSessionDevice(this, streamHandle,
@@ -1812,8 +1826,11 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
         //if CRSCall enabled, populate rx mfc coeff payload, in plugin.
         if (rm->IsCRSCallEnabled()) {
             ppld.payload = reinterpret_cast<void*>(&rxDevice);
-            status = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
-                                    reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
+                        reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         }
     }
 exit:

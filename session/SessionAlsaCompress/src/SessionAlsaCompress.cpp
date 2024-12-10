@@ -1304,6 +1304,7 @@ int SessionAlsaCompress::start(Stream * s)
     struct compr_config compress_config = {};
     struct pal_stream_attributes sAttr = {};
     int32_t status = 0;
+    int ret = 0;
     size_t in_buf_size, in_buf_count, out_buf_size, out_buf_count;
     struct pal_device dAttr = {};
     void* plugin = nullptr;
@@ -1385,10 +1386,9 @@ int SessionAlsaCompress::start(Stream * s)
             ppld.builder = reinterpret_cast<void*>(builder);
             ppld.payload = reinterpret_cast<void*>(&audio_fmt);
             //previous logic in config plugin
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "pluginConfig failed");
-                goto exit;
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
             break;
         }
@@ -1422,10 +1422,9 @@ int SessionAlsaCompress::start(Stream * s)
             PAL_VERBOSE(LOG_TAG, "capture: compress is ready");
             //previous logic in config plugin
             ppld.builder = reinterpret_cast<void*>(builder);
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "pluginConfig failed");
-                goto exit;
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_START, reinterpret_cast<void*>(&ppld), sizeof(ppld));
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
             if (!capture_started) {
                 status = compress_start(compress);
@@ -1452,10 +1451,9 @@ int SessionAlsaCompress::start(Stream * s)
             }
         } else {
             //call device rotation logic in plugin
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(this), 0);
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "PLUGIN_CONFIG_SETPARAM failed");
-                goto exit;
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_POST_START, reinterpret_cast<void*>(this), 0);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
         }
     }
@@ -1469,10 +1467,10 @@ exit:
 int SessionAlsaCompress::stop(Stream * s __unused)
 {
     int32_t status = 0;
+    int ret = 0;
     size_t payload_size = 0;
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
-    // struct agm_event_reg_cfg event_cfg;
     struct pal_stream_attributes sAttr = {};
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -1514,7 +1512,10 @@ int SessionAlsaCompress::stop(Stream * s __unused)
         status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
         if (plugin && !status) {
             pluginConfig = reinterpret_cast<PluginConfig>(plugin);
-            status = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
+            }
         } else {
             PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr.type).c_str());
         }
@@ -1804,6 +1805,7 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
 {
     pal_param_payload *param_payload = (pal_param_payload *)payload;
     int status = 0;
+    int ret = 0;
     int device = 0;
     uint8_t* alsaParamData = NULL;
     size_t alsaPayloadSize = 0;
@@ -1916,10 +1918,9 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
                 ppld.session = this;
                 ppld.builder = reinterpret_cast<void*>(builder);
                 ppld.payload = reinterpret_cast<void*>(&audio_fmt);
-                status = pluginConfig(s, PAL_PLUGIN_CONFIG_SETPARAM, reinterpret_cast<void*>(&ppld), sizeof(SetParamPluginPayload));
-                if (0 != status) {
-                    PAL_ERR(LOG_TAG, "pluginConfig failed");
-                    goto exit;
+                ret = pluginConfig(s, PAL_PLUGIN_CONFIG_SETPARAM, reinterpret_cast<void*>(&ppld), sizeof(SetParamPluginPayload));
+                if (ret) {
+                    PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
                 }
             }
         break;

@@ -762,11 +762,9 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
         return status_tToBinderResult(-EINVAL);
 
     buf.size = inBuf.data()->size;
-    buf.buffer = (uint8_t *)calloc(1, buf.size);
-    if (!buf.buffer) {
-        ALOGE("%s: failed to calloc", __func__);
-        return status_tToBinderResult(-ENOMEM);
-    }
+    std::vector<uint8_t> dataBuffer(buf.size, 0);
+    buf.buffer = dataBuffer.data();
+
     buf.metadata_size = MetadataParser::READ_METADATA_MAX_SIZE();
     auto fdHandle = AidlToLegacy::getFdIntFromNativeHandle(inBuf.data()->allocInfo.allocHandle);
 

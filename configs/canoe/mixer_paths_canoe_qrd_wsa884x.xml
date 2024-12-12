@@ -686,6 +686,10 @@
         <ctl name="TX_DEC2 Volume" value="105" />
     </path>
 
+    <path name="speaker-mic">
+        <path name="qmp2"/>
+    </path>
+
     <path name="va-mic-mono">
         <ctl name="VA_SWR_DMIC Enable" value="1" />
         <ctl name="VA DEC0 MUX" value="SWR_MIC"/>

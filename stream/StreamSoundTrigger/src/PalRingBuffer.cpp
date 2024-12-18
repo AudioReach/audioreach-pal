@@ -129,12 +129,13 @@ void PalRingBuffer::getIndices(Stream *s,
 size_t PalRingBuffer::write(void* writeBuffer, size_t writeSize)
 {
     /* update the unread size for each reader*/
-    size_t freeSize = getFreeSize();
+    size_t freeSize = 0;
     size_t writtenSize = 0;
     size_t i = 0;
     size_t sizeToCopy = 0;
 
     std::lock_guard<std::mutex> lck(mutex_);
+    freeSize = getFreeSize();
     PAL_DBG(LOG_TAG, "Enter. freeSize(%zu), writeOffset(%zu)", freeSize, writeOffset_);
 
     if (writeSize <= freeSize)
@@ -231,6 +232,8 @@ int32_t PalRingBufferReader::read(void* readBuffer, size_t bufferSize)
 {
     int32_t readSize = 0;
 
+    std::lock_guard<std::mutex> lck(ringBuffer_->mutex_);
+
     if (state_ == READER_DISABLED) {
         return -EINVAL;
     } else if (state_ == READER_PREPARED) {
@@ -241,7 +244,6 @@ int32_t PalRingBufferReader::read(void* readBuffer, size_t bufferSize)
     if (unreadSize_ == 0)
         return 0;
 
-    std::lock_guard<std::mutex> lck(ringBuffer_->mutex_);
 
     // when writeOffset leads readOffset
     if (ringBuffer_->writeOffset_ > readOffset_) {

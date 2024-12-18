@@ -197,6 +197,7 @@ public:
     uint32_t getCallbackEventId() override;
     void TransitTo(int32_t state_id);
     bool checkStreamMatch(Stream *ref) override;
+    uint32_t GetMMAModelType() override;
 
     friend class PalRingBufferReader;
     bool IsCaptureRequested() { return capture_requested_; }

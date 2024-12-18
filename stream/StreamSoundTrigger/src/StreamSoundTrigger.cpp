@@ -4138,3 +4138,32 @@ int32_t StreamSoundTrigger::ReleaseVUIInterface(struct vui_intf_t *intf) {
 
     return status;
 }
+
+bool StreamSoundTrigger::isLPIProfile() {
+    if (cap_prof_ && strstr(cap_prof_->GetSndName().c_str(), "lpi")) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+uint32_t StreamSoundTrigger::GetMMAModelType() {
+    int32_t status = 0;
+    uint32_t mode_bit = 0;
+    vui_intf_param_t param {};
+
+    if (vui_intf_) {
+        param.stream = this;
+        status = vui_intf_->GetParameter(PARAM_MMA_MODE_BIT_CONFIG, &param);
+        if (!status) {
+            mode_bit = *(uint32_t *)param.data;
+            if (mode_bit & (1 << NVD))
+                return MMA_NVD;
+            else if (mode_bit & (1 << SPEECH))
+                return MMA_VAD;
+        }
+    }
+
+    return 0;
+}
+

@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -191,6 +191,7 @@ public:
     virtual uint32_t GetNumEvents() { return 0; }
     virtual uint32_t GetOutputToken() { return 0; }
     virtual uint32_t GetPayloadSize() { return 0; }
+    virtual uint32_t GetMMAModelType() { return 0; }
     virtual int32_t setCustomParam(custom_payload_uc_info_t* uc_info,std::string param_str,
                            void* param_payload, size_t payload_size);
     virtual int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,

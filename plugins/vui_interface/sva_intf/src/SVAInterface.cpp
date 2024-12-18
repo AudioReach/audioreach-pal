@@ -211,6 +211,7 @@ SVAInterface::SVAInterface(st_module_type_t module_type) {
     sm_merged_ = false;
     wakeup_payload_ = nullptr;
     sound_model_info_ = new SoundModelInfo();
+    mma_mode_bit_config_ = 0;
     memset(&default_buf_config_, 0, sizeof(default_buf_config_));
     std::memset(&deregister_model_, 0, sizeof(deregister_model_));
     std::memset(&buffering_config_, 0, sizeof(buffering_config_));
@@ -470,6 +471,9 @@ int32_t SVAInterface::GetParameter(intf_param_id_t param_id,
         case PARAM_ENGINE_RESET:
             status = GetEngineResetPayload(param);
             break;
+        case PARAM_MMA_MODE_BIT_CONFIG:
+            status = GetMMAModeBitPayload(param);
+            break;
         default:
             ALOGE("%s: %d: Unsupported param id %d",
                 __func__, __LINE__, param_id);
@@ -496,7 +500,7 @@ int32_t SVAInterface::ParseSoundModel(
     SML_GlobalHeaderType *global_hdr = nullptr;
     SML_HeaderTypeV3 *hdr_v3 = nullptr;
     SML_BigSoundModelTypeV3 *big_sm = nullptr;
-    uint32_t offset = 0;
+    uint32_t offset = 0, sm_payload_size = 0;
     sound_model_data_t *model_data = nullptr;
 
     ALOGD("%s: %d: Enter", __func__, __LINE__);
@@ -504,97 +508,112 @@ int32_t SVAInterface::ParseSoundModel(
     if (sound_model->type == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
         phrase_sm = (struct pal_st_phrase_sound_model *)sound_model;
         sm_payload = (uint8_t *)phrase_sm + phrase_sm->common.data_offset;
-        global_hdr = (SML_GlobalHeaderType *)sm_payload;
-        if (global_hdr->magicNumber == SML_GLOBAL_HEADER_MAGIC_NUMBER) {
-            hdr_v3 = (SML_HeaderTypeV3 *)(sm_payload +
-                                          sizeof(SML_GlobalHeaderType));
-            ALOGI("%s: %d: num of sound models = %u",
-                __func__, __LINE__, hdr_v3->numModels);
-            for (i = 0; i < hdr_v3->numModels; i++) {
-                big_sm = (SML_BigSoundModelTypeV3 *)(
-                    sm_payload + sizeof(SML_GlobalHeaderType) +
-                    sizeof(SML_HeaderTypeV3) +
-                    (i * sizeof(SML_BigSoundModelTypeV3)));
+        sm_payload_size = phrase_sm->common.data_size;
+    } else {
+        common_sm = sound_model;
+        sm_payload = (uint8_t *)common_sm + common_sm->data_offset;
+        sm_payload_size = common_sm->data_size;
+    }
 
-                ALOGI("%s: %d: type = %u, size = %u, version = %u.%u",
-                    __func__, __LINE__, big_sm->type, big_sm->size,
-                    big_sm->versionMajor & 0xFF, big_sm->versionMinor & 0xFF);
-                if (big_sm->type == ST_SM_ID_SVA_F_STAGE_GMM) {
-                    *first_stage_type = (st_module_type_t)(big_sm->versionMajor & 0xFF);
-                    sm_size = big_sm->size;
-                    sm_data = (uint8_t *)calloc(1, sm_size);
-                    if (!sm_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: sm_data allocation failed, status %d",
-                            __func__, __LINE__, status);
-                        goto error_exit;
-                    }
-                    ptr = (uint8_t *)sm_payload +
-                        sizeof(SML_GlobalHeaderType) +
-                        sizeof(SML_HeaderTypeV3) +
-                        (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
-                        big_sm->offset;
-                    ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+    global_hdr = (SML_GlobalHeaderType *)sm_payload;
+    if (global_hdr->magicNumber == SML_GLOBAL_HEADER_MAGIC_NUMBER) {
+        hdr_v3 = (SML_HeaderTypeV3 *)(sm_payload +
+            sizeof(SML_GlobalHeaderType));
+        ALOGI("%s: %d: num of sound models = %u",
+            __func__, __LINE__, hdr_v3->numModels);
+        for (i = 0; i < hdr_v3->numModels; i++) {
+            big_sm = (SML_BigSoundModelTypeV3 *)(
+                sm_payload + sizeof(SML_GlobalHeaderType) +
+                sizeof(SML_HeaderTypeV3) +
+                (i * sizeof(SML_BigSoundModelTypeV3)));
 
-                    model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-                    if (!model_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: model_data allocation failed, status %d",
-                            __func__, __LINE__, status);
-                        goto error_exit;
-                    }
-                    model_data->type = big_sm->type;
-                    model_data->data = sm_data;
-                    model_data->size = sm_size;
-                    model_list.push_back(model_data);
-                } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM) {
-                    if (big_sm->type == SML_ID_SVA_F_STAGE_INTERNAL ||
-                        (big_sm->type == ST_SM_ID_SVA_S_STAGE_USER &&
-                         !(phrase_sm->phrases[0].recognition_mode &
-                         PAL_RECOGNITION_MODE_USER_IDENTIFICATION)))
-                        continue;
-                    sm_size = big_sm->size;
-                    ptr = (uint8_t *)sm_payload +
-                        sizeof(SML_GlobalHeaderType) +
-                        sizeof(SML_HeaderTypeV3) +
-                        (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
-                        big_sm->offset;
-                    sm_data = (uint8_t *)calloc(1, sm_size);
-                    if (!sm_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: Failed to alloc memory for sm_data",
-                            __func__, __LINE__);
-                        goto error_exit;
-                    }
-                    ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
-
-                    model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-                    if (!model_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: model_data allocation failed, status %d",
-                            __func__, __LINE__, status);
-                        goto error_exit;
-                    }
-                    model_data->type = big_sm->type;
-                    model_data->data = sm_data;
-                    model_data->size = sm_size;
-                    model_list.push_back(model_data);
+            ALOGI("%s: %d: type = %u, size = %u, version = %u.%u",
+                __func__, __LINE__, big_sm->type, big_sm->size,
+                big_sm->versionMajor & 0xFF, big_sm->versionMinor & 0xFF);
+            if (big_sm->type == ST_SM_ID_SVA_F_STAGE_GMM) {
+                *first_stage_type =
+                    (st_module_type_t)(big_sm->versionMajor & 0xFF);
+                sm_size = big_sm->size;
+                sm_data = (uint8_t *)calloc(1, sm_size);
+                if (!sm_data) {
+                    status = -ENOMEM;
+                    ALOGE("%s: %d: sm_data allocation failed, status %d",
+                        __func__, __LINE__, status);
+                    goto error_exit;
                 }
+                ptr = (uint8_t *)sm_payload +
+                    sizeof(SML_GlobalHeaderType) +
+                    sizeof(SML_HeaderTypeV3) +
+                    (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
+                    big_sm->offset;
+                ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+
+                model_data = (sound_model_data_t *)calloc(1,
+                    sizeof(sound_model_data_t));
+                if (!model_data) {
+                    status = -ENOMEM;
+                    ALOGE("%s: %d: model_data allocation failed, status %d",
+                        __func__, __LINE__, status);
+                    goto error_exit;
+                }
+                model_data->type = big_sm->type;
+                model_data->data = sm_data;
+                model_data->size = sm_size;
+                model_list.push_back(model_data);
+            } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM) {
+                if (big_sm->type == SML_ID_SVA_F_STAGE_INTERNAL ||
+                    (big_sm->type == ST_SM_ID_SVA_S_STAGE_USER &&
+                        !(phrase_sm->phrases[0].recognition_mode &
+                        PAL_RECOGNITION_MODE_USER_IDENTIFICATION)))
+                    continue;
+                sm_size = big_sm->size;
+                ptr = (uint8_t *)sm_payload +
+                    sizeof(SML_GlobalHeaderType) +
+                    sizeof(SML_HeaderTypeV3) +
+                    (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
+                    big_sm->offset;
+                sm_data = (uint8_t *)calloc(1, sm_size);
+                if (!sm_data) {
+                    status = -ENOMEM;
+                    ALOGE("%s: %d: Failed to alloc memory for sm_data",
+                        __func__, __LINE__);
+                    goto error_exit;
+                }
+                ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+
+                model_data = (sound_model_data_t *)calloc(1,
+                    sizeof(sound_model_data_t));
+                if (!model_data) {
+                    status = -ENOMEM;
+                    ALOGE("%s: %d: model_data allocation failed, status %d",
+                        __func__, __LINE__, status);
+                    goto error_exit;
+                }
+                model_data->type = big_sm->type;
+                model_data->data = sm_data;
+                model_data->size = sm_size;
+                model_list.push_back(model_data);
             }
-        } else {
-            // Parse sound model 2.0
-            sm_size = phrase_sm->common.data_size;
+        }
+        /*
+         * Update mode bit config for MMA usecase:
+         * mode bit config is 4bytes placed at the end
+         * of combined sound model in the opaque data
+         */
+        if (*first_stage_type == ST_MODULE_TYPE_MMA) {
+            ptr = sm_payload + sm_payload_size - sizeof(uint32_t);
+            sm_size = sizeof(uint32_t);
             sm_data = (uint8_t *)calloc(1, sm_size);
             if (!sm_data) {
-                ALOGE("%s: %d: Failed to allocate memory for sm_data",
-                    __func__, __LINE__);
                 status = -ENOMEM;
+                ALOGE("%s: %d: Failed to alloc memory for sm_data",
+                    __func__, __LINE__);
                 goto error_exit;
             }
-            ptr = (uint8_t*)phrase_sm + phrase_sm->common.data_offset;
             ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
 
-            model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
+            model_data = (sound_model_data_t *)calloc(1,
+                sizeof(sound_model_data_t));
             if (!model_data) {
                 status = -ENOMEM;
                 ALOGE("%s: %d: model_data allocation failed, status %d",
@@ -607,9 +626,7 @@ int32_t SVAInterface::ParseSoundModel(
             model_list.push_back(model_data);
         }
     } else {
-        // handle for generic sound model
-        common_sm = sound_model;
-        sm_size = common_sm->data_size;
+        sm_size = sm_payload_size;
         sm_data = (uint8_t *)calloc(1, sm_size);
         if (!sm_data) {
             ALOGE("%s: %d: Failed to allocate memory for sm_data",
@@ -617,10 +634,10 @@ int32_t SVAInterface::ParseSoundModel(
             status = -ENOMEM;
             goto error_exit;
         }
-        ptr = (uint8_t*)common_sm + common_sm->data_offset;
-        ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+        ar_mem_cpy(sm_data, sm_size, sm_payload, sm_size);
 
-        model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
+        model_data = (sound_model_data_t *)calloc(1,
+            sizeof(sound_model_data_t));
         if (!model_data) {
             status = -ENOMEM;
             ALOGE("%s: %d: model_data allocation failed, status %d",
@@ -632,6 +649,7 @@ int32_t SVAInterface::ParseSoundModel(
         model_data->size = sm_size;
         model_list.push_back(model_data);
     }
+
     ALOGD("%s: %d: Exit, status %d", __func__, __LINE__, status);
     return status;
 
@@ -3758,6 +3776,24 @@ int32_t SVAInterface::GetEngineResetPayload(vui_intf_param_t *param) {
     return 0;
 }
 
+int32_t SVAInterface::GetMMAModeBitPayload(vui_intf_param_t *param) {
+
+    if (!param) {
+        ALOGE("%s: %d: Invalid param", __func__, __LINE__);
+        return -EINVAL;
+    }
+
+    if (!mma_mode_bit_config_) {
+        ALOGE("%s: %d: Mode bit config not set", __func__, __LINE__);
+        return -ENOENT;
+    }
+
+    param->data = (void *)&mma_mode_bit_config_;
+    param->size = sizeof(uint32_t);
+
+    return 0;
+}
+
 int32_t SVAInterface::SetModelState(void *s, bool state) {
     int32_t status = 0;
     uint8_t *conf_levels = nullptr;
@@ -3900,6 +3936,17 @@ int32_t SVAInterface::RegisterModel(void *s,
     }
     sm_info_map_[s]->model = model;
     sm_info_map_[s]->type = model->type;
+
+    // update mma mode bit config
+    if (module_type_ == ST_MODULE_TYPE_MMA) {
+        for (auto iter: model_list) {
+            if ((*iter).type == ST_SM_ID_SVA_F_STAGE_GMM) {
+                if ((*iter).size == sizeof(uint32_t)) {
+                    mma_mode_bit_config_ = *(uint32_t *)(*iter).data;
+                }
+            }
+        }
+    }
 
 exit:
     return status;

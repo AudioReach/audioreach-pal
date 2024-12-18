@@ -127,6 +127,7 @@ class SVAInterface: public VoiceUIInterface {
     int32_t GetWakeUpPayload(vui_intf_param_t *param);
     int32_t GetBufferingPayload(vui_intf_param_t *param);
     int32_t GetEngineResetPayload(vui_intf_param_t *param);
+    int32_t GetMMAModeBitPayload(vui_intf_param_t *param);
 
     int32_t SetModelState(void *s, bool state);
     void SetStreamAttributes(struct pal_stream_attributes *attr);
@@ -160,6 +161,7 @@ class SVAInterface: public VoiceUIInterface {
     struct detection_engine_config_voice_wakeup wakeup_config_;
     struct param_id_mma_context_ml_model_config_t *mma_model_;
     struct param_id_mma_history_buffer_size_t mma_buffering_config_;
+    uint32_t mma_mode_bit_config_;
     uint8_t *wakeup_payload_;
     uint32_t wakeup_payload_size_;
     uint8_t *ftrt_data_;

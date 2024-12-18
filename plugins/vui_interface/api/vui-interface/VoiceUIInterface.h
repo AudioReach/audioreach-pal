@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -147,6 +147,7 @@ typedef enum {
     PARAM_SSTAGE_KW_DET_STATS = 33,
     PARAM_SSTAGE_UV_DET_STATS = 34,
     PARAM_DETECTION_PERF_MODE = 35,
+    PARAM_MMA_MODE_BIT_CONFIG = 36,
     // new custom param id can be added here
 } intf_param_id_t;
 

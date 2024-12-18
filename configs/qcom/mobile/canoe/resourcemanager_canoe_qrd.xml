@@ -1945,6 +1945,7 @@
                     <first_stage_module_params>
                         <param module_type="MMA" />
                         <param load_sound_model_ids="0xC0000008, 0x08001AC6" />
+                        <param mode_bit_config_ids="0xC0000008, 0x08001AC5" />
                         <param wakeup_config_ids="0xC0000008, 0x08001AC7" />
                         <param buffering_config_ids="0xC0000008, 0x08001ACF" />
                         <param engine_reset_ids="0xC0000008, 0x08001AD0" />

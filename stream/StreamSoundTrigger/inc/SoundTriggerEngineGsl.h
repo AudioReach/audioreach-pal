@@ -184,5 +184,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     // for global concurrent detection check
     static std::mutex global_det_mutex_;
     static std::map<SoundTriggerEngineGsl*, int> eng_det_stat_map_;
+
+    uint32_t mma_mode_bit_;
 };
 #endif  // SOUNDTRIGGERENGINEGSL_H

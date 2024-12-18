@@ -29,7 +29,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -342,6 +342,7 @@ typedef enum st_param_id_type {
     ENGINE_PER_MODEL_RESET,
     MODULE_VERSION,
     CUSTOM_CONFIG,
+    MMA_MODE_BIT_CONFIG,
     MAX_PARAM_IDS
 } st_param_id_type_t;
 
@@ -364,6 +365,26 @@ struct model_stats
     uint32_t detection_timestamp_lsw;
     uint32_t detection_timestamp_msw;
 };
+
+/*
+ * Mode bit definitions in Client
+ * This is used between client and PAL as
+ * different mode bit id is needed for NVD
+ * and SPEECH so that different models can
+ * be picked.
+ * When updating mode bit to ADSP, NVD mode
+ * bit will be replaced by VAD mode bit to
+ * align with ADSP definitions.
+ */
+typedef enum mma_mode_bit_type {
+    NVD = 0,
+    SPEECH = 1,
+    TILT_TO_WAKE = 2,
+    INTENT2SPEAK_ACCEL = 3,
+    CAMERA_FACE = 4,
+    CAMERA_GAZE = 5,
+    ONOFFBODY_DETECTION = 6,
+} mma_mode_bit_type_t;
 
 struct detection_event_info_mma
 {

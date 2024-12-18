@@ -146,6 +146,8 @@ void VUIFirstStageConfig::HandleStartTag(const char *tag, const char **attribs)
                     index = MODULE_VERSION;
                 } else if (!strcmp(attribs[i], "engine_per_model_reset_ids")) {
                     index = ENGINE_PER_MODEL_RESET;
+                } else if (!strcmp(attribs[i], "mode_bit_config_ids")) {
+                    index = MMA_MODE_BIT_CONFIG;
                 }
                 sscanf(attribs[++i], "%x, %x", &module_tag_ids_[index],
                        &param_ids_[index]);

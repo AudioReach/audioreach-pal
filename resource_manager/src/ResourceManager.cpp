@@ -4873,7 +4873,8 @@ int ResourceManager::getSndDeviceName(int deviceId, char *device_name)
                                 !strstr(device_name, VBAT_BCL_SUFFIX)) {
             if (deviceId == PAL_DEVICE_OUT_ULTRASOUND) {
                 getBackendName(deviceId, backEndName);
-                if (!(strstr(backEndName.c_str(), "CODEC_DMA-LPAIF_WSA-RX")))
+                if (!(strstr(backEndName.c_str(), "CODEC_DMA-LPAIF_WSA-RX")) ||
+                     strstr(device_name, "handset"))
                     return 0;
             }
             strlcat(device_name, VBAT_BCL_SUFFIX, DEVICE_NAME_MAX_SIZE);

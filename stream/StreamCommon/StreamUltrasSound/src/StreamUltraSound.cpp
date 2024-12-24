@@ -136,7 +136,7 @@ int32_t  StreamUltraSound::setParameters(uint32_t param_id, void *payload)
     switch (param_id) {
         case PAL_PARAM_ID_UPD_REGISTER_FOR_EVENTS:
         {
-            status = session->setParameters(NULL, param_id, payload);
+            status = session->setParameters(this, param_id, payload);
             if (status)
                 PAL_ERR(LOG_TAG, "Error:%d, Failed to setParam for registering an event",
                 status);

@@ -98,6 +98,7 @@ typedef enum {
     SML_ID_SVA_F_STAGE_INTERNAL = 0x0020,
     ST_SM_ID_SVA_S_STAGE_UDK  = 0x0040,
     ST_SM_ID_SVA_S_STAGE_KWD  = 0x004A, // S_STAGE_PDK | S_STAGE_RNN | S_STAGE_UDK
+    ST_SM_ID_SVA_S_STAGE_CTIUV = 0x0080,
     ST_SM_ID_SVA_END          = 0x00F0,
     ST_SM_ID_CUSTOM_START     = 0x0100,
     ST_SM_ID_CUSTOM_END       = 0xF000,
@@ -181,6 +182,8 @@ enum st_param_key {
     ST_PARAM_KEY_DETECTION_CH_INFO = 0x7,
     ST_PARAM_KEY_MMA_THRESHOLD_CONFIG = 0x8,
     ST_PARAM_KEY_MMA_DETECTION_RESULT = 0x9,
+    ST_PARAM_KEY_TIUV_THRESHOLD_CONFIG = 0xA,
+    ST_PARAM_KEY_TIUV_DETECTION_RESULT = 0xB,
 
     // Keys for optional detection payload information
     ST_PARAM_KEY_KEYWORD_BUFFER = 0x10001,
@@ -385,6 +388,24 @@ typedef enum mma_mode_bit_type {
     CAMERA_GAZE = 5,
     ONOFFBODY_DETECTION = 6,
 } mma_mode_bit_type_t;
+
+typedef struct tiuv_threshold_config {
+    uint32_t nnvad_hangover_frames;
+    uint32_t nnvad_threshold;
+    uint32_t nnvad_min_speech_frames;
+    uint32_t nnvad_pre_guard_frames;
+    int32_t  tiuv_thresholds[3];
+    uint32_t tiuv_min_speech_frames;
+    uint32_t tiuv_overlap_frames;
+    uint32_t get_max;
+    int32_t timer_frames;
+    uint32_t reserved[7];
+} tiuv_threshold_config_t;
+
+typedef struct tiuv_detection_result {
+    uint32_t detection_status;
+    uint32_t user_score;
+} tiuv_detection_result_t;
 
 struct detection_event_info_mma
 {

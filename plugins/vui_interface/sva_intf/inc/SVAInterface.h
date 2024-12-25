@@ -53,7 +53,7 @@ class SVAInterface: public VoiceUIInterface {
 
     void SetSecondStageDetStats(void *s,
                                listen_model_indicator_enum type,
-                               struct st_det_engine_stats *info,
+                               void *info,
                                int32_t level);
 
     int32_t ParseDetectionPayload(void *s, void *event, uint32_t size);
@@ -128,6 +128,7 @@ class SVAInterface: public VoiceUIInterface {
     int32_t GetBufferingPayload(vui_intf_param_t *param);
     int32_t GetEngineResetPayload(vui_intf_param_t *param);
     int32_t GetMMAModeBitPayload(vui_intf_param_t *param);
+    int32_t GetTIUVThresholdConfig(vui_intf_param_t *param);
 
     int32_t SetModelState(void *s, bool state);
     void SetStreamAttributes(struct pal_stream_attributes *attr);
@@ -161,6 +162,8 @@ class SVAInterface: public VoiceUIInterface {
     struct detection_engine_config_voice_wakeup wakeup_config_;
     struct param_id_mma_context_ml_model_config_t *mma_model_;
     struct param_id_mma_history_buffer_size_t mma_buffering_config_;
+    struct tiuv_threshold_config tiuv_threshold_config_;
+    struct tiuv_detection_result tiuv_detection_result_;
     uint32_t mma_mode_bit_config_;
     uint8_t *wakeup_payload_;
     uint32_t wakeup_payload_size_;

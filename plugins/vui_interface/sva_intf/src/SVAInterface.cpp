@@ -343,16 +343,21 @@ int32_t SVAInterface::SetParameter(intf_param_id_t param_id,
         }
         case PARAM_SSTAGE_KW_DET_STATS: {
             SetSecondStageDetStats(param->stream,
-                ST_SM_ID_SVA_S_STAGE_KWD, (struct st_det_engine_stats *)param->data, 0);
+                ST_SM_ID_SVA_S_STAGE_KWD, param->data, 0);
             break;
         }
         case PARAM_SSTAGE_UV_DET_STATS: {
             SetSecondStageDetStats(param->stream,
-                ST_SM_ID_SVA_S_STAGE_USER, (struct st_det_engine_stats *)param->data, 0);
+                ST_SM_ID_SVA_S_STAGE_USER, param->data, 0);
             break;
         }
         case PARAM_DETECTION_PERF_MODE: {
             perf_mode_ = *(bool *)param->data;
+            break;
+        }
+        case PARAM_TIUV_DETECTION_RESULT: {
+            SetSecondStageDetStats(param->stream,
+                ST_SM_ID_SVA_S_STAGE_USER, param->data, 0);
             break;
         }
         default:
@@ -474,6 +479,9 @@ int32_t SVAInterface::GetParameter(intf_param_id_t param_id,
         case PARAM_MMA_MODE_BIT_CONFIG:
             status = GetMMAModeBitPayload(param);
             break;
+        case PARAM_TIUV_THRESHOLD_CONFIG:
+            status = GetTIUVThresholdConfig(param);
+            break;
         default:
             ALOGE("%s: %d: Unsupported param id %d",
                 __func__, __LINE__, param_id);
@@ -560,12 +568,15 @@ int32_t SVAInterface::ParseSoundModel(
                 model_data->data = sm_data;
                 model_data->size = sm_size;
                 model_list.push_back(model_data);
-            } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM) {
-                if (big_sm->type == SML_ID_SVA_F_STAGE_INTERNAL ||
-                    (big_sm->type == ST_SM_ID_SVA_S_STAGE_USER &&
-                        !(phrase_sm->phrases[0].recognition_mode &
-                        PAL_RECOGNITION_MODE_USER_IDENTIFICATION)))
+            } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM &&
+                       big_sm->type != SML_ID_SVA_F_STAGE_INTERNAL) {
+                if (phrase_sm &&
+                    (big_sm->type == ST_SM_ID_SVA_S_STAGE_USER ||
+                     big_sm->type == ST_SM_ID_SVA_S_STAGE_CTIUV) &&
+                    !(phrase_sm->phrases[0].recognition_mode &
+                      PAL_RECOGNITION_MODE_USER_IDENTIFICATION)) {
                     continue;
+                }
                 sm_size = big_sm->size;
                 ptr = (uint8_t *)sm_payload +
                     sizeof(SML_GlobalHeaderType) +
@@ -801,6 +812,23 @@ int32_t SVAInterface::ParseRecognitionConfig(void *s,
                     opaque_ptr += sizeof(struct st_param_header) +
                         param_hdr->payload_size;
                     break;
+                case ST_PARAM_KEY_TIUV_THRESHOLD_CONFIG:
+                    if (param_hdr->payload_size !=
+                        sizeof(struct tiuv_threshold_config)) {
+                        ALOGE("%s: %d: Opaque data format error, exiting",
+                            __func__, __LINE__);
+                        status = -EINVAL;
+                        goto error_exit;
+                    }
+                    ar_mem_cpy(&tiuv_threshold_config_, param_hdr->payload_size,
+                        opaque_ptr + sizeof(struct st_param_header),
+                        param_hdr->payload_size);
+
+                    opaque_size += sizeof(struct st_param_header) +
+                        param_hdr->payload_size;
+                    opaque_ptr += sizeof(struct st_param_header) +
+                        param_hdr->payload_size;
+                    break;
                 default:
                     ALOGE("%s: %d: Unsupported opaque data key id, exiting",
                         __func__, __LINE__);
@@ -876,7 +904,7 @@ void SVAInterface::GetSecondStageConfLevels(void *s,
 
 void SVAInterface::SetSecondStageDetStats(void *s,
                                          listen_model_indicator_enum type,
-                                         struct st_det_engine_stats *info,
+                                         void *info,
                                          int32_t level) {
 
     bool sec_det_level_exist = false;
@@ -887,8 +915,13 @@ void SVAInterface::SetSecondStageDetStats(void *s,
                 memcpy(&sm_info_map_[s]->sec_kw_det_info,
                     info, sizeof(struct st_det_engine_stats));
             } else if (type == ST_SM_ID_SVA_S_STAGE_USER) {
-                memcpy(&sm_info_map_[s]->sec_uv_det_info,
-                    info, sizeof(struct st_det_engine_stats));
+                if (module_type_ == ST_MODULE_TYPE_MMA) {
+                    memcpy(&tiuv_detection_result_, info,
+                        sizeof(struct tiuv_detection_result));
+                } else {
+                    memcpy(&sm_info_map_[s]->sec_uv_det_info,
+                        info, sizeof(struct st_det_engine_stats));
+                }
             } else {
                 ALOGE("%s: %d: Invalid model type 0x%x used", __func__, __LINE__, type);
             }
@@ -1450,8 +1483,9 @@ int32_t SVAInterface::GenerateCallbackEvent(void *s,
                 conf_levels_size + ext_payload_size;
         } else {
             ext_payload_size = GetExtendedPayloadSize(s);
-            opaque_size = sizeof(struct st_param_header) +
+            opaque_size = 2 * sizeof(struct st_param_header) +
                 sizeof(struct event_id_mma_detection_event_t) +
+                sizeof(struct tiuv_detection_result) +
                 ext_payload_size;
         }
 
@@ -3790,6 +3824,19 @@ int32_t SVAInterface::GetMMAModeBitPayload(vui_intf_param_t *param) {
 
     param->data = (void *)&mma_mode_bit_config_;
     param->size = sizeof(uint32_t);
+
+    return 0;
+}
+
+int32_t SVAInterface::GetTIUVThresholdConfig(vui_intf_param_t *param) {
+
+    if (!param) {
+        ALOGE("%s: %d: Invalid param", __func__, __LINE__);
+        return -EINVAL;
+    }
+
+    param->data = (void *)&tiuv_threshold_config_;
+    param->size = sizeof(tiuv_threshold_config_t);
 
     return 0;
 }

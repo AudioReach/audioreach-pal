@@ -112,7 +112,10 @@ void SoundTriggerEngineCapi::BufferThreadLoop(
                 }
             } else if (capi_engine->detection_type_ ==
                 ST_SM_TYPE_USER_VERIFICATION) {
-                status = capi_engine->StartUserVerification();
+                if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_USER)
+                    status = capi_engine->StartUserVerification();
+                else if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_CTIUV)
+                    status = capi_engine->StartTIUserVerification();
                 /*
                  * StreamSoundTrigger may call stop recognition to second stage
                  * engines when one of the second stage engine reject detection.
@@ -322,8 +325,6 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
         }
 
         det_conf_score_ = result_cfg_ptr->best_confidence;
-        PAL_INFO(LOG_TAG, "PDK Stage2 Result: is_detected = %d, best_confidence = %d, start_position = %d, end_position = %d, current_confidence = %d",
-            result_cfg_ptr->is_detected, result_cfg_ptr->best_confidence, result_cfg_ptr->start_position, result_cfg_ptr->end_position, result_cfg_ptr->current_confidence);
         if (result_cfg_ptr->is_detected) {
             exit_buffering_ = true;
             detection_state_ = KEYWORD_DETECTION_SUCCESS;
@@ -712,6 +713,234 @@ exit:
     return status;
 }
 
+int32_t SoundTriggerEngineCapi::StartTIUserVerification()
+{
+    int32_t status = 0;
+    char *process_input_buff = nullptr;
+    capi_v2_err_t rc = CAPI_V2_EOK;
+    capi_v2_stream_data_t *stream_input = nullptr;
+    stage2_uv_wrapper_result *result_cfg_ptr = nullptr;
+    int32_t read_size = 0;
+    capi_v2_buf_t capi_result;
+    FILE *user_verification_fd = nullptr;
+    ChronoSteadyClock_t process_start;
+    ChronoSteadyClock_t process_end;
+    ChronoSteadyClock_t capi_call_start;
+    ChronoSteadyClock_t capi_call_end;
+    uint64_t process_duration = 0;
+    uint64_t total_capi_process_duration = 0;
+    uint64_t total_capi_get_param_duration = 0;
+    uint32_t hist_data_size = 0, min_hist_data_size = 0;
+    uint32_t frame_size = 0, proc_size = 0;
+    uint32_t processed_sz = 0;
+    vui_intf_param_t param = {};
+    tiuv_detection_result_t tiuv_detection_result = {};
+    struct buffer_config buf_config = {};
+
+    PAL_DBG(LOG_TAG, "Enter");
+    if (!reader_) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
+        goto exit;
+    }
+
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_OPEN_WR(user_verification_fd, ST_DEBUG_DUMP_LOCATION,
+            "user_verification", "bin", user_verification_cnt);
+        PAL_DBG(LOG_TAG, "User Verification data stored in: user_verification_%d.bin",
+            user_verification_cnt);
+        user_verification_cnt++;
+    }
+
+    param.data = (void *)&buf_config;
+    param.size = sizeof(struct buffer_config);
+    vui_intf_->GetParameter(PARAM_FSTAGE_BUFFERING_CONFIG, &param);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to get buffering config, status %d", status);
+        goto exit;
+    }
+
+    hist_data_size = reader_->getUnreadSize() % reader_->getBufferSize();
+    min_hist_data_size = UsToBytes(
+        buf_config.hist_buffer_duration * US_PER_SEC / MS_PER_SEC);
+    if (hist_data_size < min_hist_data_size)
+        hist_data_size = min_hist_data_size;
+    frame_size = UsToBytes(
+        ss_cfg_->GetProcFrameSize() * US_PER_SEC / MS_PER_SEC);
+    proc_size = hist_data_size;
+
+    memset(&capi_result, 0, sizeof(capi_result));
+
+    process_input_buff = (char*)calloc(1, proc_size);
+    if (!process_input_buff) {
+        PAL_ERR(LOG_TAG, "failed to allocate process input buff");
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    stream_input = (capi_v2_stream_data_t *)
+                   calloc(1, sizeof(capi_v2_stream_data_t));
+    if (!stream_input) {
+        PAL_ERR(LOG_TAG, "failed to allocate stream input");
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    stream_input->buf_ptr = (capi_v2_buf_t*)calloc(1, sizeof(capi_v2_buf_t));
+    if (!stream_input->buf_ptr) {
+        PAL_ERR(LOG_TAG, "failed to allocate buf ptr");
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    result_cfg_ptr = (stage2_uv_wrapper_result*)
+                     calloc(1, sizeof(stage2_uv_wrapper_result));
+    if (!result_cfg_ptr) {
+        PAL_ERR(LOG_TAG, "failed to allocate result cfg ptr");
+        status = -ENOMEM;
+        goto exit;
+    }
+
+    process_start = std::chrono::steady_clock::now();
+    while (!exit_buffering_) {
+        /*
+         * Original code had some time of wait will need to revisit
+         * need to take into consideration the start and end buffer
+         */
+        if (!reader_->isEnabled()) {
+            status = -EINVAL;
+            goto exit;
+        }
+
+        if (!reader_->waitForBuffers(proc_size))
+            continue;
+
+        read_size = reader_->read((void*)process_input_buff, proc_size);
+        if (read_size == 0) {
+            continue;
+        } else if (read_size < 0) {
+            status = read_size;
+            PAL_ERR(LOG_TAG, "Failed to read from buffer, status %d", status);
+            goto exit;
+        }
+        stream_input->bufs_num = 1;
+        stream_input->buf_ptr->max_data_len = proc_size;
+        stream_input->buf_ptr->actual_data_len = read_size;
+        stream_input->buf_ptr->data_ptr = (int8_t *)process_input_buff;
+
+        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+            ST_DBG_FILE_WRITE(user_verification_fd,
+                process_input_buff, read_size);
+        }
+
+        PAL_VERBOSE(LOG_TAG, "Calling Capi Process\n");
+        capi_call_start = std::chrono::steady_clock::now();
+        ATRACE_BEGIN("Second stage uv process");
+        rc = capi_handle_->vtbl_ptr->process(capi_handle_,
+            &stream_input, nullptr);
+        ATRACE_END();
+        capi_call_end = std::chrono::steady_clock::now();
+        total_capi_process_duration +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                capi_call_end - capi_call_start).count();
+        if (CAPI_V2_EFAILED == rc) {
+            PAL_ERR(LOG_TAG, "capi process failed\n");
+            status = -EINVAL;
+            goto exit;
+        }
+
+        processed_sz += read_size;
+
+        capi_result.data_ptr = (int8_t*)result_cfg_ptr;
+        capi_result.actual_data_len = sizeof(stage2_uv_wrapper_result);
+        capi_result.max_data_len = sizeof(stage2_uv_wrapper_result);
+
+        PAL_VERBOSE(LOG_TAG, "Calling Capi get param for result\n");
+        capi_call_start = std::chrono::steady_clock::now();
+        ATRACE_BEGIN("Second stage TI-UV get result");
+        rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
+            STAGE2_UV_WRAPPER_ID_RESULT, nullptr, &capi_result);
+        ATRACE_END();
+        capi_call_end = std::chrono::steady_clock::now();
+        total_capi_get_param_duration +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                capi_call_end - capi_call_start).count();
+        if (CAPI_V2_EFAILED == rc) {
+            PAL_ERR(LOG_TAG, "capi get param failed\n");
+            status = -EINVAL;
+            goto exit;
+        }
+
+        det_conf_score_ = (int32_t)result_cfg_ptr->final_user_score;
+        if (result_cfg_ptr->is_detected) {
+            exit_buffering_ = true;
+            detection_state_ = USER_VERIFICATION_SUCCESS;
+            PAL_INFO(LOG_TAG, "TI-UV Second Stage Detected");
+            tiuv_detection_result.detection_status = detection_state_;
+            tiuv_detection_result.user_score = det_conf_score_;
+            param.stream = (void *)stream_handle_;
+            param.data = (void *)&tiuv_detection_result;
+            param.size = sizeof(int32_t);
+            vui_intf_->SetParameter(PARAM_TIUV_DETECTION_RESULT, &param);
+        } else if (result_cfg_ptr->timeout) {
+            exit_buffering_ = true;
+            detection_state_ = USER_VERIFICATION_REJECT;
+            PAL_INFO(LOG_TAG, "TI-UV Second Stage Rejected due to timeout");
+            tiuv_detection_result.detection_status = detection_state_;
+            tiuv_detection_result.user_score = det_conf_score_;
+            param.stream = (void *)stream_handle_;
+            param.data = (void *)&tiuv_detection_result;
+            param.size = sizeof(int32_t);
+            vui_intf_->SetParameter(PARAM_TIUV_DETECTION_RESULT, &param);
+        }
+        PAL_INFO(LOG_TAG, "TI-UV second stage conf level %d, processing %u bytes",
+            det_conf_score_, processed_sz);
+        if (proc_size == hist_data_size)
+            proc_size = frame_size;
+    }
+
+exit:
+    process_end = std::chrono::steady_clock::now();
+    process_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        process_end - process_start).count();
+    PAL_INFO(LOG_TAG, "TI-UV processing time: Bytes processed %u, Total processing "
+        "time %llums, Algo process time %llums, get result time %llums",
+        processed_sz, (long long)process_duration,
+        (long long)total_capi_process_duration,
+        (long long)total_capi_get_param_duration);
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_CLOSE(user_verification_fd);
+    }
+
+    /* Reinit the UV module */
+    PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
+            STAGE2_UV_WRAPPER_ID_REINIT);
+    rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+        STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
+    if (CAPI_V2_EOK != rc) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
+                status);
+    }
+
+    if (reader_)
+        reader_->updateState(READER_DISABLED);
+
+    if (process_input_buff)
+        free(process_input_buff);
+    if (stream_input) {
+        if (stream_input->buf_ptr)
+            free(stream_input->buf_ptr);
+        free(stream_input);
+    }
+    if (result_cfg_ptr)
+        free(result_cfg_ptr);
+
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+
+    return status;
+}
+
 SoundTriggerEngineCapi::SoundTriggerEngineCapi(
     StreamSoundTrigger *s,
     listen_model_indicator_enum type,
@@ -878,7 +1107,7 @@ int32_t SoundTriggerEngineCapi::StartSoundEngine()
         capi_buf.max_data_len = sizeof(sva_threshold_config_t);
         threshold_cfg->smm_threshold = confidence_threshold_;
 
-        PAL_DBG(LOG_TAG, "Keyword detection (CNN) confidence level = %d",
+        PAL_DBG(LOG_TAG, "Keyword detection confidence level = %d",
             threshold_cfg->smm_threshold);
 
         status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
@@ -904,34 +1133,64 @@ int32_t SoundTriggerEngineCapi::StartSoundEngine()
         }
         detection_state_ = KEYWORD_DETECTION_PENDING;
     } else if (detection_type_ == ST_SM_TYPE_USER_VERIFICATION) {
-        stage2_uv_wrapper_threshold_config_t *threshold_cfg = nullptr;
+        if (engine_type_ & ST_SM_ID_SVA_S_STAGE_USER) {
+            stage2_uv_wrapper_threshold_config_t *threshold_cfg = nullptr;
 
-        threshold_cfg = (stage2_uv_wrapper_threshold_config_t *)
-            calloc(1, sizeof(stage2_uv_wrapper_threshold_config_t));
-        if (!threshold_cfg) {
-            PAL_ERR(LOG_TAG, "failed to allocate threshold cfg");
-            status = -ENOMEM;
-            return status;
-        }
+            threshold_cfg = (stage2_uv_wrapper_threshold_config_t *)
+                calloc(1, sizeof(stage2_uv_wrapper_threshold_config_t));
+            if (!threshold_cfg) {
+                PAL_ERR(LOG_TAG, "failed to allocate threshold cfg");
+                status = -ENOMEM;
+                return status;
+            }
 
-        capi_buf.data_ptr = (int8_t *)threshold_cfg;
-        capi_buf.actual_data_len = sizeof(stage2_uv_wrapper_threshold_config_t);
-        capi_buf.max_data_len = sizeof(stage2_uv_wrapper_threshold_config_t);
-        threshold_cfg->threshold = confidence_threshold_;
-        threshold_cfg->anti_spoofing_enabled = 0;
-        threshold_cfg->anti_spoofing_threshold = 0;
+            capi_buf.data_ptr = (int8_t *)threshold_cfg;
+            capi_buf.actual_data_len = sizeof(stage2_uv_wrapper_threshold_config_t);
+            capi_buf.max_data_len = sizeof(stage2_uv_wrapper_threshold_config_t);
+            threshold_cfg->threshold = confidence_threshold_;
+            threshold_cfg->anti_spoofing_enabled = 0;
+            threshold_cfg->anti_spoofing_threshold = 0;
 
-        PAL_DBG(LOG_TAG, "Keyword detection (UV) confidence level = %d",
-                threshold_cfg->threshold);
+            PAL_DBG(LOG_TAG, "User Verification confidence level = %d",
+                    threshold_cfg->threshold);
 
-        rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-            STAGE2_UV_WRAPPER_ID_THRESHOLD, nullptr, &capi_buf);
-        free(threshold_cfg);
-        if (CAPI_V2_EOK != rc) {
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "set param %d failed with %d",
-                    STAGE2_UV_WRAPPER_ID_THRESHOLD, rc);
-            return status;
+            rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                STAGE2_UV_WRAPPER_ID_THRESHOLD, nullptr, &capi_buf);
+            free(threshold_cfg);
+            if (CAPI_V2_EOK != rc) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param %d failed with %d",
+                        STAGE2_UV_WRAPPER_ID_THRESHOLD, rc);
+                return status;
+            }
+        } else if (engine_type_ & ST_SM_ID_SVA_S_STAGE_CTIUV) {
+            stage2_uv_wrapper_ctiuv_config_t *ctiuv_config = nullptr;
+            vui_intf_param_t param = {};
+
+            param.stream = (void *)stream_handle_;
+            param.size = sizeof(tiuv_threshold_config_t);
+            status = vui_intf_->GetParameter(PARAM_TIUV_THRESHOLD_CONFIG, &param);
+            if (status) {
+                PAL_ERR(LOG_TAG, "failed to get tiuv cfg");
+                return status;
+            }
+            ctiuv_config = (stage2_uv_wrapper_ctiuv_config_t *)param.data;
+
+            capi_buf.data_ptr = (int8_t *)ctiuv_config;
+            capi_buf.actual_data_len = sizeof(stage2_uv_wrapper_ctiuv_config_t);
+            capi_buf.max_data_len = sizeof(stage2_uv_wrapper_ctiuv_config_t);
+
+            PAL_DBG(LOG_TAG, "User Verification confidence level = %d",
+                    ctiuv_config->tiuv_thresholds[0]);
+
+            rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                STAGE2_UV_WRAPPER_ID_CTIUV_PARAMS, nullptr, &capi_buf);
+            if (CAPI_V2_EOK != rc) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param %d failed with %d",
+                        STAGE2_UV_WRAPPER_ID_CTIUV_PARAMS, rc);
+                return status;
+            }
         }
         detection_state_ =  USER_VERIFICATION_PENDING;
     }

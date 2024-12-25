@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -107,6 +107,7 @@ private:
     int32_t StopSoundEngine();
     int32_t StartKeywordDetection();
     int32_t StartUserVerification();
+    int32_t StartTIUserVerification();
     int32_t UpdateConfThreshold(StreamSoundTrigger *s);
     static void BufferThreadLoop(SoundTriggerEngineCapi *capi_engine);
 

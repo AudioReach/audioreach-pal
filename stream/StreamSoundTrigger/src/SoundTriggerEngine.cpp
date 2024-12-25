@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -103,6 +103,7 @@ std::shared_ptr<SoundTriggerEngine> SoundTriggerEngine::Create(
     case ST_SM_ID_SVA_S_STAGE_RNN:
     case ST_SM_ID_SVA_S_STAGE_USER:
     case ST_SM_ID_SVA_S_STAGE_UDK:
+    case ST_SM_ID_SVA_S_STAGE_CTIUV:
         st_engine = std::make_shared<SoundTriggerEngineCapi>(s, type,
                                                               sm_cfg);
         if (!st_engine)

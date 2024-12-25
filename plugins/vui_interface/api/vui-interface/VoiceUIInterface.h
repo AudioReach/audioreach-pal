@@ -148,12 +148,18 @@ typedef enum {
     PARAM_SSTAGE_UV_DET_STATS = 34,
     PARAM_DETECTION_PERF_MODE = 35,
     PARAM_MMA_MODE_BIT_CONFIG = 36,
-    // new custom param id can be added here
+    PARAM_TIUV_THRESHOLD_CONFIG = 37,
+    PARAM_TIUV_DETECTION_RESULT = 38,
+    PARAM_ID_MAX = 39,
+    // custom param id should be in format like
+    // PARAM_ID_MAX + x
 } intf_param_id_t;
 
 typedef enum {
     PROCESS_LAB_DATA = 0,
-    // new custom process id can be added here
+    PROCESS_ID_MAX = 1,
+    // custom process id should be started from
+    // PROCESS_ID_MAX + x
 } intf_process_id_t;
 
 class VoiceUIInterface;

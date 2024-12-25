@@ -1362,7 +1362,8 @@ int32_t StreamSoundTrigger::LoadSoundModel(
         } else {
             if (sm_data->type & ST_SM_ID_SVA_S_STAGE_KWD) {
                 notification_state_ |= KEYWORD_DETECTION_SUCCESS;
-            } else if (sm_data->type == ST_SM_ID_SVA_S_STAGE_USER) {
+            } else if (sm_data->type == ST_SM_ID_SVA_S_STAGE_USER ||
+                       sm_data->type == ST_SM_ID_SVA_S_STAGE_CTIUV) {
                 notification_state_ |= USER_VERIFICATION_SUCCESS;
             }
         }
@@ -3488,9 +3489,10 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
 
                 for (auto& eng : st_stream_.engines_) {
                     if ((data->det_type_ == USER_VERIFICATION_REJECT &&
-                        eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_KWD) ||
+                         eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_KWD) ||
                         (data->det_type_ == KEYWORD_DETECTION_REJECT &&
-                        eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_USER)) {
+                         (eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_USER ||
+                          eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_CTIUV))) {
 
                         status = eng->GetEngine()->StopRecognition(&st_stream_);
                         if (status) {

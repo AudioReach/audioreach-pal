@@ -1950,6 +1950,15 @@
                         <param buffering_config_ids="0xC0000008, 0x08001ACF" />
                         <param engine_reset_ids="0xC0000008, 0x08001AD0" />
                     </first_stage_module_params>
+                    <arm_ss_module_params>
+                        <param sm_detection_type= "USER_VERIFICATION" />
+                        <param sm_id="0x80" />
+                        <param module_lib="libcapiv2uvvendor.so" />
+                        <param sample_rate="16000" />
+                        <param bit_width="16" />
+                        <param channel_count="1" />
+                        <param proc_frame_size="120" /> <!-- Processing frame size(in ms) -->
+                    </arm_ss_module_params>
                 </sound_model_info>
             </stream_config>
         </vui_platform_info>

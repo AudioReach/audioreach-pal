@@ -80,6 +80,7 @@ public:
     uint32_t GetSampleRate() const { return sample_rate_; }
     uint32_t GetBitWidth() const { return bit_width_; }
     uint32_t GetChannels() const { return channels_; }
+    uint32_t GetProcFrameSize() const { return proc_frame_size_; }
 
 private:
     st_sound_model_type_t detection_type_;
@@ -88,6 +89,7 @@ private:
     uint32_t sample_rate_;
     uint32_t bit_width_;
     uint32_t channels_;
+    uint32_t proc_frame_size_;
 };
 
 class VUIFirstStageConfig : public SoundTriggerXml

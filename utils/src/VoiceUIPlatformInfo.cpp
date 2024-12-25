@@ -50,7 +50,8 @@ VUISecondStageConfig::VUISecondStageConfig() :
     module_lib_(""),
     sample_rate_(16000),
     bit_width_(16),
-    channels_(1)
+    channels_(1),
+    proc_frame_size_(120)
 {
 }
 
@@ -80,6 +81,8 @@ void VUISecondStageConfig::HandleStartTag(const char *tag, const char **attribs)
                 bit_width_ = std::stoi(attribs[++i]);
             } else if (!strcmp(attribs[i], "channel_count")) {
                 channels_ = std::stoi(attribs[++i]);
+            } else if (!strcmp(attribs[i], "proc_frame_size")) {
+                proc_frame_size_ = std::stoi(attribs[++i]);
             }
             ++i;
         }

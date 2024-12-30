@@ -1240,4 +1240,8 @@
         <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
     </path>
 
+    <path name="ultrasound-mic">
+        <path name="qmp3"/>
+    </path>
+
 </mixer>

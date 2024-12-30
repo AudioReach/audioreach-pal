@@ -205,38 +205,6 @@
         <ctl name="GSM mode Enable" value="ON" />
     </path>
 
-    <path name="speaker-hdk">
-        <path name="speaker-mono" />
-    </path>
-
-    <path name="speaker-fluid">
-        <path name="speaker-mono" />
-    </path>
-
-    <path name="speaker-liquid">
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-safe">
-        <path name="speaker-mono"/>
-    </path>
-
-    <path name="speaker-hdk-vbat">
-        <path name="speaker-mono-vbat" />
-    </path>
-
-    <path name="speaker-fluid-vbat">
-        <path name="speaker-mono-vbat" />
-    </path>
-
-    <path name="speaker-liquid-vbat">
-        <path name="speaker-vbat" />
-    </path>
-
-    <path name="speaker-safe-vbat">
-        <path name="speaker-mono-vbat"/>
-    </path>
-
     <path name="afe-sidetone">
         <ctl name="Voice Sidetone Enable" value="1" />
     </path>
@@ -247,184 +215,6 @@
     <path name="speaker-mic-sbc">
     </path>
 
-    <path name="voice-speaker-stereo-protected">
-        <path name="speaker-protected" />
-    </path>
-
-    <path name="voice-speaker-stereo-protected-vbat">
-        <path name="speaker-protected-vbat" />
-    </path>
-
-    <path name="voice-handset-tmus">
-        <path name="handset" />
-    </path>
-
-    <path name="voice-handset-hac">
-        <path name="handset" />
-    </path>
-
-    <path name="voice-handset-hdk">
-        <path name="handset" />
-    </path>
-
-    <path name="voice-handset-tmus-hdk">
-        <path name="handset" />
-    </path>
-
-    <path name="voice-speaker">
-        <path name="speaker-mono" />
-    </path>
-
-    <path name="voice-speaker-2">
-        <path name="speaker-mono-2" />
-    </path>
-
-    <path name="voice-speaker-hdk">
-        <path name="speaker-mono" />
-    </path>
-
-    <path name="voice-speaker-fluid">
-        <path name="speaker-fluid" />
-    </path>
-
-    <path name="voice-speaker-vbat">
-        <path name="speaker-mono-vbat" />
-    </path>
-
-    <path name="voice-speaker-2-vbat">
-        <path name="speaker-mono-2-vbat" />
-    </path>
-
-    <path name="voice-speaker-hdk-vbat">
-        <path name="speaker-mono-vbat" />
-    </path>
-
-    <path name="voice-speaker-fluid-vbat">
-        <path name="speaker-fluid-vbat" />
-    </path>
-
-    <path name="voice-speaker-mic">
-        <path name="speaker-mic" />
-    </path>
-
-    <path name="voice-headphones">
-        <path name="headphones" />
-    </path>
-
-    <path name="voice-headset">
-        <path name="headphones" />
-    </path>
-
-    <path name="voice-line">
-        <path name="voice-headphones" />
-    </path>
-
-    <path name="voice-headset-mic">
-        <path name="headset-mic" />
-    </path>
-
-    <path name="speaker-and-headphones">
-        <path name="headphones" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-and-headphones-hifi-filter">
-        <path name="headphones-hifi-filter" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-safe-and-headphones">
-        <path name="headphones" />
-        <path name="speaker-safe" />
-    </path>
-
-    <path name="speaker-and-line">
-        <path name="speaker-and-headphones" />
-    </path>
-
-    <path name="speaker-and-headphones-liquid">
-        <path name="headphones" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-and-line-liquid">
-        <path name="speaker-and-headphones-liquid" />
-    </path>
-
-    <path name="usb-headphones">
-    </path>
-
-    <path name="usb-headset">
-    </path>
-
-    <path name="afe-proxy">
-    </path>
-
-    <path name="echo-ref-record">
-    </path>
-    <path name="usb-headset-mic">
-    </path>
-
-    <path name="display-port">
-    </path>
-
-    <path name="display-port1">
-    </path>
-
-    <path name="speaker-and-usb-headphones">
-        <path name="speaker" />
-        <path name="usb-headphones" />
-    </path>
-
-    <path name="speaker-safe-and-usb-headphones">
-        <path name="speaker-safe" />
-        <path name="usb-headphones" />
-    </path>
-
-    <path name="speaker-and-display-port">
-        <path name="speaker" />
-        <path name="display-port" />
-    </path>
-
-    <path name="speaker-and-display-port1">
-        <path name="speaker" />
-        <path name="display-port1" />
-    </path>
-
-    <path name="voice-rec-mic">
-        <path name="handset-mic" />
-    </path>
-
-    <path name="bt-sco">
-    </path>
-
-    <path name="bt-sco-mic">
-    </path>
-
-    <path name="bt-sco-wb">
-    </path>
-
-    <path name="bt-sco-mic-wb">
-    </path>
-
-    <path name="bt-sco-swb">
-    </path>
-
-    <path name="bt-sco-mic-swb">
-    </path>
-
-    <path name="bt-a2dp">
-    </path>
-
-    <path name="bt-a2dp-mic">
-    </path>
-
-    <path name="bt-ble">
-    </path>
-
-    <path name="bt-ble-mic">
-    </path>
-
     <path name="lpi-pcm-logging">
         <ctl name="LPI PCM Logging Enable" value="1" />
     </path>
@@ -432,64 +222,7 @@
     <path name="PM_QOS_Vote">
         <ctl name="PM_QOS Vote" value="Enable" />
     </path>
-    <path name="camcorder-main-mic">
-        <path name="speaker-mic" />
-    </path>
 
-    <path name="camcorder-dual-mic">
-        <path name="speaker-dmic-endfire" />
-    </path>
-
-    <path name="camcorder-quad-mic">
-        <path name="speaker-qmic" />
-    </path>
-    <path name="voice-tty-full-headphones">
-        <path name="tty-headphones" />
-    </path>
-
-    <path name="voice-tty-full-headset">
-        <path name="tty-headphones" />
-    </path>
-
-    <path name="voice-tty-vco-headphones">
-        <path name="tty-headphones" />
-    </path>
-
-    <path name="voice-tty-vco-headset">
-        <path name="tty-headphones" />
-    </path>
-    <path name="voice-tty-hco-handset">
-        <path name="handset" />
-    </path>
-
-
-    <path name="voice-tty-hco-handset-hdk">
-        <path name="handset" />
-    </path>
-
-    <path name="unprocessed-handset-mic">
-        <path name="handset-mic" />
-    </path>
-
-    <path name="unprocessed-mic">
-        <path name="unprocessed-handset-mic" />
-    </path>
-
-    <path name="unprocessed-stereo-mic">
-        <path name="voice-rec-dmic-ef" />
-    </path>
-
-    <path name="unprocessed-three-mic">
-        <path name="three-mic" />
-    </path>
-
-    <path name="unprocessed-quad-mic">
-        <path name="quad-mic" />
-    </path>
-
-    <path name="unprocessed-headset-mic">
-        <path name="headset-mic" />
-    </path>
 <!-- WCD File Contents  -->
 
     <!-- WCD939x enable PCM path by default -->
@@ -640,66 +373,6 @@
     <path name="headset-mic-liquid">
         <path name="amic2" />
     </path>
-
-     <path name="voice-headphones">
-        <path name="headphones" />
-    </path>
-
-    <path name="voice-headset">
-        <path name="headphones" />
-    </path>
-
-    <path name="voice-line">
-        <path name="voice-headphones" />
-    </path>
-
-    <path name="voice-headset-mic">
-        <path name="headset-mic" />
-    </path>
-
-    <path name="speaker-and-headphones">
-        <path name="headphones" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-and-headphones-hifi-filter">
-        <path name="headphones-hifi-filter" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-safe-and-headphones">
-        <path name="headphones" />
-        <path name="speaker-safe" />
-    </path>
-
-    <path name="speaker-and-line">
-        <path name="speaker-and-headphones" />
-    </path>
-
-    <path name="speaker-and-headphones-liquid">
-        <path name="headphones" />
-        <path name="speaker" />
-    </path>
-
-    <path name="speaker-and-line-liquid">
-        <path name="speaker-and-headphones-liquid" />
-    </path>
-
-    <path name="usb-headphones">
-    </path>
-
-    <path name="usb-headset">
-    </path>
-
-    <path name="speaker-and-usb-headphones">
-        <path name="speaker" />
-        <path name="usb-headphones" />
-    </path>
-
-    <path name="speaker-safe-and-usb-headphones">
-        <path name="speaker-safe" />
-        <path name="usb-headphones" />
-	</path>
 
     <path name="va-mic-mono">
         <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
@@ -1305,6 +978,297 @@
     <path name="ultrasound-handset-wsa-vbat">
         <path name="ultrasound-handset-wsa" />
         <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+    </path>
+
+    <path name="speaker-mono-2-ultrasound">
+        <ctl name="WSA RX_MIX1 MUX" value="AIF_MIX1_PB" />
+        <ctl name="WSA_RX1 MIX INP" value="RX_MIX1" />
+        <ctl name="WSA_COMP2 Switch" value="1" />
+        <ctl name="Idle Detect" value="1" />
+        <ctl name="SpkrRight COMP Switch" value="1" />
+        <ctl name="SpkrRight VISENSE Switch" value="1" />
+        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
+        <ctl name="WSA PBR Enable" value="1" />
+    </path>
+
+    <path name="speaker-ultrasound">
+        <path name="ultrasound-handset-wsa" />
+        <path name="speaker-mono-2-ultrasound" />
+    </path>
+
+    <path name="ultrasound-dmic">
+        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="TX DMIC MUX3" value="DMIC2" />
+        <ctl name="TX_AIF2_CAP Mixer DEC4" value="1" />
+        <ctl name="TX DMIC MUX4" value="DMIC0" />
+    </path>
+
+    <path name="speaker-hdk">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="speaker-fluid">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="speaker-liquid">
+        <path name="speaker" />
+    </path>
+
+    <path name="speaker-safe">
+        <path name="speaker-mono"/>
+    </path>
+
+    <path name="speaker-hdk-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="speaker-fluid-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="speaker-liquid-vbat">
+        <path name="speaker-vbat" />
+    </path>
+
+    <path name="speaker-safe-vbat">
+        <path name="speaker-mono-vbat"/>
+    </path>
+
+    <path name="voice-speaker-stereo-protected">
+        <path name="speaker-protected" />
+    </path>
+
+    <path name="voice-speaker-stereo-protected-vbat">
+        <path name="speaker-protected-vbat" />
+    </path>
+
+    <path name="voice-handset-tmus">
+        <path name="handset" />
+    </path>
+
+    <path name="voice-handset-hac">
+        <path name="handset" />
+    </path>
+
+    <path name="voice-handset-hdk">
+        <path name="handset" />
+    </path>
+
+    <path name="voice-handset-tmus-hdk">
+        <path name="handset" />
+    </path>
+
+    <path name="voice-speaker">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="voice-speaker-2">
+        <path name="speaker-mono-2" />
+    </path>
+
+    <path name="voice-speaker-hdk">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="voice-speaker-fluid">
+        <path name="speaker-fluid" />
+    </path>
+
+    <path name="voice-speaker-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="voice-speaker-2-vbat">
+        <path name="speaker-mono-2-vbat" />
+    </path>
+
+    <path name="voice-speaker-hdk-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="voice-speaker-fluid-vbat">
+        <path name="speaker-fluid-vbat" />
+    </path>
+
+    <path name="voice-speaker-mic">
+        <path name="speaker-mic" />
+    </path>
+
+    <path name="voice-headphones">
+        <path name="headphones" />
+    </path>
+
+    <path name="voice-headset">
+        <path name="headphones" />
+    </path>
+
+    <path name="voice-line">
+        <path name="voice-headphones" />
+    </path>
+
+    <path name="voice-headset-mic">
+        <path name="headset-mic" />
+    </path>
+
+    <path name="speaker-and-headphones">
+        <path name="headphones" />
+        <path name="speaker" />
+    </path>
+
+    <path name="speaker-and-headphones-hifi-filter">
+        <path name="headphones-hifi-filter" />
+        <path name="speaker" />
+    </path>
+
+    <path name="speaker-safe-and-headphones">
+        <path name="headphones" />
+        <path name="speaker-safe" />
+    </path>
+
+    <path name="speaker-and-line">
+        <path name="speaker-and-headphones" />
+    </path>
+
+    <path name="speaker-and-headphones-liquid">
+        <path name="headphones" />
+        <path name="speaker" />
+    </path>
+
+    <path name="speaker-and-line-liquid">
+        <path name="speaker-and-headphones-liquid" />
+    </path>
+
+    <path name="usb-headphones">
+    </path>
+
+    <path name="usb-headset">
+    </path>
+
+    <path name="afe-proxy">
+    </path>
+
+    <path name="echo-ref-record">
+    </path>
+    <path name="usb-headset-mic">
+    </path>
+
+    <path name="display-port">
+    </path>
+
+    <path name="display-port1">
+    </path>
+
+    <path name="speaker-and-usb-headphones">
+        <path name="speaker" />
+        <path name="usb-headphones" />
+    </path>
+
+    <path name="speaker-safe-and-usb-headphones">
+        <path name="speaker-safe" />
+        <path name="usb-headphones" />
+    </path>
+
+    <path name="speaker-and-display-port">
+        <path name="speaker" />
+        <path name="display-port" />
+    </path>
+
+    <path name="speaker-and-display-port1">
+        <path name="speaker" />
+        <path name="display-port1" />
+    </path>
+
+    <path name="voice-rec-mic">
+        <path name="handset-mic" />
+    </path>
+
+    <path name="bt-sco">
+    </path>
+
+    <path name="bt-sco-mic">
+    </path>
+
+    <path name="bt-sco-wb">
+    </path>
+
+    <path name="bt-sco-mic-wb">
+    </path>
+
+    <path name="bt-sco-swb">
+    </path>
+
+    <path name="bt-sco-mic-swb">
+    </path>
+
+    <path name="bt-a2dp">
+    </path>
+
+    <path name="bt-a2dp-mic">
+    </path>
+
+    <path name="bt-ble">
+    </path>
+
+    <path name="bt-ble-mic">
+    </path>
+
+    <path name="camcorder-main-mic">
+        <path name="speaker-mic" />
+    </path>
+
+    <path name="camcorder-dual-mic">
+        <path name="speaker-dmic-endfire" />
+    </path>
+
+    <path name="camcorder-quad-mic">
+        <path name="speaker-qmic" />
+    </path>
+    <path name="voice-tty-full-headphones">
+        <path name="tty-headphones" />
+    </path>
+
+    <path name="voice-tty-full-headset">
+        <path name="tty-headphones" />
+    </path>
+
+    <path name="voice-tty-vco-headphones">
+        <path name="tty-headphones" />
+    </path>
+
+    <path name="voice-tty-vco-headset">
+        <path name="tty-headphones" />
+    </path>
+    <path name="voice-tty-hco-handset">
+        <path name="handset" />
+    </path>
+
+    <path name="voice-tty-hco-handset-hdk">
+        <path name="handset" />
+    </path>
+
+    <path name="unprocessed-handset-mic">
+        <path name="handset-mic" />
+    </path>
+
+    <path name="unprocessed-mic">
+        <path name="unprocessed-handset-mic" />
+    </path>
+
+    <path name="unprocessed-stereo-mic">
+        <path name="voice-rec-dmic-ef" />
+    </path>
+
+    <path name="unprocessed-three-mic">
+        <path name="three-mic" />
+    </path>
+
+    <path name="unprocessed-quad-mic">
+        <path name="quad-mic" />
+    </path>
+
+    <path name="unprocessed-headset-mic">
+        <path name="headset-mic" />
     </path>
 
 </mixer>

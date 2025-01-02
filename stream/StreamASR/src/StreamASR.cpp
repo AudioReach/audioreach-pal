@@ -404,7 +404,8 @@ pal_device_id_t StreamASR::GetAvailCaptureDevice()
 
 bool StreamASR::UseLpiCaptureProfile() {
 
-    if (outputConfig->output_mode == BUFFERED)
+    if (outputConfig->output_mode == BUFFERED ||
+        cmCfg->PartialModeInLpiSupported())
         return true;
 
     return false;

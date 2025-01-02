@@ -50,6 +50,8 @@ void ASRCommonConfig::HandleStartTag(const char* tag, const char** attribs __unu
                 partial_mode_input_buffer_size_ = std::stoi(attribs[++i]);
             } else if (!strcmp(attribs[i], "buffering_mode_out_buf_size")) {
                 buffering_mode_out_buffer_size_ = std::stoi(attribs[++i]);
+            } else if (!strcmp(attribs[i], "partial_mode_in_lpi")) {
+                partial_mode_in_lpi_ = !strcmp(attribs[++i], "true");
             } else {
                 PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[++i]);
             }
@@ -65,6 +67,7 @@ void ASRCommonConfig::HandleEndTag(struct xml_userdata *data, const char* tag_na
 }
 
 ASRCommonConfig::ASRCommonConfig():
+    partial_mode_in_lpi_(false),
     input_buffer_size_(0),
     partial_mode_input_buffer_size_(0),
     buffering_mode_out_buffer_size_(0)

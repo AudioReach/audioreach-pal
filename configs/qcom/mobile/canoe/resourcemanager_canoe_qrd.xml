@@ -1710,9 +1710,11 @@
                 <!-- ASR input DAM buffer size in millseconds for non-partial mode -->
                 <param asr_input_buffer_size="10000" />
                 <!-- ASR input DAM buffer size in millseconds for partial mode -->
-                <param asr_input_buffer_size_partial_mode="3000" />
+                <param asr_input_buffer_size_partial_mode="480" />
                 <!-- ASR output buffer size in bytes for continuous buffering mode -->
                 <param buffering_mode_out_buf_size="102400" />
+                <!-- Partial mode runs in NLPI by default, set this flag to run it in LPI -->
+                <param partial_mode_in_lpi="true"/>
             </common_config>
             <stream_config>
                 <name>QC_ASR</name>

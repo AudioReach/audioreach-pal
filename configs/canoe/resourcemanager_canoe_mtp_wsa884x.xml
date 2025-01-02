@@ -1701,8 +1701,6 @@
                 <param asr_input_buffer_size_partial_mode="3000" />
                 <!-- ASR output buffer size in bytes for continuous buffering mode -->
                 <param buffering_mode_out_buf_size="102400" />
-                <!-- ASR timeout in millseconds for no silence detection in command mode -->
-                <param command_mode_timeout="30000" />
             </common_config>
             <stream_config>
                 <name>QC_ASR</name>

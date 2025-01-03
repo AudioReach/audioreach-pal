@@ -1465,4 +1465,7 @@
         <path name="speaker-mono-2-ultrasound" />
     </path>
 
+    <path name="dummy-dev">
+    </path>
+
 </mixer>

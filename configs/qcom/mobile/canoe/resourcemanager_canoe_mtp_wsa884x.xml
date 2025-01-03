@@ -69,6 +69,7 @@
         </lpm_supported_streams>
     </config_lpm>
     <config_gapless key="gapless_supported" value="1"/>
+    <config_sound_dose key="sound_dose_enable" value ="false" />
     <bt_codecs>
         <codec codec_format="CODEC_TYPE_AAC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
         <codec codec_format="CODEC_TYPE_SBC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />

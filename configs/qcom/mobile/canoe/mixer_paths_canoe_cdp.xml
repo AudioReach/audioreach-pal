@@ -1231,4 +1231,6 @@
         <path name="ultrasound-handset-wsa" />
     </path>
 
+    <path name="dummy-dev">
+    </path>
 </mixer>

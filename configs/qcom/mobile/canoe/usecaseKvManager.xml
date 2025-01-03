@@ -603,6 +603,15 @@
                 <graph_kv key="0xE7010000" value="0xE7010002"/>
             </keys_and_values>
         </device>
+
+        <!-- SoundDose Device -->
+        <device id="PAL_DEVICE_OUT_SOUND_DOSE">
+            <keys_and_values>
+                <!-- DEVICERX - SOUNDDOSECOMPUTATION -->
+                <graph_kv key="0xA2000000" value="0xA2000012"/>
+            </keys_and_values>
+        </device>
+
         <!-- In Telephony RX Device -->
         <device id="PAL_DEVICE_IN_TELEPHONY_RX">
             <keys_and_values>

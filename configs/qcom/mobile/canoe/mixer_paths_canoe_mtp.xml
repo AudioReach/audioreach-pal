@@ -1190,4 +1190,7 @@
         <path name="headset-mic" />
     </path>
 
+    <path name="dummy-dev">
+    </path>
+
 </mixer>

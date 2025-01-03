@@ -1279,4 +1279,7 @@
         <path name="qmp1-normal" />
     </path>
 
+    <path name="dummy-dev">
+    </path>
+
 </mixer>

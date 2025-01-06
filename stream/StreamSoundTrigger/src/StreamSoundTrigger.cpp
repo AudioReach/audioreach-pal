@@ -103,6 +103,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     mutex_unlocked_after_cb_ = false;
     common_cp_update_disable_ = false;
     second_stage_processing_ = false;
+    is_abort_event_notifying_ = false;
     gsl_engine_model_ = nullptr;
     gsl_engine_ = nullptr;
     vui_intf_ = nullptr;
@@ -292,7 +293,10 @@ int32_t StreamSoundTrigger::close() {
 
     PAL_DBG(LOG_TAG, "Enter, stream direction %d", mStreamAttr->direction);
 
-    std::lock_guard<std::mutex> lck(mStreamMutex);
+    std::unique_lock<std::mutex> lck(mStreamMutex);
+    if (is_abort_event_notifying_)
+        abort_event_cond_.wait(lck);
+
     std::shared_ptr<StEventConfig> ev_cfg(new StUnloadEventConfig());
     status = cur_state_->ProcessEvent(ev_cfg);
 
@@ -1791,6 +1795,7 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
         if (callback_) {
             currentState = STREAM_STOPPED;
             PAL_INFO(LOG_TAG, "Notify abort event to client");
+            is_abort_event_notifying_ = true;
             mStreamMutex.unlock();
             /*
              * When handling concurrency, active stream mutex is locked,
@@ -1803,6 +1808,8 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
                        event_size, cookie_);
             rm->lockActiveStream();
             mStreamMutex.lock();
+            is_abort_event_notifying_ = false;
+            abort_event_cond_.notify_all();
         }
         free(phrase_rec_event);
         goto exit;

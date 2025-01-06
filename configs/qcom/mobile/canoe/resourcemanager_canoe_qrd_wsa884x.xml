@@ -1742,6 +1742,8 @@
                 <param mmap_frame_length="5" />
                 <!-- Move this flag to common_config if ACD/Sensor PCM Data support car mode in the future -->
                 <param transit_to_non_lpi_on_charging="false" />
+                <!-- whether concurrent detection is supported across different VoiceUI sessions(SVA/Hotword/MMA)-->
+                <param enable_inter_va_engine_concurrent_detection="true" />
             </config>
             <!-- Multiple stream_config tags can be listed, each with unique -->
             <!-- vendor_uuid. The below tag represents QC Voice UI sound model -->
@@ -1757,7 +1759,7 @@
                 <!--For now total 3 engines are supported, if more engine instances are needed,-->
                 <!-- do update acdb and usecaseKvManager.xml files by adding more instances    -->
                 <param pdk_first_stage_max_engine_count="1"/>
-                <param enable_concurrent_event_capture="true" />
+                <param enable_intra_va_engine_concurrent_detection="true" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->

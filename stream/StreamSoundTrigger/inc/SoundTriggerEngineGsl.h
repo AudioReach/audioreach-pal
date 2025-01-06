@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -134,6 +134,8 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     bool IsEngineActive();
     std::vector<StreamSoundTrigger *> GetBufferingStreams();
     void DetachStream(StreamSoundTrigger *s, bool erase_engine);
+    bool UpdateGlobalDetectionStatus(bool is_active);
+
     Session *session_;
     PayloadBuilder *builder_;
     st_module_type_t module_type_;
@@ -178,5 +180,9 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     std::shared_ptr<Device> rx_ec_dev_;
     std::recursive_mutex ec_ref_mutex_;
     StreamSoundTrigger* device_switch_stream_;
+
+    // for global concurrent detection check
+    static std::mutex global_det_mutex_;
+    static std::map<SoundTriggerEngineGsl*, int> eng_det_stat_map_;
 };
 #endif  // SOUNDTRIGGERENGINEGSL_H

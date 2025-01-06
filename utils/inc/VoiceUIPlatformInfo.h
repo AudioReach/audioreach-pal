@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -147,7 +147,7 @@ public:
     uint32_t GetOutChannels() const { return out_channels_; }
     uint32_t GetSupportedEngineCount() const {
                         return supported_first_stage_engine_count_; }
-    bool GetConcurrentEventCapture() const { return enable_concurrent_event_capture_; }
+    bool GetEnableIntraConcurrentDetection() const { return enable_intra_concurrent_detection_; }
     st_module_type_t GetVUIModuleType();
     std::shared_ptr<VUISecondStageConfig> GetVUISecondStageConfig(
         const listen_model_indicator_enum& sm_type) const;
@@ -183,7 +183,7 @@ private:
     uint32_t bit_width_;
     uint32_t out_channels_;
     uint32_t supported_first_stage_engine_count_;
-    bool enable_concurrent_event_capture_;
+    bool enable_intra_concurrent_detection_;
     st_op_modes_t vui_op_modes_;
     std::shared_ptr<SoundTriggerXml> curr_child_;
     std::map<uint32_t, std::shared_ptr<VUISecondStageConfig>> vui_2nd_stage_cfg_list_;
@@ -210,6 +210,7 @@ public:
     }
     bool GetMmapEnable() const { return mmap_enable_; }
     bool GetNotifySecondStageFailure() { return notify_second_stage_failure_; }
+    bool GetEnableInterConcurrentDetection() const { return enable_inter_concurrent_detection_; }
     uint32_t GetVersion() const { return vui_version_; }
     uint32_t GetMmapBufferDuration() const { return mmap_buffer_duration_; }
     uint32_t GetMmapFrameLength() const { return mmap_frame_length_; }
@@ -222,6 +223,7 @@ private:
     bool enable_failure_detection_;
     bool transit_to_non_lpi_on_charging_;
     bool notify_second_stage_failure_;
+    bool enable_inter_concurrent_detection_;
     bool mmap_enable_;
     uint32_t mmap_buffer_duration_;
     uint32_t mmap_frame_length_;

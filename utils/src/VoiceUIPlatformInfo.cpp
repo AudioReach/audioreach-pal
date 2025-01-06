@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -166,7 +166,7 @@ VUIStreamConfig::VUIStreamConfig() :
     client_capture_read_delay_(2000),
     pre_roll_duration_(0),
     supported_first_stage_engine_count_(1),
-    enable_concurrent_event_capture_(false),
+    enable_intra_concurrent_detection_(false),
     curr_child_(nullptr)
 {
     ext_det_prop_list_.clear();
@@ -320,8 +320,8 @@ void VUIStreamConfig::HandleStartTag(const char* tag, const char** attribs)
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "pdk_first_stage_max_engine_count")) {
                 supported_first_stage_engine_count_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "enable_concurrent_event_capture")) {
-                enable_concurrent_event_capture_ =
+            } else if (!strcmp(attribs[i], "enable_intra_va_engine_concurrent_detection")) {
+                enable_intra_concurrent_detection_ =
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "capture_keyword")) {
                 capture_keyword_ = std::stoi(attribs[++i]);
@@ -398,6 +398,7 @@ VoiceUIPlatformInfo::VoiceUIPlatformInfo() :
     enable_failure_detection_(false),
     transit_to_non_lpi_on_charging_(false),
     notify_second_stage_failure_(false),
+    enable_inter_concurrent_detection_(true),
     mmap_enable_(false),
     mmap_buffer_duration_(0),
     mmap_frame_length_(0),
@@ -474,6 +475,9 @@ void VoiceUIPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "notify_second_stage_failure")) {
                 notify_second_stage_failure_ =
+                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
+            } else if (!strcmp(attribs[i], "enable_inter_va_engine_concurrent_detection")) {
+                enable_inter_concurrent_detection_ =
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "mmap_enable")) {
                 mmap_enable_ =

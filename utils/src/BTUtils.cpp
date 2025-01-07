@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -2017,6 +2017,7 @@ void reconfigureScoStreams() {
     std::vector <pal_device *> palDevices;
     struct pal_device *dattr = nullptr;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    std::vector <Stream *> reconfigureStreams;
 
     scoDevs.push_back(PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET);
     scoDevs.push_back(PAL_DEVICE_OUT_BLUETOOTH_SCO);
@@ -2036,14 +2037,22 @@ void reconfigureScoStreams() {
         activeScoStreams.clear();
         rm->lockActiveStream();
         rm->getActiveStream_l(activeScoStreams, dev);
-        rm->unlockActiveStream();
         if (activeScoStreams.size() > 0) {
             for (sIter = activeScoStreams.begin();
                 sIter != activeScoStreams.end(); sIter++) {
+                status = rm->increaseStreamUserCounter(*sIter);
+                reconfigureStreams.push_back(*sIter);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,
+                            "Error incrementing the stream counter for the stream handle: %pK",
+                            *sIter);
+                    continue;
+                }
                 streamDevDisconnect.push_back({*sIter, devId});
                 streamDevConnect.push_back({*sIter, dattr});
             }
         }
+        rm->unlockActiveStream();
         dattr = nullptr;
     }
 
@@ -2053,6 +2062,20 @@ void reconfigureScoStreams() {
     if (status) {
         PAL_ERR(LOG_TAG, "streamDevSwitch failed %d", status);
     }
+    rm->lockActiveStream();
+    if (reconfigureStreams.size() > 0) {
+        for (sIter = reconfigureStreams.begin();
+            sIter != reconfigureStreams.end(); sIter++) {
+            status = rm->decreaseStreamUserCounter(*sIter);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,
+                        "Error decrementing the stream counter for the stream handle: %pK",
+                        *sIter);
+                continue;
+            }
+        }
+    }
+    rm->unlockActiveStream();
     for (auto dAttr : palDevices) free(dAttr);
 }
 

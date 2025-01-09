@@ -44,7 +44,6 @@ LOCAL_SHARED_LIBRARIES := \
     libar-pal \
     libexpat \
     libaudioroute \
-    libutilscallstack \
     libsession_ar
 
  ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)

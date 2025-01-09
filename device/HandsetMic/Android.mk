@@ -38,8 +38,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblx-osal \
     libar-pal \
-    libexpat \
-    libutilscallstack
+    libexpat
 
  ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
  LOCAL_SHARED_LIBRARIES += libqti-tinyalsa libqti-tinycompress

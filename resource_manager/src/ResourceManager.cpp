@@ -2579,6 +2579,11 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
         deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_LE;
         deviceattr->config.bit_width = BITWIDTH_24;
     }
+    if (deviceattr->id == PAL_DEVICE_NONE) {
+        PAL_DBG(LOG_TAG, "device none, no need to get instance");
+        goto exit;
+    }
+
     tempDevAttr.id = deviceattr->id;
     tempDev = Device::getInstance(&tempDevAttr, rm);
     if (!tempDev) {

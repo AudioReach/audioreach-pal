@@ -93,6 +93,10 @@ std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
         PAL_ERR(LOG_TAG, "Invalid input parameters");
         return NULL;
     }
+    if (device->id == PAL_DEVICE_NONE) {
+        PAL_DBG(LOG_TAG," Device None");
+        return nullptr;
+    }
 
     pm = PluginManager::getInstance();
     if (!pm) {

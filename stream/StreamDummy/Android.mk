@@ -37,7 +37,6 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-    libar-gsl \
     libsession_ar
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

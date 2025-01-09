@@ -27,7 +27,7 @@
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 * -->
 
@@ -1671,6 +1671,14 @@
                             <context id="0x08001339" /> <!-- AMBIENCE_NOISY_SFLUX -->
                             <context id="0x0800133A" /> <!-- AMBIENCE_SILENT_SFLUX -->
                             <context id="0x08001AE2" /> <!-- AMBIENCE_SPL_METER -->
+                        </contexts>
+                    </sound_model>
+                    <sound_model>
+                        <name>ACD_SOUND_MODEL_ID_CONVERSATION</name>
+                        <bin>conv_detection.eai</bin>
+                        <uuid>0x0B00100F</uuid>
+                        <contexts>
+                            <context id="0x08001AF2" /> <!-- EVENT_CONVERSATION -->
                         </contexts>
                     </sound_model>
                 </sound_model_info>

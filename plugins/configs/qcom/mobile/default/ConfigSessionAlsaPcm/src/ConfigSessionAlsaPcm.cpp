@@ -34,7 +34,15 @@
 
 #define LOG_TAG "PAL: libsession_pcm_config"
 
+#ifdef PAL_USE_SYSLOG
+#include <syslog.h>
+#define ALOGE(fmt, arg...) syslog (LOG_ERR, fmt, ##arg)
+#define ALOGI(fmt, arg...) syslog (LOG_INFO, fmt, ##arg)
+#define ALOGD(fmt, arg...) syslog (LOG_DEBUG, fmt, ##arg)
+#define ALOGV(fmt, arg...) syslog (LOG_NOTICE, fmt, ##arg)
+#else
 #include <log/log.h>
+#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1621,3 +1629,4 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
 
     return;
 }
+

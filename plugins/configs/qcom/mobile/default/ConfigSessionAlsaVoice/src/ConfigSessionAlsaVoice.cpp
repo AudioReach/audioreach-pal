@@ -35,11 +35,21 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #define LOG_TAG "PAL: libsession_voice_config"
 
+#ifdef PAL_USE_SYSLOG
+#include <syslog.h>
+#define ALOGE(fmt, arg...) syslog (LOG_ERR, fmt, ##arg)
+#define ALOGI(fmt, arg...) syslog (LOG_INFO, fmt, ##arg)
+#define ALOGD(fmt, arg...) syslog (LOG_DEBUG, fmt, ##arg)
+#define ALOGV(fmt, arg...) syslog (LOG_NOTICE, fmt, ##arg)
+#else
 #include <log/log.h>
+#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
+#endif
 #include <kvh2xml.h>
 #include "apm_api.h"
 #include "PluginManagerIntf.h"

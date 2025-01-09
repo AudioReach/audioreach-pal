@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: session_utils_config
+Description: session_utils_config library
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/session_utils_config

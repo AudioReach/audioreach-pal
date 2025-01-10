@@ -435,9 +435,9 @@ configure_pspfmfc:
             }
             if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY) {
                 status = configureMFC(rm, sAttr, dAttr, pcmDevIds,
-                txAifBackEnds[0].second.data());
+                txAifBackEnds[0].second.data(), builder);
                 if(status != 0) {
-                    PAL_ERR(LOG_TAG, "configure MFC failed");
+                    PAL_ERR(LOG_TAG, "build MFC payload failed");
                 }
             }
 set_mixer:
@@ -845,9 +845,17 @@ silence_ev_setup_done:
                 goto exit;
             }
             status = configureMFC(rm, sAttr, dAttr, pcmDevIds,
-                        rxAifBackEnds[i].second.data());
+                        rxAifBackEnds[i].second.data(), builder);
             if (status != 0) {
-                PAL_ERR(LOG_TAG, "configure MFC failed");
+                PAL_ERR(LOG_TAG, "build MFC payload failed");
+                goto exit;
+            }
+            builder->getCustomPayload(&payload, &payloadSize);
+            status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
+                                                         payload, payloadSize);
+            builder->freeCustomPayload();
+            if (status != 0) {
+                PAL_ERR(LOG_TAG, "setMixerParameter failed");
                 goto exit;
             }
             if ((rm->IsChargeConcurrencyEnabled()) &&
@@ -1094,9 +1102,9 @@ silence_ev_setup_done:
                 goto exit;
             }
             status = configureMFC(rm, sAttr, dAttr, pcmDevRxIds,
-                        rxAifBackEnds[0].second.data());
+                        rxAifBackEnds[0].second.data(), builder);
             if (status != 0) {
-                PAL_ERR(LOG_TAG, "configure MFC failed");
+                PAL_ERR(LOG_TAG, "build MFC payload failed");
                 goto exit;
             }
             builder->getCustomPayload(&payload, &payloadSize);

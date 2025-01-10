@@ -9,7 +9,8 @@
 #include "Stream.h"
 
 int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
-            struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf);
+            struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf,
+            PayloadBuilder* builder);
 int setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
                     struct pal_device &dAttr, const std::vector<int> &pcmDevIds);
 int32_t reconfigureInCallMusicStream(struct pal_media_config config, PayloadBuilder* builder);

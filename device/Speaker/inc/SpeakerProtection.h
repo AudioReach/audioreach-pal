@@ -92,6 +92,9 @@ class Device;
 #define CPS_WSA_VBATT_LOWER_THRESHOLD_1 168
 #define CPS_WSA_VBATT_LOWER_THRESHOLD_2 148
 
+/* For Stereo Channel Simple Spkr Amp: STEREO_SA_MODE */
+#define STEREO_SA_MODE 3
+
 typedef enum speaker_prot_cal_state {
     SPKR_NOT_CALIBRATED,     /* Speaker not calibrated  */
     SPKR_CALIBRATED,         /* Speaker calibrated  */
@@ -170,6 +173,7 @@ public:
     static std::mutex calibrationMutex;
     void spkrCalibrationThread();
     int getSpeakerTemperature(int spkr_pos);
+    int32_t getSpeakerTemperature();
     void spkrCalibrateWait();
     int spkrStartCalibration();
     void speakerProtectionInit();

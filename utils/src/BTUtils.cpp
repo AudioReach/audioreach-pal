@@ -2122,9 +2122,9 @@ int setBTParameter(uint32_t param_id, void *param_payload,
             }
 
             if (param_bt_sco->bt_sco_on) {
-                rm->lockResourceManagerMutex();
-                reconfigureScoStreams();
                 rm->unlockResourceManagerMutex();
+                reconfigureScoStreams();
+                rm->lockResourceManagerMutex();
             }
         }
         break;

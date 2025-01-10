@@ -110,9 +110,9 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
             PAL_DBG(LOG_TAG, "PAL_STREAM_ULTRASOUND or PAL_STREAM_LOOPBACK case.");
             if (sess) {
                 status = configureMFC(rmHandle,sAttr, dAttr, pcmDevIds,
-                                    aifBackEndsToConnect[0].second.data());
+                                    aifBackEndsToConnect[0].second.data(), builder);
                 if (status != 0) {
-                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                    PAL_ERR(LOG_TAG, "build MFC payload failed");
                     goto exit;
                 }
             } else {
@@ -133,8 +133,11 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
             if (sAttr.direction == PAL_AUDIO_OUTPUT) {
                 if (sess) {
                     status = configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
-                                        aifBackEndsToConnect[0].second.data());
-
+                                        aifBackEndsToConnect[0].second.data(), builder);
+                    if (status != 0) {
+                        PAL_ERR(LOG_TAG, "build MFC payload failed");
+                        goto exit;
+                    }
                     if (strcmp(dAttr.custom_config.custom_key, "mspp") &&
                         dAttr.id == PAL_DEVICE_OUT_SPEAKER &&
                         dAttr.config.ch_info.channels == 2 &&
@@ -150,37 +153,10 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
                                                         pcmDevIds.at(0), mixerHandle, builder,
                                                         aifBackEndsToConnect);
                         if (status != 0) {
-                            PAL_ERR(LOG_TAG,"handleDeviceRotation failed");
+                            PAL_ERR(LOG_TAG,"build DeviceRotation payload failed");
                             status = 0; //rotaton setting failed is not fatal.
-                            builder->getCustomPayload(&payload, &payloadSize);
-                            if (payload) {
-                                status = SessionAlsaUtils::setMixerParameter(mixerHandle,
-                                                                        pcmDevIds.at(0),
-                                                                        payload, payloadSize);
-                                builder->freeCustomPayload();
-                                payload = nullptr;
-                                payloadSize = 0;
-                                if (status != 0) {
-                                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                                    goto exit;
-                                }
-                            }
-                        }
-                    } else {
-                        builder->getCustomPayload(&payload, &payloadSize);
-                        if (payload) {
-                            status = SessionAlsaUtils::setMixerParameter(mixerHandle, pcmDevIds.at(0),
-                                                                    payload, payloadSize);
-                            builder->freeCustomPayload();
-                            payload = nullptr;
-                            payloadSize = 0;
-                            if (status != 0) {
-                                PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                                goto exit;
-                            }
                         }
                     }
-
                 } else {
                     PAL_ERR(LOG_TAG, "invalid session audio object");
                     status = -EINVAL;
@@ -200,9 +176,9 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
                 (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY)) {
                     if (sess) {
                         status = configureMFC(rmHandle, sAttr, dAttr, pcmDevIds,
-                                        aifBackEndsToConnect[0].second.data());
+                                        aifBackEndsToConnect[0].second.data(), builder);
                         if (status != 0) {
-                            PAL_ERR(LOG_TAG, "configureMFC failed");
+                            PAL_ERR(LOG_TAG, "build MFC payload failed");
                             goto exit;
                         }
                     } else {
@@ -214,6 +190,20 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
             }
         }
     }
+
+    builder->getCustomPayload(&payload, &payloadSize);
+    if (payload) {
+        status = SessionAlsaUtils::setMixerParameter(mixerHandle, pcmDevIds.at(0),
+                                payload, payloadSize);
+    }
+    builder->freeCustomPayload();
+    payload = NULL;
+    payloadSize = 0;
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "setMixerParameter failed");
+        goto exit;
+    }
+
 exit:
     if (builder) {
        delete builder;
@@ -225,7 +215,8 @@ exit:
 
 /* This is to set devicePP MFC(if exists) and PSPD MFC and stream MFC*/
 int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
-            struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf)
+            struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf,
+            PayloadBuilder* builder)
 {
     int status = 0;
     std::shared_ptr<Device> dev = nullptr;
@@ -233,7 +224,6 @@ int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_a
     size_t payloadSize = 0;
     struct pal_media_config codecConfig;
     struct sessionToPayloadParam mfcData;
-    PayloadBuilder* builder = new PayloadBuilder();
     uint32_t miid = 0;
     bool devicePPMFCSet =  true;
     struct mixer *mixer = nullptr;
@@ -241,8 +231,6 @@ int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_a
     std::shared_ptr<group_dev_config_t> groupDevConfig;
 
     PAL_DBG(LOG_TAG,"Enter");
-    // clear any cached custom payload
-    builder->freeCustomPayload();
 
     /* Prepare devicePP MFC payload */
     /* Try to set devicePP MFC for virtual port enabled device to match to DMA config */
@@ -387,25 +375,6 @@ int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_a
     }
 
 exit:
-    builder->getCustomPayload(&payload, &payloadSize);
-    if (payload) {
-        if (pcmDevIds.size() == 0) {
-            PAL_ERR(LOG_TAG, "frontendIDs is not available.");
-            status = -EINVAL;
-            builder->freeCustomPayload();
-            goto exit;
-        }
-        status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
-                                         payload, payloadSize);
-        builder->freeCustomPayload();
-        if (status != 0) {
-            PAL_ERR(LOG_TAG, "setMixerParameter failed");
-        }
-    }
-    if (builder) {
-        delete builder;
-        builder = nullptr;
-    }
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
 }

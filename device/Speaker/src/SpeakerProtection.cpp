@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -1072,6 +1072,49 @@ exit:
     return ret;
 }
 
+int32_t SpeakerProtection::getSpeakerTemperature()
+{
+    int ret;
+    struct mixer_ctl *trigger_temp_ctl;
+    struct mixer_ctl *temp_ctl;
+    int status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter Speaker Get Temperature");
+
+    trigger_temp_ctl = mixer_get_ctl_by_name(hwMixer, "SA1 Trigger Die Temperature");
+    if (!trigger_temp_ctl) {
+       PAL_ERR(LOG_TAG, "Invalid mixer control: SA1 Trigger Die Temperature");
+       return -ENOENT;
+    }
+
+    ret = mixer_ctl_set_value(trigger_temp_ctl, 0, 1);
+    if (ret) {
+         PAL_ERR(LOG_TAG, "Could not Enable ctl for mixer cmd - %s ret %d\n",
+                  "SA1 Trigger Die Temperature", ret);
+        return -EINVAL;
+    }
+
+    temp_ctl = mixer_get_ctl_by_name(hwMixer, "SA1 Die Temperature");
+    if (!temp_ctl) {
+       PAL_ERR(LOG_TAG, "Invalid mixer control: SA1 Die Temperature");
+       status = -EINVAL;
+       goto exit;
+    }
+
+    status = mixer_ctl_get_value(temp_ctl, 0);
+
+    PAL_DBG(LOG_TAG, "Exiting Speaker Get Temperature %d", status);
+exit:
+
+   ret = mixer_ctl_set_value(trigger_temp_ctl, 0, 0);
+   if (ret)
+      PAL_ERR(LOG_TAG, "Could not Disable ctl for mixer cmd - %s ret %d\n",
+         "SA1 Trigger Die Temperature", ret);
+
+    PAL_DBG(LOG_TAG, "Status : %d", status);
+    return status;
+}
+
 /**
   * This function sets the temperature of each speakers.
   * Currently values are supported like:
@@ -1084,6 +1127,13 @@ void SpeakerProtection::getSpeakerTemperatureList()
     int value;
     PAL_DBG(LOG_TAG, "Enter Speaker Get Temperature List");
 
+    if (rm->getCpsMode() == STEREO_SA_MODE) {
+       value = getSpeakerTemperature();
+       spkerTempList[0] = value;
+       spkerTempList[1] = value;
+       PAL_DBG(LOG_TAG, "Temperature %d ", value);
+       return;
+    }
     for(i = 0; i < numberOfChannels; i++) {
          value = getSpeakerTemperature(i);
          PAL_DBG(LOG_TAG, "Temperature %d ", value);
@@ -1962,6 +2012,7 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
         switch(rm->getCpsMode())
         {
             case 1:
+            case 3:
                 goto cps_dev_setup;
             case 2:
 

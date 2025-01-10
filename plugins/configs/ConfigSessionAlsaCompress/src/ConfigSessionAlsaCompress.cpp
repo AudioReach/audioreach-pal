@@ -257,9 +257,9 @@ int32_t compressPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 }
                 status = configureMFC(rm, sAttr, dAttr,
                                                 compressDevIds,
-                                                rxAifBackEnds[i].second.data());
+                                                rxAifBackEnds[i].second.data(), builder);
                 if (status != 0) {
-                    PAL_ERR(LOG_TAG, "configure MFC failed");
+                    PAL_ERR(LOG_TAG, "build MFC payload failed");
                     goto exit;
                 }
 
@@ -447,9 +447,9 @@ int32_t compressPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
             if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY)
             {
                 status = configureMFC(rm, sAttr, dAttr, compressDevIds,
-                txAifBackEnds[0].second.data());
+                txAifBackEnds[0].second.data(), builder);
                 if(status != 0) {
-                    PAL_ERR(LOG_TAG, "configure MFC failed");
+                    PAL_ERR(LOG_TAG, "build MFC payload failed");
                 }
             }
             builder->getCustomPayload(&payload, &payloadSize);

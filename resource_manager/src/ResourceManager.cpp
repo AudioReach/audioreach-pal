@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -925,15 +925,6 @@ ResourceManager::ResourceManager()
     ResourceManager::loadAdmLib();
     ResourceManager::initWakeLocks();
 
-    if (ResourceManager::isHapticsthroughWSA) {
-        ret = AudioHapticsInterface::init();
-        if (ret) {
-            throw std::runtime_error("Failed to parse hapticsconfig xml");
-        } else {
-            PAL_INFO(LOG_TAG, "hapticsconfig xml parsing successful");
-        }
-    }
-
     PAL_DBG(LOG_TAG, "Creating ContextManager");
     ctxMgr = new ContextManager();
     if (!ctxMgr) {
@@ -1746,6 +1737,32 @@ int ResourceManager::initContextManager()
     return ret;
 }
 
+int ResourceManager::initHapticsInterface()
+{
+    int ret = 0;
+    struct pal_device dattr;
+    std::shared_ptr<Device> dev = nullptr;
+
+    PAL_INFO(LOG_TAG," isHapticsthroughWSA: %s", isHapticsthroughWSA? "true":"false");
+    if (isHapticsthroughWSA) {
+        ret = AudioHapticsInterface::init();
+        if (ret) {
+            throw std::runtime_error("Failed to parse hapticsconfig xml");
+        } else {
+            PAL_INFO(LOG_TAG, "hapticsconfig xml parsing successful");
+        }
+        dattr.id = PAL_DEVICE_OUT_HAPTICS_DEVICE;
+        dev = Device::getInstance(&dattr , rm);
+        if (dev) {
+            PAL_DBG(LOG_TAG, "HapticsDev instance created");
+        }
+        else
+           PAL_INFO(LOG_TAG, "HapticsDev instance not created");
+    }
+
+    return ret;
+}
+
 void ResourceManager::deInitContextManager()
 {
     if (isContextManagerEnabled) {
@@ -1778,16 +1795,6 @@ int ResourceManager::init()
     }
     else
         PAL_DBG(LOG_TAG, "Speaker instance not created");
-
-    if (ResourceManager::isHapticsthroughWSA) {
-        dattr.id = PAL_DEVICE_OUT_HAPTICS_DEVICE;
-        dev = Device::getInstance(&dattr , rm);
-        if (dev) {
-            PAL_DBG(LOG_TAG, "HapticsDev instance created");
-        }
-        else
-           PAL_INFO(LOG_TAG, "HapticsDev instance not created");
-    }
 
     PAL_INFO(LOG_TAG, "Initialize Audio Feature Stats");
     AudioFeatureStatsInit();

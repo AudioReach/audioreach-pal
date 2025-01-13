@@ -153,6 +153,8 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
 
         //TODO: shift this to rm or somewhere else where we can read the supported config from xml
         palDevsAttr[count].id = dAttr[i].id;
+        palDevsAttr[count].addressV1 = dAttr[i].addressV1;
+
         if (palDevsAttr[count].id == PAL_DEVICE_OUT_USB_DEVICE ||
             palDevsAttr[count].id == PAL_DEVICE_OUT_USB_HEADSET ||
             palDevsAttr[count].id == PAL_DEVICE_IN_USB_DEVICE ||

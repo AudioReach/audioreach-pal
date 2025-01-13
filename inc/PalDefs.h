@@ -908,6 +908,45 @@ struct pal_vol_ctrl_ramp_param {
    uint32_t ramp_period_ms;
 };
 
+/* Payload For Custom Config
+ * Description : Used by PAL client to customize
+ *               the device related information.
+ */
+#define PAL_MAX_CUSTOM_KEY_SIZE 128
+typedef struct pal_device_custom_config {
+    char custom_key[PAL_MAX_CUSTOM_KEY_SIZE];
+} pal_device_custom_config_t;
+
+
+/**
+ * @brief Structure to hold various types of device addresses.
+ * ID, basically a string for custom type of address
+ * IEEE 802 MAC address (exactly 6 elements)
+ * IPv4 Address (exactly 4 elements)
+ * IPv6 Address (exactly 8 elements)
+ * PCI bus Address. Set for USB devices (exactly 2 elements)
+ */
+
+typedef union {
+    char id [128];
+    uint8_t mac[6];
+    uint8_t ipv4[4];
+    uint32_t ipv6[8];
+    uint32_t alsa[2];
+} pal_address_type_t;
+
+/**< PAL device */
+#define DEVICE_NAME_MAX_SIZE 128
+struct pal_device {
+    pal_device_id_t id;             /**<  device id */
+    struct pal_media_config config; /**<  media config of the device */
+    struct pal_usb_device_address address;
+    char sndDevName[DEVICE_NAME_MAX_SIZE];
+    pal_device_custom_config_t custom_config; /**<  Optional */
+    pal_address_type_t addressV1;
+};
+
+
 /* Payload For ID: PAL_PARAM_ID_DEVICE_CONNECTION
  * Description   : Device Connection
 */
@@ -915,6 +954,7 @@ typedef struct pal_param_device_connection {
     pal_device_id_t   id;
     bool              connection_state;
     pal_device_config_t device_config;
+    struct pal_device device; // intermediate remove once device_config instances are removed.
 } pal_param_device_connection_t;
 
 /* Payload For ID: PAL_PARAM_ID_GAIN_LVL_MAP
@@ -1152,14 +1192,7 @@ typedef struct pal_param_dtmf_gen_tone_cfg {
     int32_t  duration_ms;
 } pal_param_dtmf_gen_tone_cfg_t;
 
-/* Payload For Custom Config
- * Description : Used by PAL client to customize
- *               the device related information.
-*/
-#define PAL_MAX_CUSTOM_KEY_SIZE 128
-typedef struct pal_device_custom_config {
-    char custom_key[PAL_MAX_CUSTOM_KEY_SIZE];
-} pal_device_custom_config_t;
+
 
 typedef struct pal_bt_lc3_payload_s {
     bool isLC3MonoModeOn;

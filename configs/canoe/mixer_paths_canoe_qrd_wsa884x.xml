@@ -1223,7 +1223,7 @@
         <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
-    <path name="ultrasound-handset-wsa">
+    <path name="handset-wsa-ultrasound">
         <ctl name="WSA RX_MIX0 MUX" value="AIF_MIX1_PB" />
         <ctl name="WSA_RX0 MIX INP" value="RX_MIX0" />
         <ctl name="WSA_COMP1 Switch" value="1" />
@@ -1235,13 +1235,47 @@
         <ctl name="WSA_RX0 Digital Volume" value="50" />
     </path>
 
-    <path name="ultrasound-handset-wsa-vbat">
-        <path name="ultrasound-handset-wsa" />
+    <path name="handset-wsa-vbat-ultrasound">
+        <path name="handset-wsa-ultrasound" />
         <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
     </path>
 
+    <path name="speaker-mono-2-ultrasound">
+        <ctl name="WSA RX_MIX1 MUX" value="AIF_MIX1_PB" />
+        <ctl name="WSA_RX1 MIX INP" value="RX_MIX1" />
+        <ctl name="WSA_COMP2 Switch" value="1" />
+        <ctl name="Idle Detect" value="1" />
+        <ctl name="SpkrRight COMP Switch" value="1" />
+        <ctl name="SpkrRight VISENSE Switch" value="1" />
+        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
+        <ctl name="WSA PBR Enable" value="1" />
+    </path>
+
+    <path name="speaker-ultrasound">
+        <path name="handset-wsa-ultrasound" />
+        <path name="speaker-mono-2-ultrasound" />
+    </path>
+
     <path name="ultrasound-mic">
-        <path name="qmp3"/>
+        <ctl name="TX_SWR_DMIC Enable" value="1" />
+        <ctl name="TX DEC3 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
+        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
+        <path name="qmp2-normal" />
+    </path>
+
+    <path name="ultrasound-dmic">
+        <ctl name="TX_SWR_DMIC Enable" value="1" />
+        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+        <ctl name="TX DEC2 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX0" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
+        <ctl name="TX_AIF2_CAP Mixer DEC0" value="1" />
+        <ctl name="TX_AIF2_CAP Mixer DEC2" value="1" />
+        <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
+        <path name="qmp2-normal" />
+        <path name="qmp1-normal" />
     </path>
 
 </mixer>

@@ -851,12 +851,14 @@ silence_ev_setup_done:
                 goto exit;
             }
             builder->getCustomPayload(&payload, &payloadSize);
-            status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
-                                                         payload, payloadSize);
-            builder->freeCustomPayload();
-            if (status != 0) {
-                PAL_ERR(LOG_TAG, "setMixerParameter failed");
-                goto exit;
+            if (payload) {
+                status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
+                                                            payload, payloadSize);
+                builder->freeCustomPayload();
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                    goto exit;
+                }
             }
             if ((rm->IsChargeConcurrencyEnabled()) &&
                 (dAttr.id == PAL_DEVICE_OUT_SPEAKER)) {

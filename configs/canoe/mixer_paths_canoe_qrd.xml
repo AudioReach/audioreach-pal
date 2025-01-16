@@ -565,6 +565,17 @@
         <ctl name="AMIC3_MIXER Switch" value="1" />
     </path>
 
+    <path name="amic7">
+        <ctl name="TX DEC3 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX3" value="SWR_MIC4" />
+        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="ADC1 ChMap" value="SWRM_TX2_CH1" />
+        <ctl name="ADC1 MUX" value="CH1_AMIC1" />
+        <ctl name="TX0 MODE" value="ADC_LP" />
+        <ctl name="ADC1_MIXER Switch" value="1" />
+        <ctl name="AMIC1_MIXER Switch" value="1" />
+    </path>
+
     <path name="sidetone-iir">
         <ctl name="IIR0 Enable Band1" value="1" />
         <ctl name="IIR0 Enable Band2" value="1" />
@@ -647,6 +658,11 @@
 
     <path name="ultrasound-mic">
         <path name="amic6" />
+    </path>
+
+    <path name="ultrasound-mic">
+        <path name="amic6" />
+        <path name="amic7" />
     </path>
 
     <path name="headphones-and-haptics">
@@ -1415,13 +1431,25 @@
         <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
-    <path name="ultrasound-handset-wsa">
+    <path name="handset-wsa-ultrasound">
         <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
         <ctl name="SA1 Rx Channel Select" value="CH1" />
         <ctl name="SA1 OT23 Usage Mode" value="4" />
     </path>
 
-    <path name="ultrasound-handset-wsa-vbat">
-        <path name="ultrasound-handset-wsa" />
+    <path name="handset-wsa-vbat-ultrasound">
+        <path name="handset-wsa-ultrasound" />
     </path>
+
+    <path name="speaker-mono-2-ultrasound">
+        <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
+        <ctl name="SA1 Rx Channel Select" value="CH2" />
+        <ctl name="SA1 OT23 Usage Mode" value="0" />
+    </path>
+
+    <path name="speaker-ultrasound">
+        <path name="handset-wsa-ultrasound" />
+        <path name="speaker-mono-2-ultrasound" />
+    </path>
+
 </mixer>

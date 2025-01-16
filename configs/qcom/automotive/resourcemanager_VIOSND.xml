@@ -121,7 +121,7 @@
     </group_device_cfg>
     <config_max_sessions>
         <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
-        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="3" />
+        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="10" />
         <stream name="PAL_STREAM_COMPRESSED" max_size="10" />
         <stream name="PAL_STREAM_VOIP" max_size="8" />
         <stream name="PAL_STREAM_VOIP_RX" max_size="8" />

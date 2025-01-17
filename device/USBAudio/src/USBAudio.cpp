@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -1246,12 +1246,13 @@ int32_t USB::getDeviceConfig(struct pal_device *deviceattr,
     int32_t status = 0;
     struct pal_device_info devinfo = {};
 
-    if (!sAttr) {
+    if (!sAttr || !deviceattr) {
         PAL_ERR(LOG_TAG, "Invalid parameter.");
         return -EINVAL;
     }
+    bool isPlayback = deviceattr->id > PAL_DEVICE_OUT_MAX ? false : true;
     // config.ch_info memory is allocated in selectBestConfig below
-    status = this->selectBestConfig(deviceattr, sAttr, true, &devinfo);
+    status = this->selectBestConfig(deviceattr, sAttr, isPlayback, &devinfo);
     deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
     if (deviceattr->config.bit_width == BITWIDTH_24) {
         if (devinfo.bitFormatSupported == PAL_AUDIO_FMT_PCM_S24_LE)

@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -880,14 +880,21 @@ int32_t Stream::disconnectStreamDevice_l(Stream* streamHandle, pal_device_id_t d
                 rm->deregisterDevice(mDevices[i], this);
             }
 
-            if(mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER &&
-                     ResourceManager::IsSpeakerProtectionEnabled()) {
-               status = mDevices[i]->stop();
-               if (0 != status) {
-                   PAL_ERR(LOG_TAG, "device stop failed with status %d", status);
-                   rm->unlockGraph();
-                   goto exit;
-               }
+            bool isDeviceStopped = false;
+            if ((currentState != STREAM_INIT && currentState != STREAM_STOPPED) &&
+                mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER &&
+                ResourceManager::IsSpeakerProtectionEnabled()) {
+                /*
+                 * Special handling if speaker protection enabled to disable vi
+                 * feedback firstly before disconnecting session device to avoid
+                 * glitch in vi_tx.
+                 */
+                status = mDevices[i]->stop();
+                isDeviceStopped = true;
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "device stop failed with status %d", status);
+                    goto exit;
+                }
             }
 
             rm->lockGraph();
@@ -902,12 +909,12 @@ int32_t Stream::disconnectStreamDevice_l(Stream* streamHandle, pal_device_id_t d
              * hence stop A2DP/BLE device to match device start&stop count.
              */
 
-            if ((currentState != STREAM_INIT && currentState != STREAM_STOPPED) ||
+            if (((currentState != STREAM_INIT && currentState != STREAM_STOPPED) ||
                 ((currentState == STREAM_INIT || currentState == STREAM_STOPPED) &&
                 ((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) &&
-                 isMMap)) {
+                 isMMap)) && !isDeviceStopped) {
                 status = mDevices[i]->stop();
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "device stop failed with status %d", status);

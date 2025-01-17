@@ -412,7 +412,7 @@
         <in-device>
             <id>PAL_DEVICE_IN_WIRED_HEADSET</id>
             <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
-            <max_channels>1</max_channels>
+            <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>headset-mic</snd_device_name>
             <ec_enable>0</ec_enable>
@@ -422,6 +422,10 @@
             <usecase>
                 <name>PAL_STREAM_DEEP_BUFFER</name>
                 <ec_enable>1</ec_enable>
+                <custom-config key="headset-single-amic-dual-adc-hdr">
+                    <channels>2</channels>
+                    <snd_device_name>headset-single-amic-dual-adc-hdr</snd_device_name>
+                </custom-config>
             </usecase>
         <!--Uncomment these lines instead of above lines if needing to enable EC per custom key
             <usecase>
@@ -434,6 +438,10 @@
             <usecase>
                 <name>PAL_STREAM_COMPRESSED</name>
                 <ec_enable>1</ec_enable>
+                <custom-config key="headset-single-amic-dual-adc-hdr">
+                    <channels>2</channels>
+                    <snd_device_name>headset-single-amic-dual-adc-hdr</snd_device_name>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>

@@ -28,7 +28,7 @@
 *
 * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 *
-* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 *
 */
@@ -149,9 +149,8 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
                         pal_param_device_rotation_t rotation;
                         rotation.rotation_type = rmHandle->getOrientation() == ORIENTATION_270 ?
                                                 PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-                        status = handleDeviceRotation(rmHandle, streamHandle, rotation.rotation_type,
-                                                        pcmDevIds.at(0), mixerHandle, builder,
-                                                        aifBackEndsToConnect);
+                        status = sess->setParameters(streamHandle, PAL_PARAM_ID_DEVICE_ROTATION,
+                                                        &rotation);
                         if (status != 0) {
                             PAL_ERR(LOG_TAG,"build DeviceRotation payload failed");
                             status = 0; //rotaton setting failed is not fatal.

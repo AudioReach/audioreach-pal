@@ -683,8 +683,7 @@ int32_t SessionAgm::setCustomParam(custom_payload_uc_info_t* uc_info, std::strin
     int status = -EINVAL;
 
     if(param_str == PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG) {
-        pal_param_payload *payload = (pal_param_payload *)param_payload;
-        status = agm_session_set_params(sessionId, payload->payload, payload->payload_size);
+        status = agm_session_set_params(sessionId, param_payload, payload_size);
         if (0 != status)
             PAL_ERR(LOG_TAG,"setTagsWithModuleInfo Failed");
     }

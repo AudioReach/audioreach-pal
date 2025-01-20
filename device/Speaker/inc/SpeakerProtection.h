@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023, 2025, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -146,6 +146,7 @@ protected :
     static bool isSpkrInUse;
     static bool calThrdCreated;
     static bool isDynamicCalTriggered;
+    static bool viTxSetupThrdCreated;
     static struct timespec spkrLastTimeUsed;
     static struct mixer *virtMixer;
     static struct mixer *hwMixer;
@@ -162,11 +163,14 @@ protected :
     static int numberOfRequest;
     static struct pal_device_info vi_device;
     static struct pal_device_info cps_device;
+    void *viCustomPayload;
+    size_t viCustomPayloadSize;
 
 private :
 
 public:
     static std::thread mCalThread;
+    static std::thread viTxSetupThread;
     static std::condition_variable cv;
     static std::mutex cvMutex;
     std::mutex deviceMutex;
@@ -176,6 +180,7 @@ public:
     int32_t getSpeakerTemperature();
     void spkrCalibrateWait();
     int spkrStartCalibration();
+    int viTxSetupThreadLoop();
     void speakerProtectionInit();
     void speakerProtectionDeinit();
     void getSpeakerTemperatureList();
@@ -200,6 +205,7 @@ public:
     static void handleSPCallback (uint64_t hdl, uint32_t event_id, void *event_data,
                                   uint32_t event_size);
     void updateCpsCustomPayload(int miid);
+    int updateVICustomPayload(void *payload, size_t size);
     int getCpsDevNumber(std::string mixer);
     int32_t getCalibrationData(void **param);
     int32_t getFTMParameter(void **param);

@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -91,6 +91,8 @@ private:
 
     bool isCrrDevUsingExtEc;
     bool exitThread;
+    bool loggerModeEnabled;
+    uint32_t outputBufSize;
     uint32_t numOutput;
     uint32_t payloadSize;
     uint32_t outputToken;

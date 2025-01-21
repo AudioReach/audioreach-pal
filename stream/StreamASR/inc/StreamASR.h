@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -145,12 +145,12 @@ class StreamASR : public Stream {
     pal_device_id_t GetAvailCaptureDevice();
     std::shared_ptr<CaptureProfile> GetCurrentCaptureProfile();
 
-    int32_t GetCurrentStateId();
     void TransitTo(int32_t stateId);
     void GetUUID(class SoundTriggerUUID *uuid, const struct st_uuid *vendorUuid);
     void HandleEventData(struct pal_asr_event *event, size_t eventSize);
     void sendAbort();
     bool compareConfig(struct pal_asr_config *oldConfig, struct pal_asr_config *newConfig);
+    int32_t GetCurrentStateId();
     struct st_uuid GetVendorUuid() { return qcAsrUuid; }
     param_id_asr_config_t* GetSpeechConfig() { return recConfig;}
     param_id_asr_output_config_t* GetOutputConfig() { return outputConfig; }
@@ -405,14 +405,15 @@ class StreamASR : public Stream {
     std::shared_ptr<CaptureProfile> capProf;
     std::shared_ptr<ASREngine> engine;
 
+    bool paused;
+    bool deviceOpened;
+    uint64_t cookie;
+    std::map<uint32_t, ASRState*> asrStates;
     struct pal_asr_config *palRecConfig;
     param_id_asr_config_t *recConfig;
     param_id_asr_output_config_t *outputConfig;
     param_id_asr_input_threshold_t *inputConfig;
-    bool                  paused;
-    bool                  deviceOpened;
     pal_stream_callback callback;
-    uint64_t            cookie;
 
     ASRState *asrIdle;
     ASRState *asrLoaded;
@@ -423,7 +424,6 @@ class StreamASR : public Stream {
     ASRState *prevState;
     asrStateIdT stateToRestore;
 
-    std::map<uint32_t, ASRState*> asrStates;
     std::condition_variable cv;
     bool conc_notified_;
 };

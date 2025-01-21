@@ -737,6 +737,8 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     recConfig->enable_partial_transcription = asrRecCfg->enable_partial_transcription;
 
     outputConfig->output_mode  = asrRecCfg->outputBufferMode ? BUFFERED : NON_BUFFERED;
+    outputConfig->output_mode  = asrRecCfg->enable_logger_mode ? LOGGER :
+                                 outputConfig->output_mode;
     outputConfig->out_buf_size = cmCfg->GetOutputBufferSize(outputConfig->output_mode);
     outputConfig->num_bufs     = 2;
 
@@ -750,8 +752,8 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
         recConfig->threshold, recConfig->timeout_duration,
         recConfig->vad_hangover_duration, recConfig->enable_partial_transcription);
 
-    PAL_INFO(LOG_TAG, "Recieved output buffer mode : %d, sending output mode : %d",
-        asrRecCfg->outputBufferMode, outputConfig->output_mode);
+    PAL_INFO(LOG_TAG, "Recieved output buffer mode : %d, logger mode : %d, sending output mode : %d",
+        asrRecCfg->outputBufferMode, asrRecCfg->enable_logger_mode, outputConfig->output_mode);
 
     palRecConfig = (struct pal_asr_config *)calloc(1, sizeof(struct pal_asr_config));
     ar_mem_cpy(palRecConfig, sizeof(struct pal_asr_config), asrRecCfg, sizeof(struct pal_asr_config));

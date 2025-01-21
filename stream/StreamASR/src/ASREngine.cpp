@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -66,6 +66,8 @@ ASREngine::ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg)
 
     isCrrDevUsingExtEc = false;
     exitThread = false;
+    loggerModeEnabled = false;
+    outputBufSize = 0;
     ecRefCount = 0;
     devDisconnectCount = 0;
     numOutput = 0;
@@ -203,6 +205,25 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             break;
         }
         case ASR_FORCE_OUTPUT : {
+            if (loggerModeEnabled) {
+                /* In logger mode, HLOS will not get any event from DSP, HLOS need to
+                 * trigger a getParam to get the transcription, hence following dummy event
+                 * is pushed in the event queue, so that getParam and all other handling
+                 * can be leveraged by logger mode. Number of output is updated with 1,
+                 * and payloadSize with outputBufSize, as these will be used by payload
+                 * builder during getParam, as DSP will send payload of output buffer size,
+                 * which was used while setting up the usecase.
+                 */
+                event_id_asr_output_event_t *event = (event_id_asr_output_event_t *)
+                                     calloc(1, sizeof(event_id_asr_output_event_t));
+                event->output_token = 0;
+                event->num_outputs = 1;
+                event->payload_size = outputBufSize;
+                eventQ.push(event);
+                cv.notify_one();
+                goto exit;
+            }
+
             param_id_asr_force_output_t *param = (param_id_asr_force_output_t *)
                                     calloc(1, sizeof(param_id_asr_force_output_t));
             param->force_output = 1;
@@ -217,6 +238,8 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
                 PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
                 goto exit;
             }
+            loggerModeEnabled = opConfig->output_mode == LOGGER ? true : false;
+            outputBufSize = opConfig->out_buf_size;
             data = (uint8_t *)opConfig;
             dataSize = sizeof(param_id_asr_output_config_t);
             sesParamId = PAL_PARAM_ID_ASR_OUTPUT;
@@ -343,6 +366,7 @@ int32_t ASREngine::StopEngine(Stream *s)
         PAL_ERR(LOG_TAG, "Error: %d Failed to close session", status);
 
     engState = ASR_ENG_IDLE;
+    loggerModeEnabled = false;
 exit:
     PAL_DBG(LOG_TAG, "Exit, status = %d", status);
     return status;
@@ -354,13 +378,14 @@ void ASREngine::ParseEventAndNotifyStream() {
 
     int32_t status = 0;
     bool eventStatus = false;
-    void *payload = nullptr;
-    uint8_t *temp;
     size_t eventSize = 0;
-    event_id_asr_output_event_t *event;
-    asr_output_status_t *ev;
-    pal_asr_event *eventToStream;
-    StreamASR *sAsr;
+    void *payload = nullptr;
+    uint8_t *temp = nullptr;
+    event_id_asr_output_event_t *event = nullptr;
+    asr_output_status_t *ev = nullptr;
+    pal_asr_event *eventToStream = nullptr;
+    param_id_asr_output_t *eventHeader = nullptr;
+    StreamASR *sAsr = nullptr;
 
     event = (struct event_id_asr_output_event_t *)eventQ.front();
     if (event == nullptr) {
@@ -368,22 +393,17 @@ void ASREngine::ParseEventAndNotifyStream() {
         goto exit;
     }
 
-    PAL_INFO(LOG_TAG, "Output mode : %d, output token : %d, num output : %d, payload size : %d",
-            event->asr_out_mode, event->output_token, event->num_outputs, event->payload_size);
+    PAL_INFO(LOG_TAG, "Logger mode : %d, Output mode : %d, output token : %d, num output : %d, payload size : %d",
+            loggerModeEnabled, event->asr_out_mode, event->output_token, event->num_outputs, event->payload_size);
 
     if (event->num_outputs == 0) {
         PAL_ERR(LOG_TAG, "event raised without any transcript");
         goto exit;
     }
 
-    eventSize = sizeof(pal_asr_event) + event->num_outputs * sizeof(pal_asr_engine_event);
-    eventToStream = (pal_asr_event *)calloc(1, eventSize);
-    if (eventToStream == nullptr) {
-        PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!");
-        goto exit;
-    }
-
-    eventToStream->num_events = event->num_outputs;
+    /* Don't move following variable updates after the getParam, as these variables
+     * will be used by payload builder while handling the getParam.
+     */
     numOutput = event->num_outputs;
     outputToken = event->output_token;
     payloadSize = event->payload_size;
@@ -395,11 +415,25 @@ void ASREngine::ParseEventAndNotifyStream() {
         PAL_ERR(LOG_TAG, "Failed to get output payload");
         goto cleanup;
     }
+    numOutput = 0;
+    outputToken = 0;
+    payloadSize = 0;
 
     temp = (uint8_t *)payload;
+    eventHeader = (struct param_id_asr_output_t *)temp;
     ev = (asr_output_status_t *)(temp + sizeof(struct param_id_asr_output_t));
 
-    for (int i = 0; i < event->num_outputs; i++) {
+    eventSize = sizeof(pal_asr_event) + eventHeader->num_outputs *
+                sizeof(pal_asr_engine_event);
+    eventToStream = (pal_asr_event *)calloc(1, eventSize);
+    if (eventToStream == nullptr) {
+        PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!!");
+        goto cleanup;
+    }
+
+    eventToStream->num_events = eventHeader->num_outputs;
+
+    for (int i = 0; i < eventHeader->num_outputs; i++) {
         eventStatus = (ev[i].status == 0 ? true : false);
         if (!eventStatus) {
             PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
@@ -412,14 +446,10 @@ void ASREngine::ParseEventAndNotifyStream() {
             eventToStream->event[i].text[j] = ev[i].text[j];
     }
 
-
     eventToStream->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
 
     sAsr = dynamic_cast<StreamASR *>(streamHandle);
     sAsr->HandleEventData(eventToStream, eventSize);
-    numOutput = 0;
-    outputToken = 0;
-    payloadSize = 0;
 
 cleanup:
     if (eventToStream)
@@ -433,6 +463,8 @@ cleanup:
 
 exit:
     eventQ.pop();
+
+    PAL_DBG(LOG_TAG, "Exit.");
 }
 
 void ASREngine::EventProcessingThread(ASREngine *engine)

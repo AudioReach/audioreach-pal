@@ -1481,18 +1481,23 @@ struct pal_asr_config {
     bool enable_translation;                /**< translation switch enable/disable flag */
     bool enable_continuous_mode;            /**< continuous mode enable/disable flag */
     bool enable_partial_transcription;      /**< partial transcription switch enable/disable flag */
+    bool enable_logger_mode;                /**< Flag to enable/disable logger mode */
     uint32_t threshold;                     /**< Confidence threshold for ASR transcription */
-    uint32_t timeout_duration;              /**< ASR processing timeout, in milliseconds, if silence is not detected
-                                                 after the speech processing is started*/
-    uint32_t silence_detection_duration;    /**< "No speech" duration needed before determining speech has ended (in ms) */
+    uint32_t timeout_duration;              /**< ASR processing timeout, in milliseconds,
+                                                 if silence is not detected after the speech
+                                                 processing is started */
+    uint32_t silence_detection_duration;    /**< "No speech" duration needed before
+                                                 determining speech has ended (in ms) */
 
     bool outputBufferMode;                  /**< Buffer mode enable/disable */
     uint32_t data_size;                     /**< Additional Engine specific custom data size */
-    uint8_t data[];                         /**< custom data offset from the start of this structure */
+    uint8_t data[];                         /**< custom data offset from the start of this
+                                                 structure */
 };
 
 #define MAX_TRANSCRIPTION_CHAR_SIZE 1024
 #define MAX_JSON_CHAR_SIZE 4096
+
 struct pal_asr_engine_event {
     bool is_final;                          /**< Final transcription after end of speech is detected. */
     uint32_t confidence;                    /**< Confidence for the entire transcription */

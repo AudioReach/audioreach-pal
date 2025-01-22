@@ -28,7 +28,7 @@
 
 
 * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 * -->
 
@@ -1677,6 +1677,12 @@
                 <graph_kv key="0xA3000000" value="0xA3000002"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_VOIP_FLUENCE_SMECNS -->
                 <graph_kv key="0xAD000000" value="0xAD000007"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_VOICE_RECOGNITION">
+                <!-- DEVICETX - BT_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000002"/>
+                <!-- DEVICEPP_TX - DEVICEPP_TX_VOICE_RECOGNITION -->
+                <graph_kv key="0xAD000000" value="0xAD000017"/>
             </keys_and_values>
         </devicepp>
        <!-- IN Ultrasound DevicePPs -->

@@ -1,4 +1,5 @@
 /*
+/*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -99,7 +100,7 @@ StreamDummy::StreamDummy(const struct pal_stream_attributes *sattr, struct pal_d
              * plugin manager to open an AGM session.
              */
             status = pm->openPlugin(PAL_PLUGIN_MANAGER_SESSION,
-                                    "PAL_STREAM_DB", plugin);
+                                    "PAL_STREAM_DUMMY", plugin);
             if (plugin && !status) {
                 sessionCreate = reinterpret_cast<SessionCreate>(plugin);
                 session = sessionCreate(rm);

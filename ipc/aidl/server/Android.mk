@@ -12,6 +12,8 @@ LOCAL_CLANG             := true
 LOCAL_TIDY              := true
 LOCAL_CFLAGS            += -v -Wall -Wthread-safety
 
+LOCAL_VINTF_FRAGMENTS := Manifest_IPAL.xml
+
 LOCAL_SRC_FILES     :=  \
     Service.cpp \
     PalServerWrapper.cpp

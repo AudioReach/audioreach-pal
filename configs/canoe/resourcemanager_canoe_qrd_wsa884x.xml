@@ -1086,7 +1086,7 @@
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>1</haptics_protection_enabled>
+            <haptics_protection_enabled>0</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">

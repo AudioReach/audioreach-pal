@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -1584,9 +1584,9 @@ int32_t HapticsDevProtection::getAndsetVIScalingParameter(uint32_t pcmid, uint32
         PMICHapticsVIScaling(VIConf);
         VIscale = (wsa_haptics_ex_lra_param_t *) calloc(1, sizeof(wsa_haptics_ex_lra_param_t));
         memcpy(VIscale, VIConf, sizeof(wsa_haptics_ex_lra_param_t));
+        PAL_DBG(LOG_TAG,"updated Vsense_Scale %x, Isense_Scale %x",VIConf->vsens_scale_q24,
+                        VIConf->isens_scale_q24);
         free(payload);
-           PAL_DBG(LOG_TAG,"updated Vsense_Scale %x, Isense_Scale %x",VIConf->vsens_scale_q24,
-                                                VIConf->isens_scale_q24);
     }
 
 SetParam:

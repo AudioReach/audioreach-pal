@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -45,7 +45,9 @@
 #include "PalDefs.h"
 
 #ifdef __cplusplus
+#include <iomanip>
 #include <map>
+#include <sstream>
 #include <string>
 
 static const std::map<std::string, pal_audio_fmt_t> PalAudioFormatMap
@@ -288,6 +290,84 @@ const std::map<uint32_t, std::string> hapticsLUT {
     {PAL_STREAM_HAPTICS_TOUCH,        std::string{ "PAL_STREAM_HAPTICS_TOUCH" } },
     {PAL_STREAM_HAPTICS_RINGTONE,     std::string{ "PAL_STREAM_HAPTICS_RINGTONE" } },
 };
+
+enum class PalAddressTag { ID, MAC, IPv4, IPv6, ALSA };
+
+static PalAddressTag getAddressTag(const pal_device_id_t deviceId) {
+    // don't have cases for ipv4/ ipv6 devices, add once have exact usecases.
+    switch (deviceId) {
+        case PAL_DEVICE_OUT_USB_DEVICE:
+        case PAL_DEVICE_OUT_USB_HEADSET:
+        case PAL_DEVICE_IN_USB_ACCESSORY:
+        case PAL_DEVICE_IN_USB_DEVICE:
+        case PAL_DEVICE_IN_USB_HEADSET:
+            return PalAddressTag::ALSA;
+        case PAL_DEVICE_OUT_BLUETOOTH_SCO:
+        case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
+        case PAL_DEVICE_OUT_HEARING_AID:
+        case PAL_DEVICE_OUT_BLUETOOTH_BLE:
+        case PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST:
+        case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
+        case PAL_DEVICE_IN_BLUETOOTH_A2DP:
+        case PAL_DEVICE_IN_BLUETOOTH_BLE:
+            return PalAddressTag::MAC;
+        default:
+            return PalAddressTag::ID;
+    }
+}
+
+static std::string toString(const pal_device* device) {
+    std::ostringstream oss;
+    auto tag = getAddressTag(device->id);
+    if (deviceNameLUT.find(device->id) != deviceNameLUT.end()) {
+        oss << " " << deviceNameLUT.at(device->id);
+    } else {
+        oss << " Unknown Device";
+        return oss.str();
+    }
+
+    oss << " Address ( ";
+    switch (tag) {
+        case PalAddressTag::ID:
+            oss << "id: " << device->addressV1.id;
+            break;
+        case PalAddressTag::MAC:
+            oss << "mac: ";
+            for (int i = 0; i < 6; ++i) {
+                oss << std::hex << std::setw(2) << std::setfill('0')
+                    << static_cast<int>(device->addressV1.mac[i]);
+                if (i < 5) oss << ":";
+            }
+            oss << std::dec;
+            break;
+        case PalAddressTag::IPv4:
+            oss << " ipv4: ";
+            for (int i = 0; i < 4; ++i) {
+                oss << static_cast<int>(device->addressV1.ipv4[i]);
+                if (i < 3) oss << ".";
+            }
+
+            break;
+        case PalAddressTag::IPv6:
+            oss << " ipv6: ";
+            for (int i = 0; i < 8; ++i) {
+                oss << std::hex << device->addressV1.ipv6[i];
+                if (i < 7) oss << ":";
+            }
+            oss << std::dec;
+            break;
+        case PalAddressTag::ALSA:
+            oss << " alsa: ";
+            for (int i = 0; i < 2; ++i) {
+                oss << device->addressV1.alsa[i];
+                if (i < 1) oss << ":";
+            }
+            break;
+    }
+
+    oss << ")";
+    return oss.str();
+}
 
 #endif
 #endif /*PAL_MAPPINGS_H*/

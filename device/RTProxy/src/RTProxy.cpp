@@ -51,6 +51,7 @@ extern "C" void CreateRTProxyDevice(struct pal_device *device,
         switch (device->id) {
             case PAL_DEVICE_OUT_PROXY:
             case PAL_DEVICE_OUT_RECORD_PROXY:
+            case PAL_DEVICE_OUT_HEARING_AID:
                 *dev = RTProxyOut::getInstance(device, rm);
                 break;
             case PAL_DEVICE_IN_PROXY:
@@ -62,6 +63,7 @@ extern "C" void CreateRTProxyDevice(struct pal_device *device,
         switch (id) {
             case PAL_DEVICE_OUT_PROXY:
             case PAL_DEVICE_OUT_RECORD_PROXY:
+            case PAL_DEVICE_OUT_HEARING_AID:
                 *dev = RTProxyOut::getObject(id);
                 break;
             case PAL_DEVICE_IN_PROXY:

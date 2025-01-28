@@ -25,6 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef HEADPHONE_H
@@ -32,6 +36,9 @@
 
 #include "Device.h"
 #include "PalAudioRoute.h"
+
+#include "SoundDoseUtility.h"
+
 
 extern "C" void CreateHeadphoneDevice(struct pal_device *device,
                                         const std::shared_ptr<ResourceManager> rm,
@@ -55,7 +62,14 @@ public:
                             struct pal_stream_attributes *sAttr) override;
     bool isPluginPlaybackDevice(pal_device_id_t id) override { return true; }
     static std::shared_ptr<Device> getObject(pal_device_id_t id);
+    int start() override;
+    int stop() override;
+
     virtual ~Headphone();
+
+private:
+    std::unique_ptr<SoundDoseUtility> mSoundDose;
+
 };
 
 

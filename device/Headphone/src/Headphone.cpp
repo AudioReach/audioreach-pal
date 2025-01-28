@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: Headphone"
@@ -68,12 +73,12 @@ std::shared_ptr<Device> Headphone::getObject(pal_device_id_t id)
 Headphone::Headphone(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)
 {
-
+    mSoundDose = std::make_unique<SoundDoseUtility>(this, *device);
 }
 
 Headphone::~Headphone()
 {
-PAL_ERR(LOG_TAG, "dtor called");
+    PAL_DBG(LOG_TAG, "destructor called");
 }
 
 int32_t Headphone::isSampleRateSupported(uint32_t sampleRate)
@@ -180,5 +185,37 @@ int32_t Headphone::getDeviceConfig(struct pal_device *deviceattr,
         PAL_ERR(LOG_TAG, "failed to update samplerate/bitwidth");
         status = -EINVAL;
     }
+    return status;
+}
+
+int Headphone::start() {
+    int status = 0;
+
+    mDeviceMutex.lock();
+
+    // start computation for first start instance
+    if (deviceStartStopCount == 0) {
+        mSoundDose->startComputation();
+    }
+
+    status = start_l();
+    mDeviceMutex.unlock();
+
+    return status;
+}
+
+int Headphone::stop() {
+    int status = 0;
+
+    mDeviceMutex.lock();
+
+    // stop computation only when 1 instance is left
+    if (deviceStartStopCount == 1) {
+        mSoundDose->stopComputation();
+    }
+
+    status = stop_l();
+    mDeviceMutex.unlock();
+
     return status;
 }

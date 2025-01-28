@@ -553,6 +553,7 @@ int handleBTDeviceConnectionChange(pal_param_device_connection_t connection_stat
     bool device_available = rm->isDeviceAvailable(device_id);
     struct pal_device dAttr;
     struct pal_device conn_device;
+    pal_address_type_t deviceAddress = connection_state.device.addressV1;
     std::shared_ptr<Device> dev = nullptr;
     struct pal_device_info devinfo = {};
     int32_t scoCount = is_connected ? 1 : -1;
@@ -576,6 +577,7 @@ int handleBTDeviceConnectionChange(pal_param_device_connection_t connection_stat
         device_id == PAL_DEVICE_IN_BLUETOOTH_BLE ||
         rm->isBtScoDevice(device_id)) {
         dAttr.id = device_id;
+        dAttr.addressV1 = deviceAddress;
         /* Stream type is irrelevant here as we need device num channels
            which is independent of stype for BT devices */
         status = rm->getDeviceConfig(&dAttr, NULL);
@@ -597,6 +599,7 @@ int handleBTDeviceConnectionChange(pal_param_device_connection_t connection_stat
     if (is_connected && !device_available) {
         if (!dev) {
             dAttr.id = device_id;
+            dAttr.addressV1 = deviceAddress;
             dev = Device::getInstance(&dAttr, rm);
             if (!dev)
                 PAL_ERR(LOG_TAG, "get dev instance for %d failed", device_id);
@@ -615,6 +618,7 @@ int handleBTDeviceConnectionChange(pal_param_device_connection_t connection_stat
                 PAL_INFO(LOG_TAG, "found device id 0x%x in avail_device",
                                         device_id);
                 conn_device.id = device_id;
+                conn_device.addressV1 = deviceAddress;
                 dev = Device::getInstance(&conn_device, rm);
                 if (!dev) {
                     PAL_ERR(LOG_TAG, "Device getInstance failed");

@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -72,6 +72,8 @@
 #include <vector>
 #include <system/audio.h>
 #include <map>
+
+#include "SoundDoseUtility.h"
 
 #define USB_BUFF_SIZE           4096
 #define CHANNEL_NUMBER_STR      "Channels: "
@@ -178,7 +180,8 @@ protected:
     USB(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
     static int usb_vendor_id_ckv_;
 public:
-    int start();
+    int start() override;
+    int stop() override;
     int init(pal_param_device_connection_t device_conn);
     int deinit(pal_param_device_connection_t device_conn);
     int getDefaultConfig(pal_param_device_capability_t capability);
@@ -205,6 +208,9 @@ public:
     bool isPluginPlaybackDevice(pal_device_id_t id) override;
     static std::shared_ptr<Device> getObject(pal_device_id_t id);
     ~USB();
+
+  private:
+    std::unique_ptr<SoundDoseUtility> mSoundDose;
 };
 
 

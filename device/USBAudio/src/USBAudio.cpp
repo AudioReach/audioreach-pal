@@ -134,7 +134,7 @@ std::shared_ptr<Device> USB::getObject(pal_device_id_t id)
 USB::USB(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)
 {
-
+    mSoundDose = std::make_unique<SoundDoseUtility>(this, *device);
 }
 
 USB::~USB()
@@ -158,7 +158,32 @@ int USB::start()
         return status;
     }
 
-    status = Device::start();
+    mDeviceMutex.lock();
+
+    // start computation for first start instance
+    if (deviceStartStopCount == 0) {
+        mSoundDose->startComputation();
+    }
+
+    status = start_l();
+    mDeviceMutex.unlock();
+    return status;
+}
+
+int USB::stop()
+{
+    int status = 0;
+
+    mDeviceMutex.lock();
+
+    // stop computation only when 1 instance is left
+    if (deviceStartStopCount == 1) {
+        mSoundDose->stopComputation();
+    }
+
+    status = stop_l();
+    mDeviceMutex.unlock();
+
     return status;
 }
 

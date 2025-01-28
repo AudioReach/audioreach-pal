@@ -474,6 +474,7 @@ bool ResourceManager::isHapticsProtectionEnabled = false;
 bool ResourceManager::isChargeConcurrencyEnabled = false;
 bool ResourceManager::isSoundDoseEnabled = false;
 int ResourceManager::cpsMode = 0;
+int ResourceManager::wsaUsed = 0;
 bool ResourceManager::isVbatEnabled = false;
 static int max_nt_sessions;
 bool ResourceManager::isRasEnabled = false;
@@ -8864,6 +8865,8 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
                 deviceInfo[size].is32BitSupported = true;
         } else if (!strcmp(tag_name, "cps_mode")) {
             cpsMode = atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "wsa_used")) {
+            wsaUsed = atoi(data->data_buf);
         } else if (!strcmp(tag_name, "supported_bit_format")) {
             size = deviceInfo.size() - 1;
             if(!strcmp(data->data_buf, "PAL_AUDIO_FMT_PCM_S24_3LE"))
@@ -10025,6 +10028,10 @@ int ResourceManager::SilenceDetectionDuration() {
 
 int ResourceManager::getCpsMode() {
     return ResourceManager::cpsMode;
+}
+
+int ResourceManager::getWsaUsed() {
+    return ResourceManager::wsaUsed;
 }
 
 int ResourceManager::getSpQuickCalTime() {

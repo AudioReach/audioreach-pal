@@ -4832,6 +4832,11 @@ void ResourceManager::checkAndSetDutyCycleParam()
     }
 }
 
+void ResourceManager::registerGlobalCallback(pal_global_callback cb, uint64_t cookie) {
+    this->globalCb = cb;
+    this->cookie = cookie;
+}
+
 std::shared_ptr<ResourceManager> ResourceManager::getInstance()
 {
     if(!rm) {

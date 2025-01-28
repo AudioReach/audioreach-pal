@@ -1560,8 +1560,7 @@ int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie)
     kpiEnqueue(__func__, true);
 #endif
     if (cb != NULL) {
-        rm->globalCb = cb;
-        rm->cookie = cookie;
+        rm->registerGlobalCallback(cb, cookie);
     }
     PAL_DBG(LOG_TAG, "Exit");
 #ifndef PAL_MEMLOG_UNSUPPORTED

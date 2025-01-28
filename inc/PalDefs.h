@@ -1229,7 +1229,7 @@ enum BeCtrlsIndex {
 
 /** payload for Sound Dose Info */
 typedef struct pal_sound_dose_info {
-    pal_device_id_t id;                     /**<  device id */
+    struct pal_device device;
     uint32_t is_momentary_exposure_warning;
     uint32_t num_mel_values;
     float mel_values[PAL_MAX_SOUND_DOSE_VALUES];

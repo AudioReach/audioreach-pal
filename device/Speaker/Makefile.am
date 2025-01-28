@@ -16,7 +16,11 @@ AM_CPPFLAGS += -I ../../resource_manager/inc
 AM_CPPFLAGS += -I ../../context_manager/inc
 
 dev_speaker_sources = ./src/Speaker.cpp \
-                      ./src/SpeakerProtection.cpp
+                      ./src/SpeakerProtection.cpp \
+                      ./src/SpeakerProtectionwsa883x.cpp \
+                      ./src/SpeakerProtectionwsa884x.cpp \
+                      ./src/SpeakerProtectionwsa885x.cpp \
+                      ./src/SpeakerProtectionwsa885xI2s.cpp
 else
 AM_CPPFLAGS := -I $(top_srcdir)/device/Speaker/inc
 AM_CPPFLAGS += -I $(top_srcdir)/inc
@@ -36,7 +40,11 @@ AM_CPPFLAGS += @AROUTE_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 
 dev_speaker_sources = $(top_srcdir)/device/Speaker/src/Speaker.cpp \
-                      $(top_srcdir)/device/Speaker/src/SpeakerProtection.cpp
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtection.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa883x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa884x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa885x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa885xI2s.cpp
 endif
 
 

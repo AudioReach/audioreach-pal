@@ -75,6 +75,53 @@
 #include<vector>
 #include "apm_api.h"
 
+#ifndef PAL_SP_TEMP_PATH
+#define PAL_SP_TEMP_PATH "/data/misc/audio/audio.cal"
+#endif
+#define FEEDBACK_MONO_1 "-mono-1"
+
+#define MIN_SPKR_IDLE_SEC (60 * 3)
+#define WAKEUP_MIN_IDLE_CHECK (1000 * 30)
+
+#define SPKR_RIGHT_WSA_TEMP "SpkrRight WSA Temp"
+#define SPKR_LEFT_WSA_TEMP "SpkrLeft WSA Temp"
+
+#define SPKR_RIGHT_WSA_DEV_NUM "SpkrRight WSA Get DevNum"
+#define SPKR_LEFT_WSA_DEV_NUM "SpkrLeft WSA Get DevNum"
+
+#define SPKR_RIGHT_WSA_DC_DET "SpkrRight WSA PA Disable"
+#define SPKR_LEFT_WSA_DC_DET "SpkrLeft WSA PA Disable"
+
+#define TZ_TEMP_MIN_THRESHOLD    (-30)
+#define TZ_TEMP_MAX_THRESHOLD    (80)
+
+/*Set safe temp value to 40C*/
+#define SAFE_SPKR_TEMP 40
+#define SAFE_SPKR_TEMP_Q6 (SAFE_SPKR_TEMP * (1 << 6))
+
+#define MIN_RESISTANCE_SPKR_Q24 (7 * (1 << 24))
+
+#define DEFAULT_PERIOD_SIZE 256
+#define DEFAULT_PERIOD_COUNT 4
+
+//TODO : remove this and add proper file
+//#define EVENT_ID_VI_CALIBRATION 0x08001511
+
+#define NORMAL_MODE 0
+#define CALIBRATION_MODE 1
+#define FACTORY_TEST_MODE 2
+#define V_VALIDATION_MODE 3
+
+#define CALIBRATION_STATUS_SUCCESS 4
+#define CALIBRATION_STATUS_FAILURE 5
+#define CALIBRATION_STATUS_IVLOW 7
+
+#define MAX_RETRY 3
+#define WSA883X 1
+#define WSA884X 2
+#define WSA885X 3
+#define WSA885X_I2S 4
+
 class Device;
 
 #ifdef WSA_V883X_ADDR
@@ -146,7 +193,6 @@ protected :
     static bool isSpkrInUse;
     static bool calThrdCreated;
     static bool isDynamicCalTriggered;
-    static bool viTxSetupThrdCreated;
     static struct timespec spkrLastTimeUsed;
     static struct mixer *virtMixer;
     static struct mixer *hwMixer;
@@ -170,17 +216,13 @@ private :
 
 public:
     static std::thread mCalThread;
-    static std::thread viTxSetupThread;
     static std::condition_variable cv;
     static std::mutex cvMutex;
-    std::mutex deviceMutex;
     static std::mutex calibrationMutex;
     void spkrCalibrationThread();
-    int getSpeakerTemperature(int spkr_pos);
-    int32_t getSpeakerTemperature();
+    virtual int getSpeakerTemperature(int spkr_pos);
     void spkrCalibrateWait();
-    int spkrStartCalibration();
-    int viTxSetupThreadLoop();
+    virtual int spkrStartCalibration() {return 0;};
     void speakerProtectionInit();
     void speakerProtectionDeinit();
     void getSpeakerTemperatureList();
@@ -190,7 +232,8 @@ public:
 
     SpeakerProtection(struct pal_device *device,
                       std::shared_ptr<ResourceManager> Rm);
-    ~SpeakerProtection();
+    SpeakerProtection();
+    virtual ~SpeakerProtection();
 
     int32_t start();
     int32_t stop();
@@ -198,15 +241,13 @@ public:
     int32_t setParameter(uint32_t param_id, void *param) override;
     int32_t getParameter(uint32_t param_id, void **param) override;
 
-    int32_t spkrProtProcessingMode(bool flag);
+    virtual int32_t spkrProtProcessingMode(bool flag){return 0;};
     int speakerProtectionDynamicCal();
     void updateSPcustomPayload();
     static int32_t spkrProtSetR0T0Value(vi_r0t0_cfg_t r0t0Array[]);
     static void handleSPCallback (uint64_t hdl, uint32_t event_id, void *event_data,
                                   uint32_t event_size);
-    void updateCpsCustomPayload(int miid);
     int updateVICustomPayload(void *payload, size_t size);
-    int getCpsDevNumber(std::string mixer);
     int32_t getCalibrationData(void **param);
     int32_t getFTMParameter(void **param);
     void disconnectFeandBe(std::vector<int> pcmDevIds, std::string backEndName);

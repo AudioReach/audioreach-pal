@@ -25,11 +25,16 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: Speaker"
 #include "Speaker.h"
 #include "ResourceManager.h"
+#include "SpeakerProtectionwsa88xx.h"
 #include "SpeakerProtection.h"
 #include "Device.h"
 #include "kvh2xml.h"
@@ -58,10 +63,26 @@ std::shared_ptr<Device> Speaker::getInstance(struct pal_device *device,
 {
     if (!obj) {
         if (ResourceManager::IsSpeakerProtectionEnabled()) {
-            std::shared_ptr<Device> sp(new SpeakerProtection(device, Rm));
+            std::shared_ptr<Device> sp;
+            switch (Rm->getWsaUsed()) {
+                case WSA883X:
+                    sp = std::make_shared<SpeakerProtectionwsa883x>(device, Rm);
+                    break;
+                case WSA884X:
+                    sp = std::make_shared<SpeakerProtectionwsa884x>(device, Rm);
+                    break;
+                case WSA885X:
+                    sp = std::make_shared<SpeakerProtectionwsa885x>(device, Rm);
+                    break;
+                case WSA885X_I2S:
+                    sp = std::make_shared<SpeakerProtectionwsa885xI2s>(device, Rm);
+                    break;
+                default:
+                    PAL_ERR(LOG_TAG, "Wrong CPS mode set in RM XML");
+                    return nullptr;
+            }
             obj = sp;
-        }
-        else {
+        } else {
             std::shared_ptr<Device> sp(new Speaker(device, Rm));
             obj = sp;
         }

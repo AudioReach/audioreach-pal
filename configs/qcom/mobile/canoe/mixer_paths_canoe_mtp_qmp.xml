@@ -1020,14 +1020,18 @@
         <ctl name="SA1 OT23 Usage Mode" value="8" />
     </path>
 
-    <path name="ultrasound-handset-wsa">
+    <path name="handset">
+        <path name="handset-wsa" />
+    </path>
+
+    <path name="handset-wsa-ultrasound">
         <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
         <ctl name="SA1 Rx Channel Select" value="CH1" />
         <ctl name="SA1 OT23 Usage Mode" value="4" />
     </path>
 
-    <path name="ultrasound-handset-wsa-vbat">
-        <path name="ultrasound-handset-wsa" />
+    <path name="handset-wsa-vbat-ultrasound">
+        <path name="handset-wsa-ultrasound" />
     </path>
 
     <path name="ultrasound-mic">

@@ -964,7 +964,11 @@
         <ctl name="WSA_RX0 Digital Volume" value="70" />
     </path>
 
-    <path name="ultrasound-handset-wsa">
+    <path name="handset">
+        <path name="handset-wsa" />
+    </path>
+
+    <path name="handset-wsa-ultrasound">
         <ctl name="WSA RX_MIX0 MUX" value="AIF_MIX1_PB" />
         <ctl name="WSA_RX0 MIX INP" value="RX_MIX0" />
         <ctl name="WSA_COMP1 Switch" value="1" />
@@ -976,8 +980,8 @@
         <ctl name="WSA_RX0 Digital Volume" value="50" />
     </path>
 
-    <path name="ultrasound-handset-wsa-vbat">
-        <path name="ultrasound-handset-wsa" />
+    <path name="handset-wsa-vbat-ultrasound">
+        <path name="handset-wsa-ultrasound" />
         <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
     </path>
 
@@ -993,7 +997,7 @@
     </path>
 
     <path name="speaker-ultrasound">
-        <path name="ultrasound-handset-wsa" />
+        <path name="handset-wsa-ultrasound" />
         <path name="speaker-mono-2-ultrasound" />
     </path>
 

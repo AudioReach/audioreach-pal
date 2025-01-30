@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -158,9 +158,6 @@ StreamASR::~StreamASR()
     rm->resetStreamInstanceID(this, mInstanceID);
 
     rm->deregisterStream(this);
-    if (mStreamAttr) {
-        free(mStreamAttr);
-    }
     mDevices.clear();
     PAL_INFO(LOG_TAG, "Exit");
 }

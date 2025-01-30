@@ -115,7 +115,6 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
     session = Session::makeSession(rm, sattr);
     if (session == NULL){
        PAL_ERR(LOG_TAG,"session (compress) creation failed");
-       free(mStreamAttr);
        mStreamMutex.unlock();
        throw std::runtime_error("failed to create session object");
     }
@@ -127,7 +126,6 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);
         if (dev == nullptr) {
             PAL_ERR(LOG_TAG, "Device creation is failed");
-            free(mStreamAttr);
             mStreamMutex.unlock();
             if (str_registered) {
                 rm->deregisterStream(this);

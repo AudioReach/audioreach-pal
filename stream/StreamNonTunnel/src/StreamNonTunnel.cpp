@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -112,7 +112,6 @@ StreamNonTunnel::StreamNonTunnel(const struct pal_stream_attributes *sattr, stru
     session = Session::makeSession(rm, sattr);
     if (!session) {
         PAL_ERR(LOG_TAG, "session creation failed");
-        free(mStreamAttr);
         mStreamMutex.unlock();
         throw std::runtime_error("failed to create session object");
     }

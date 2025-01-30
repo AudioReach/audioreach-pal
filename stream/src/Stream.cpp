@@ -66,7 +66,7 @@ Stream::Stream() {
     if (session) {
         delete session;
         session = nullptr;
-        if (Session::pm)
+        if (Session::pm && mStreamAttr)
             Session::pm->closePlugin(PAL_PLUGIN_MANAGER_SESSION,
                                      streamNameLUT.at(mStreamAttr->type));
     }

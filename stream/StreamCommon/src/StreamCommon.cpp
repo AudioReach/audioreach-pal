@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -99,7 +99,6 @@ StreamCommon::StreamCommon(const struct pal_stream_attributes *sattr, struct pal
     session = Session::makeSession(rm, sattr);
     if (!session) {
         PAL_ERR(LOG_TAG, "Error:session creation failed");
-        free(mStreamAttr);
         mStreamMutex.unlock();
         throw std::runtime_error("failed to create session object");
     }
@@ -130,8 +129,6 @@ StreamCommon::StreamCommon(const struct pal_stream_attributes *sattr, struct pal
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);
         if (!dev) {
             PAL_ERR(LOG_TAG, "Error:Device creation failed");
-            free(mStreamAttr);
-
             //TBD::free session too
             mStreamMutex.unlock();
             throw std::runtime_error("failed to create device object");

@@ -115,7 +115,6 @@ StreamPCM::StreamPCM(const struct pal_stream_attributes *sattr, struct pal_devic
     session = Session::makeSession(rm, sattr);
     if (!session) {
         PAL_ERR(LOG_TAG, "session creation failed");
-        free(mStreamAttr);
         mStreamMutex.unlock();
         throw std::runtime_error("failed to create session object");
     }
@@ -130,8 +129,6 @@ StreamPCM::StreamPCM(const struct pal_stream_attributes *sattr, struct pal_devic
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);
         if (!dev) {
             PAL_ERR(LOG_TAG, "Device creation failed");
-            free(mStreamAttr);
-
             //TBD::free session too
             mStreamMutex.unlock();
             if (str_registered) {

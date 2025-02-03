@@ -1626,20 +1626,20 @@ void HapticsDevProtection::PMICHapticsVIScaling(wsa_haptics_ex_lra_param_t *VIpe
 
     ret = snprintf(vgain_sysfs, sizeof(vgain_sysfs), "%s%s", HAPTICS_SYSFS, "/v_gain_error");
     if (ret < 0) {
-        ALOGE("Failed to generate v_gain_error path name, ret = %d\n", ret);
+        PAL_ERR(LOG_TAG, "Failed to generate v_gain_error path name, ret = %d\n", ret);
         goto exit;
     }
 
     fd = TEMP_FAILURE_RETRY(::open(vgain_sysfs, O_RDONLY));
     if (fd < 0) {
-        ALOGE("Open %s failed, fd = %d\n", vgain_sysfs, fd);
+        PAL_ERR(LOG_TAG, "Open %s failed, fd = %d\n", vgain_sysfs, fd);
         goto exit;
     }
 
     ret = TEMP_FAILURE_RETRY(::read(fd, vgain, sizeof(vgain)));
     ::close(fd);
     if (ret < 0) {
-        ALOGE("Failed to read %s, errno = %d\n", vgain_sysfs, errno);
+        PAL_ERR(LOG_TAG, "Failed to read %s, errno = %d\n", vgain_sysfs, errno);
         goto exit;
     }
 
@@ -1648,20 +1648,20 @@ void HapticsDevProtection::PMICHapticsVIScaling(wsa_haptics_ex_lra_param_t *VIpe
 
     ret = snprintf(igain_sysfs, sizeof(igain_sysfs), "%s%s", HAPTICS_SYSFS, "/i_gain_error");
     if (ret < 0) {
-        ALOGE("Failed to generate i_gain_error path name, ret = %d\n", ret);
+        PAL_ERR(LOG_TAG, "Failed to generate i_gain_error path name, ret = %d\n", ret);
         goto exit;
     }
 
     fd = TEMP_FAILURE_RETRY(::open(igain_sysfs, O_RDONLY));
     if (fd < 0) {
-        ALOGE("Open %s failed, fd = %d\n", igain_sysfs, fd);
+        PAL_ERR(LOG_TAG, "Open %s failed, fd = %d\n", igain_sysfs, fd);
         goto exit;
     }
 
     ret = TEMP_FAILURE_RETRY(::read(fd, igain, sizeof(igain)));
     ::close(fd);
     if (ret < 0) {
-        ALOGE("Failed to read %s, errno = %d\n", igain_sysfs, errno);
+        PAL_ERR(LOG_TAG, "Failed to read %s, errno = %d\n", igain_sysfs, errno);
         goto exit;
     }
 
@@ -1683,7 +1683,6 @@ void HapticsDevProtection::PMICHapticsVIScaling(wsa_haptics_ex_lra_param_t *VIpe
 exit:
     PAL_DBG(LOG_TAG, "Vscale %x Iscale %x",VIpeValue->vsens_scale_q24, VIpeValue->isens_scale_q24);
 }
-
 
 int32_t HapticsDevProtection::getFTMParameter(void **param)
 {
@@ -1722,6 +1721,81 @@ exit:
     return ret;
 }
 
+int HapticsDevProtection::isPmicAutoResonanceEnabled()
+{
+    char f0_state_sysfs[50];
+    int fd;
+    char f0_state[8];
+    std::stringstream vi;
+    int ret = 0;
+
+    ret = snprintf(f0_state_sysfs, sizeof(f0_state_sysfs), "%s%s", HAPTICS_SYSFS, "/lra_f0_cal_in_play");
+    if (ret < 0) {
+        PAL_ERR(LOG_TAG, "Failed to generate lra_frequency_hz path name, ret = %d\n", ret);
+        goto exit;
+    }
+
+    fd = TEMP_FAILURE_RETRY(::open(f0_state_sysfs, O_RDONLY));
+    if (fd < 0) {
+        PAL_ERR(LOG_TAG, "Open %s failed, fd = %d\n", f0_state_sysfs, fd);
+        goto exit;
+    }
+
+    ret = TEMP_FAILURE_RETRY(::read(fd, f0_state, sizeof(f0_state)));
+    ::close(fd);
+    if (ret < 0) {
+        PAL_ERR(LOG_TAG, "Failed to read %s, errno = %d\n", f0_state_sysfs, errno);
+        goto exit;
+    }
+
+    vi << std::hex << f0_state;
+    vi >> lraF0CalState;
+    PAL_INFO(LOG_TAG,"lraF0CalState = %d", lraF0CalState);
+    ret = lraF0CalState;
+
+exit:
+    PAL_DBG(LOG_TAG,"Exit status = %d", ret);
+    return ret;
+}
+
+int HapticsDevProtection::getLraFrequency()
+{
+    char f0_sysfs[50];
+    int fd;
+    char lra_f0[8];
+    std::stringstream vi;
+    int ret = 0;
+
+    ret = snprintf(f0_sysfs, sizeof(f0_sysfs), "%s%s", HAPTICS_SYSFS, "/lra_frequency_hz");
+    if (ret < 0) {
+        PAL_ERR(LOG_TAG, "Failed to generate lra_frequency_hz path name, ret = %d\n", ret);
+        goto exit;
+    }
+
+    fd = TEMP_FAILURE_RETRY(::open(f0_sysfs, O_RDONLY));
+    if (fd < 0) {
+        PAL_ERR(LOG_TAG, "Open %s failed, fd = %d\n", f0_sysfs, fd);
+        goto exit;
+    }
+
+    ret = TEMP_FAILURE_RETRY(::read(fd, lra_f0, sizeof(lra_f0)));
+    ::close(fd);
+    if (ret < 0) {
+        PAL_ERR(LOG_TAG, "Failed to read %s, errno = %d\n", f0_sysfs, errno);
+        goto exit;
+    }
+
+    vi << std::hex << lra_f0;
+    vi >> fresHzQ20;
+
+    PAL_INFO(LOG_TAG,"lra_frequency_hz = %d", fresHzQ20);
+    fresHzQ20 = fresHzQ20 << 20;
+
+exit:
+    PAL_DBG(LOG_TAG,"Exit status = %d", ret);
+    return ret;
+}
+
 int HapticsDevProtection::HapticsDevProtectionFTM()
 {
     int ret = 0;
@@ -1737,7 +1811,6 @@ int HapticsDevProtection::HapticsDevProtectionFTM()
     calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_INACTIVE;
     mDspCallbackRcvd = false;
     ftmThrdCreated.store(true);
-
     PAL_DBG(LOG_TAG, "creating Haptics FTM thread");
     std::thread dynamicFTMThread(&HapticsDevProtection::HapticsDevFTMThread, this);
 
@@ -1884,6 +1957,14 @@ int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)
         PAL_ERR(LOG_TAG, "Error: %d Failed to get tag info %x", status, MODULE_HAPTICS_VI);
         goto exit;
     }
+
+    if (isPmicAutoResonanceEnabled() == TRUE) {
+        status = getLraFrequency();
+        if (status) {
+            PAL_ERR(LOG_TAG, "getLraFrequency failed");
+        }
+    }
+
     if (flag) {
         builder->payloadHapticsDevPConfig (&payload, &payloadSize, miid,
                               PARAM_ID_HAPTICS_EX_VI_PERSISTENT, &ViPe);
@@ -1909,24 +1990,29 @@ int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)
             } else {
                 PAL_DBG(LOG_TAG, "Write the Vi persistant value to file");
                 for (int i = 0; i < numberOfChannels; i++) {
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Re_ohm_q24[i] =%d",VIpeValue->Re_ohm_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Re_ohm_q24[i] =%d",VIpeValue->Re_ohm_q24[i]);
                     fwrite(&VIpeValue->Re_ohm_q24[i], sizeof(VIpeValue->Re_ohm_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Le_mH_q24[i] =%d",VIpeValue->Le_mH_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Le_mH_q24[i] =%d",VIpeValue->Le_mH_q24[i]);
                     fwrite(&VIpeValue->Le_mH_q24[i], sizeof(VIpeValue->Le_mH_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Bl_q24[i] =%d",VIpeValue->Bl_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Bl_q24[i] =%d",VIpeValue->Bl_q24[i]);
                     fwrite(&VIpeValue->Bl_q24[i], sizeof(VIpeValue->Bl_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Rms_KgSec_q24[i] =%d",VIpeValue->Rms_KgSec_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Rms_KgSec_q24[i] =%d",VIpeValue->Rms_KgSec_q24[i]);
                     fwrite(&VIpeValue->Rms_KgSec_q24[i], sizeof(VIpeValue->Rms_KgSec_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Kms_Nmm_q24[i] =%d",VIpeValue->Kms_Nmm_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Kms_Nmm_q24[i] =%d",VIpeValue->Kms_Nmm_q24[i]);
                     fwrite(&VIpeValue->Kms_Nmm_q24[i], sizeof(VIpeValue->Kms_Nmm_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Fres_Hz_q20[i] =%d",VIpeValue->Fres_Hz_q20[i]);
-                    fwrite(&VIpeValue->Fres_Hz_q20[i], sizeof(VIpeValue->Fres_Hz_q20[i]),
+                    if (lraF0CalState) {
+                        PAL_INFO(LOG_TAG, "persistent values Fres_Hz_q20[i] =%d",fresHzQ20);
+                        fwrite(&fresHzQ20, sizeof(fresHzQ20), 1, fp);
+                    } else {
+                        PAL_INFO(LOG_TAG, "persistent values VIpeValue->Fres_Hz_q20[i] =%d",VIpeValue->Fres_Hz_q20[i]);
+                        fwrite(&VIpeValue->Fres_Hz_q20[i], sizeof(VIpeValue->Fres_Hz_q20[i]),
                                              1, fp);
+                    }
                 }
                 fclose(fp);
             }
@@ -1945,22 +2031,25 @@ int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)
             for (int i = 0; i < numberOfChannels; i++) {
                     fread(&VIpeValue->Re_ohm_q24[i], sizeof(VIpeValue->Re_ohm_q24[i]),
                                              1, fp);
-                     PAL_ERR(LOG_TAG, "persistent values VIpeValue->Re_ohm_q24[i] =%d",VIpeValue->Re_ohm_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Re_ohm_q24[i] =%d",VIpeValue->Re_ohm_q24[i]);
                     fread(&VIpeValue->Le_mH_q24[i], sizeof(VIpeValue->Le_mH_q24[i]),
                                              1, fp);
-                     PAL_ERR(LOG_TAG, "persistent values VIpeValue->Le_mH_q24[i] =%d",VIpeValue->Le_mH_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Le_mH_q24[i] =%d",VIpeValue->Le_mH_q24[i]);
                     fread(&VIpeValue->Bl_q24[i], sizeof(VIpeValue->Bl_q24[i]),
                                              1, fp);
-                     PAL_ERR(LOG_TAG, "persistent values VIpeValue->Bl_q24[i] =%d",VIpeValue->Bl_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Bl_q24[i] =%d",VIpeValue->Bl_q24[i]);
                     fread(&VIpeValue->Rms_KgSec_q24[i], sizeof(VIpeValue->Rms_KgSec_q24[i]),
                                              1, fp);
-                    PAL_ERR(LOG_TAG, "persistent values VIpeValue->Rms_KgSec_q24[i] =%d",VIpeValue->Rms_KgSec_q24[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Rms_KgSec_q24[i] =%d",VIpeValue->Rms_KgSec_q24[i]);
                     fread(&VIpeValue->Kms_Nmm_q24[i], sizeof(VIpeValue->Kms_Nmm_q24[i]),
                                              1, fp);
-                     PAL_ERR(LOG_TAG, "persistent values VIpeValue->Kms_Nmm_q24[i] =%d",VIpeValue->Kms_Nmm_q24[i]);
-                    fread(&VIpeValue->Fres_Hz_q20[i], sizeof(VIpeValue->Fres_Hz_q20[i]),
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Kms_Nmm_q24[i] =%d",VIpeValue->Kms_Nmm_q24[i]);
+                    if (lraF0CalState)
+                        VIpeValue->Fres_Hz_q20[i] = fresHzQ20;
+                    else
+                        fread(&VIpeValue->Fres_Hz_q20[i], sizeof(VIpeValue->Fres_Hz_q20[i]),
                                              1, fp);
-                     PAL_ERR(LOG_TAG, "persistent values VIpeValue->Fres_Hz_q20[i] =%d",VIpeValue->Fres_Hz_q20[i]);
+                    PAL_INFO(LOG_TAG, "persistent values VIpeValue->Fres_Hz_q20[i] =%d",VIpeValue->Fres_Hz_q20[i]);
             }
             fclose(fp);
         }

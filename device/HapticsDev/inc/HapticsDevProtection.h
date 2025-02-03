@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -101,6 +101,8 @@ protected :
     static int calibrationCallbackStatus;
     static int numberOfRequest;
     static struct pal_device_info vi_device;
+    int fresHzQ20;  /* stores the auto resonance value from pmic */
+    bool lraF0CalState; /* holds the flag to indicate if LRA F0 calibration is done */
 
 private :
 
@@ -144,7 +146,8 @@ public:
     int32_t getFTMParameter(void **param);
     int32_t getAndsetPersistentParameter(bool flag);
     void disconnectFeandBe(std::vector<int> pcmDevIds, std::string backEndName);
-
+    int getLraFrequency();
+    int isPmicAutoResonanceEnabled();
 };
 
 class HapticsDevFeedback : public HapticsDev

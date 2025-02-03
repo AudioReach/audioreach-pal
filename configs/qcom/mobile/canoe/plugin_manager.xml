@@ -24,6 +24,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <stream name="PAL_STREAM_VOICE_UI" lib="libstream_soundtrigger.so" entryFunction="CreateSoundTriggerStream"/>
         <stream name="PAL_STREAM_VOICE_CALL_RECORD" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
         <stream name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
+        <stream name="PAL_STREAM_CALL_TRANSLATION" lib="libstream_calltranslation.so" entryFunction="CreateCallTranslationStream"/>
         <stream name="PAL_STREAM_NON_TUNNEL" lib="libstream_nontunnel.so" entryFunction="CreateNonTunnelStream"/>
         <stream name="PAL_STREAM_ACD" lib="libstream_acd.so" entryFunction="CreateACDStream"/>
         <stream name="PAL_STREAM_HAPTICS" lib="libstream_haptics.so" entryFunction="CreateHapticsStream"/>
@@ -51,6 +52,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <session name="PAL_STREAM_VOICE_UI" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_CALL_TRANSLATION" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_ACD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_HAPTICS" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
@@ -144,6 +146,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <config name="PAL_STREAM_ASR" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_CALL_TRANSLATION" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_ACD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_HAPTICS" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>

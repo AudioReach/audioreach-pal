@@ -3030,6 +3030,7 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
     pal_device_id_t deviceId;
     std::string key = "";
     struct pal_stream_attributes curStrAttr;
+    PAL_DBG(TAG_LOG," : Enter");
 
     if (tx_dev == nullptr || ec_enable == nullptr || streamHandle == nullptr) {
         PAL_ERR(LOG_TAG, "invalid input");
@@ -3050,6 +3051,10 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
 
     PAL_DBG(TAG_LOG, "stream type: %d, deviceid: %d, custom key: %s",
                       curStrAttr.type, deviceId, key.c_str());
+    if (deviceInfo.empty()) {
+        PAL_ERR(LOG_TAG, "deviceInfo empty");
+        goto exit;
+    }
     for (auto devInfo : deviceInfo) {
         if (deviceId != devInfo.deviceId)
             continue;

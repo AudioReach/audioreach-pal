@@ -1311,11 +1311,9 @@ int setSTParameter(uint32_t param_id, void *param_payload,
                             break;
                         }
                         charging_state_ = battery_charging_state->charging_state;
-                        rm->lockResourceManagerMutex();
                         rm->lockActiveStream();
                         onChargingStateChange();
                         rm->unlockActiveStream();
-                        rm->unlockResourceManagerMutex();
                     } else {
                         PAL_ERR(LOG_TAG,
                                 "Incorrect size : expected (%zu), received(%zu)",

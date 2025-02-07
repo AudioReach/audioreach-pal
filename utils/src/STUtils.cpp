@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -34,6 +34,7 @@ static defer_switch_state_t deferredSwitchState = NO_DEFER;
 static std::thread vui_deferred_switch_thread_;
 static std::condition_variable vui_switch_cv_;
 static std::mutex vui_switch_mutex_;
+static std::mutex st_utils_mutex_;
 static bool vui_switch_thread_exit_ = false;
 static int deferred_switch_cnt_ = -1;
 #ifndef VUI_DMGR_AUDIO_UNSUPPORTED
@@ -519,12 +520,12 @@ bool UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active) {
         return false;
     }
     // backend config update
-    rm->lockResourceManagerMutex();
+    st_utils_mutex_.lock();
     if (is_active) {
         cap_prof = s->GetCurrentCaptureProfile();
         if (!cap_prof) {
             PAL_ERR(LOG_TAG, "Failed to get capture profile");
-            rm->unlockResourceManagerMutex();
+            st_utils_mutex_.unlock();
             return false;
         }
 
@@ -562,7 +563,7 @@ bool UpdateSoundTriggerCaptureProfile(Stream *s, bool is_active) {
                 backend_update = true;
         }
     }
-    rm->unlockResourceManagerMutex();
+    st_utils_mutex_.unlock();
 
     return backend_update;
 }
@@ -811,7 +812,7 @@ void handleConcurrentStreamSwitch(std::vector<pal_stream_type_t>& st_streams)
 
     // update common capture profile after use_lpi_ updated for all streams
     if (st_streams.size()) {
-        rm->lockResourceManagerMutex();
+        st_utils_mutex_.lock();
         /* Updating SoundTriggerCaptureProfile for streams use VA Macro capture profiles */
         SoundTriggerCaptureProfile = nullptr;
         cap_prof_priority = GetCaptureProfileByPriority(nullptr, "va_macro");
@@ -832,7 +833,7 @@ void handleConcurrentStreamSwitch(std::vector<pal_stream_type_t>& st_streams)
                 CAPTURE_PROFILE_PRIORITY_HIGH) {
             TXMacroCaptureProfile = cap_prof_priority;
         }
-        rm->unlockResourceManagerMutex();
+        st_utils_mutex_.unlock();
     }
 
     for (pal_stream_type_t st_stream_type_to_stop : st_streams) {
@@ -1053,6 +1054,7 @@ void SwitchSoundTriggerDevices(bool connect_state,
         goto exit;
     }
 
+    st_utils_mutex_.lock();
     /* Updating SoundTriggerCaptureProfile for streams use VA Macro capture profiles */
     SoundTriggerCaptureProfile = nullptr;
     cap_prof_priority = GetCaptureProfileByPriority(nullptr, "va_macro");
@@ -1083,7 +1085,7 @@ void SwitchSoundTriggerDevices(bool connect_state,
         device_to_disconnect = st_device;
     }
 
-    rm->unlockResourceManagerMutex();
+    st_utils_mutex_.unlock();
     rm->lockActiveStream();
 
     rm->getActiveStreamByType_l(activeStream, PAL_STREAM_VOICE_UI);
@@ -1114,7 +1116,6 @@ void SwitchSoundTriggerDevices(bool connect_state,
                                     (void *)&device_to_connect);
     }
     rm->unlockActiveStream();
-    rm->lockResourceManagerMutex();
 
 exit:
     PAL_DBG(LOG_TAG, "Exit");
@@ -1458,6 +1459,7 @@ exit:
 }
 
 void updateCaptureProfiles() {
+    std::lock_guard<std::mutex> lck(st_utils_mutex_);
     SoundTriggerCaptureProfile = GetCaptureProfileByPriority(nullptr, "va_macro");
     TXMacroCaptureProfile = GetCaptureProfileByPriority(nullptr, "tx_macro");
 }
@@ -1470,6 +1472,7 @@ bool IsLPISupported() {
 }
 
 std::shared_ptr<CaptureProfile> GetSoundTriggerCaptureProfile() {
+    std::lock_guard<std::mutex> lck(st_utils_mutex_);
     return SoundTriggerCaptureProfile;
 }
 
@@ -1486,6 +1489,7 @@ void setForceNLPI(bool enable) {
 }
 
 std::shared_ptr<CaptureProfile> GetTXMacroCaptureProfile() {
+    std::lock_guard<std::mutex> lck(st_utils_mutex_);
     return TXMacroCaptureProfile;
 }
 

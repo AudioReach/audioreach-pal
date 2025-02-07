@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -491,16 +491,6 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
             sample_rate = dev_config.config.sample_rate;
             bit_width = dev_config.config.bit_width;
             channels = dev_config.config.ch_info.channels;
-        }
-
-        cap_prof = GetTXMacroCaptureProfile();
-        if (cap_prof) {
-            channels = (channels >= cap_prof->GetChannels()) ?
-                        channels : cap_prof->GetChannels();
-            sample_rate = (sample_rate >= cap_prof->GetSampleRate()) ?
-                           sample_rate : cap_prof->GetSampleRate();
-            bit_width = (bit_width >= cap_prof->GetBitWidth()) ?
-                           bit_width : cap_prof->GetBitWidth();
         }
 
         if (channels == 1)

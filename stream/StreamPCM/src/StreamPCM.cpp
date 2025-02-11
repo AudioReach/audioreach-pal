@@ -40,7 +40,9 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 
 extern "C" Stream* CreatePCMStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -239,7 +241,9 @@ closeDevice:
         }
     }
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_OPENED, status);
+#endif
     mStreamMutex.unlock();
     PAL_DBG(LOG_TAG, "Exit ret %d", status)
     return status;
@@ -298,7 +302,9 @@ int32_t  StreamPCM::close()
     currentState = STREAM_IDLE;
     rm->unlockGraph();
     rm->checkAndSetDutyCycleParam();
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
+#endif
     mStreamMutex.unlock();
 
     PAL_DBG(LOG_TAG, "Exit. closed the stream successfully %d status %d",
@@ -607,7 +613,9 @@ session_fail:
             status = devStatus;
     }
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit. state %d, status %d", currentState, status);
     mStreamMutex.unlock();
     return status;
@@ -735,7 +743,9 @@ int32_t StreamPCM::stop()
     }
 
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
     mStreamMutex.unlock();
     return status;
@@ -986,7 +996,9 @@ int32_t StreamPCM::write(struct pal_buffer* buf)
             mStreamMutex.unlock();
             rm->unlockActiveStream();
             currentState = STREAM_STARTED;
+#ifndef PAL_MEMLOG_UNSUPPORTED
             palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
         }
         PAL_VERBOSE(LOG_TAG, "Exit. session write successful size - %d", size);
         return size;
@@ -1173,7 +1185,9 @@ exit:
     isPaused = true;
     currentState = STREAM_PAUSED;
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
+#endif
     return status;
 }
 
@@ -1320,6 +1334,10 @@ int32_t StreamPCM::isChannelSupported(uint32_t numChannels)
         case CHANNELS_5_1:
         case CHANNELS_7:
         case CHANNELS_8:
+        case CHANNELS_10:
+        case CHANNELS_12:
+        case CHANNELS_14:
+        case CHANNELS_16:
             break;
         default:
             rc = -EINVAL;

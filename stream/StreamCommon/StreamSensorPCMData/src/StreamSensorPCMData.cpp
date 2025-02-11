@@ -40,7 +40,9 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include <unistd.h>
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 #include "STUtils.h"
 
 extern "C" Stream* CreateSensorPCMDataStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -129,7 +131,9 @@ int32_t StreamSensorPCMData::open()
         goto exit;
     }
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_OPENED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit ret %d", status);
     return status;
 }
@@ -162,7 +166,9 @@ int32_t  StreamSensorPCMData::close()
         PAL_ERR(LOG_TAG, "Error:session close failed with status %d", status);
     }
     currentState = STREAM_IDLE;
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
+#endif
     mStreamMutex.unlock();
 
     PAL_DBG(LOG_TAG, "Exit ret %d", status);
@@ -268,7 +274,9 @@ int32_t StreamSensorPCMData::start()
     }
 
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit. state %d, status %d", currentState, status);
     return status;
 }
@@ -327,7 +335,9 @@ int32_t StreamSensorPCMData::stop()
         PAL_ERR(LOG_TAG, "Error:Stream should be in start/pause state, %d", currentState);
         status = -EINVAL;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
 
     return status;
@@ -362,7 +372,9 @@ int32_t StreamSensorPCMData::Pause(bool is_internal)
     }
     else
         PAL_ERR(LOG_TAG, "Error:%d Pause Stream failed", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -439,6 +451,10 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
 
     PAL_DBG(LOG_TAG, "Enter");
 
+    if (!sm_cfg_) {
+        PAL_ERR(LOG_TAG, "Stream config not created yet");
+        return nullptr;
+    }
     if (current_capture_device == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;
 

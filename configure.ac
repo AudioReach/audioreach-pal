@@ -44,6 +44,13 @@ AC_ARG_WITH([glib],
       AS_HELP_STRING([--with-glib],
          [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
 
+
+AC_ARG_WITH([syslog],
+    AS_HELP_STRING([use syslog (default is no)]),
+        [with_syslog=$withval],
+            [with_syslog=no])
+            AM_CONDITIONAL([USE_SYSLOG], [test "x${with_syslog}" = "xyes"])
+
 if (test "x${with_glib}" = "xyes"); then
         PKG_CHECK_MODULES(GTHREAD, gthread-2.0 >= 2.16, dummy=yes,
                                 AC_MSG_ERROR(GThread >= 2.16 is required))
@@ -57,16 +64,29 @@ if (test "x${with_glib}" = "xyes"); then
 fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
+AC_ARG_WITH([cutils],
+    AS_HELP_STRING([Use cutils (default is no)]),
+     [with_cutils=$withval],
+     [with_cutils=no])
+AM_CONDITIONAL([CUTILS_SUPPORTED], [test "x${with_cutils}" = "xyes"])
 AM_CONDITIONAL([IS_SDXLEMUR], [test x$IS_SDXLEMUR_TARGET = xtrue])
 AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 
 # Checks for libraries
-AC_ARG_WITH([spf],
-      AC_HELP_STRING([--with-spf],
-         [enable spf, Build against spf. Use this when building for HLOS systems which use spf]))
-SPF_CFLAGS=
-AS_IF([test "x$with_spf" != "xno"], [SPF_CFLAGS="-I$with_spf"])
-AC_SUBST(SPF_CFLAGS)
+PKG_CHECK_MODULES([AGM], [agm])
+AC_SUBST([AGM_CFLAGS])
+
+PKG_CHECK_MODULES([SPF], [spf])
+AC_SUBST([SPF_CFLAGS])
+
+AC_CHECK_FUNCS([strlcpy])
+AM_CONDITIONAL(USE_G_STR_FUNC, ! test "x$ac_cv_func_strlcpy" = "xyes")
+
+PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
+AC_SUBST([PALHEADERS_CFLAGS])
+
+PKG_CHECK_MODULES([CAPIV2HEADERS], [capiv2-api-headers])
+AC_SUBST([CAPIV2HEADERS_CFLAGS])
 
 AC_ARG_WITH([acdbdata],
       AC_HELP_STRING([--with-acdbdata],
@@ -76,6 +96,19 @@ ACDBDATA_CFLAGS=
 AS_IF([test "x$with_acdbdata" != "xno"], [ACDBDATA_CFLAGS="-I$with_acdbdata"])
 
 AC_SUBST(ACDBDATA_CFLAGS)
+
+PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
+AC_SUBST([KVH2XML_CFLAGS])
+
+PKG_CHECK_MODULES([AROUTE], [audioroute])
+AC_SUBST([AROUTE_CFLAGS])
+
+AC_ARG_WITH([qli],
+    AS_HELP_STRING([use qli (default is no)]),
+    [with_qli=$withval],
+    [with_qli=no])
+AM_CONDITIONAL([BUILDSYSTEM_QLI], [test "x${with_qli}" = "xyes"])
+
 
 AC_ARG_WITH([compress],
     AS_HELP_STRING([compile compress (default is no)]),
@@ -167,12 +200,6 @@ device/RTProxy/dev_proxy.pc \
 plugins/Makefile plugins/plugins.pc \
 plugins/PluginManager/Makefile \
 plugins/PluginManager/plugin_manager.pc \
-plugins/hotword_intf/Makefile \
-plugins/hotword_intf/hotword_intf.pc \
-plugins/customva_intf/Makefile \
-plugins/customva_intf/customva_intf.pc \
 plugins/codecs/Makefile \
-plugins/codecs/codecs.pc \
-plugins/vui_interface/Makefile \
-plugins/vui_interface/vui_interface.pc ])
+plugins/codecs/codecs.pc ])
 AC_OUTPUT

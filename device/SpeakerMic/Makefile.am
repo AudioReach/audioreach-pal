@@ -2,7 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = dev_speaker_mic.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
-
+if BUILDSYSTEM_OPENWRT
 AM_CPPFLAGS := -I ./inc
 AM_CPPFLAGS += -I ../../inc
 AM_CPPFLAGS += -I ../../
@@ -15,21 +15,56 @@ AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
 AM_CPPFLAGS += -I ../../resource_manager/inc
 AM_CPPFLAGS += -I ../../context_manager/inc
 
-
 dev_speaker_mic_sources = ./src/SpeakerMic.cpp
+else
+AM_CPPFLAGS := -I $(top_srcdir)/device/SpeakerMic/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/api/vui-interface
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
+AM_CPPFLAGS += @SPF_CFLAGS@
+AM_CPPFLAGS += @AROUTE_CFLAGS@
+AM_CPPFLAGS += @KVH2XML_CFLAGS@
+
+dev_speaker_mic_sources = $(top_srcdir)/device/SpeakerMic/src/SpeakerMic.cpp
+endif
 
 library_includedir = $(includedir)/dev_speaker_mic
 
 lib_LTLIBRARIES     = libdev_speaker_mic.la
 libdev_speaker_mic_la_SOURCES   = $(dev_speaker_mic_sources)
-libdev_speaker_mic_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
+libdev_speaker_mic_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
+libdev_speaker_mic_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_speaker_mic_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_speaker_mic_la_CPPFLAGS += -std=c++14
 libdev_speaker_mic_la_LDFLAGS   = -shared -avoid-version
-libdev_speaker_mic_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+
+libdev_speaker_mic_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
+
+if BUILDSYSTEM_QLI
+libdev_speaker_mic_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DPAL_MEMLOG_UNSUPPORTED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+endif
+
 libdev_speaker_mic_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_speaker_mic_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if BUILDSYSTEM_OPENWRT
-libdev_speaker_mic_la_LIBADD += -lglib-2.0
+libdev_speaker_mic_la_LIBADD += -lglib-2.0 -llog
+endif
+
+if CUTILS_SUPPORTED
+libdev_speaker_mic_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
+libdev_speaker_mic_la_LIBADD += -lcutils
+endif
+
+if USE_G_STR_FUNC
+libdev_speaker_mic_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

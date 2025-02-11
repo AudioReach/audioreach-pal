@@ -2,7 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = dev_haptics.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
-
+if BUILDSYSTEM_OPENWRT
 AM_CPPFLAGS := -I ./inc
 AM_CPPFLAGS += -I ../../inc
 AM_CPPFLAGS += -I ../../
@@ -16,23 +16,61 @@ AM_CPPFLAGS += -I ../../resource_manager/inc
 AM_CPPFLAGS += -I ../../context_manager/inc
 AM_CPPFLAGS += -I ../../device/Speaker/inc
 
-
 dev_haptics_sources = ./src/HapticsDev.cpp \
                       ./src/HapticsDevProtection.cpp
+
+else
+AM_CPPFLAGS := -I $(top_srcdir)/device/HapticsDev/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/Speaker/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/api/vui-interface
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
+AM_CPPFLAGS += @SPF_CFLAGS@
+AM_CPPFLAGS += @AROUTE_CFLAGS@
+AM_CPPFLAGS += @KVH2XML_CFLAGS@
+
+dev_haptics_sources = $(top_srcdir)/device/HapticsDev/src/HapticsDev.cpp \
+                      $(top_srcdir)/device/HapticsDev/src/HapticsDevProtection.cpp
+
+endif
 
 library_includedir = $(includedir)/dev_haptics
 
 lib_LTLIBRARIES     = libdev_haptics.la
 libdev_haptics_la_SOURCES   = $(dev_haptics_sources)
-libdev_haptics_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -ltinyalsa -ltinycompress
+libdev_haptics_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_haptics_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
+libdev_haptics_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_haptics_la_CPPFLAGS += -std=c++14
 libdev_haptics_la_LDFLAGS   = -shared -avoid-version
-libdev_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+libdev_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
+
+if BUILDSYSTEM_QLI
+libdev_haptics_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DPAL_MEMLOG_UNSUPPORTED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+endif
+
 libdev_haptics_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_haptics_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if BUILDSYSTEM_OPENWRT
-libdev_haptics_la_LIBADD += -lglib-2.0
+libdev_haptics_la_LIBADD += -lglib-2.0 -llog
+endif
+
+if CUTILS_SUPPORTED
+libdev_haptics_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
+libdev_haptics_la_LIBADD += -lcutils
+endif
+
+if USE_G_STR_FUNC
+libdev_haptics_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

@@ -1,8 +1,7 @@
-vuiInterface_headers := SoundTriggerUtils.h \
-	VoiceUIInterface.h \
-	VUIInterfaceProxy.h
+vuiInterface_headers := VoiceUIInterface.h \
+        SoundTriggerUtils.h
 
-vuiInterface_includedir = $(includedir)/acdbdata
+vuiInterface_includedir = $(includedir)/vuiInterfaceHeader
 vuiInterface_include_HEADERS = $(vuiInterface_headers)
 
 pkgconfigdir = $(libdir)/pkgconfig

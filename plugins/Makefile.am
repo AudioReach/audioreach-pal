@@ -1,1 +1,1 @@
-SUBDIRS = PluginManager hotword_intf codecs customva_intf vui_interface
+SUBDIRS = PluginManager codecs

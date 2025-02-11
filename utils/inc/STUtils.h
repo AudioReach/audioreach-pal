@@ -7,7 +7,9 @@
 #define ST_UTILS_H
 
 #include <stdio.h>
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 #include <vui_dmgr_audio_intf.h>
+#endif
 #include "Stream.h"
 #include "SoundTriggerPlatformInfo.h"
 
@@ -16,10 +18,12 @@ typedef void (*SoundTriggerOnResourceAvailableCallback)(uint64_t cookie);
 static void voiceUIDeferredSwitchLoop(std::shared_ptr<ResourceManager> rm);
 void onChargingStateChange();
 void STUtilsInit();
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 void voiceuiDmgrManagerInit();
 void voiceuiDmgrManagerDeInit();
 int32_t voiceuiDmgrPalCallback(int32_t param_id, void *payload, size_t payload_size);
 int32_t voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info);
+#endif
 void GetVoiceUIProperties(struct pal_st_properties *qstp);
 bool isNLPISwitchSupported();
 void GetSoundTriggerConcurrencyCount_l(pal_stream_type_t type, int32_t *enable_count,

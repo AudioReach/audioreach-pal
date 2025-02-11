@@ -36,11 +36,11 @@ static std::condition_variable vui_switch_cv_;
 static std::mutex vui_switch_mutex_;
 static bool vui_switch_thread_exit_ = false;
 static int deferred_switch_cnt_ = -1;
-
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 void* vui_utils_dmgr_lib_handle = NULL;
 vui_dmgr_init_t vui_utils_dmgr_init = NULL;
 vui_dmgr_deinit_t vui_utils_dmgr_deinit = NULL;
-
+#endif
 std::shared_ptr<CaptureProfile> SoundTriggerCaptureProfile;
 std::shared_ptr<CaptureProfile> TXMacroCaptureProfile;
 std::unordered_map<int, pal_stream_handle_t *> mStCaptureInfo;
@@ -76,9 +76,11 @@ void STUtilsInit() {
             voiceUIDeferredSwitchLoop, rm);
     }
     PAL_INFO(LOG_TAG, "Initialize voiceui dmgr");
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
     voiceuiDmgrManagerInit();
+#endif
 }
-
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 void getMatchingStreams(std::list<Stream*> &active_streams, std::vector<Stream*> &streams, vui_dmgr_uuid_t &uuid)
 {
     int ret = 0;
@@ -102,7 +104,8 @@ void getMatchingStreams(std::list<Stream*> &active_streams, std::vector<Stream*>
         }
     }
 }
-
+#endif
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 int32_t voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info)
 {
     int status = 0;
@@ -228,7 +231,7 @@ void voiceuiDmgrManagerDeInit()
     vui_utils_dmgr_init = NULL;
     vui_utils_dmgr_deinit = NULL;
 }
-
+#endif
 /* Moved from resource manager */
 
 void GetVoiceUIProperties(struct pal_st_properties *qstp)

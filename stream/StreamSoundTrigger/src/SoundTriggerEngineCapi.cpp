@@ -31,18 +31,21 @@
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
-
+#ifndef ATRACE_UNSUPPORTED
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
+#endif
 #define LOG_TAG "PAL: SoundTriggerEngineCapi"
 
 #include "SoundTriggerEngineCapi.h"
-
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/trace.h>
+#endif
 #include <dlfcn.h>
 
 #include "StreamSoundTrigger.h"
 #include "SoundTriggerPlatformInfo.h"
 #include "VoiceUIInterface.h"
+#include "SoundTriggerUtils.h"
 
 #define CNN_BUFFER_LENGTH 10000
 #define CNN_FRAME_SIZE 320
@@ -280,10 +283,14 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi Process");
         capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage KW process");
+#endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
+#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -583,10 +590,14 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi Process\n");
         capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage uv process");
+#endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
+#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -605,10 +616,14 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi get param for result\n");
         capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage uv get result");
+#endif
         rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
             STAGE2_UV_WRAPPER_ID_RESULT, nullptr, &capi_result);
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
+#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_get_param_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -37,9 +37,13 @@
 #include "Session.h"
 #include "ResourceManager.h"
 #include "Device.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
+#endif
 #include "PluginManager.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 
 std::shared_ptr<ResourceManager> Stream::rm = nullptr;
 std::shared_ptr<PluginManager> Stream::pm = nullptr;
@@ -827,9 +831,9 @@ int32_t Stream::getTimestamp(struct pal_session_time *stime)
         PAL_ERR(LOG_TAG, "Sound card offline/standby, status %d", status);
         goto exit;
     }
-    rm->lockResourceManagerMutex();
+    mGetParamMutex.lock();
     status = session->getTimestamp(stime);
-    rm->unlockResourceManagerMutex();
+    mGetParamMutex.unlock();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to get session timestamp status %d", status);
         if (errno == -ENETRESET &&
@@ -1069,8 +1073,9 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
     }
 
     rm->checkAndSetDutyCycleParam();
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(streamHandle, (pal_state_queue_state) currentState, status);
-
+#endif
     /* For UC2: USB insertion on playback, After USB online notification,
      * As enabling PA is done assuming that current Concurrent Boost state
      * is True and Audio will config Limiter for speaker.
@@ -1171,6 +1176,7 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     int32_t connectCount = 0, disconnectCount = 0;
     bool isNewDeviceA2dp = false;
     bool checkNoneDevice = false;
+    bool isCurDeviceA2dp = false;
     bool matchFound = false;
     bool voice_call_switch = false;
     bool force_switch_dev_id[PAL_DEVICE_IN_MAX] = {};

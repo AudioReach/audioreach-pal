@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 #include "Device.h"
 #ifdef FEATURE_IPQ_OPENWRT
 #include <binder/IPCThreadState.h>

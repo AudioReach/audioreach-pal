@@ -31,13 +31,15 @@
  * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
-
+#ifndef ATRACE_UNSUPPORTED
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
+#endif
 #define LOG_TAG "PAL: SoundTriggerEngineGsl"
 
 #include "SoundTriggerEngineGsl.h"
-
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/trace.h>
+#endif
 #include <cstring>
 
 #include "SessionAR.h"
@@ -212,8 +214,9 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         PAL_DBG(LOG_TAG, "Start lab reading from offset %zu", read_offset);
     }
     buffer_->getIndices(s, &start_index, &end_index, &ftrt_size);
-
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_ASYNC_BEGIN("stEngine: read FTRT data", (int32_t)module_type_);
+#endif
     kw_transfer_begin = std::chrono::steady_clock::now();
     while (!exit_buffering_) {
         /*
@@ -240,7 +243,9 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
 
         PAL_VERBOSE(LOG_TAG, "request read %zu from gsl", buf.size);
         // read data from session
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_ASYNC_BEGIN("stEngine: lab read", (int32_t)module_type_);
+#endif
         if (mmap_buffer_size_ != 0) {
             /*
              * GetMmapPosition returns total frames written for this session
@@ -337,7 +342,9 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
             PAL_VERBOSE(LOG_TAG, "requested %zu, read %d", buf.size, size);
             total_read_size += size;
         }
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_ASYNC_END("stEngine: lab read", (int32_t)module_type_);
+#endif
         // write data to ring buffer
         if (size) {
             size_t ret = 0;
@@ -366,7 +373,9 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         if (total_read_size >= ftrt_size) {
             if (!event_notified) {
                 kw_transfer_end = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
                 ATRACE_ASYNC_END("stEngine: read FTRT data", (int32_t)module_type_);
+#endif
                 kw_transfer_latency_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                     kw_transfer_end - kw_transfer_begin).count();
                 PAL_INFO(LOG_TAG, "FTRT data read done! total_read_size %zu, ftrt_size %zu, read latency %llums",
@@ -1501,8 +1510,10 @@ void SoundTriggerEngineGsl::HandleSessionEvent(uint32_t event_id __unused,
 
         UpdateState(ENG_DETECTED);
         PAL_INFO(LOG_TAG, "signal event processing thread");
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("stEngine: keyword detected");
         ATRACE_END();
+#endif
         cv_.notify_one();
     } else {
         det_streams_q_.push(s);

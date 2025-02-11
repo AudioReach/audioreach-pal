@@ -101,6 +101,9 @@ private:
 
     std::queue<void *> eventQ;
     static std::shared_ptr<ASREngine> eng;
+    param_id_asr_config_t *speechCfg;
+    param_id_asr_output_config_t *outputCfg;
+    param_id_asr_input_threshold_t *inputCfg;
     std::shared_ptr<Device> rxEcDev;
     std::recursive_mutex ecRefMutex;
     std::shared_ptr<ASRPlatformInfo> asrInfo;

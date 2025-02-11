@@ -42,7 +42,9 @@
 #include "ACDPlatformInfo.h"
 #include "SoundTriggerUtils.h"
 #include "ContextDetectionEngine.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 
 class ContextDetectionEngine;
 
@@ -101,7 +103,11 @@ class StreamACD : public Stream {
                const uint32_t no_of_modifiers,
                const std::shared_ptr<ResourceManager> rm);
     ~StreamACD();
+#ifndef PAL_MEMLOG_UNSUPPORTED
     int32_t open() { palStateEnqueue(this, PAL_STATE_OPENED, 0); return 0; }
+#else
+    int32_t open() { return 0; }
+#endif
     int32_t close() override;
     int32_t prepare() override { return 0; }
     int32_t start() override;

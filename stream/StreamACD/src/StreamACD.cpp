@@ -216,7 +216,9 @@ int32_t StreamACD::close()
         free(cached_event_data_);
         cached_event_data_ = nullptr;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -234,7 +236,9 @@ int32_t StreamACD::start()
     if (!status) {
         currentState = STREAM_STARTED;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -251,7 +255,9 @@ int32_t StreamACD::stop()
     if (!status) {
         currentState = STREAM_STOPPED;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -265,7 +271,9 @@ int32_t StreamACD::Resume(bool is_internal) {
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Resume failed", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -280,7 +288,9 @@ int32_t StreamACD::Pause(bool is_internal) {
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Pause failed", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -590,6 +600,11 @@ std::shared_ptr<CaptureProfile> StreamACD::GetCurrentCaptureProfile()
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
     enum StInputModes input_mode = ST_INPUT_MODE_HANDSET;
     enum StOperatingModes operating_mode = ST_OPERATING_MODE_HIGH_PERF;
+
+    if (!sm_cfg_) {
+        PAL_ERR(LOG_TAG, "Stream config not created yet");
+        return nullptr;
+    }
 
     if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;

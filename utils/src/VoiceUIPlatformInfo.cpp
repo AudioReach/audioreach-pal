@@ -33,6 +33,7 @@
 
 #include "VoiceUIPlatformInfo.h"
 #include "PalCommon.h"
+#include "SoundTriggerUtils.h"
 #include "STUtils.h"
 #ifdef FEATURE_IPQ_OPENWRT
 #include <algorithm>

@@ -6,7 +6,10 @@
 #define LOG_TAG "PAL: MetadataParser"
 
 #include <string>
+#ifndef PAL_USE_SYSLOG
 #include <log/log.h>
+#endif
+#include "PalCommon.h"
 #include <unistd.h>
 #include "PalDefs.h"
 #include "MetadataParser.h"

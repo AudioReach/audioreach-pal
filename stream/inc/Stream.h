@@ -114,6 +114,7 @@ protected:
     int mGainLevel;
     int mOrientation = 0;
     std::mutex mStreamMutex;
+    std::mutex mGetParamMutex;
     static std::mutex mBaseStreamMutex; //TBD change this. as having a single static mutex for all instances of Stream is incorrect. Replace
     static std::shared_ptr<ResourceManager> rm;
     static std::shared_ptr<PluginManager> pm;
@@ -268,6 +269,8 @@ public:
         mStreamMutex.unlock();
     };
     bool isMutexLockedbyRm() { return mutexLockedbyRm; }
+    void lockGetParamMutex() { mGetParamMutex.lock(); };
+    void unlockGetParamMutex() { mGetParamMutex.unlock(); };
     void setCachedState(stream_state_t state);
     void clearmDevices();
     void removemDevice(int palDevId);

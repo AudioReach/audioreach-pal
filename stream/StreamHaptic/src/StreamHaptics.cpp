@@ -44,7 +44,9 @@
 #include "Device.h"
 #include <unistd.h>
 #include "rx_haptics_api.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 #include "wsa_haptics_vi_api.h"
 
 extern "C" Stream* CreateHapticsStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -254,7 +256,9 @@ session_fail:
         rm->deregisterDevice(mDevices[i], this);
     }
 exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_DBG(LOG_TAG, "Exit. state %d, status %d", currentState, status);
     mStreamMutex.unlock();
     return status;

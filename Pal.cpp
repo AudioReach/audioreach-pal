@@ -36,8 +36,9 @@
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
 
 #define LOG_TAG "PAL: API"
-
+#ifndef ATRACE_UNSUPPORTED
 #include <utils/Trace.h>
+#endif
 #include <set>
 #include <stdio.h>
 #include <unistd.h>
@@ -48,10 +49,14 @@
 #include "Device.h"
 #include "ResourceManager.h"
 #include "PalCommon.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
+#endif
 #include "PerfLock.h"
 #include "PluginManager.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 class Stream;
 
 /**
@@ -94,7 +99,9 @@ static void notify_concurrent_stream(pal_stream_type_t type,
  */
 int32_t pal_init(void)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     PAL_DBG(LOG_TAG, "Enter.");
     int32_t ret = 0;
     std::shared_ptr<ResourceManager> ri = NULL;
@@ -112,12 +119,13 @@ int32_t pal_init(void)
         ret = -EINVAL;
         goto exit;
     }
+#ifndef CARD_STATE_UNSUPPORTED
     ret = ri->initSndMonitor();
     if (ret != 0) {
         PAL_ERR(LOG_TAG, "snd monitor init failed");
         goto exit;
     }
-
+#endif
     ri->init();
 
     ret = ri->initContextManager();
@@ -146,7 +154,9 @@ exit:
  */
 void pal_deinit(void)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     PAL_DBG(LOG_TAG, "Enter.");
 
     std::shared_ptr<ResourceManager> rm = NULL;
@@ -168,9 +178,13 @@ void pal_deinit(void)
         PAL_ERR(LOG_TAG, "ResourceManager::getInstance() failed: %s", e.what());
         goto exit;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     rm->deInitContextManager();
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
 
     ResourceManager::deinit();
 
@@ -237,7 +251,9 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
                         pal_stream_handle_t **stream_handle)
 {
     PerfLock perflock(__func__);
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     uint64_t *stream = NULL;
     Stream *s = NULL;
     int status = 0;
@@ -258,7 +274,9 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     }
 
     PAL_INFO(LOG_TAG, "Enter, stream type:%d", attributes->type);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
 #ifdef SOC_PERIPHERAL_PROT
     if (rm->IsTZSecureZone()) {
         PAL_DBG(LOG_TAG, "In secure zone, so stop the usecase");
@@ -302,13 +320,17 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     *stream_handle = stream;
 exit:
     PAL_INFO(LOG_TAG, "Exit. Value of stream_handle %pK, status %d", stream, status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
 int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     Stream *s = NULL;
     int status = 0;
     struct pal_stream_attributes sAttr = {};
@@ -319,7 +341,9 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
         return status;
     }
     PAL_INFO(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
 
     rm = ResourceManager::getInstance();
     if (!rm) {
@@ -357,14 +381,18 @@ exit:
         rm->setCRSCallEnabled(false);
     rm->eraseStreamUserCounter(s);
     status = Stream::destroy(s);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
 int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
 {
     PerfLock perflock(__func__);
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     Stream *s = NULL;
     struct pal_stream_attributes sAttr = {};
     std::vector <std::shared_ptr<Device>> palDevices;
@@ -391,7 +419,9 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
         status = -EINVAL;
         goto exit;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
 
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
@@ -448,13 +478,17 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
 int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     Stream *s = NULL;
     struct pal_stream_attributes sAttr = {};
     std::shared_ptr<ResourceManager> rm = NULL;
@@ -474,8 +508,9 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
         status = -EINVAL;
         goto exit;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
 
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
@@ -529,7 +564,9 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
     }
 exit:
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -591,16 +628,22 @@ int32_t pal_stream_get_param(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
     status = s->getParameters(param_id, (void **)param_payload);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "get parameters failed status %d param_id %u", status, param_id);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -630,13 +673,17 @@ int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_
         PAL_ERR(LOG_TAG, "Invalid resource manager");
         return status;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     if (param_id == PAL_PARAM_ID_STOP_BUFFERING) {
         PAL_DBG(LOG_TAG, "Buffering stopped, handle deferred LPI<->NLPI switch");
         rm->handleDeferredSwitch();
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -659,8 +706,9 @@ int32_t pal_stream_set_volume(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
         rm->unlockActiveStream();
@@ -687,11 +735,15 @@ int32_t pal_stream_set_volume(pal_stream_handle_t *stream_handle,
 
     if (0 != status) {
         PAL_ERR(LOG_TAG, "setVolume failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -715,8 +767,9 @@ int32_t pal_stream_set_mute(pal_stream_handle_t *stream_handle, bool state)
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
         rm->unlockActiveStream();
@@ -745,7 +798,9 @@ int32_t pal_stream_set_mute(pal_stream_handle_t *stream_handle, bool state)
 
 exit:
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -769,16 +824,22 @@ int32_t pal_stream_pause(pal_stream_handle_t *stream_handle)
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
     status = s->pause();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_stream_pause failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -802,18 +863,24 @@ int32_t pal_stream_resume(pal_stream_handle_t *stream_handle)
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
 
     status = s->resume();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "resume failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
 
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -837,8 +904,9 @@ int32_t pal_stream_drain(pal_stream_handle_t *stream_handle, pal_drain_type_t ty
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
         rm->unlockActiveStream();
@@ -867,7 +935,9 @@ int32_t pal_stream_drain(pal_stream_handle_t *stream_handle, pal_drain_type_t ty
     }
 exit:
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -891,18 +961,24 @@ int32_t pal_stream_flush(pal_stream_handle_t *stream_handle)
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
 
     status = s->flush();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "flush failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
 
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -926,7 +1002,9 @@ int32_t pal_stream_suspend(pal_stream_handle_t *stream_handle)
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
 
     status = s->suspend();
@@ -935,7 +1013,9 @@ int32_t pal_stream_suspend(pal_stream_handle_t *stream_handle)
     }
 
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -961,17 +1041,23 @@ int32_t pal_stream_set_buffer_size (pal_stream_handle_t *stream_handle,
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
 
     status = s->setBufInfo(in_buffer_cfg, out_buffer_cfg);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_stream_set_buffer_size failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1015,8 +1101,9 @@ int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle,
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK\n", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
     rm->lockActiveStream();
     if (rm->isActiveStream(stream_handle)) {
         s =  reinterpret_cast<Stream *>(stream_handle);
@@ -1028,7 +1115,9 @@ int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle,
 
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_get_timestamp failed with status %d\n", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
 
@@ -1037,7 +1126,9 @@ int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle,
     PAL_VERBOSE(LOG_TAG, "stime->timestamp.value_lsw = %u, stime->timestamp.value_msw = %u \n", stime->timestamp.value_lsw, stime->timestamp.value_msw);
 
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1062,17 +1153,23 @@ int32_t pal_add_remove_effect(pal_stream_handle_t *stream_handle,
     }
 
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
 
     s =  reinterpret_cast<Stream *>(stream_handle);
     status = s->addRemoveEffect(effect, enable);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_add_effect failed with status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 
 }
@@ -1080,7 +1177,9 @@ int32_t pal_add_remove_effect(pal_stream_handle_t *stream_handle,
 int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
                            uint32_t no_of_devices, struct pal_device *devices)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     int status = -EINVAL;
     Stream *s = NULL;
     std::shared_ptr<ResourceManager> rm = NULL;
@@ -1111,7 +1210,9 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
     }
 
     PAL_INFO(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
 
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
@@ -1293,7 +1394,9 @@ exit:
     if (pDevices)
         free(pDevices);
     PAL_INFO(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1306,13 +1409,17 @@ int32_t pal_set_param(uint32_t param_id, void *param_payload,
 
     rm = ResourceManager::getInstance();
     if (rm) {
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, true);
+#endif
         status = rm->setParameter(param_id, param_payload, payload_size);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to set global parameter %u, status %d",
                     param_id, status);
         }
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
     } else {
         PAL_ERR(LOG_TAG, "Pal has not been initialized yet");
         status = -EINVAL;
@@ -1331,13 +1438,17 @@ int32_t pal_get_param(uint32_t param_id, void **param_payload,
     PAL_DBG(LOG_TAG, "Enter:");
 
     if (rm) {
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, true);
+#endif
         status = rm->getParameter(param_id, param_payload, payload_size, query);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to get global parameter %u, status %d",
                     param_id, status);
         }
+#ifndef PAL_MEMLOG_UNSUPPORTED
         kpiEnqueue(__func__, false);
+#endif
     } else {
         PAL_ERR(LOG_TAG, "Pal has not been initialized yet");
         status = -EINVAL;
@@ -1364,7 +1475,9 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
     status = s->GetMmapPosition(position);
     if (0 != status) {
@@ -1372,7 +1485,9 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1380,7 +1495,9 @@ int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle,
                               int32_t min_size_frames,
                               struct pal_mmap_buffer *info)
 {
+#ifndef ATRACE_UNSUPPORTED
     ATRACE_CALL();
+#endif
     Stream *s = NULL;
     int status;
     std::shared_ptr<ResourceManager> rm = NULL;
@@ -1396,7 +1513,9 @@ int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Enter. Stream handle :%pK", stream_handle);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     s =  reinterpret_cast<Stream *>(stream_handle);
     status = s->createMmapBuffer(min_size_frames, info);
     if (0 != status) {
@@ -1404,7 +1523,9 @@ int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle,
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1420,14 +1541,17 @@ int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie)
         PAL_ERR(LOG_TAG, "Invalid resource manager");
         return status;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
-
+#endif
     if (cb != NULL) {
         rm->globalCb = cb;
         rm->cookie = cookie;
     }
     PAL_DBG(LOG_TAG, "Exit");
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1499,8 +1623,9 @@ int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
     int32_t status = 0;
     Stream *s = nullptr;
     custom_payload_uc_info_t info;
-
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     if (!handle) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid stream handle status %d", status);
@@ -1514,7 +1639,9 @@ int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
     }
     status = s->setCustomParam(&info,std::string(param_str),param_payload,payload_size);
     exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1524,8 +1651,9 @@ int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
     int32_t status = 0;
     Stream *s = nullptr;
     custom_payload_uc_info_t info;
-
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     if (!handle) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid stream handle status %d", status);
@@ -1540,7 +1668,9 @@ int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
     PAL_ERR(LOG_TAG, "calling get");
     status = s->getCustomParam(&info,std::string(param_str),param_payload,payload_size);
     exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     return status;
 }
 
@@ -1549,9 +1679,10 @@ int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
 
     int32_t status = 0;
     std::shared_ptr<ResourceManager> rm = NULL;
-
     PAL_DBG(LOG_TAG, "Enter.");
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     rm = ResourceManager::getInstance();
     if (!rm) {
         status = -EINVAL;
@@ -1564,7 +1695,9 @@ int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
                 param_str, status);
     }
     exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     PAL_DBG(LOG_TAG, "Exit:");
     return status;
 }
@@ -1576,7 +1709,9 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
     std::shared_ptr<ResourceManager> rm = NULL;
 
     PAL_DBG(LOG_TAG, "Enter.");
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, true);
+#endif
     rm = ResourceManager::getInstance();
     if (!rm) {
         status = -EINVAL;
@@ -1589,7 +1724,9 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
                 param_str, status);
     }
     exit:
+#ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
+#endif
     PAL_DBG(LOG_TAG, "Exit:");
     return status;
 }

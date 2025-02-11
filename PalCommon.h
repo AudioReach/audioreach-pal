@@ -37,8 +37,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#ifdef PAL_USE_SYSLOG
+#include <syslog.h>
+#define ALOGE(fmt, arg...) syslog (LOG_ERR, fmt, ##arg)
+#define ALOGI(fmt, arg...) syslog (LOG_INFO, fmt, ##arg)
+#define ALOGD(fmt, arg...) syslog (LOG_DEBUG, fmt, ##arg)
+#define ALOGV(fmt, arg...) syslog (LOG_NOTICE, fmt, ##arg)
+#else
 #include <log/log.h>
+#endif
 
 #define PAL_LOG_ERR             (0x1) /**< error message, represents code bugs that should be debugged and fixed.*/
 #define PAL_LOG_INFO            (0x2) /**< info message, additional info to support debug */

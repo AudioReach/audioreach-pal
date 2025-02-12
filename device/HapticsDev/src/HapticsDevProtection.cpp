@@ -130,6 +130,14 @@ typedef struct haptics_vi_calib_param_t {
 
     int32_t Le_mH_ftm_q24[HAPTICS_MAX_OUT_CHAN];    // LRA inductance from FTM
 
+    int32_t Fres_offset_Hz_q20[HAPTICS_MAX_OUT_CHAN];      // F0 offset from duffing non linerity
+
+    int32_t Tuned_LRA_ID[HAPTICS_MAX_OUT_CHAN];    // ID of LRA selected during FTM
+
+    uint32_t payload_size; // Custom payload size in bytes, returned from FTM.
+
+    uint8_t payload_data[0];
+
 } haptics_vi_calib_param_t;
 
 std::thread HapticsDevProtection::mCalThread;
@@ -145,7 +153,7 @@ struct timespec HapticsDevProtection::devLastTimeUsed;
 struct mixer *HapticsDevProtection::virtMixer;
 struct mixer *HapticsDevProtection::hwMixer;
 haptics_dev_prot_cal_state HapticsDevProtection::hapticsDevCalState = HAPTICS_DEV_NOT_CALIBRATED;
-haptics_vi_cal_param HapticsDevProtection::cbCalData[HAPTICS_MAX_OUT_CHAN];
+haptics_vi_cal_param HapticsDevProtection::cbCalData;
 struct pcm * HapticsDevProtection::rxPcm = NULL;
 struct pcm * HapticsDevProtection::txPcm = NULL;
 int HapticsDevProtection::numberOfChannels;
@@ -238,12 +246,27 @@ void HapticsDevProtection::handleHPCallback(uint64_t hdl __unused, uint32_t even
 
         if (param_data->state == HAPTICS_VI_CALIB_STATE_SUCCESS) {
             PAL_DBG(LOG_TAG, "Calibration is successful");
-            cbCalData[0].Re_ohm_Cal_q24 = param_data->Re_ohm_q24[0];
-            cbCalData[0].Fres_Hz_Cal_q20 = param_data->Fres_Hz_q20[0];
-            cbCalData[0].Bl_q24 = param_data->Bl_q24[0];
-            cbCalData[0].Rms_KgSec_q24 = param_data->Rms_KgSec_q24[0];
-            cbCalData[0].Blq_ftm_q24 = param_data->Blq_ftm_q24[0];
-            cbCalData[0].Le_mH_ftm_q24 = param_data->Le_mH_ftm_q24[0];
+            for(int i = 0; i < numberOfChannels; i++) {
+                cbCalData.Re_ohm_Cal_q24[i] = param_data->Re_ohm_q24[i];
+                cbCalData.Fres_Hz_Cal_q20[i] = param_data->Fres_Hz_q20[i];
+                cbCalData.Bl_q24[i] = param_data->Bl_q24[i];
+                cbCalData.Rms_KgSec_q24[i] = param_data->Rms_KgSec_q24[i];
+                cbCalData.Blq_ftm_q24[i] = param_data->Blq_ftm_q24[i];
+                cbCalData.Le_mH_ftm_q24[i] = param_data->Le_mH_ftm_q24[i];
+                cbCalData.Fres_offset_Hz_q20[i] = param_data->Fres_offset_Hz_q20[i];
+                cbCalData.Tuned_LRA_ID[i] = param_data->Tuned_LRA_ID[i];
+            }
+
+            cbCalData.payload_size = param_data->payload_size;
+            if(param_data->payload_size > 0) {
+                cbCalData.payload_data = (uint8_t *)calloc(1, param_data->payload_size);
+                if (!cbCalData.payload_data) {
+                    PAL_ERR(LOG_TAG," payload creation Failed");
+                } else {
+                    memcpy(cbCalData.payload_data, param_data->payload_data,
+                           param_data->payload_size);
+                }
+            }
 
             mDspCallbackRcvd = true;
             calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_SUCCESS;
@@ -817,8 +840,38 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
                 PAL_ERR(LOG_TAG, "Unable to open file for write");
             } else {
                 PAL_DBG(LOG_TAG, "Write calibrated values to file");
-                for (i = 0; i < numberOfChannels; i++) {
-                      outFile.write(reinterpret_cast<char*>(&cbCalData[i]), sizeof(cbCalData[0]));
+                size_t chunkSize = 0;
+                for (int i = 0; i < numberOfChannels; i++) {
+                    chunkSize += sizeof(cbCalData.Re_ohm_Cal_q24[i]) + sizeof(cbCalData.Fres_Hz_Cal_q20[i]) +
+                                sizeof(cbCalData.Bl_q24[i]) + sizeof(cbCalData.Rms_KgSec_q24[i]) +
+                                sizeof(cbCalData.Blq_ftm_q24[i]) + sizeof(cbCalData.Le_mH_ftm_q24[i]) +
+                                sizeof(cbCalData.Fres_offset_Hz_q20[i]) + sizeof(cbCalData.Tuned_LRA_ID[i]);
+                }
+                std::unique_ptr<uint8_t[]> buffer(new uint8_t[chunkSize * numberOfChannels]);
+                for (int i = 0; i < numberOfChannels; i++) {
+                    uint8_t *ptr = buffer.get() + i * chunkSize;
+                    memcpy(ptr, &cbCalData.Re_ohm_Cal_q24[i], sizeof(cbCalData.Re_ohm_Cal_q24[i]));
+                    ptr += sizeof(cbCalData.Re_ohm_Cal_q24[i]);
+                    memcpy(ptr, &cbCalData.Fres_Hz_Cal_q20[i], sizeof(cbCalData.Fres_Hz_Cal_q20[i]));
+                    ptr += sizeof(cbCalData.Fres_Hz_Cal_q20[i]);
+                    memcpy(ptr, &cbCalData.Bl_q24[i], sizeof(cbCalData.Bl_q24[i]));
+                    ptr += sizeof(cbCalData.Bl_q24[i]);
+                    memcpy(ptr, &cbCalData.Rms_KgSec_q24[i], sizeof(cbCalData.Rms_KgSec_q24[i]));
+                    ptr += sizeof(cbCalData.Rms_KgSec_q24[i]);
+                    memcpy(ptr, &cbCalData.Blq_ftm_q24[i], sizeof(cbCalData.Blq_ftm_q24[i]));
+                    ptr += sizeof(cbCalData.Blq_ftm_q24[i]);
+                    memcpy(ptr, &cbCalData.Le_mH_ftm_q24[i], sizeof(cbCalData.Le_mH_ftm_q24[i]));
+                    ptr += sizeof(cbCalData.Le_mH_ftm_q24[i]);
+                    memcpy(ptr, &cbCalData.Fres_offset_Hz_q20[i], sizeof(cbCalData.Fres_offset_Hz_q20[i]));
+                    ptr += sizeof(cbCalData.Fres_offset_Hz_q20[i]);
+                    memcpy(ptr, &cbCalData.Tuned_LRA_ID[i], sizeof(cbCalData.Tuned_LRA_ID[i]));
+                }
+                outFile.write(reinterpret_cast<char*>(buffer.get()), (chunkSize * numberOfChannels));
+                if((cbCalData.payload_size > 0) && cbCalData.payload_data) {
+                    outFile.write(reinterpret_cast<char*>(cbCalData.payload_data),
+                                    sizeof(cbCalData.payload_size));
+                    free(cbCalData.payload_data);
+                    cbCalData.payload_data = nullptr;
                 }
                 hapticsDevCalState = HAPTICS_DEV_CALIBRATED;
                 outFile.close();
@@ -1699,15 +1752,24 @@ int32_t HapticsDevProtection::getFTMParameter(void **param)
         goto exit;
     }
     inFile.read(reinterpret_cast<char*>(&FtmCalParam), sizeof(haptics_vi_cal_param));
+    inFile.read(reinterpret_cast<char*>(FtmCalParam.payload_data), FtmCalParam.payload_size);
     inFile.close();
 
-    resString << "HapticsParamStatus: " <<  "; Re: "
-              << ((FtmCalParam.Re_ohm_Cal_q24)/(1<<24)) << "; Fres: "
-              << ((FtmCalParam.Fres_Hz_Cal_q20)/(1<<20)) << "; Bl: "
-              << ((FtmCalParam.Bl_q24)/(1<<24)) << "; Rms: "
-              << ((FtmCalParam.Rms_KgSec_q24)/(1<<24)) << "; Blq: "
-              << ((FtmCalParam.Blq_ftm_q24)/(1<<24)) << "; Le: "
-              << ((FtmCalParam.Le_mH_ftm_q24)/(1<<24));
+    for(int i = 0; i < numberOfChannels; i++) {
+        resString << "HapticsParamStatus: " <<  "; Re: "
+                << ((FtmCalParam.Re_ohm_Cal_q24[i])/(1<<24)) << "; Fres: "
+                << ((FtmCalParam.Fres_Hz_Cal_q20[i])/(1<<20)) << "; Bl: "
+                << ((FtmCalParam.Bl_q24[i])/(1<<24)) << "; Rms: "
+                << ((FtmCalParam.Rms_KgSec_q24[i])/(1<<24)) << "; Blq: "
+                << ((FtmCalParam.Blq_ftm_q24[i])/(1<<24)) << "; Le: "
+                << ((FtmCalParam.Le_mH_ftm_q24[i])/(1<<24)) << "; Fres_offset: "
+                << ((FtmCalParam.Fres_offset_Hz_q20[i])/(1<<20)) << "; Tuned_LRA_ID: "
+                << FtmCalParam.Tuned_LRA_ID[i];
+    }
+
+    resString << " payload_size: "
+              << FtmCalParam.payload_size << "; payload_data: "
+              << std::string((char*)FtmCalParam.payload_data, FtmCalParam.payload_size);
 
     PAL_DBG(LOG_TAG, "Get param value %s, length:%d",
             resString.str().c_str(), resString.str().length());

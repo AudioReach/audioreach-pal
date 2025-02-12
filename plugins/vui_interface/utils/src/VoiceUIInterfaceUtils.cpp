@@ -62,6 +62,7 @@
 #include <memory>
 #include <algorithm>
 #include "SoundTriggerUtils.h"
+#include <VoiceUIInterfaceUtils.h>
 
 #define LOG_TAG "PAL: SoundTriggerUtils"
 //#define LOG_NDEBUG 0

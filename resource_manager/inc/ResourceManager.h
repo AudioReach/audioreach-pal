@@ -53,7 +53,9 @@
 #include <queue>
 #include <deque>
 #include <unordered_map>
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
 #include <audio_feature_stats_intf.h>
+#endif
 #include <amdb_api.h>
 #include "PalCommon.h"
 #include "PalDefs.h"
@@ -328,6 +330,7 @@ struct pal_device_info {
      bool bit_width_overwrite;
      uint32_t bit_width;
      pal_audio_fmt_t bitFormatSupported;
+     bool is32BitSupported;
 };
 
 struct vsid_modepair {
@@ -474,6 +477,7 @@ struct deviceIn {
     uint32_t bit_width;
     pal_audio_fmt_t bitFormatSupported;
     bool ec_enable;
+    bool is32BitSupported;
 };
 
 class ResourceManager
@@ -607,8 +611,10 @@ private:
 
     pal_stream_handle_t *afs_stream_handle = NULL;
     static void *feature_stats_handle;
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
     static afs_init_t feature_stats_init;
     static afs_deinit_t feature_stats_deinit;
+#endif
 protected:
     std::list <Stream*> mActiveStreams;
     std::map<pal_stream_type_t, std::list <Stream*>> activeStreamMap;
@@ -704,9 +710,11 @@ public:
     int initContextManager();
     int initHapticsInterface();
     void deInitContextManager();
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
     static void AudioFeatureStatsInit();
     static void AudioFeatureStatsDeInit();
     static int AudioFeatureStatsGetInfo(void **afs_payload, size_t *afs_payload_size);
+#endif
     void checkQVAAppPresence(afs_param_payload_t *payload);
     pal_param_payload *AFSWakeUpAlgoDetection();
 
@@ -794,7 +802,8 @@ public:
     int getActiveStreamByType_l(std::list<Stream*> &activestreams, pal_stream_type_t type);
     int getOrphanStream(std::vector<Stream*> &orphanstreams, std::vector<Stream*> &retrystreams);
     int getOrphanStream_l(std::vector<Stream*> &orphanstreams, std::vector<Stream*> &retrystreams);
-    int getActiveDevices(std::vector<std::shared_ptr<Device>> &deviceList);
+    void getActiveDevices(std::vector<std::shared_ptr<Device>> &deviceList);
+    void getActiveDevices_l(std::vector<std::shared_ptr<Device>> &deviceList);
     int getSndDeviceName(int deviceId, char *device_name);
     int getDeviceEpName(int deviceId, std::string &epName);
     int getBackendName(int deviceId, std::string &backendName);

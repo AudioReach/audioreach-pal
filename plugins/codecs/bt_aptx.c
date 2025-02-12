@@ -30,7 +30,15 @@
 #define LOG_TAG "PAL: bt_aptx"
 //#define LOG_NDEBUG 0
 
+#ifdef PAL_USE_SYSLOG
+#include <syslog.h>
+#define ALOGE(fmt, arg...) syslog (LOG_ERR, fmt, ##arg)
+#define ALOGI(fmt, arg...) syslog (LOG_INFO, fmt, ##arg)
+#define ALOGD(fmt, arg...) syslog (LOG_DEBUG, fmt, ##arg)
+#define ALOGV(fmt, arg...) syslog (LOG_NOTICE, fmt, ##arg)
+#else
 #include <log/log.h>
+#endif
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>

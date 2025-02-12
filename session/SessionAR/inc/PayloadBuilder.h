@@ -47,6 +47,9 @@
 #include "Stream.h"
 #include "Device.h"
 #include "ResourceManager.h"
+#include "bt_intf.h"
+#include "congestion_buf_api.h"
+#include "jitter_buf_api.h"
 #include "AudioHapticsInterface.h"
 #include "us_tone_renderer_api.h"
 

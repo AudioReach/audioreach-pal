@@ -47,7 +47,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "PalARDefs.h"
+#ifdef __cplusplus
 
+#include <map>
+#include <string>
+#include <set>
+extern "C" {
+#endif
 
 #define MIXER_PATH_MAX_LENGTH 100
 #define PAL_MAX_CHANNELS_SUPPORTED 64
@@ -463,7 +469,29 @@ typedef enum {
     PAL_STREAM_HAPTICS_TOUCH = 1,
     PAL_STREAM_HAPTICS_PCM = 2,
 } pal_stream_haptics_type_t;
+#ifdef __cplusplus
+const std::set<pal_device_id_t> pluginDeviceList {
+    PAL_DEVICE_OUT_USB_DEVICE,
+    PAL_DEVICE_OUT_USB_HEADSET,
+    PAL_DEVICE_OUT_WIRED_HEADPHONE,
+    PAL_DEVICE_OUT_WIRED_HEADSET,
+    PAL_DEVICE_OUT_BLUETOOTH_A2DP,
+    PAL_DEVICE_OUT_BLUETOOTH_BLE,
+    PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST,
+    PAL_DEVICE_OUT_BLUETOOTH_SCO,
+    PAL_DEVICE_OUT_PROXY,
+    PAL_DEVICE_OUT_AUX_DIGITAL,
+    PAL_DEVICE_OUT_AUX_DIGITAL_1,
+    PAL_DEVICE_OUT_HDMI
+};
 
+const std::set<pal_device_id_t> BTPlaybackDeviceList {
+    PAL_DEVICE_OUT_BLUETOOTH_A2DP,
+    PAL_DEVICE_OUT_BLUETOOTH_BLE,
+    PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST,
+    PAL_DEVICE_OUT_BLUETOOTH_SCO
+};
+#endif
 /* type of asynchronous write callback events. Mutually exclusive */
 typedef enum {
     PAL_STREAM_CBK_EVENT_WRITE_READY, /* non blocking write completed */
@@ -832,6 +860,7 @@ typedef enum {
     PAL_PARAM_ID_DTMF_DETECTION_CFG = 86,
     PAL_PARAM_ID_DTMF_GEN_TONE_CFG = 87,
     PAL_PARAM_ID_HAPTICS_MODE = 88,
+    PAL_PARAM_ID_ULTRASOUND_SET_GAIN = 90,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1136,6 +1165,13 @@ typedef struct pal_bt_lc3_payload_s {
 typedef struct pal_param_haptics_intensity {
     int intensity;
 } pal_param_haptics_intensity_t;
+
+/* Type of Ultrasound Gain */
+typedef enum {
+    PAL_ULTRASOUND_GAIN_MUTE = 0,
+    PAL_ULTRASOUND_GAIN_LOW,
+    PAL_ULTRASOUND_GAIN_HIGH,
+} pal_ultrasound_gain_t;
 
 /**< PAL device */
 #define DEVICE_NAME_MAX_SIZE 128
@@ -1549,4 +1585,7 @@ typedef struct custom_payload_uc_info_s {
 
 }custom_payload_uc_info_t;
 
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif
 #endif /*PAL_DEFS_H*/

@@ -11,7 +11,9 @@
 #include <fstream>
 #include <map>
 #include "PalCommon.h"
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
+#endif
 
 std::shared_ptr<PluginManager> PluginManager::pm = nullptr;
 std::mutex PluginManager::mPluginManagerMutex;
@@ -261,6 +263,7 @@ void PluginManager::startElement(void* userData, const char* name, const char** 
 /* Function to get audio vendor configs path */
 void PluginManager::getVendorConfigPath (char* config_file_path, int path_size)
 {
+#ifdef PAL_CUTILS_SUPPORTED
    char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
    if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
@@ -275,6 +278,7 @@ void PluginManager::getVendorConfigPath (char* config_file_path, int path_size)
        snprintf(config_file_path, path_size,
                        "%s%s", "/vendor/etc/audio/sku_", vendor_sku);
     }
+#endif
 }
 
 void PluginManager::data_handler(void *userdata, const XML_Char *s, int len)

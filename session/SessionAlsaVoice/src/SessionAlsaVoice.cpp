@@ -44,13 +44,15 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include <sstream>
 #include <string>
 #include <agm/agm_api.h>
-#include <cutils/properties.h>
 #ifdef FEATURE_IPQ_OPENWRT
 #include "audio_route.h"
 #include <stdarg.h>
 #include <err.h>
 #else
 #include "audio_route/audio_route.h"
+#ifdef PAL_CUTILS_SUPPORTED
+#include <cutils/properties.h>
+#endif
 #endif
 
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)
@@ -773,9 +775,11 @@ err_pcm_open:
             if (status)
                 rm->voteSleepMonitor(s, false);
             PAL_ERR(LOG_TAG,"graph open failure reach to max allowed value");
+#ifdef PAL_CUTILS_SUPPORTED
             if (property_set("vendor.audio.ssr.trigger", "1")) {
                 PAL_ERR(LOG_TAG, "set property failed");
             }
+#endif
             status = 0;
             retries = 0;
         }

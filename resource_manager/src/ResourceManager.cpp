@@ -34,7 +34,9 @@
 
 #define LOG_TAG "PAL: ResourceManager"
 #include <agm/agm_api.h>
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
+#endif
 #include <tinyalsa/asoundlib.h>
 #include <unistd.h>
 #include <dlfcn.h>
@@ -48,10 +50,11 @@
 #include "Stream.h"
 #include "SndCardMonitor.h"
 #include "AudioHapticsInterface.h"
-#include "VUIInterfaceProxy.h"
 #include "VoiceUIPlatformInfo.h"
 #include "PluginManager.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
+#endif
 
 #ifndef SOUND_TRIGGER_FEATURES_DISABLED
 #include "STUtils.h"
@@ -66,6 +69,11 @@
 #ifndef FEATURE_IPQ_OPENWRT
 #include <cutils/str_parms.h>
 #endif
+
+#ifdef PAL_CUTILS_SUPPORTED
+#include <cutils/str_parms.h>
+#endif
+
 
 #define XML_PATH_EXTN_MAX_SIZE 80
 #define XML_FILE_DELIMITER "_"
@@ -422,9 +430,11 @@ cl_init_t ResourceManager::cl_init = NULL;
 cl_deinit_t ResourceManager::cl_deinit = NULL;
 cl_set_boost_state_t ResourceManager::cl_set_boost_state = NULL;
 
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
 void* ResourceManager::feature_stats_handle = NULL;
 afs_init_t ResourceManager::feature_stats_init = NULL;
 afs_deinit_t ResourceManager::feature_stats_deinit = NULL;
+#endif
 
 std::mutex ResourceManager::cvMutex;
 std::queue<card_status_t> ResourceManager::msgQ;
@@ -479,7 +489,7 @@ deregisterPeripheralCBFnPtr ResourceManager::mDeregisterPeripheralCb = nullptr;
 #define PRPHRL_REGSTR_RETRY_COUNT 10
 #endif
 //TODO:Needs to define below APIs so that functionality won't break
-#ifdef FEATURE_IPQ_OPENWRT
+#ifdef FEATURE_IPQ_OPENWRT || PAL_CUTILS_SUPPORTED
 int str_parms_get_str(struct str_parms *str_parms, const char *key,
                       char *out_val, int len){return 0;}
 char *str_parms_to_str(struct str_parms *str_parms){return NULL;}
@@ -725,11 +735,13 @@ err:
 void ResourceManager::sendCrashSignal(int signal, pid_t pid, uid_t uid)
 {
     PAL_DBG(LOG_TAG, "%s: signal %d, pid %u, uid %u", __func__, signal, pid, uid);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     int32_t ret = memLoggerDumpAllToFile();
     if (ret)
     {
         PAL_ERR(LOG_TAG, "Error in dumping queues: %d", ret);
     }
+#endif
     struct agm_dump_info dump_info = {signal, (uint32_t)pid, (uint32_t)uid};
     agm_dump(&dump_info);
 }
@@ -835,7 +847,7 @@ ResourceManager::ResourceManager()
     memset(&this->mSpkrProtModeValue, 0, sizeof(pal_spkr_prot_payload));
     mHighestPriorityActiveStream = nullptr;
     mPriorityHighestPriorityActiveStream = 0;
-
+#ifndef PAL_MEMLOG_UNSUPPORTED
     ret = memLoggerInitQ(PAL_STATE_Q, MEMLOG_CFG_FILE); //initializes the queue for the debug logger
 
     if (ret) {
@@ -847,7 +859,7 @@ ResourceManager::ResourceManager()
     if (ret) {
         PAL_ERR(LOG_TAG, "error in initializing KPI queue %d", ret);
     }
-
+#endif
     ret = ResourceManager::XmlParser(SNDPARSER);
     if (ret) {
         PAL_ERR(LOG_TAG, "error in snd xml parsing ret %d", ret);
@@ -875,7 +887,7 @@ ResourceManager::ResourceManager()
 
     if (isHifiFilterEnabled)
         audio_route_apply_and_update_path(audio_route, "hifi-filter-coefficients");
-
+#ifndef PAL_SIGNAL_HANDLER_UNSUPPORTED
     char propValue[PROPERTY_VALUE_MAX];
     bool isBuildDebuggable = false;
     property_get("ro.debuggable", propValue, "0");
@@ -894,7 +906,7 @@ ResourceManager::ResourceManager()
             PAL_INFO(LOG_TAG, "Failed to create signal handler");
         }
     }
-
+#endif
 #if defined(ADSP_SLEEP_MONITOR)
     lpi_counter_ = 0;
     nlpi_counter_ = 0;
@@ -947,6 +959,7 @@ ResourceManager::~ResourceManager()
     std::map<std::string, std::vector <int>>::iterator it;
 
     // Dump memory logger queues
+#ifndef PAL_MEMLOG_UNSUPPORTED
     int ret = memLoggerDumpAllToFile();
     if (ret)
     {
@@ -963,7 +976,7 @@ ResourceManager::~ResourceManager()
     {
         PAL_ERR(LOG_TAG, "error in deinitializing KPI queue %d", ret);
     }
-
+#endif
     streamTag.clear();
     streamPpTag.clear();
     mixerTag.clear();
@@ -1455,7 +1468,24 @@ int ResourceManager::init_audio()
                 PAL_INFO(LOG_TAG, "mixer_open success. snd_card_num = %d, snd_card_name %s",
                 snd_hw_card, snd_card_name);
 
-                if (strstr(snd_card_name, VENDOR_SKU)) {
+                /* TODO: Needs to extend for new targets */
+                if (strstr(snd_card_name, "kona") ||
+                    strstr(snd_card_name, "sm8150") ||
+                    strstr(snd_card_name, "lahaina") ||
+                    strstr(snd_card_name, "waipio") ||
+                    strstr(snd_card_name, "kalama") ||
+                    strstr(snd_card_name, "pineapple") ||
+                    strstr(snd_card_name, "cliffs") ||
+                    strstr(snd_card_name, "pitti") ||
+                    strstr(snd_card_name, "volcano") ||
+                    strstr(snd_card_name, "anorak") ||
+                    strstr(snd_card_name, "diwali") ||
+                    strstr(snd_card_name, "qcm6490") ||
+                    strstr(snd_card_name, "bengal") ||
+                    strstr(snd_card_name, "qcs8300") ||
+                    strstr(snd_card_name, "qcs9100") ||
+                    strstr(snd_card_name, "qcs9075") ||
+                    strstr(snd_card_name, "monaco")) {
                     PAL_DBG(LOG_TAG, "Found Codec sound card, %s", VENDOR_SKU);
                     snd_card_found = true;
                     audio_hw_mixer = tmp_mixer;
@@ -1616,6 +1646,7 @@ close_stream:
     return NULL;
 }
 
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
 int ResourceManager::AudioFeatureStatsGetInfo(void **afs_payload,
                                                size_t *afs_payload_size)
 {
@@ -1722,6 +1753,7 @@ void ResourceManager::AudioFeatureStatsDeInit()
     feature_stats_deinit = NULL;
 }
 
+#endif
 int ResourceManager::initContextManager()
 {
     int ret = 0;
@@ -1808,10 +1840,12 @@ bool ResourceManager::isLpiLoggingEnabled()
     bool lpi_logging_prop = false;
 
 #ifndef FEATURE_IPQ_OPENWRT
+#ifdef PAL_CUTILS_SUPPORTED
     property_get("vendor.audio.lpi_logging", value, "");
     if (!strncmp("true", value, sizeof("true"))) {
         lpi_logging_prop = true;
     }
+#endif
 #endif
     return (lpi_logging_prop | lpi_logging_);
 }
@@ -1852,7 +1886,7 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
     mSleepMonitorMutex.lock();
     if (vote) {
         if (lpi_stream) {
-            if (++lpi_counter_ == 1) {
+            if (++lpi_counter_ >= 1) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_START;
                 mSleepMonitorMutex.unlock();
                 ret = ioctl(sleepmon_fd_, ADSPSLEEPMON_IOCTL_AUDIO_ACTIVITY, &monitor_payload);
@@ -1868,7 +1902,7 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
         }
     } else {
         if (lpi_stream) {
-            if (--lpi_counter_ == 0) {
+            if (--lpi_counter_ >= 0) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_STOP;
                 mSleepMonitorMutex.unlock();
                 ret = ioctl(sleepmon_fd_, ADSPSLEEPMON_IOCTL_AUDIO_ACTIVITY, &monitor_payload);
@@ -2265,6 +2299,7 @@ void ResourceManager::getDeviceInfo(pal_device_id_t deviceId, pal_stream_type_t 
             devinfo->isUSBUUIdBasedTuningEnabledFlag = deviceInfo[i].isUSBUUIdBasedTuningEnabled;
             devinfo->bit_width = deviceInfo[i].bit_width;
             devinfo->bitFormatSupported = deviceInfo[i].bitFormatSupported;
+            devinfo->is32BitSupported = deviceInfo[i].is32BitSupported;
             devinfo->channels_overwrite = false;
             devinfo->samplerate_overwrite = false;
             devinfo->sndDevName_overwrite = false;
@@ -2501,6 +2536,66 @@ void ResourceManager::getChannelMap(uint8_t *channel_map, int channels)
        channel_map[6] = PAL_CHMAP_CHANNEL_LS;
        channel_map[7] = PAL_CHMAP_CHANNEL_RS;
        break;
+    case CHANNELS_10:
+       channel_map[0] = PAL_CHMAP_CHANNEL_FL;
+       channel_map[1] = PAL_CHMAP_CHANNEL_FR;
+       channel_map[2] = PAL_CHMAP_CHANNEL_C;
+       channel_map[3] = PAL_CHMAP_CHANNEL_LS;
+       channel_map[4] = PAL_CHMAP_CHANNEL_RS;
+       channel_map[5] = PAL_CHMAP_CHANNEL_LFE;
+       channel_map[6] = PAL_CHMAP_CHANNEL_LB;
+       channel_map[7] = PAL_CHMAP_CHANNEL_RB;
+       channel_map[8] = PAL_CHMAP_CHANNEL_RC;
+       channel_map[9] = PAL_CHMAP_CHANNEL_TS;
+       break;
+    case CHANNELS_12:
+       channel_map[0] = PAL_CHMAP_CHANNEL_FL;
+       channel_map[1] = PAL_CHMAP_CHANNEL_FR;
+       channel_map[2] = PAL_CHMAP_CHANNEL_C;
+       channel_map[3] = PAL_CHMAP_CHANNEL_LS;
+       channel_map[4] = PAL_CHMAP_CHANNEL_RS;
+       channel_map[5] = PAL_CHMAP_CHANNEL_LFE;
+       channel_map[6] = PAL_CHMAP_CHANNEL_LB;
+       channel_map[7] = PAL_CHMAP_CHANNEL_RB;
+       channel_map[8] = PAL_CHMAP_CHANNEL_RC;
+       channel_map[9] = PAL_CHMAP_CHANNEL_TS;
+       channel_map[10] = PAL_CHMAP_CHANNEL_TFC;
+       channel_map[11] = PAL_CHMAP_CHANNEL_MS;
+       break;
+    case CHANNELS_14:
+       channel_map[0] = PAL_CHMAP_CHANNEL_FL;
+       channel_map[1] = PAL_CHMAP_CHANNEL_FR;
+       channel_map[2] = PAL_CHMAP_CHANNEL_C;
+       channel_map[3] = PAL_CHMAP_CHANNEL_LS;
+       channel_map[4] = PAL_CHMAP_CHANNEL_RS;
+       channel_map[5] = PAL_CHMAP_CHANNEL_LFE;
+       channel_map[6] = PAL_CHMAP_CHANNEL_LB;
+       channel_map[7] = PAL_CHMAP_CHANNEL_RB;
+       channel_map[8] = PAL_CHMAP_CHANNEL_RC;
+       channel_map[9] = PAL_CHMAP_CHANNEL_TS;
+       channel_map[10] = PAL_CHMAP_CHANNEL_TFC;
+       channel_map[11] = PAL_CHMAP_CHANNEL_MS;
+       channel_map[12] = PAL_CHMAP_CHANNEL_FLC;
+       channel_map[13] = PAL_CHMAP_CHANNEL_FRC;
+       break;
+    case CHANNELS_16:
+       channel_map[0] = PAL_CHMAP_CHANNEL_FL;
+       channel_map[1] = PAL_CHMAP_CHANNEL_FR;
+       channel_map[2] = PAL_CHMAP_CHANNEL_C;
+       channel_map[3] = PAL_CHMAP_CHANNEL_LS;
+       channel_map[4] = PAL_CHMAP_CHANNEL_RS;
+       channel_map[5] = PAL_CHMAP_CHANNEL_LFE;
+       channel_map[6] = PAL_CHMAP_CHANNEL_LB;
+       channel_map[7] = PAL_CHMAP_CHANNEL_RB;
+       channel_map[8] = PAL_CHMAP_CHANNEL_RC;
+       channel_map[9] = PAL_CHMAP_CHANNEL_TS;
+       channel_map[10] = PAL_CHMAP_CHANNEL_TFC;
+       channel_map[11] = PAL_CHMAP_CHANNEL_MS;
+       channel_map[12] = PAL_CHMAP_CHANNEL_FLC;
+       channel_map[13] = PAL_CHMAP_CHANNEL_FRC;
+       channel_map[14] = PAL_CHMAP_CHANNEL_RLC;
+       channel_map[15] = PAL_CHMAP_CHANNEL_RRC;
+       break;
    }
 }
 
@@ -2574,7 +2669,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
     deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
 
     if ((sAttr != NULL) && (sAttr->direction == PAL_AUDIO_INPUT) &&
-            (deviceattr->config.bit_width == BITWIDTH_32)) {
+            (deviceattr->config.bit_width == BITWIDTH_32 && !devinfo.is32BitSupported)) {
         PAL_INFO(LOG_TAG, "update i/p bitwidth stream from 32b to max supported 24b");
         deviceattr->config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S24_LE;
         deviceattr->config.bit_width = BITWIDTH_24;
@@ -3049,7 +3144,7 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
     }
     deviceId = (pal_device_id_t)tx_dev->getSndDeviceId();
 
-    PAL_DBG(TAG_LOG, "stream type: %d, deviceid: %d, custom key: %s",
+    PAL_DBG(LOG_TAG, "stream type: %d, deviceid: %d, custom key: %s",
                       curStrAttr.type, deviceId, key.c_str());
     if (deviceInfo.empty()) {
         PAL_ERR(LOG_TAG, "deviceInfo empty");
@@ -3064,7 +3159,7 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
                 continue;
             *ec_enable = usecaseInfo.ec_enable;
             for (auto custom_config : usecaseInfo.config) {
-                PAL_DBG(TAG_LOG,"existing custom config key = %s", custom_config.key.c_str());
+                PAL_DBG(LOG_TAG,"existing custom config key = %s", custom_config.key.c_str());
                 if (!custom_config.key.compare(key)) {
                     *ec_enable = custom_config.ec_enable;
                     break;
@@ -3075,7 +3170,7 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
         break;
     }
 exit:
-    PAL_DBG(TAG_LOG,"ec_enable_setting:%d, status:%d", ec_enable ? *ec_enable : 0, status);
+    PAL_DBG(LOG_TAG,"ec_enable_setting:%d, status:%d", ec_enable ? *ec_enable : 0, status);
     return status;
 }
 
@@ -3322,6 +3417,7 @@ int ResourceManager::registerDevice(std::shared_ptr<Device> d, Stream *s)
     } else {
         checkandEnableEC_l(d, s, true);
     }
+
     mResourceManagerMutex.unlock();
 
     PAL_DBG(LOG_TAG, "Exit.");
@@ -3357,6 +3453,7 @@ int ResourceManager::deregisterDevice(std::shared_ptr<Device> d, Stream *s)
     } else {
         checkandEnableEC_l(d, s, false);
     }
+
     mResourceManagerMutex.unlock();
     PAL_DBG(LOG_TAG, "Exit.");
     return 0;
@@ -3451,14 +3548,17 @@ int ResourceManager::removePlugInDevice(pal_device_id_t device_id,
     return ret;
 }
 
-int ResourceManager::getActiveDevices(std::vector<std::shared_ptr<Device>> &deviceList)
+void ResourceManager::getActiveDevices_l(std::vector<std::shared_ptr<Device>> &deviceList)
 {
-    int ret = 0;
-    mResourceManagerMutex.lock();
     for (int i = 0; i < active_devices.size(); i++)
         deviceList.push_back(active_devices[i].first);
+}
+
+void ResourceManager::getActiveDevices(std::vector<std::shared_ptr<Device>> &deviceList)
+{
+    mResourceManagerMutex.lock();
+    getActiveDevices_l(deviceList);
     mResourceManagerMutex.unlock();
-    return ret;
 }
 
 int ResourceManager::getAudioRoute(struct audio_route** ar)
@@ -6242,6 +6342,11 @@ int ResourceManager::getNativeAudioSupport()
         na_props.ui_na_prop_enabled) {
         ret = na_props.na_mode;
     }
+
+#ifndef PAL_CUTILS_SUPPORTED
+    na_props.rm_na_prop_enabled = na_props.ui_na_prop_enabled = true;
+    na_props.na_mode = 4; // NATIVE_AUDIO_MODE_MULTIPLE_MIX_IN_DSP = 4
+#endif
     PAL_ERR(LOG_TAG,"napb: ui Prop enabled(%d) mode(%d)",
            na_props.ui_na_prop_enabled, na_props.na_mode);
     return ret;
@@ -8034,6 +8139,29 @@ bool ResourceManager::isDeviceAvailable(
     return isAvailable;
 }
 
+bool ResourceManager::isDisconnectedDeviceStillActive(
+    std::set<pal_device_id_t> &curPalDevices, std::set<pal_device_id_t> &activeDevices,
+    const std::set<pal_device_id_t> &extDeviceList)
+{
+    for (pal_device_id_t id : extDeviceList) {
+        if ((curPalDevices.find(id) != curPalDevices.end() &&
+            activeDevices.find(id) != activeDevices.end()) &&
+            ((isBtDevice(id) && !isDeviceReady(id)) || !isDeviceAvailable(id))) {
+             return true;
+        }
+    }
+    return false;
+}
+
+bool ResourceManager::isDeviceGroupInList(std::set<pal_device_id_t> &devicelist,
+                                          const std::set<pal_device_id_t> &devicegroup) {
+    for (pal_device_id_t id : devicelist) {
+        if (devicegroup.find(id) != devicegroup.end())
+            return true;
+    }
+    return false;
+}
+
 bool ResourceManager::isDeviceReady(pal_device_id_t id)
 {
     struct pal_device dAttr;
@@ -8544,6 +8672,7 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
     struct deviceIn dev = {
         .bitFormatSupported = PAL_AUDIO_FMT_PCM_S16_LE,
         .ec_enable = true,
+        .is32BitSupported = false,
     };
     int size = 0 , sizeusecase = 0, sizecustomconfig = 0;
 
@@ -8609,6 +8738,10 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
         } else if (!strcmp(tag_name, "Charge_concurrency_enabled")) {
             if (atoi(data->data_buf))
                 isChargeConcurrencyEnabled = true;
+        } else if (!strcmp(tag_name, "is32BitSupported")) {
+            size = deviceInfo.size() - 1;
+            if (atoi(data->data_buf))
+                deviceInfo[size].is32BitSupported = true;
         } else if (!strcmp(tag_name, "cps_mode")) {
             cpsMode = atoi(data->data_buf);
         } else if (!strcmp(tag_name, "supported_bit_format")) {
@@ -9228,8 +9361,10 @@ done:
 /* Function to get audio vendor configs path */
 void ResourceManager::getVendorConfigPath (char* config_file_path, int path_size)
 {
+#ifdef PAL_CUTILS_SUPPORTED
    char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
    if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
+#endif
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
        /* Audio configs are stored in /etc */
        snprintf(config_file_path, path_size, "%s", "/etc");
@@ -9237,11 +9372,13 @@ void ResourceManager::getVendorConfigPath (char* config_file_path, int path_size
        /* Audio configs are stored in /vendor/etc */
        snprintf(config_file_path, path_size, "%s", "/vendor/etc");
 #endif
+#ifdef PAL_CUTILS_SUPPORTED
     } else {
        /* Audio configs are stored in /vendor/etc/audio/sku_${vendor_sku} */
        snprintf(config_file_path, path_size,
                        "%s%s", "/vendor/etc/audio/sku_", vendor_sku);
     }
+#endif
 }
 
 void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)

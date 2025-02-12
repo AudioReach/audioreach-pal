@@ -111,3 +111,26 @@ int bt_base_populate_enc_cmn_param(custom_block_t *blk, uint32_t param_id,
 
     return 0;
 }
+
+int bt_base_populate_dec_media_fmt(custom_block_t *blk,uint32_t fmt_id,
+        void *payload, size_t size)
+{
+    media_format_t *media_format = NULL;
+    void *enc_payload = NULL;
+
+    blk->param_id = PARAM_ID_MEDIA_FORMAT;
+    blk->payload_sz = sizeof(struct media_format_t) + size;
+    blk->payload = (uint8_t *)calloc(1, blk->payload_sz);
+    if (!blk->payload) {
+        blk->payload_sz = 0;
+        return -ENOMEM;
+    }
+    media_format = (struct media_format_t *) blk->payload;
+    media_format->data_format  = DATA_FORMAT_RAW_COMPRESSED;
+    media_format->fmt_id       = fmt_id;
+    media_format->payload_size = size;
+    enc_payload = (void *)(blk->payload + sizeof(struct media_format_t));
+    memcpy(enc_payload, payload, size);
+
+    return 0;
+}

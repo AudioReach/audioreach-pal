@@ -125,4 +125,55 @@ endif
 libpal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs
 libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.a
 
+if BUILDSYSTEM_QLI
+
+libpal_la_list      = ./configs/qcm6490/mixer_paths_qcm6490_idp.xml \
+                      ./configs/qcm6490/resourcemanager_qcm6490_idp.xml \
+                      ./configs/qcm6490/mixer_paths_qcm6490_rb3.xml \
+                      ./configs/qcm6490/resourcemanager_qcm6490_rb3.xml \
+                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_vision.xml \
+                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_vision.xml \
+                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_vc.xml \
+                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_vc.xml \
+                      ./configs/qcm6490/usecaseKvManager.xml \
+                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_ia.xml \
+                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_ia.xml \
+                      ./configs/qcs8300/mixer_paths_qcs8300_ridesx.xml \
+                      ./configs/qcs8300/resourcemanager_qcs8300_ridesx.xml \
+                      ./configs/qcs9075/mixer_paths_qcs9075_rb8.xml \
+                      ./configs/qcs9075/resourcemanager_qcs9075_rb8.xml \
+                      ./configs/qcs9100/mixer_paths_qcs9100_ridesx.xml \
+                      ./configs/qcs9100/resourcemanager_qcs9100_ridesx.xml
+
+# install essential xml files under /etc
+root_etcdir      = "/etc"
+root_etc_SCRIPTS = $(libpal_la_list)
+install-data-hook:
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs8300_ridesx.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs8300_ridesx.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs9100_ridesx.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs9100_ridesx.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs9075_rb8.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs9075_rb8.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_idp.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcm6490_idp.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_rb3.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcm6490_rb3.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_rb3_vision.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcm6490_rb3_vision.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_rb3_vc.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcm6490_rb3_vc.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/usecaseKvManager.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_rb3_ia.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcm6490_rb3_ia.xml
+
+adsprpc_sources = adsprpcd/adsprpcd.c
+
+bin_PROGRAMS = audioadsprpcd
+audioadsprpcd_SOURCES = $(adsprpc_sources)
+audioadsprpcd_LDADD = -ldl
+audioadsprpcd_la_CFLAGS = -fPIC
+
+endif
+
 SUBDIRS =  plugins . session stream device plugins/configs

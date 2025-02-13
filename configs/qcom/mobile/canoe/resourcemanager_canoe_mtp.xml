@@ -1116,6 +1116,19 @@
             <snd_device_name>ultrasound-handset-wsa</snd_device_name>
             <samplerate>96000</samplerate>
             <bit_width>16</bit_width>
+            <usecase>
+                <name>PAL_STREAM_SENSOR_PCM_RENDERER</name>
+                <custom-config key="stereo-spkr">
+                    <snd_device_name>speaker</snd_device_name>
+                    <channels>2</channels>
+                </custom-config>
+                <custom-config key="top-spkr">
+                    <snd_device_name>handset</snd_device_name>
+                </custom-config>
+                <custom-config key="bottom-spkr">
+                    <snd_device_name>speaker-mono-2</snd_device_name>
+                </custom-config>
+            </usecase>
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND_DEDICATED</id>

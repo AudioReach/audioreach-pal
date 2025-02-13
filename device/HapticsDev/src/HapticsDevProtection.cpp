@@ -1447,6 +1447,25 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             }
         }
 
+        param_id_haptics_rx_persistent_data_param_t VIpeValue;
+        if (getRxPersistentParameter(&VIpeValue) == 0) {
+            payloadSize = 0;
+            builder->payloadHapticsDevPConfig(&payload, &payloadSize, miid,
+                    PARAM_ID_HAPTICS_RX_PERSISTENT_DATA_PARAM,(void *)&VIpeValue);
+            if (payloadSize) {
+                if (customPayload) {
+                    free (customPayload);
+                    customPayloadSize = 0;
+                    customPayload = NULL;
+                }
+                ret = updateCustomPayload(payload, payloadSize);
+                free(payload);
+                if (0 != ret) {
+                    PAL_ERR(LOG_TAG," updateCustomPayload Failed\n");
+                }
+            }
+        }
+
         enableDevice(audioRoute, mSndDeviceName_vi);
         PAL_DBG(LOG_TAG, "pcm start for TX");
         if (pcm_start(txPcm) < 0) {
@@ -1973,6 +1992,50 @@ int32_t HapticsDevProtection::getParameter(uint32_t param_id, void **param)
         break;
     }
     return status;
+}
+
+int32_t HapticsDevProtection::getRxPersistentParameter(param_id_haptics_rx_persistent_data_param_t *VIpeValue)
+{
+    int fd;
+
+    fd = TEMP_FAILURE_RETRY(::open(PAL_HP_VI_PER_PATH, O_RDONLY));
+    if (fd < 0) {
+        PAL_INFO(LOG_TAG, "Haptics_Persistent.cal file not present, use the default Persistent values");
+        return -ENOENT;
+    }
+
+    size_t chunkSize = 0;
+    for (int i = 0; i < numberOfChannels; i++) {
+        chunkSize += sizeof(VIpeValue->Re_ohm_q24[i]) + sizeof(VIpeValue->Le_mH_q24[i]) +
+                     sizeof(VIpeValue->Bl_q24[i]) + sizeof(VIpeValue->Rms_KgSec_q24[i]) +
+                     sizeof(VIpeValue->Kms_Nmm_q24[i]) + sizeof(VIpeValue->Fres_Hz_q20[i]);
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[chunkSize * numberOfChannels]);
+
+    PAL_INFO(LOG_TAG, "update RX persistent value from file");
+    ssize_t bytesRead = TEMP_FAILURE_RETRY(::read(fd, buffer.get(), chunkSize * numberOfChannels));
+    ::close(fd);
+    if (bytesRead != static_cast<ssize_t>(chunkSize * numberOfChannels)) {
+        PAL_INFO(LOG_TAG, "Failed to read the expected amount of data from file");
+        return -EIO;
+    }
+
+    for (int i = 0; i < numberOfChannels; i++) {
+        uint8_t *ptr = buffer.get() + i * chunkSize;
+        memcpy(&VIpeValue->Re_ohm_q24[i], ptr, sizeof(VIpeValue->Re_ohm_q24[i]));
+        ptr += sizeof(VIpeValue->Re_ohm_q24[i]);
+        memcpy(&VIpeValue->Le_mH_q24[i], ptr, sizeof(VIpeValue->Le_mH_q24[i]));
+        ptr += sizeof(VIpeValue->Le_mH_q24[i]);
+        memcpy(&VIpeValue->Bl_q24[i], ptr, sizeof(VIpeValue->Bl_q24[i]));
+        ptr += sizeof(VIpeValue->Bl_q24[i]);
+        memcpy(&VIpeValue->Rms_KgSec_q24[i], ptr, sizeof(VIpeValue->Rms_KgSec_q24[i]));
+        ptr += sizeof(VIpeValue->Rms_KgSec_q24[i]);
+        memcpy(&VIpeValue->Kms_Nmm_q24[i], ptr, sizeof(VIpeValue->Kms_Nmm_q24[i]));
+        ptr += sizeof(VIpeValue->Kms_Nmm_q24[i]);
+        memcpy(&VIpeValue->Fres_Hz_q20[i], ptr, sizeof(VIpeValue->Fres_Hz_q20[i]));
+    }
+    return 0;
 }
 
 int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)

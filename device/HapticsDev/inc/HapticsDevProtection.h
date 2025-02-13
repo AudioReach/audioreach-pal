@@ -147,6 +147,7 @@ public:
     int getCpsDevNumber(std::string mixer);
 //    int32_t getCalibrationData(void **param);
     int32_t getAndsetVIScalingParameter(uint32_t pcmid, uint32_t miid);
+    int32_t getRxPersistentParameter(param_id_haptics_rx_persistent_data_param_t *VIpeValue);
     int32_t getFTMParameter(void **param);
     int32_t getAndsetPersistentParameter(bool flag);
     void disconnectFeandBe(std::vector<int> pcmDevIds, std::string backEndName);

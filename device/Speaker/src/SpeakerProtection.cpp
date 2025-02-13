@@ -727,6 +727,7 @@ int SpeakerProtection::spkrStartCalibration()
         }
     }
 
+    enableDevice(audioRoute, mSndDeviceName_vi);
     txPcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdsTx.at(0), flags, &config);
     if (!txPcm) {
         PAL_ERR(LOG_TAG, "txPcm open failed");
@@ -763,7 +764,6 @@ int SpeakerProtection::spkrStartCalibration()
         goto err_pcm_open;
     }
 
-    enableDevice(audioRoute, mSndDeviceName_vi);
 
     PAL_DBG(LOG_TAG, "pcm start for TX path");
     if (pcm_start(txPcm) < 0) {

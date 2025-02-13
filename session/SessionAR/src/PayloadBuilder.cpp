@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -4513,6 +4513,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
             }
         break;
       case PARAM_ID_HAPTICS_EX_VI_PERSISTENT:
+      case PARAM_ID_HAPTICS_RX_PERSISTENT_DATA_PARAM:
             {
                 param_id_haptics_ex_vi_persistent *hpConf;
                 param_id_haptics_ex_vi_persistent *data;

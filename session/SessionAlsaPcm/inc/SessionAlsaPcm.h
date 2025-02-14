@@ -79,13 +79,11 @@ private:
     int32_t configureInCallRxMFC();
     static bool silenceEventRegistered;
     std::mutex kvMutex;
-    uint32_t eventId;
-    void *eventPayload;
-    size_t eventPayloadSize;
     bool RegisterForEvents = false;
     struct pal_param_haptics_cnfg_t *hpCnfg;
     bool isMixerEventCbRegd;
     int getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info, size_t *size __unused, uint8_t *payload);
+    std::vector<eventPayload *> eventPayloadList;
 public:
 
     SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm);
@@ -133,16 +131,16 @@ public:
     void deRegisterAdmStream(Stream *s);
     void requestAdmFocus(Stream *s, long ns);
     void releaseAdmFocus(Stream *s);
+    void clearEventPayloadList();
     void setEventPayload(uint32_t event_id, void *payload, size_t payload_size);
     void retryOpenWithoutEC(Stream *s, unsigned int pcm_flags, struct pcm_config *config);
+    void getEventPayload(std::vector<eventPayload *> &payloadListParam);
     int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
             us_tone_renderer_ep_media_format_status_t event);
     uint32_t getsvaMiid() { return svaMiid; };
     uint32_t getAsrMiid() { return asrMiid; };
-    int getEventPayload(void** evtPld, size_t* size);
     bool getRegisterForEvents() { return RegisterForEvents; };
     void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
-    int getEventId() { return eventId; };
     bool IsSilenceEventRegistered() { return silenceEventRegistered; };
     void setSilenceEventRegistered(bool newState) { silenceEventRegistered = newState; };
     int getHapticsConfig(struct pal_param_haptics_cnfg_t *config);

@@ -129,6 +129,11 @@ public:
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
+    typedef struct eventPayload {
+        uint32_t eventId;
+        void *payload;
+        size_t payloadSize;
+    } eventPayload;
 };
 
 #endif //SESSION_H

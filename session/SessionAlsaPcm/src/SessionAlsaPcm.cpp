@@ -74,8 +74,6 @@ SessionAlsaPcm::SessionAlsaPcm(std::shared_ptr<ResourceManager> Rm)
 {
    rm = Rm;
    builder = new PayloadBuilder();
-   eventPayload = NULL;
-   eventPayloadSize = 0;
    pcm = NULL;
    pcmRx = NULL;
    pcmTx = NULL;
@@ -1048,8 +1046,6 @@ int SessionAlsaPcm::start(Stream * s)
     struct sessionToPayloadParam streamData = {};
     int payload_size = 0;
     struct agm_event_reg_cfg event_cfg = {};
-    struct agm_event_reg_cfg *acd_event_cfg = nullptr;
-    struct agm_event_reg_cfg *asr_event_cfg = nullptr;
     int tagId = 0;
     int DeviceId;
     struct disable_lpm_info lpm_info = {};
@@ -1685,12 +1681,9 @@ int SessionAlsaPcm::close(Stream * s)
     }
 
     builder->freeCustomPayload();
-    if (eventPayload) {
-        free(eventPayload);
-        eventPayload = NULL;
-        eventPayloadSize = 0;
-        eventId = 0;
-    }
+    if (eventPayloadList.size() > 0)
+       clearEventPayloadList();
+
 exit:
     ecRefDevId = PAL_DEVICE_OUT_MIN;
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
@@ -2063,17 +2056,35 @@ exit:
 
 void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t payload_size)
 {
-    eventId = event_id;
-    if (eventPayload)
-        free(eventPayload);
+    eventPayload *event = NULL;
 
-    eventPayloadSize = payload_size;
-    eventPayload = calloc(1, payload_size);
-    if (!eventPayload) {
-        PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload");
+    event = (struct eventPayload *)calloc(1, sizeof(struct eventPayload));
+    if (!event) {
+        PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload struct");
         return;
     }
-    memcpy(eventPayload, payload, payload_size);
+
+    event->eventId = event_id;
+    event->payloadSize = payload_size;
+    event->payload = calloc(1, payload_size);
+    if (!event->payload) {
+        PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload");
+        free(event);
+        return;
+    }
+
+    memcpy(event->payload, payload, payload_size);
+    eventPayloadList.push_back(event);
+}
+
+void SessionAlsaPcm::clearEventPayloadList() {
+
+    for (int i = 0; i < eventPayloadList.size(); i++) {
+        if (eventPayloadList[i]->payload)
+            free(eventPayloadList[i]->payload);
+        free(eventPayloadList[i]);
+    }
+    eventPayloadList.clear();
 }
 
 int SessionAlsaPcm::getHapticsConfig(struct pal_param_haptics_cnfg_t *config)
@@ -3752,18 +3763,9 @@ exit:
     return status;
 }
 
-int SessionAlsaPcm::getEventPayload(void** evtPld, size_t* size)
+void SessionAlsaPcm::getEventPayload(std::vector<eventPayload *> &payloadListParam)
 {
-    int32_t status = 0;
-    if (!eventPayload) {
-        PAL_ERR(LOG_TAG,"eventPayload is NULL!!!");
-        status = -EINVAL;
-    } else {
-        *evtPld = eventPayload;
-        if (size)
-            *size = eventPayloadSize;
-    }
-    return status;
+    payloadListParam.assign(eventPayloadList.begin(), eventPayloadList.end());
 }
 
 int32_t SessionAlsaPcm::getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,

@@ -1727,6 +1727,19 @@
                     <high_performance_ns capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
                 </operating_modes>
             </stream_config>
+            <!-- SDZ -->
+            <stream_config>
+                <name>QC_SDZ</name>
+                <param vendor_uuid="38661a34-c17a-45c6-86ab-1bc3f2c079a1" />
+                <param sample_rate="16000" />
+                <param bit_width="16" />
+                <!-- Module output channels -->
+                <param out_channels="1" />
+                <operating_modes>
+                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI" />
+                    <high_performance capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                </operating_modes>
+            </stream_config>
         </acd_platform_info>
         <!-- ASR -->
         <asr_platform_info>

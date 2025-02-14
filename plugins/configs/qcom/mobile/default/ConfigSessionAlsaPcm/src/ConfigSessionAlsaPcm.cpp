@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -238,12 +238,37 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
     } else if (sAttr.type == PAL_STREAM_ACD) {
-        PAL_DBG(LOG_TAG, "register ACD models");
-        /*IS THIS doing anything??? where is the customPayloadset???*/
-        builder->getCustomPayload(&payload, &payloadSize);
-        SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
-                                            payload, payloadSize);
-        builder->freeCustomPayload();
+        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
+        session->getEventPayload(payloadListParam);
+        if (payloadListParam.empty()) {
+            PAL_ERR(LOG_TAG, "payload list is empty!!!");
+            status = -EINVAL;
+            goto exit;
+        }
+        for (int i = 0; i < payloadListParam.size(); i++) {
+            payload_size = sizeof(struct agm_event_reg_cfg) +
+                           payloadListParam[i]->payloadSize;
+            acd_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+            if (!acd_event_cfg) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for acd event config");
+                status = -EINVAL;
+                goto exit;
+            }
+            memset(&event_cfg, 0, sizeof(event_cfg));
+            acd_event_cfg->event_config_payload_size =
+                                     payloadListParam[i]->payloadSize;
+            acd_event_cfg->is_register = 1;
+            acd_event_cfg->event_id = payloadListParam[i]->eventId;
+            memcpy(acd_event_cfg->event_config_payload,
+                   payloadListParam[i]->payload,
+                   payloadListParam[i]->payloadSize);
+            SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
+                                                 txAifBackEnds[0].second.data(),
+                                                 CONTEXT_DETECTION_ENGINE,
+                                                 (void *)acd_event_cfg,
+                                                  payload_size);
+            free(acd_event_cfg);
+        }
     } else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
         status = register_asps_event(1, session, mxr);
     } else if (sAttr.type == PAL_STREAM_HAPTICS &&
@@ -257,25 +282,36 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, (void *)&event_cfg,
                 payload_size);
     } else if (sAttr.type == PAL_STREAM_ASR) {
-        void *eventPayload = nullptr;
-        size_t eventPayloadSize = 0;
         uint32_t asrMiid = session->getAsrMiid();
-        session->getEventPayload(&eventPayload, &eventPayloadSize);
-        payload_size = sizeof(struct agm_event_reg_cfg) + eventPayloadSize;
-        asr_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        asr_event_cfg->event_config_payload_size = eventPayloadSize;
-        asr_event_cfg->is_register = 1;
-        asr_event_cfg->event_id = session->getEventId();
-        asr_event_cfg->module_instance_id = asrMiid;
-        memcpy(asr_event_cfg->event_config_payload, eventPayload, eventPayloadSize);
-        if (pcmDevIds.size() == 0) {
-            PAL_ERR(LOG_TAG, "frontendIDs is not available.");
+        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
+        session->getEventPayload(payloadListParam);
+        if (payloadListParam.empty()) {
+            PAL_ERR(LOG_TAG, "payload list is empty!!!");
             status = -EINVAL;
             goto exit;
         }
-        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-            (void *)asr_event_cfg, payload_size);
+        for (int i = 0; i < payloadListParam.size(); i++) {
+            payload_size = sizeof(struct agm_event_reg_cfg) +
+                           payloadListParam[i]->payloadSize;
+            asr_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+            if (!asr_event_cfg) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for asr event config");
+                status = -EINVAL;
+                goto exit;
+            }
+            memset(&event_cfg, 0, sizeof(event_cfg));
+            asr_event_cfg->event_config_payload_size =
+                                     payloadListParam[i]->payloadSize;
+            asr_event_cfg->is_register = 1;
+            asr_event_cfg->event_id = payloadListParam[i]->eventId;
+            asr_event_cfg->module_instance_id = asrMiid;
+            memcpy(asr_event_cfg->event_config_payload,
+                   payloadListParam[i]->payload,
+                   payloadListParam[i]->payloadSize);
+            SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
+                   (void *)asr_event_cfg, payload_size);
+            free(asr_event_cfg);
+        }
     }
 
     switch (sAttr.direction) {
@@ -517,44 +553,12 @@ set_mixer:
                     PAL_ERR(LOG_TAG, "Failed to set incall record params status = %d", status);
             }
         } else if (sAttr.type == PAL_STREAM_VOICE_UI ||
-                       sAttr.type == PAL_STREAM_ASR) {
+                        sAttr.type == PAL_STREAM_ASR ||
+                        sAttr.type == PAL_STREAM_ACD) {
             builder->getCustomPayload(&payload, &payloadSize);
             SessionAlsaUtils::setMixerParameter(mxr,
                 pcmDevIds.at(0), payload, payloadSize);
             builder->freeCustomPayload();
-        } else if (sAttr.type == PAL_STREAM_ACD) {
-            size_t eventPayloadSize;
-            void* eventPayload = nullptr;
-            status = session->getEventPayload(&eventPayload, &eventPayloadSize);
-            if (status) {
-                PAL_ERR(LOG_TAG, "getEventPayload failure");
-                goto exit;
-            }
-            if (eventPayload) {
-                PAL_DBG(LOG_TAG, "register ACD events");
-                payload_size = sizeof(struct agm_event_reg_cfg) + eventPayloadSize;
-                acd_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
-                if (acd_event_cfg) {
-                    uint32_t eventId = session->getEventId();
-                    PAL_DBG(LOG_TAG, "eventId: %d", eventId);
-                    acd_event_cfg->event_id = eventId;
-                    acd_event_cfg->event_config_payload_size = eventPayloadSize;
-                    acd_event_cfg->is_register = 1;
-                    memcpy(acd_event_cfg->event_config_payload, eventPayload, eventPayloadSize);
-                    SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                                                            txAifBackEnds[0].second.data(),
-                                                            CONTEXT_DETECTION_ENGINE,
-                                                            (void *)acd_event_cfg,
-                                                            payload_size);
-                    free(acd_event_cfg);
-                } else {
-                    PAL_ERR(LOG_TAG, "get acd_event_cfg instance memory allocation failed");
-                    status = -ENOMEM;
-                    goto exit;
-                }
-            } else {
-                PAL_INFO(LOG_TAG, "eventPayload is NULL");
-            }
         } else if (sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
             status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
                                                 txAifBackEnds[0].second.data(),
@@ -1327,26 +1331,25 @@ int32_t pcmPluginConfigSetConfigStop(Stream* s, void* pluginPayload)
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
     } else if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_ASR) {
-        uint32_t eventId;
-        void* eventPayload = nullptr;
-        session->getEventPayload(&eventPayload, nullptr);
-
-        if (eventPayload == nullptr) {
-            PAL_INFO(LOG_TAG, "eventPayload is NULL");
+        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
+        session->getEventPayload(payloadListParam);
+        if (payloadListParam.empty()) {
+            PAL_ERR(LOG_TAG, "payload list is empty!!!");
+            status = -EINVAL;
             goto exit;
         }
-        payload_size = sizeof(struct agm_event_reg_cfg);
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        eventId = session->getEventId();
-        event_cfg.event_id = eventId;
-        event_cfg.event_config_payload_size = 0;
-        event_cfg.is_register = 0;
-        tagId = sAttr.type == PAL_STREAM_ACD ? CONTEXT_DETECTION_ENGINE :
-                                        TAG_MODULE_ASR;
-        if (!txAifBackEnds.empty()) {
-            if (!pcmDevIds.size()) {
-                PAL_ERR(LOG_TAG, "pcmDevIds not found.");
-                status = -EINVAL;
+        for (int i = 0; i < payloadListParam.size(); i++) {
+            payload_size = sizeof(struct agm_event_reg_cfg);
+            memset(&event_cfg, 0, sizeof(event_cfg));
+            event_cfg.event_config_payload_size =  0;
+            event_cfg.is_register = 0;
+            event_cfg.event_id = payloadListParam[i]->eventId;
+            tagId = (sAttr.type == PAL_STREAM_ACD ? CONTEXT_DETECTION_ENGINE :
+                                        TAG_MODULE_ASR);
+            if (txAifBackEnds.empty() || !pcmDevIds.size()) {
+                    PAL_ERR(LOG_TAG, "pcmDevIds not found.");
+                    status = -EINVAL;
+                    goto exit;
                 goto exit;
             }
             SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),

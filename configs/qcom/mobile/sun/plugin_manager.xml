@@ -139,6 +139,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <config name="PAL_STREAM_RAW" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_UI" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ASR" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_ACD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>

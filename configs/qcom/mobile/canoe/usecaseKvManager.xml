@@ -407,6 +407,12 @@
                 <!-- STREAMTX - ACD -->
                 <graph_kv key="0xB1000000" value="0xB100000D"/>
             </keys_and_values>
+            <keys_and_values ACDModuleType="QC_SDZ">
+                <!-- STREAM_CONFIG - STREAM_CFG_SDZ_QC -->
+                <graph_kv key="0xBC000000" value="0xBC00000B"/>
+                <!-- STREAMTX - ACD -->
+                <graph_kv key="0xB1000000" value="0xB100000D"/>
+            </keys_and_values>
         </stream>
         <stream type="PAL_STREAM_ASR">
             <keys_and_values ASRModuleType="QC_ASR" Instance="1">

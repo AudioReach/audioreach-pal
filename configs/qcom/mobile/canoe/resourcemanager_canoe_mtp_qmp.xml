@@ -1977,6 +1977,7 @@
             <stream_config>
                 <name>QC_MMA</name>
                 <param vendor_uuid="018f8585-3890-7419-b0f3-e5b6ec961d9c" />
+                <param interface_plugin_lib="sva_plugin.so" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->

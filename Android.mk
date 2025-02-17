@@ -35,7 +35,7 @@ LOCAL_CFLAGS        += -DCONFIG_GSL
 LOCAL_CFLAGS        += -D_GNU_SOURCE
 LOCAL_CFLAGS        += -DADSP_SLEEP_MONITOR
 LOCAL_CFLAGS        += -DVENDOR_SKU=\"$(TARGET_CODEC_NAME)\"
-ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
+ifeq ($(call is-board-platform-in-list,kalama pineapple sun canoe), true)
 LOCAL_CFLAGS        += -DSOC_PERIPHERAL_PROT
 endif
 LOCAL_CPPFLAGS      += -fexceptions -frtti -Wno-ignored-attributes
@@ -162,7 +162,7 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libdev_hfpuplink
 endif #end of static compilation
 
-ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
+ifeq ($(call is-board-platform-in-list,kalama pineapple sun canoe), true)
 LOCAL_SHARED_LIBRARIES += libPeripheralStateUtils
 LOCAL_HEADER_LIBRARIES += peripheralstate_headers \
     vendor_common_inc\

@@ -41,6 +41,9 @@
 #ifdef FEATURE_IPQ_OPENWRT
 #include <stdexcept>
 #endif
+#ifdef LINUX_ENABLED
+#include <stdexcept>
+#endif
 
 std::shared_ptr<AudioHapticsInterface> AudioHapticsInterface::me_ = nullptr;
 std::vector<haptics_wave_designer_config_t> AudioHapticsInterface::predefined_haptics_info;

@@ -73,6 +73,10 @@
 #ifdef FEATURE_IPQ_OPENWRT
 #include <sstream>
 #endif
+#ifdef LINUX_ENABLED
+#include <sstream>
+#endif
+
 #define MAX_CHANNEL_SUPPORTED 2
 #define DEFAULT_OUTPUT_SAMPLING_RATE 48000
 #define DEFAULT_OUTPUT_CHANNEL 2

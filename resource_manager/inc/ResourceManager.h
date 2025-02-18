@@ -924,6 +924,11 @@ public:
     bool isDeviceAvailable(pal_device_id_t id);
     bool isDeviceAvailable(std::vector<std::shared_ptr<Device>> devices, pal_device_id_t id);
     bool isDeviceAvailable(struct pal_device *devices, uint32_t devCount, pal_device_id_t id);
+    bool isDisconnectedDeviceStillActive(std::set<pal_device_id_t> &curPalDevices,
+                                         std::set<pal_device_id_t> &activeDevices,
+                                         const std::set<pal_device_id_t> &extDeviceList);
+    bool isDeviceGroupInList(std::set<pal_device_id_t> &devicelist,
+                             const std::set<pal_device_id_t> &devicegroup);
     bool isDeviceReady(pal_device_id_t id);
     bool isBtScoDevice(pal_device_id_t id);
     bool isBtDevice(pal_device_id_t id);

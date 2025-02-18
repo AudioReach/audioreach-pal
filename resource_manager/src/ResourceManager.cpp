@@ -49,8 +49,8 @@
 #include "Device.h"
 #include "Stream.h"
 #include "SndCardMonitor.h"
+#include "StreamUltraSound.h"
 #include "AudioHapticsInterface.h"
-#include "VoiceUIPlatformInfo.h"
 #include "PluginManager.h"
 #ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
@@ -66,9 +66,6 @@
 
 #include "PerfLock.h"
 
-#ifndef FEATURE_IPQ_OPENWRT
-#include <cutils/str_parms.h>
-#endif
 
 #ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/str_parms.h>
@@ -489,7 +486,7 @@ deregisterPeripheralCBFnPtr ResourceManager::mDeregisterPeripheralCb = nullptr;
 #define PRPHRL_REGSTR_RETRY_COUNT 10
 #endif
 //TODO:Needs to define below APIs so that functionality won't break
-#ifdef FEATURE_IPQ_OPENWRT || PAL_CUTILS_SUPPORTED
+#ifndef PAL_CUTILS_SUPPORTED
 int str_parms_get_str(struct str_parms *str_parms, const char *key,
                       char *out_val, int len){return 0;}
 char *str_parms_to_str(struct str_parms *str_parms){return NULL;}
@@ -1829,7 +1826,9 @@ int ResourceManager::init()
         PAL_DBG(LOG_TAG, "Speaker instance not created");
 
     PAL_INFO(LOG_TAG, "Initialize Audio Feature Stats");
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
     AudioFeatureStatsInit();
+#endif
 
     return 0;
 }
@@ -4946,10 +4945,10 @@ void ResourceManager::deinit()
    if (isChargeConcurrencyEnabled)
        chargerListenerDeinit();
 
-#ifndef SOUND_TRIGGER_FEATURES_DISABLED
+#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
     voiceuiDmgrManagerDeInit();
-#endif
     AudioFeatureStatsDeInit();
+#endif
 
     cvMutex.lock();
     msgQ.push(state);
@@ -6872,12 +6871,7 @@ int ResourceManager::getParameter(uint32_t param_id, void **param_payload,
     int status = 0;
     bool found_id = true;
 
-    PAL_DBG(LOG_TAG, "param_id=%d", param_id);
-    if (param_id == PAL_PARAM_ID_VUI_GET_META_DATA ||
-        param_id == PAL_PARAM_ID_VUI_CAPTURE_META_DATA) {
-        return VUIGetParameters(param_id, param_payload, payload_size);
-    }
-
+    PAL_DBG(LOG_TAG, "param_id=%d", param_id);    
     mResourceManagerMutex.lock();
     switch (param_id) {
         case PAL_PARAM_ID_GAIN_LVL_MAP:
@@ -7051,9 +7045,6 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
 
     PAL_DBG(LOG_TAG, "Enter param id: %d", param_id);
 
-    if (param_id == PAL_PARAM_ID_VUI_SET_META_DATA) {
-        return VUISetParameters(param_id, param_payload, payload_size);
-    }
 
     mResourceManagerMutex.lock();
     switch (param_id) {

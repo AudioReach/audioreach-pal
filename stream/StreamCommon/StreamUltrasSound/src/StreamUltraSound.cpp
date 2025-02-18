@@ -39,6 +39,7 @@
 #include "Device.h"
 #include "us_detect_api.h"
 #include <unistd.h>
+#include "PalDefs.h"
 
 extern "C" Stream* CreateUltraSoundStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -112,8 +113,6 @@ int32_t StreamUltraSound::stop()
     mStreamMutex.unlock();
     return status;
 }
-
-
 
 int32_t  StreamUltraSound::setParameters(uint32_t param_id, void *payload)
 {

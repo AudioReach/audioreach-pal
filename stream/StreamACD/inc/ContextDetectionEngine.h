@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -68,11 +68,11 @@ public:
     ContextDetectionEngine(StreamACD *s, std::shared_ptr<ACDStreamConfig> sm_cfg);
     virtual ~ContextDetectionEngine();
 
-    virtual int32_t StartEngine(StreamACD *s) = 0;
-    virtual int32_t StopEngine(StreamACD *s) = 0;
-    virtual int32_t SetupEngine(StreamACD *s, void *config) = 0;
-    virtual int32_t TeardownEngine(StreamACD *s, void *config) = 0;
-    virtual int32_t ReconfigureEngine(StreamACD *s, void *old_config, void *new_config) = 0;
+    virtual int32_t StartEngine(StreamACD *s);
+    virtual int32_t StopEngine(StreamACD *s);
+    virtual int32_t SetupEngine(StreamACD *s, void *config);
+    virtual int32_t TeardownEngine(StreamACD *s, void *config);
+    virtual int32_t ReconfigureEngine(StreamACD *s, void *old_config, void *new_config);
     virtual bool isEngActive() { return eng_state_ == ENG_ACTIVE; }
 
     virtual int32_t ConnectSessionDevice(
@@ -95,8 +95,10 @@ public:
                                     void* param_payload, size_t* payload_size, Stream *s);
 
 private:
-    virtual int32_t LoadSoundModel() = 0;
-    virtual int32_t UnloadSoundModel() = 0;
+    virtual int32_t LoadSoundModel();
+    virtual int32_t UnloadSoundModel();
+    static void ContextHandleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,
+                                      uint32_t event_size);
 
 protected:
     std::shared_ptr<ACDPlatformInfo> acd_info_;

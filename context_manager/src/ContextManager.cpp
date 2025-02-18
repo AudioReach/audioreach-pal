@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -36,7 +36,6 @@
 #include <chrono>
 #include "ContextManager.h"
 #include <asps/asps_acm_api.h>
-#include <asps/asps_us_rendering_usecase_api.h>
 #include "apm_api.h"
 #include "kvh2xml.h"
 
@@ -937,6 +936,9 @@ Usecase* UsecaseFactory::UsecaseCreate(int32_t usecase_id)
         case ASPS_USECASE_ID_ULTRASOUND_RENDERING:
             ret_usecase = new UsecasePCMRenderer(usecase_id);
             break;
+        case ASPS_USECASE_ID_SDZ:
+            ret_usecase = new UsecaseSDZ(usecase_id);
+            break;
         default:
             ret_usecase = NULL;
             PAL_ERR(LOG_TAG, "Error:%d Invalid usecaseid:%d", -EINVAL, usecase_id);
@@ -978,6 +980,8 @@ Usecase::~Usecase()
         free(this->pal_devices);
         this->pal_devices = NULL;
     }
+
+    tags.clear();
 
     pal_stream = NULL;
     this->usecase_id = 0;
@@ -1106,7 +1110,7 @@ int32_t Usecase::GetModuleIIDs(std::vector<int32_t> tags,
         if (std::find(tags.begin(), tags.end(), tag_entry->tag_id) != tags.end()) {
             for (uint32_t i = 0; i < tag_entry->num_modules; ++i) {
                 PAL_VERBOSE(LOG_TAG, "tag_id:0x%x -> miid:0x%x",
-                    tag_entry->mod_list[i].module_iid,tag_entry->tag_id);
+                    tag_entry->tag_id, tag_entry->mod_list[i].module_iid);
                 tag_miid_map[tag_entry->tag_id].push_back(tag_entry->mod_list[i].module_iid);
             }
         }
@@ -1129,6 +1133,36 @@ int32_t Usecase::SetUseCaseData(uint32_t size, void *data)
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
 
     PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
+    return rc;
+}
+
+int32_t Usecase::GetAckDataOnSuccessfullStart(uint32_t *size, void *data)
+{
+    int32_t rc = 0;
+    uint32_t *data_ptr = (uint32_t *)data;
+    size_t no_of_miid = 0;
+    std::map<int32_t, std::vector<uint32_t>> tag_miid_map;
+
+    PAL_VERBOSE(LOG_TAG, "Enter");
+
+    rc = GetModuleIIDs(this->tags, tag_miid_map);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d failed to get module iids", rc);
+        goto exit;
+    }
+
+    //grab all miids for all tags in the order that tags exist in the UC vector
+    for (auto tag : tags) {
+        for (uint32_t miid : tag_miid_map[tag]) {
+            *data_ptr = miid;
+            ++data_ptr;
+            ++no_of_miid;
+        }
+    }
+    *size = (no_of_miid * sizeof(uint32_t));
+
+exit:
+    PAL_DBG(LOG_TAG, "Exit %d, number of MIID %d", rc, no_of_miid);
     return rc;
 }
 
@@ -1163,7 +1197,6 @@ UsecaseACD::~UsecaseACD()
         free(this->requested_context_list);
         this->requested_context_list = NULL;
     }
-    tags.clear();
 
     PAL_VERBOSE(LOG_TAG, "Exit ");
 }
@@ -1174,6 +1207,12 @@ int32_t UsecaseACD::Configure()
     pal_param_payload *context_payload = NULL;
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
+
+    if (this->requested_context_list->num_contexts == 0) {
+        PAL_ERR(LOG_TAG, "none context id enables for ACD usecase");
+        rc = -EINVAL;
+        goto exit;
+    }
 
     context_payload = (pal_param_payload *) calloc (1, sizeof(pal_param_payload)
         + sizeof(uint32_t) * (1 + this->requested_context_list->num_contexts));
@@ -1197,7 +1236,7 @@ exit:
     return rc;
 }
 
-int32_t UsecaseACD::GetAckDataOnSuccessfullStart(uint32_t *size __unused, void *data __unused)
+int32_t UsecaseACD::GetAckDataOnSuccessfullStart(uint32_t *size, void *data)
 {
     int32_t rc = 0;
     asps_acd_usecase_register_ack_payload_t *data_ptr;
@@ -1344,36 +1383,6 @@ UsecasePCMData::~UsecasePCMData()
     PAL_VERBOSE(LOG_TAG, "Exit");
 }
 
-int32_t UsecasePCMData::GetAckDataOnSuccessfullStart(uint32_t *size, void *data)
-{
-    int32_t rc = 0;
-    uint32_t *data_ptr = (uint32_t *)data;
-    size_t no_of_miid = 0;
-    std::map<int32_t, std::vector<uint32_t>> tag_miid_map;
-
-    PAL_VERBOSE(LOG_TAG, "Enter");
-
-    rc = GetModuleIIDs(this->tags, tag_miid_map);
-    if (rc) {
-        PAL_ERR(LOG_TAG, "Error:%d failed to get module iids", rc);
-        goto exit;
-    }
-
-    //grab all miids for all tags in the order that tags exist in the UC vector
-    for (auto tag : tags) {
-        for (uint32_t miid : tag_miid_map[tag]) {
-            *data_ptr = miid;
-            ++data_ptr;
-            ++no_of_miid;
-        }
-    }
-    *size = (no_of_miid * sizeof(uint32_t));
-
-exit:
-    PAL_DBG(LOG_TAG, "Exit %d, number of MIID %d", rc, no_of_miid);
-    return rc;
-}
-
 int32_t UsecasePCMData::Configure()
 {
     int32_t rc = 0;
@@ -1487,35 +1496,6 @@ UsecaseUPD::~UsecaseUPD()
     PAL_VERBOSE(LOG_TAG, "Exit");
 }
 
-int32_t UsecaseUPD::GetAckDataOnSuccessfullStart(uint32_t * size, void * data)
-{
-    int32_t rc = 0;
-    uint32_t *data_ptr = (uint32_t *)data;
-    int32_t no_of_miid = 0;
-    std::map<int32_t, std::vector<uint32_t>> tag_miid_map;
-
-    PAL_VERBOSE(LOG_TAG, "Enter");
-
-    rc = GetModuleIIDs(this->tags, tag_miid_map);
-    if (rc) {
-        PAL_ERR(LOG_TAG, "Error:%d failed to get module iids", rc);
-        goto exit;
-    }
-
-    // grab all miids for all tags, in the order that tags exist in the UC vector
-    for (auto tag : tags) {
-        for (uint32_t miid : tag_miid_map[tag]) {
-            *data_ptr = miid;
-            ++data_ptr;
-            ++no_of_miid;
-        }
-    }
-    *size = (no_of_miid * sizeof(uint32_t));
-exit:
-    PAL_VERBOSE(LOG_TAG, "Exit %d", rc);
-    return rc;
-}
-
 UsecasePCMRenderer::UsecasePCMRenderer(uint32_t usecase_id) : Usecase(usecase_id)
 {
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
@@ -1594,31 +1574,83 @@ exit:
     return rc;
 }
 
-int32_t UsecasePCMRenderer::GetAckDataOnSuccessfullStart(uint32_t * size, void * data)
+UsecaseSDZ::UsecaseSDZ(uint32_t usecase_id) : Usecase(usecase_id)
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+
+    this->requested_context_list = NULL;
+    this->stream_attributes->type = PAL_STREAM_ACD;
+    this->no_of_devices = 1;
+    this->pal_devices = (struct pal_device *) calloc(this->no_of_devices, sizeof(struct pal_device));
+    if (!this->pal_devices) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to allocate memory for pal_devices",-ENOMEM);
+        throw std::runtime_error("Failed to allocate memory for pal_devices");
+    }
+
+    //input device
+    this->pal_devices[0].id = PAL_DEVICE_IN_HANDSET_VA_MIC;
+    this->pal_devices[0].config.bit_width = 16;
+    this->pal_devices[0].config.sample_rate = 16000;
+    this->pal_devices[0].config.ch_info.channels = 1;
+
+    this->tags.push_back(TAG_MODULE_SDZ);
+
+    PAL_VERBOSE(LOG_TAG, "Exit ");
+}
+
+int32_t UsecaseSDZ::Configure()
 {
     int32_t rc = 0;
-    uint32_t *data_ptr = (uint32_t *)data;
-    int32_t no_of_miid = 0;
-    std::map<int32_t, std::vector<uint32_t>> tag_miid_map;
+    pal_param_payload *context_payload = NULL;
 
-    PAL_VERBOSE(LOG_TAG, "Enter");
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
 
-    rc = GetModuleIIDs(this->tags, tag_miid_map);
-    if (rc) {
-        PAL_ERR(LOG_TAG, "Error:%d failed to get module iids", rc);
+    this->requested_context_list = (struct pal_param_context_list *) calloc(1, sizeof(struct pal_param_context_list));
+    if (!this->requested_context_list) {
+        rc = -ENOMEM;
+        PAL_ERR(LOG_TAG, "Error:%d Failed to allocate memory for context_list", rc);
         goto exit;
     }
 
-    // grab all miids for all tags, in the order that tags exist in the UC vector
-    for (auto tag : tags) {
-        for (uint32_t miid : tag_miid_map[tag]) {
-            *data_ptr = miid;
-            ++data_ptr;
-            ++no_of_miid;
-        }
+    /*
+     * Set num of contexts to 0 to indicate this is SDZ usecase, model doesn't need
+     * to be loaded from PAL, so payload is only 'num_contexts' with size of uint32_t
+    */
+    this->requested_context_list->num_contexts = 0;
+    context_payload = (pal_param_payload *) calloc(1, sizeof(pal_param_payload) + sizeof(uint32_t));
+    if (!context_payload) {
+        rc = -ENOMEM;
+        goto exit;
     }
-    *size = (no_of_miid * sizeof(uint32_t));
+
+    context_payload->payload_size = sizeof(this->requested_context_list);
+    memcpy(context_payload->payload, this->requested_context_list, sizeof(uint32_t));
+    rc = pal_stream_set_param(this->pal_stream, PAL_PARAM_ID_CONTEXT_LIST, context_payload);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x", rc, this->usecase_id);
+        goto exit;
+    }
+
 exit:
-    PAL_VERBOSE(LOG_TAG, "Exit %d", rc);
+    if (this->requested_context_list) {
+        free(this->requested_context_list);
+        this->requested_context_list = NULL;
+    }
+    if (context_payload)
+        free(context_payload);
+
+    PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
     return rc;
+}
+
+UsecaseSDZ::~UsecaseSDZ()
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
+
+    if (this->requested_context_list) {
+        free(this->requested_context_list);
+        this->requested_context_list = NULL;
+    }
+    //cleanup is done in baseclass
+    PAL_VERBOSE(LOG_TAG, "Exit");
 }

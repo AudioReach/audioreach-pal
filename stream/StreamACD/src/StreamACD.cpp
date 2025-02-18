@@ -54,6 +54,10 @@ extern "C" Stream* CreateACDStream(const struct pal_stream_attributes *sattr,
 static const struct st_uuid qc_acd_uuid =
     { 0x4e93281b, 0x296e, 0x4d73, 0x9833, { 0x27, 0x10, 0xc3, 0xc7, 0xc1, 0xdb } };
 
+/* Use below UUID for ACM usecase */
+static const struct st_uuid qc_sdz_uuid =
+    { 0x38661a34, 0xc17a, 0x45c6, 0x86ab, { 0x1b, 0xc3, 0xf2, 0xc0, 0x79, 0xa1 } };
+
 StreamACD::StreamACD(const struct pal_stream_attributes *sattr,
                     struct pal_device *dattr,
                     const uint32_t no_of_devices,
@@ -810,8 +814,13 @@ int32_t StreamACD::SetupDetectionEngine()
 
     PAL_DBG(LOG_TAG, "Enter");
     if (sm_cfg_ == NULL) {
-        /* Use QC ACD as default streamConfig */
-        status = SetupStreamConfig(&qc_acd_uuid);
+        if (context_config_->num_contexts == 0) {
+            /* Use QC SDZ if no context id specified */
+            status = SetupStreamConfig(&qc_sdz_uuid);
+        } else {
+            /* Use QC ACD as default streamConfig */
+            status = SetupStreamConfig(&qc_acd_uuid);
+        }
         if (status) {
             PAL_ERR(LOG_TAG, "Error:%d Failed to setup Stream Config", status);
             goto error_exit;

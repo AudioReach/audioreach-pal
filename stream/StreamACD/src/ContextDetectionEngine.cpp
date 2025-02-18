@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -55,6 +55,13 @@ std::shared_ptr<ContextDetectionEngine> ContextDetectionEngine::Create(
     if (!strcmp(streamConfigName.c_str(), "QC_ACD")) {
         try {
             engine = ACDEngine::GetInstance(s, sm_cfg);
+        } catch (const std::exception& e) {
+            PAL_ERR(LOG_TAG, "ContextDetectionEngine creation failed %s", e.what());
+            goto exit;
+        }
+    } else if (!strcmp(streamConfigName.c_str(), "QC_SDZ")) {
+        try {
+            engine = std::make_shared<ContextDetectionEngine>(s, sm_cfg);
         } catch (const std::exception& e) {
             PAL_ERR(LOG_TAG, "ContextDetectionEngine creation failed %s", e.what());
             goto exit;
@@ -105,7 +112,15 @@ ContextDetectionEngine::ContextDetectionEngine(
         throw std::runtime_error("Failed to create session");
     }
 
+    session_->registerCallBack(ContextHandleSessionCallBack, (uint64_t)this);
+
     PAL_DBG(LOG_TAG, "Exit");
+}
+
+void ContextDetectionEngine::ContextHandleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,
+                                      uint32_t event_size)
+{
+    return;
 }
 
 ContextDetectionEngine::~ContextDetectionEngine()
@@ -126,6 +141,98 @@ ContextDetectionEngine::~ContextDetectionEngine()
         delete session_;
     }
     PAL_INFO(LOG_TAG, "Exit");
+}
+
+int32_t ContextDetectionEngine::StartEngine(StreamACD *s)
+{
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+
+    if (isEngActive())
+        goto exit;
+
+    status = session_->prepare(s);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to prepare session", status);
+        goto exit;
+    }
+
+    status = session_->start(s);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to start session", status);
+        goto exit;
+    }
+
+    eng_state_ = ENG_ACTIVE;
+exit:
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    return status;
+}
+
+int32_t ContextDetectionEngine::StopEngine(StreamACD *s)
+{
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+
+    status = session_->stop(s);
+    if (status)
+        PAL_ERR(LOG_TAG, "Error:%d Failed to stop session", status);
+
+    eng_state_ = ENG_LOADED;
+    PAL_DBG(LOG_TAG, "Exit, status = %d", status);
+    return status;
+}
+
+int32_t ContextDetectionEngine::SetupEngine(StreamACD *s, void *config __unused)
+{
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+
+    status = session_->open(s);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to open session", status);
+        goto exit;
+    }
+
+    eng_state_ = ENG_LOADED;
+    eng_streams_.push_back(s);
+exit:
+    return status;
+}
+
+int32_t ContextDetectionEngine::TeardownEngine(StreamACD *s, void *config __unused)
+{
+    int32_t status = 0;
+
+    status = session_->close(s);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to close session", status);
+        goto exit;
+    }
+
+    eng_state_ = ENG_IDLE;
+exit:
+    auto iter = std::find(eng_streams_.begin(), eng_streams_.end(), s);
+    if (iter != eng_streams_.end())
+        eng_streams_.erase(iter);
+    return status;
+}
+
+int32_t ContextDetectionEngine::ReconfigureEngine(StreamACD *s, void *old_config, void *new_config)
+{
+    return 0;
+}
+
+int32_t ContextDetectionEngine::LoadSoundModel()
+{
+    return 0;
+}
+int32_t ContextDetectionEngine::UnloadSoundModel()
+{
+    return 0;
 }
 
 int32_t ContextDetectionEngine::ConnectSessionDevice(

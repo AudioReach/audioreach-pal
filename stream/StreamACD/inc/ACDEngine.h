@@ -64,9 +64,9 @@ public:
                           std::shared_ptr<ACDStreamConfig> sm_cfg);
     int32_t StartEngine(StreamACD *s) override;
     int32_t StopEngine(StreamACD *s) override;
-    int32_t SetupEngine(StreamACD *s, void *config);
-    int32_t TeardownEngine(StreamACD *s, void *config);
-    int32_t ReconfigureEngine(StreamACD *s, void *old_config, void *new_config);
+    int32_t SetupEngine(StreamACD *s, void *config) override;
+    int32_t TeardownEngine(StreamACD *s, void *config) override;
+    int32_t ReconfigureEngine(StreamACD *s, void *old_config, void *new_config) override;
 
 private:
     static void EventProcessingThread(ACDEngine *engine);

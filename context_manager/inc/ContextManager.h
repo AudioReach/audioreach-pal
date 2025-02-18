@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef CONTEXTMANAGER_H
@@ -55,6 +55,7 @@ using ACDUUID = SoundTriggerUUID;
 class Usecase
 {
 protected:
+    std::vector<int32_t> tags;
     uint32_t usecase_id;
     uint32_t no_of_devices;
     pal_device *pal_devices;
@@ -78,14 +79,15 @@ public:
 
     // caller should allocate sufficient memory the first time to avoid
     // calling this api twice. Size, will be updated to actual size;
-    virtual int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data) = 0;
+    // if the ack payload only has module instance ids, then this can be
+    // leveraged without overriding the defaul implementation
+    virtual int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
 };
 
 class UsecaseACD :public Usecase
 {
 private:
     struct pal_param_context_list *requested_context_list;
-    std::vector<int32_t> tags;
 
 public:
     UsecaseACD(uint32_t usecase_id);
@@ -95,7 +97,7 @@ public:
 
     // caller can allocate sufficient memory the first time to avoid
     // calling this api twice. Size, will be updated to actual size;
-    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
+    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data) override;
 
     //static functions
     // caller should allocate sufficient memory the first time to avoid
@@ -106,21 +108,14 @@ public:
 
 class UsecaseUPD : public Usecase
 {
-private:
-    std::vector<int32_t> tags;
 public:
     UsecaseUPD(uint32_t usecase_id);
     ~UsecaseUPD();
-
-    // caller can allocate sufficient memory the first time to avoid
-    // calling this api twice. Size, will be updated to actual size;
-    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
 };
 
 class UsecasePCMData : public Usecase
 {
 private:
-    std::vector<int32_t> tags;
     uint32_t pcm_data_type;
     uint32_t pcm_data_buffering;
 public:
@@ -128,23 +123,25 @@ public:
     ~UsecasePCMData();
     int32_t SetUseCaseData(uint32_t size, void *data);
     int32_t Configure();
-
-    // caller can allocate sufficient memory the first time to avoid
-    // calling this api twice. Size, will be updated to actual size;
-    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
 };
 
 class UsecasePCMRenderer : public Usecase
 {
-private:
-    std::vector<int32_t> tags;
 public:
     UsecasePCMRenderer(uint32_t usecase_id);
     ~UsecasePCMRenderer();
     int32_t SetUseCaseData(uint32_t size, void *data);
-    // caller can allocate sufficient memory the first time to avoid
-    // calling this api twice. Size, will be updated to actual size;
-    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
+};
+
+class UsecaseSDZ : public Usecase
+{
+private:
+    struct pal_param_context_list *requested_context_list;
+
+public:
+    UsecaseSDZ(uint32_t usecase_id);
+    ~UsecaseSDZ();
+    int32_t Configure();
 };
 
 class UsecaseFactory

@@ -56,6 +56,10 @@ typedef struct sound_model_data {
     uint32_t size;
 } sound_model_data_t;
 
+typedef struct detection_prop_list {
+    std::vector<uint32_t> prop_list;
+} detection_prop_list_t;
+
 // sound model list containing data for all stages
 typedef struct sound_model_list {
     std::vector<sound_model_data_t *> sm_list;
@@ -134,6 +138,10 @@ typedef enum {
     PARAM_BUFFERING_CONFIG = 29,
     PARAM_ENGINE_RESET = 30,
     PARAM_DETECTION_STREAM_LIST = 31,
+    PARAM_DETECTION_PROP_LIST = 32,
+    PARAM_SSTAGE_KW_DET_STATS = 33,
+    PARAM_SSTAGE_UV_DET_STATS = 34,
+    PARAM_DETECTION_PERF_MODE = 35,
     // new custom param id can be added here
 } intf_param_id_t;
 

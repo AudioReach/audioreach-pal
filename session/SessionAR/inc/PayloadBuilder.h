@@ -328,6 +328,8 @@ public:
     static int getBtDeviceKV(int dev_id, std::vector<std::pair<int, int>> &deviceKV,
         uint32_t codecFormat, bool isAbrEnabled, bool isHostless);
     static int getDeviceKV(int dev_id, std::vector<std::pair<int, int>> &deviceKV);
+    void payloadCABConfig(uint8_t** payload, size_t* size, uint32_t miid, bt_enc_payload_t *bt_enc_payload);
+    void payloadJBMConfig(uint8_t** payload, size_t* size, uint32_t miid, bt_enc_payload_t *bt_enc_payload);
     static bool compareNumSelectors(struct kvInfo info_1, struct kvInfo info_2);
     static int payloadDualMono(uint8_t **payloadInfo);
     void payloadAFSInfo(uint8_t **payload, size_t *size, uint32_t moduleId);

@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include "PalCommon.h"
 #include "PerfLock.h"
+#include <mutex>
 
 #include <sstream>
 

@@ -39,7 +39,9 @@
 #include "ResourceManager.h"
 #include "Device.h"
 #include "kvh2xml.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
+#endif
 #include "STUtils.h"
 
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -188,8 +190,9 @@ int32_t StreamASR::close()
         engine->releaseEngine();
         engine = nullptr;
     }
-
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
+#endif
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -207,7 +210,9 @@ int32_t StreamASR::start()
     if (!status) {
         currentState = STREAM_STARTED;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -225,7 +230,9 @@ int32_t StreamASR::stop()
     if (!status) {
         currentState = STREAM_STOPPED;
     }
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
+#endif
 
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
     return status;
@@ -1239,7 +1246,9 @@ int32_t StreamASR::Resume(bool isInternal) {
     status = curState->ProcessEvent(evCfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Resume failed", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
+#endif
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -1254,7 +1263,9 @@ int32_t StreamASR::Pause(bool isInternal) {
     status = curState->ProcessEvent(evCfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Pause failed", status);
+#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
+#endif
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
 
     return status;

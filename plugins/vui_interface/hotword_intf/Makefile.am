@@ -26,7 +26,7 @@ libhotword_intf_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat
 libhotword_intf_la_CPPFLAGS := $(AM_CPPFLAGS)
 libhotword_intf_la_CPPFLAGS += -std=c++14
 libhotword_intf_la_LDFLAGS   = -shared -avoid-version
-libhotword_intf_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+libhotword_intf_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libhotword_intf_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libhotword_intf_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 

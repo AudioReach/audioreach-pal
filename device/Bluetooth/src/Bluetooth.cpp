@@ -38,6 +38,7 @@
 #include "PayloadBuilder.h"
 #include "Stream.h"
 #include "Session.h"
+#include "SessionAR.h"
 #include "SessionAlsaUtils.h"
 #include "Device.h"
 #include "BTUtils.h"

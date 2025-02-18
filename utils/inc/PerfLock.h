@@ -6,6 +6,7 @@
 
 #include <mutex>
 #include <vector>
+#include <string>
 
 struct PerfLockConfig {
     bool usePerfLock = false;

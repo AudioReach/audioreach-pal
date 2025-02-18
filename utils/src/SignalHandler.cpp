@@ -36,8 +36,17 @@
 #define LOG_TAG "PAL: SignalHandler"
 
 #include <unistd.h>
+#ifdef PAL_USE_SYSLOG
+#include <syslog.h>
+#define ALOGE(fmt, arg...) syslog (LOG_ERR, fmt, ##arg)
+#define ALOGI(fmt, arg...) syslog (LOG_INFO, fmt, ##arg)
+#define ALOGD(fmt, arg...) syslog (LOG_DEBUG, fmt, ##arg)
+#define ALOGV(fmt, arg...) syslog (LOG_NOTICE, fmt, ##arg)
+#else
 #include <log/log.h>
+#endif
 #include <chrono>
+#include <signal.h>
 #include "SignalHandler.h"
 
 #ifdef _ANDROID_

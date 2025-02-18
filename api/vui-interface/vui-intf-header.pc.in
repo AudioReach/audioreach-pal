@@ -7,4 +7,4 @@ Name: mm-audio-headers
 Description: capiv2_api headers
 Version: @VERSION@
 Libs: -L${libdir}
-Cflags: -I${includedir}/acdbdata
+Cflags: -I${includedir}/vuiInterfaceHeader

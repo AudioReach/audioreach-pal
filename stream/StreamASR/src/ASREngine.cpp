@@ -67,6 +67,7 @@ ASREngine::ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg)
     isCrrDevUsingExtEc = false;
     exitThread = false;
     loggerModeEnabled = false;
+    timestampEnabled = false;
     outputBufSize = 0;
     ecRefCount = 0;
     devDisconnectCount = 0;
@@ -238,7 +239,12 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
                 PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
                 goto exit;
             }
-            loggerModeEnabled = opConfig->output_mode == LOGGER ? true : false;
+            if (opConfig->output_mode == LOGGER || opConfig->output_mode == TS_LOGGER)
+                loggerModeEnabled = true;
+            if (opConfig->output_mode == TS_BUFFERED ||
+                opConfig->output_mode == TS_NON_BUFFERED ||
+                opConfig->output_mode == TS_LOGGER)
+                timestampEnabled = true;
             outputBufSize = opConfig->out_buf_size;
             data = (uint8_t *)opConfig;
             dataSize = sizeof(param_id_asr_output_config_t);
@@ -367,6 +373,7 @@ int32_t ASREngine::StopEngine(Stream *s)
 
     engState = ASR_ENG_IDLE;
     loggerModeEnabled = false;
+    timestampEnabled = false;
 exit:
     PAL_DBG(LOG_TAG, "Exit, status = %d", status);
     return status;
@@ -383,8 +390,8 @@ void ASREngine::ParseEventAndNotifyStream() {
     uint8_t *temp = nullptr;
     event_id_asr_output_event_t *event = nullptr;
     asr_output_status_t *ev = nullptr;
-    pal_asr_event *eventToStream = nullptr;
     param_id_asr_output_t *eventHeader = nullptr;
+    eventPayload eventToStream;
     StreamASR *sAsr = nullptr;
 
     event = (struct event_id_asr_output_event_t *)eventQ.front();
@@ -421,39 +428,88 @@ void ASREngine::ParseEventAndNotifyStream() {
 
     temp = (uint8_t *)payload;
     eventHeader = (struct param_id_asr_output_t *)temp;
-    ev = (asr_output_status_t *)(temp + sizeof(struct param_id_asr_output_t));
+    if (timestampEnabled) {
+        asr_output_status_v2_t *ev = (asr_output_status_v2_t *)(temp + sizeof(struct param_id_asr_output_t));
+        pal_asr_ts_event *eventPayload = nullptr;
+        asr_word_status_t *words = nullptr;
 
-    eventSize = sizeof(pal_asr_event) + eventHeader->num_outputs *
-                sizeof(pal_asr_engine_event);
-    eventToStream = (pal_asr_event *)calloc(1, eventSize);
-    if (eventToStream == nullptr) {
-        PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!!");
-        goto cleanup;
-    }
-
-    eventToStream->num_events = eventHeader->num_outputs;
-
-    for (int i = 0; i < eventHeader->num_outputs; i++) {
-        eventStatus = (ev[i].status == 0 ? true : false);
-        if (!eventStatus) {
-            PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
+        eventToStream.type = TIMESTAMP_BASED_TEXT;
+        eventToStream.payloadSize = sizeof(pal_asr_ts_event) + eventHeader->num_outputs *
+                                    sizeof(pal_asr_engine_ts_event);
+        eventToStream.payload = calloc(1, eventToStream.payloadSize);
+        if (eventToStream.payload == nullptr) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!!");
             goto cleanup;
         }
-        eventToStream->event[i].is_final = ev[i].is_final;
-        eventToStream->event[i].confidence = ev[i].confidence;
-        eventToStream->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
-        for (int j = 0; j < ev[i].text_size; ++j)
-            eventToStream->event[i].text[j] = ev[i].text[j];
+        eventPayload = (pal_asr_ts_event *)eventToStream.payload;
+        eventPayload->num_events = eventHeader->num_outputs;
+
+        for (int i = 0; i < eventHeader->num_outputs; i++) {
+            eventStatus = ev[i].status == 0 ? true : false;
+            if (!eventStatus) {
+                PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
+                goto cleanup;
+            }
+            eventPayload->event[i].is_final = ev[i].is_final;
+            eventPayload->event[i].confidence = ev[i].confidence;
+            eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
+            eventPayload->event[i].start_ts = ((uint64_t)ev[i].segment_start_time_ms_msw << 32 |
+                                              (uint64_t)ev[i].segment_start_time_ms_lsw);
+            eventPayload->event[i].end_ts = ((uint64_t)ev[i].segment_end_time_ms_msw << 32 |
+                                            (uint64_t)ev[i].segment_end_time_ms_lsw);
+            eventPayload->event[i].num_words = ev[i].num_words;
+            words = (asr_word_status_t *)(&ev[i] + sizeof(asr_output_status_v2_t));
+            for (int j = 0; j < ev[i].text_size; ++j)
+                eventPayload->event[i].text[j] = ev[i].text[j];
+            for (int j = 0; j < ev[i].num_words; j++) {
+                eventPayload->event[i].word[j].word_confidence = words[j].word_confidence;
+                eventPayload->event[i].word[j].start_ts = ((uint64_t)words[j].word_start_time_ms_msw << 32 |
+                                                           (uint64_t)words[j].word_start_time_ms_lsw);
+                eventPayload->event[i].word[j].end_ts = ((uint64_t)words[j].word_end_time_ms_msw << 32 |
+                                                         (uint64_t)words[j].word_end_time_ms_lsw);
+                for (int k = 0; k < words[j].word_size; k++)
+                    eventPayload->event[i].word[j].word[k] = words[j].word[k];
+                words += sizeof(asr_word_status_t);
+            }
+        }
+        eventPayload->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
+    } else {
+        asr_output_status_t *ev = (asr_output_status_t *)(temp + sizeof(struct param_id_asr_output_t));
+        pal_asr_event *eventPayload = nullptr;
+
+        eventToStream.type = PLAIN_TEXT;
+        eventToStream.payloadSize = sizeof(pal_asr_event) + numOutput * sizeof(pal_asr_engine_event);
+
+        eventToStream.payload = calloc(1, eventToStream.payloadSize);
+        if (eventToStream.payload == nullptr) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!!");
+            return;
+        }
+        eventPayload = (pal_asr_event *)eventToStream.payload;
+        eventPayload->num_events = eventHeader->num_outputs;
+
+        for (int i = 0; i < eventHeader->num_outputs; i++) {
+            eventStatus = ev[i].status == 0 ? true : false;
+            if (!eventStatus) {
+                PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
+                goto cleanup;
+            }
+            eventPayload->event[i].is_final = ev[i].is_final;
+            eventPayload->event[i].confidence = ev[i].confidence;
+            eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
+            for (int j = 0; j < ev[i].text_size; ++j)
+                eventPayload->event[i].text[j] = ev[i].text[j];
+        }
+        eventPayload->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
     }
 
-    eventToStream->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
 
     sAsr = dynamic_cast<StreamASR *>(streamHandle);
-    sAsr->HandleEventData(eventToStream, eventSize);
+    sAsr->HandleEventData(eventToStream);
 
 cleanup:
-    if (eventToStream)
-        free(eventToStream);
+    if (eventToStream.payload)
+        free(eventToStream.payload);
 
     if (payload)
         free(payload);

@@ -92,6 +92,7 @@ private:
     bool isCrrDevUsingExtEc;
     bool exitThread;
     bool loggerModeEnabled;
+    bool timestampEnabled;
     uint32_t outputBufSize;
     uint32_t numOutput;
     uint32_t payloadSize;

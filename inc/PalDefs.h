@@ -1462,7 +1462,7 @@ typedef enum {
     PAL_ASR_STATUS_FAILURE = -4,
 } pal_asr_status_t;
 
-/*  Payload for ID : PAL_PARAM_ID_ASR_MODEL.
+/** Payload for ID : PAL_PARAM_ID_ASR_MODEL.
  *  Description: To be used to pass ASR model.
  */
 struct pal_asr_model {
@@ -1471,8 +1471,8 @@ struct pal_asr_model {
     uint32_t size;               /**< ASR model size */
 };
 
-/* Payload for ID : PAL_PARAM_ID_ASR_CONFIG.
- * Description: To be used to pass ASR input configuration.
+/** Payload for ID : PAL_PARAM_ID_ASR_CONFIG.
+ *  Description: To be used to pass ASR input configuration.
  */
 struct pal_asr_config {
     int32_t input_language_code;            /**< input language code */
@@ -1482,6 +1482,7 @@ struct pal_asr_config {
     bool enable_continuous_mode;            /**< continuous mode enable/disable flag */
     bool enable_partial_transcription;      /**< partial transcription switch enable/disable flag */
     bool enable_logger_mode;                /**< Flag to enable/disable logger mode */
+    bool enable_timestamp;                  /**< Flag to enable/disable output with timestamp details */
     uint32_t threshold;                     /**< Confidence threshold for ASR transcription */
     uint32_t timeout_duration;              /**< ASR processing timeout, in milliseconds,
                                                  if silence is not detected after the speech
@@ -1497,6 +1498,13 @@ struct pal_asr_config {
 
 #define MAX_TRANSCRIPTION_CHAR_SIZE 1024
 #define MAX_JSON_CHAR_SIZE 4096
+#define MAX_NUM_WORDS 200
+#define MAX_WORD_LENGTH 28
+
+typedef enum {
+    PLAIN_TEXT = 0,
+    TIMESTAMP_BASED_TEXT,
+} eventType;
 
 struct pal_asr_engine_event {
     bool is_final;                          /**< Final transcription after end of speech is detected. */
@@ -1509,13 +1517,44 @@ struct pal_asr_engine_event {
     uint8_t data[];                         /**< event payload offset from the start of this structure */
 };
 
-/* Payload to be used for callback for ASR event through pal_stream_callback
- */
+/** Payload to be used for callback for ASR event through pal_stream_callback. */
 struct pal_asr_event {
     pal_asr_event_status_t status;
     uint32_t num_events;
     struct pal_asr_engine_event event[];
 };
+
+/** Struct to store timestamp details of every word present in ASR's output text. */
+struct asr_word {
+    uint32_t word_confidence;              /**< Confidence level for the word */
+    char word[MAX_WORD_LENGTH];            /**< Word, whose timestamp details are within the strcut */
+    uint64_t start_ts;                     /**< Word's start timestamp */
+    uint64_t end_ts;                       /**< Word's end timestamp */
+};
+
+/** Payload to be used to generate callback data for ASR's timestamp based output. */
+struct pal_asr_engine_ts_event {
+    bool is_final;                          /**< Final transcription after end of speech is detected. */
+    uint32_t confidence;                    /**< Confidence for the entire transcription */
+    uint32_t text_size;                     /**< Size of text to sent to the client */
+    char text[MAX_TRANSCRIPTION_CHAR_SIZE]; /**< Text to be sent to the client */
+    uint64_t start_ts;                      /**< Text's start timestamp */
+    uint64_t end_ts;                        /**< Text's end timestamp */
+    uint32_t num_words;                     /**< Number of words present in word array */
+    struct asr_word word[MAX_NUM_WORDS];    /**< Store timestamp details of every word present in text. */
+    uint32_t json_size;                     /**< size of JSON output, to be sent to client */
+    char result_json[MAX_JSON_CHAR_SIZE];   /**< JSON result */
+    uint32_t data_size;                     /**< event payload size */
+    uint8_t data[];                         /**< event payload offset from the start of this structure */
+};
+
+/** Payload to be used for callback for ASR's timestamp based event through pal_stream_callback. */
+struct pal_asr_ts_event {
+    pal_asr_event_status_t status;
+    uint32_t num_events;
+    struct pal_asr_engine_ts_event event[];
+};
+
 
 struct pal_compr_gapless_mdata {
        uint32_t encoderDelay;

@@ -78,6 +78,12 @@ enum {
     ASR_EV_EC_REF,
 };
 
+struct eventPayload {
+    eventType type;
+    uint32_t payloadSize;
+    void *payload;
+};
+
 class ASREngine;
 
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -147,7 +153,7 @@ class StreamASR : public Stream {
 
     void TransitTo(int32_t stateId);
     void GetUUID(class SoundTriggerUUID *uuid, const struct st_uuid *vendorUuid);
-    void HandleEventData(struct pal_asr_event *event, size_t eventSize);
+    void HandleEventData(struct eventPayload event);
     void sendAbort();
     bool compareConfig(struct pal_asr_config *oldConfig, struct pal_asr_config *newConfig);
     int32_t GetCurrentStateId();

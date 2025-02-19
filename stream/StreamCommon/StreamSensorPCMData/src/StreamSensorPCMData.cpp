@@ -100,6 +100,7 @@ StreamSensorPCMData::StreamSensorPCMData(const struct pal_stream_attributes *sat
 StreamSensorPCMData::~StreamSensorPCMData()
 {
     PAL_DBG(LOG_TAG, "Enter");
+    rm->resetStreamInstanceID(this);
     rm->deregisterStream(this);
     PAL_DBG(LOG_TAG, "Exit");
 }

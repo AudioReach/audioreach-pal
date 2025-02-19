@@ -283,7 +283,8 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 (sAttr.type != PAL_STREAM_CONTEXT_PROXY) &&
                 (sAttr.type != PAL_STREAM_SENSOR_PCM_DATA) &&
                 (sAttr.type != PAL_STREAM_ULTRA_LOW_LATENCY) &&
-                (sAttr.type != PAL_STREAM_COMMON_PROXY)) {
+                (sAttr.type != PAL_STREAM_COMMON_PROXY) &&
+                (sAttr.type != PAL_STREAM_CALL_TRANSLATION)) {
                 /* Get MFC MIID and configure to match to stream config */
                 /* This has to be done after sending all mixer controls and before connect */
                 if (sAttr.type != PAL_STREAM_VOICE_CALL_RECORD)

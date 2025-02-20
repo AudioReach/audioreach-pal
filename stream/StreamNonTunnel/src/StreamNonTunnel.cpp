@@ -128,6 +128,7 @@ StreamNonTunnel::StreamNonTunnel(const struct pal_stream_attributes *sattr, stru
 
 StreamNonTunnel::~StreamNonTunnel()
 {
+    rm->resetStreamInstanceID(this);
     rm->deregisterStream(this);
 }
 

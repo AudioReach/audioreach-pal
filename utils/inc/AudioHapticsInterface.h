@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -54,13 +54,15 @@ typedef enum {
     TAG_RINGTONE_EFFECT,
 } haptics_xml_tag;
 
-struct haptics_wave_designer_config_t {
+struct haptics_wave_designer_config_v2_t {
     // Waveform designer mode parameters
     int8_t num_channels;
     int8_t channel_mask;
     int8_t wave_design_mode;
     int32_t auto_overdrive_brake_en;
     int32_t f0_tracking_en;
+    int32_t rtcl_mode;
+    int32_t pmic_autobrake_en;
     int32_t f0_tracking_param_reset_flag;
     uint32_t override_flag;
     int32_t tracked_freq_warmup_time_ms;
@@ -97,13 +99,13 @@ public:
     static void handleData(void *userdata, const char *s, int len);
     static void resetDataBuf(struct haptics_xml_data *data);
     static void process_haptics_info(struct haptics_xml_data *data, const XML_Char *tag_name);
-    void getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_t **HConfig);
+    void getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig);
     int getRingtoneHapticsEffectConfiguration() {return ringtone_haptics_wave_design_mode;}
     static int init();
     static std::shared_ptr<AudioHapticsInterface> GetInstance();
 private:
-    static std::vector<haptics_wave_designer_config_t> predefined_haptics_info;
-    static std::vector<haptics_wave_designer_config_t> oneshot_haptics_info;
+    static std::vector<haptics_wave_designer_config_v2_t> predefined_haptics_info;
+    static std::vector<haptics_wave_designer_config_v2_t> oneshot_haptics_info;
     static std::shared_ptr<AudioHapticsInterface> me_;
     static int ringtone_haptics_wave_design_mode;
 };

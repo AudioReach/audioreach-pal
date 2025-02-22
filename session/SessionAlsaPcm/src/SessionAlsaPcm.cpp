@@ -2458,7 +2458,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                         }
                     }
                     builder->payloadHapticsDevPConfig(&paramData, &paramSize,
-                               miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG,(void *)hpCnfg);
+                               miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);
                     if (paramSize) {
                         status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                          paramData, paramSize);

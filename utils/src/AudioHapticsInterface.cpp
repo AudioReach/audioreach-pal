@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -46,8 +46,8 @@
 #endif
 
 std::shared_ptr<AudioHapticsInterface> AudioHapticsInterface::me_ = nullptr;
-std::vector<haptics_wave_designer_config_t> AudioHapticsInterface::predefined_haptics_info;
-std::vector<haptics_wave_designer_config_t> AudioHapticsInterface::oneshot_haptics_info;
+std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::predefined_haptics_info;
+std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::oneshot_haptics_info;
 int AudioHapticsInterface::ringtone_haptics_wave_design_mode;
 
 AudioHapticsInterface::AudioHapticsInterface()
@@ -191,7 +191,7 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
                                            const XML_Char *tag_name)
 {
     int size = 0;
-    struct haptics_wave_designer_config_t HapticsCnfg = {};
+    struct haptics_wave_designer_config_v2_t HapticsCnfg = {};
 
     if (data->hapticstag == TAG_PREDEFINED_EFFECT) {
         if (!strcmp(tag_name, "num_channels")) {
@@ -209,6 +209,12 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
         } else if (!strcmp(tag_name, "f0_tracking_en")) {
             size = predefined_haptics_info.size() - 1;
             predefined_haptics_info[size].f0_tracking_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "rtcl_mode")) {
+            size = predefined_haptics_info.size() - 1;
+            predefined_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "pmic_autobrake_en")) {
+            size = predefined_haptics_info.size() - 1;
+            predefined_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
         } else if (!strcmp(tag_name, "f0_tracking_param_reset_flag")) {
             size = predefined_haptics_info.size() - 1;
             predefined_haptics_info[size].f0_tracking_param_reset_flag =  atoi(data->data_buf);
@@ -303,6 +309,12 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
         } else if (!strcmp(tag_name, "f0_tracking_en")) {
             size = oneshot_haptics_info.size() - 1;
             oneshot_haptics_info[size].f0_tracking_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "rtcl_mode")) {
+            size = predefined_haptics_info.size() - 1;
+            predefined_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "pmic_autobrake_en")) {
+            size = predefined_haptics_info.size() - 1;
+            predefined_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
         } else if (!strcmp(tag_name, "f0_tracking_param_reset_flag")) {
             size = oneshot_haptics_info.size() - 1;
             oneshot_haptics_info[size].f0_tracking_param_reset_flag =  atoi(data->data_buf);
@@ -383,18 +395,18 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
     PAL_ERR(LOG_TAG, "%s \n", data->data_buf);
 }
 
-void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_t **HConfig)
+void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig)
 {
     if (effect_id >= 0) {
         if (*HConfig == NULL) {
-            *HConfig = (haptics_wave_designer_config_t *) calloc(1, sizeof(predefined_haptics_info[effect_id]));
+            *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(predefined_haptics_info[effect_id]));
             if (*HConfig)
                 memcpy(*HConfig, &predefined_haptics_info[effect_id],
                                             sizeof(predefined_haptics_info[effect_id]));
         }
     } else {
         if (*HConfig == NULL) {
-            *HConfig = (haptics_wave_designer_config_t *) calloc(1, sizeof(oneshot_haptics_info[0]));
+            *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(oneshot_haptics_info[0]));
             if (*HConfig)
                 memcpy(*HConfig, &oneshot_haptics_info[0],
                                              sizeof(oneshot_haptics_info[0]));

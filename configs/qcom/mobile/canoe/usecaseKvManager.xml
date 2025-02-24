@@ -193,14 +193,6 @@
         </stream>
         <!-- Loopback stream -->
         <stream type="PAL_STREAM_LOOPBACK">
-            <keys_and_values Direction="RX" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
-                <!-- STREAMRX - HFP_RX_PLAYBACK -->
-                <graph_kv key="0xA1000000" value="0xA100000C"/>
-            </keys_and_values>
-            <keys_and_values Direction="TX" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
-                <!-- STREAMTX - HFP_RX_CAPTURE -->
-                <graph_kv key="0xB1000000" value="0xB1000005"/>
-            </keys_and_values>
             <keys_and_values Direction="RX_TX" SubType="PAL_STREAM_LOOPBACK_PCM,PAL_STREAM_LOOPBACK_FM,PAL_STREAM_LOOPBACK_KARAOKE">
                 <!-- STREAMRX - PCM_RX_LOOPBACK -->
                 <graph_kv key="0xA1000000" value="0xA1000003"/>
@@ -1041,6 +1033,12 @@
                 <!-- DEVICEPP_RX - DEVICEPP_RX_VOICE RX_NN_NS/CASCADE -->
                 <graph_kv key="0xAC000000" value="0xAC000009"/>
             </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
+                <!-- DEVICERX - HANDSET -->
+                <graph_kv key="0xA2000000" value="0xA2000004"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
+            </keys_and_values>
         </devicepp>
         <!-- OUT Headset and Headphone Digital DevicePPs -->
         <devicepp id="PAL_DEVICE_OUT_WIRED_HEADSET,PAL_DEVICE_OUT_WIRED_HEADPHONE">
@@ -1073,6 +1071,12 @@
                 <graph_kv key="0xA2000000" value="0xA2000002"/>
                 <!-- DEVICEPP_RX - DEVICEPP_RX_VOICE_DEFAULT RX_NN_NS -->
                 <graph_kv key="0xAC000000" value="0xAC000009"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
+                <!-- DEVICERX - HEADPHONES -->
+                <graph_kv key="0xA2000000" value="0xA2000002"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
             </keys_and_values>
         </devicepp>
         <!-- OUT Bluetooth A2DP DevicePPs -->
@@ -1127,6 +1131,12 @@
                 <graph_kv key="0xA2000000" value="0xA2000003"/>
                 <!-- DEVICEPP_RX - DEVICEPP_RX_VOICE_DEFAULT -->
                 <graph_kv key="0xAC000000" value="0xAC000005"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_TX">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK  -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
             </keys_and_values>
         </devicepp>
         <!-- OUT HDMI and AUX Digital DevicePPs -->
@@ -1407,12 +1417,6 @@
                 <graph_kv key="0xA3000000" value="0xA3000001"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_VOIP_FLUENCE_NN_SM -->
                 <graph_kv key="0xAD000000" value="0xAD000010"/>
-            </keys_and_values>
-            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_TX">
-                <!-- DEVICETX - SPEAKER_MIC -->
-                <graph_kv key="0xA3000000" value="0xA3000001"/>
-                <!-- DEVICEPP_TX - DEVICEPP_TX_HFP_SINK_FLUENCE_SMECNS -->
-                <graph_kv key="0xAD000000" value="0xAD000006"/>
             </keys_and_values>
             <keys_and_values StreamType="PAL_STREAM_VOICE_UI"
                 DevicePPType="DUAL_HANDSET_MIC_48KHZ_16BIT_FFECNS">

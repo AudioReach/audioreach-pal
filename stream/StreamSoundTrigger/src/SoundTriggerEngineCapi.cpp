@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef ATRACE_UNSUPPORTED
@@ -91,7 +91,7 @@ void SoundTriggerEngineCapi::BufferThreadLoop(
         }
 
         if (capi_engine->processing_started_) {
-            s = dynamic_cast<StreamSoundTrigger *>(capi_engine->stream_handle_);
+            s = capi_engine->stream_handle_;
             if (capi_engine->detection_type_ ==
                 ST_SM_TYPE_KEYWORD_DETECTION) {
                 status = capi_engine->StartKeywordDetection();
@@ -428,7 +428,6 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
     int32_t read_size = 0;
     capi_v2_buf_t capi_result;
     bool buffer_advanced = false;
-    StreamSoundTrigger *str = nullptr;
     FILE *user_verification_fd = nullptr;
     ChronoSteadyClock_t process_start;
     ChronoSteadyClock_t process_end;
@@ -519,7 +518,6 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
         goto exit;
     }
 
-    str = dynamic_cast<StreamSoundTrigger *>(stream_handle_);
     param.stream = (void *)stream_handle_;
     param.data = (void *)&fstage_module_type;
     param.size = sizeof(st_module_type_t);

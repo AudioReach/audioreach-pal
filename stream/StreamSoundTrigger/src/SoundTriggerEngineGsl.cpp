@@ -161,7 +161,7 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
     size_t bytes_written = 0;
     uint32_t sleep_ms = 0;
     bool event_notified = false;
-    StreamSoundTrigger *st = (StreamSoundTrigger *)s;
+    StreamSoundTrigger *st = nullptr;
     struct pal_mmap_position mmap_pos;
     FILE *dsp_output_fd = nullptr;
     ChronoSteadyClock_t kw_transfer_begin;
@@ -382,7 +382,7 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
                         total_read_size, ftrt_size, (long long)kw_transfer_latency_);
                 if (s) {
                     mutex_.unlock();
-                    status = st->SetEngineDetectionState(GMM_DETECTED);
+                    status = s->SetEngineDetectionState(GMM_DETECTED);
                     mutex_.lock();
                     if (status < 0) {
                         PAL_ERR(LOG_TAG, "Failed to set detection to stream, status %d", status);
@@ -412,7 +412,7 @@ exit:
         while (!det_streams_q_.empty()) {
             st = det_streams_q_.front();
             det_streams_q_.pop();
-            RestartRecognition_l(s);
+            RestartRecognition_l(st);
         }
         // Detected streams notified to clients and buffering
         std::vector<StreamSoundTrigger *> streams = GetBufferingStreams();
@@ -520,7 +520,7 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
     }
 
     // get lpi state from stream side
-    use_lpi_ = dynamic_cast<StreamSoundTrigger *>(s)->isLPIProfile();
+    use_lpi_ = s->isLPIProfile();
 
     // Create session
     rm = ResourceManager::getInstance();

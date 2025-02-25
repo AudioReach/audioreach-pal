@@ -1200,6 +1200,7 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     struct pal_volume_data *volume = NULL;
     pal_device_id_t newBtDevId;
     bool isBtReady = false;
+    std::vector <Stream *> tempMutedStreams;
 
     rm->lockActiveStream();
     mStreamMutex.lock();
@@ -1437,8 +1438,23 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
                 }
                 /* If prioirty based attr diffs with running dev switch all devices */
                 if (switchStreams || custom_switch) {
+                    pal_stream_attributes sAttr;
                     streamDevDisconnect.push_back(elem);
                     StreamDevConnect.push_back({std::get<0>(elem), &newDevices[newDeviceSlots[i]]});
+                    if (sharedStream != streamHandle) {
+                        /*
+                         * temporarily mute streams for implicit device switch due to BE shared
+                         * with streamHandle.
+                         */
+                        sharedStream->getStreamAttributes(&sAttr);
+                        if (sAttr.type == PAL_STREAM_DEEP_BUFFER ||
+                            sAttr.type == PAL_STREAM_COMPRESSED ||
+                            sAttr.type == PAL_STREAM_PCM_OFFLOAD) {
+                            PAL_DBG(LOG_TAG, "mute stream %pk during switching", sharedStream);
+                            sharedStream->mute(true);
+                            tempMutedStreams.push_back(sharedStream);
+                        }
+                    }
                     matchFound = true;
                     custom_switch = false;
                 } else {
@@ -1610,6 +1626,13 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     }
 
 done:
+    if (!tempMutedStreams.empty()) {
+        for(sIter = tempMutedStreams.begin(); sIter != tempMutedStreams.end(); sIter++) {
+            (*sIter)->mute(false);
+            PAL_DBG(LOG_TAG, "unmute stream %pk during switching", *sIter);
+        }
+    }
+    tempMutedStreams.clear();
     mStreamMutex.lock();
     if (a2dpMuted) {
         if (mVolumeData) {

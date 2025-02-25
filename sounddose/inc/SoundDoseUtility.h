@@ -32,6 +32,7 @@ class SoundDoseUtility {
 
     void startComputation();
     void stopComputation();
+    void setDevice(struct pal_device palDevice) { mPalDevice = palDevice; }
 
     // handle sound dose info
     static void handleSoundDoseCallback(uint64_t hdl, uint32_t event_id, void *event_data,
@@ -44,27 +45,29 @@ class SoundDoseUtility {
         return mPalDevice;
     }
 
-  protected:
+  private:
     std::shared_ptr<ResourceManager> mResourceManager;
     /**< Associated pal_device for which SoundDose is to be computed.*/
     struct pal_device mPalDevice;
-
     Device *mDevObj;
-
     bool mIsEnabled = false;
-
-    std::vector<int> pcmDevIdRx;
-    struct mixer *virtMixer;
-    struct pcm *rxPcm;
+    std::vector<int> mPcmDevIdRx;
+    struct mixer *mVirtualMixer;
+    struct pcm *mRxPcm;
 
     /* Function to retreive any remaining MEL values cached in SPF before closing. */
     void getSoundDoseMelValues();
+
+    void startComputationInternal();
+    void stopComputationInternal();
+
     pal_global_callback getCallback();
     uint64_t getCookie();
 
-  private:
-    void startComputationInternal();
-    void stopComputationInternal();
+    void onSoundDoseEvent(pal_sound_dose_info_t *callbackData);
+    // wrapper api for SessionAlsaUtils::registerMixerEvent to register/unregister
+    // sound dose events.
+    int registerMixerEvent(const bool state, const std::string backendName);
 
     SoundDoseUtility(const SoundDoseUtility &) = delete;
     SoundDoseUtility &operator=(const SoundDoseUtility &) = delete;

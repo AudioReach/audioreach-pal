@@ -2666,6 +2666,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
     }
 
     tempDevAttr.id = deviceattr->id;
+    tempDevAttr.addressV1 = deviceattr->addressV1;
     tempDev = Device::getInstance(&tempDevAttr, rm);
     if (!tempDev) {
         PAL_ERR(LOG_TAG, "failed to get device instance");

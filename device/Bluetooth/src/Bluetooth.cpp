@@ -2148,6 +2148,7 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
         pal_param_device_connection_t *device_connection =
             (pal_param_device_connection_t *)param;
         if (device_connection->connection_state == true) {
+            mSoundDose->setDevice(device_connection->device);
             if (a2dpRole == SOURCE)
                 open_a2dp_source();
 

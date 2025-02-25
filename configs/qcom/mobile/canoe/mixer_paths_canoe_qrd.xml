@@ -664,7 +664,7 @@
         <path name="amic6" />
     </path>
 
-    <path name="ultrasound-mic">
+    <path name="ultrasound-dmic">
         <path name="amic6" />
         <path name="amic7" />
     </path>

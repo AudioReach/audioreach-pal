@@ -67,4 +67,4 @@ if USE_G_STR_FUNC
 libstream_common_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
 
-SUBDIRS = . StreamUltrasSound StreamSensorRenderer StreamSensorPCMData StreamContextProxy StreamCommonProxy StreamCallTranslation
+SUBDIRS = . StreamUltrasSound StreamSensorRenderer StreamSensorPCMData StreamContextProxy StreamCommonProxy

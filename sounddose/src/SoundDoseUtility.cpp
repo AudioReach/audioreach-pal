@@ -189,7 +189,7 @@ void SoundDoseUtility::startComputationInternal() {
     // Logic to start dosage computation for the device
     // Call pcm_open, register for event and pcm_start.
     PAL_INFO(LOG_TAG, "%p startComputation for device %s ", this, toString(&mPalDevice).c_str());
-    int ret = 0, dir = RX_HOSTLESS;
+    int ret = 0, id, dir = RX_HOSTLESS;
     char mSndDeviceName[128] = {0};
     uint32_t devicePropId[] = {0x08000010, 1, 0x2};
 
@@ -259,12 +259,13 @@ void SoundDoseUtility::startComputationInternal() {
         goto exit;
     }
 
-    mPcmDevIdRx = mResourceManager->allocateFrontEndIds(sAttr, dir);
-    if (mPcmDevIdRx.size() == 0) {
+    id = mResourceManager->allocateFrontEndIds(PCM_PLAYBACK_HOSTLESS);
+    if (id < 0) {
         PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
         ret = -ENOSYS;
         goto exit;
     }
+    mPcmDevIdRx.push_back(id);
 
     connectCtrlName << "PCM" << mPcmDevIdRx.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(mVirtualMixer, connectCtrlName.str().data());
@@ -323,7 +324,7 @@ err_pcm_open:
     }
 
 free_fe:
-    mResourceManager->freeFrontEndIds(mPcmDevIdRx, sAttr, dir);
+    mResourceManager->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, mPcmDevIdRx);
 exit:
 
     PAL_DBG(LOG_TAG, "Exit");
@@ -352,7 +353,7 @@ void SoundDoseUtility::stopComputationInternal() {
      * invoke callback to hal wih the data */
     getSoundDoseMelValues();
 
-    mResourceManager->freeFrontEndIds(mPcmDevIdRx, sAttr, RX_HOSTLESS);
+    mResourceManager->freeFrontEndIds(PCM_PLAYBACK_HOSTLESS, mPcmDevIdRx);
 
     /* De-register for the sound dose events. */
     ret = registerMixerEvent(false, backendName);

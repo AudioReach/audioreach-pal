@@ -2029,13 +2029,14 @@ void reconfigureScoStreams() {
         dattr = (pal_device *) malloc(sizeof(struct pal_device));
         if (!dattr) {
             PAL_ERR(LOG_TAG, "malloc failed for SCO device %d", devId);
+            goto exit;
         }
         palDevices.push_back(dattr);
         dattr->id = devId;
         status = rm->getDeviceConfig(dattr, NULL);
         if (status) {
             PAL_ERR(LOG_TAG, "getDeviceConfig failed for SCO device %d", devId);
-                return;
+            goto exit;
         }
         dev = Device::getInstance(dattr, rm);
         activeScoStreams.clear();
@@ -2080,6 +2081,7 @@ void reconfigureScoStreams() {
         }
     }
     rm->unlockActiveStream();
+exit:
     for (auto dAttr : palDevices) free(dAttr);
 }
 

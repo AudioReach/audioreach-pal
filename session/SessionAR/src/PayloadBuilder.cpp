@@ -4687,7 +4687,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                             hpwaveConf[ch].pulse_intensity = (data->amplitude * 100);
                         }
                         if (hpwaveConf[ch].pulse_intensity > 100 ||
-                                            hpwaveConf[ch].pulse_intensity < 0)
+                                            hpwaveConf[ch].pulse_intensity <= 0)
                             hpwaveConf[ch].pulse_intensity = 30;
                             PAL_DBG(LOG_TAG, "Haptics Effect .pulse_intensity %d for strength %d",
                                                   hpwaveConf[ch].pulse_intensity, data->strength);
@@ -4844,6 +4844,30 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 hpconf->channel_mask = 1;
                 hpconf->buffer_size = data->buffer_size;
                 memcpy(buf_ptr, data->buffer_ptr, hpconf->buffer_size);
+            }
+            break;
+            break;
+            case PARAM_ID_HAPTICS_LPASS_SWR_HW_REG_CFG:
+            {
+                param_id_haptics_lpass_swr_hw_reg_cfg_t *data = NULL;
+                param_id_haptics_lpass_swr_hw_reg_cfg_t *cfgPayload = NULL;
+                data = (param_id_haptics_lpass_swr_hw_reg_cfg_t *) param;
+                payloadSize = sizeof(struct apm_module_param_data_t) +
+                                    sizeof(param_id_haptics_lpass_swr_hw_reg_cfg_t) +
+                                    sizeof(haptics_pkd_reg_addr_t) * data->num_channel;
+                padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+                payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+                if (!payloadInfo) {
+                    PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+                    return;
+                }
+                header = (struct apm_module_param_data_t*) payloadInfo;
+                cfgPayload = (param_id_haptics_lpass_swr_hw_reg_cfg_t * ) (payloadInfo +
+                                sizeof(struct apm_module_param_data_t));
+
+                memcpy(cfgPayload, data, sizeof(param_id_haptics_lpass_swr_hw_reg_cfg_t) +
+                                sizeof(haptics_pkd_reg_addr_t) * data->num_channel);
             }
             break;
         default:

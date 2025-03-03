@@ -153,6 +153,7 @@ public:
     void disconnectFeandBe(std::vector<int> pcmDevIds, std::string backEndName);
     int getLraFrequency();
     int isPmicAutoResonanceEnabled();
+    void updateAutoBrakingCustomPayload(int miid);
 };
 
 class HapticsDevFeedback : public HapticsDev

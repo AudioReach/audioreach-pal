@@ -74,6 +74,13 @@
 #define CALIBRATION_MODE 1
 #define FACTORY_TEST_MODE 2
 
+#define LPASS_WR_CMD_REG_PHY_ADDR   0x6AB4020
+#define LPASS_RD_CMD_REG_PHY_ADDR   0x6AB4024
+#define LPASS_RD_FIFO_REG_PHY_ADDR  0x6AB4040
+
+#define AB_INITIALIZE_PKD_REG_ADDR  0x8c113081
+#define AB_TRIGGER_PKD_REG_ADDR     0x0c113081
+#define AB_STOP_PKD_REG_ADDR        0x84113081
 
 typedef enum haptics_vi_calib_state_t
 {
@@ -1465,7 +1472,7 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
                 }
             }
         }
-
+        updateAutoBrakingCustomPayload(miid);
         enableDevice(audioRoute, mSndDeviceName_vi);
         PAL_DBG(LOG_TAG, "pcm start for TX");
         if (pcm_start(txPcm) < 0) {
@@ -1536,6 +1543,55 @@ exit:
        builder = NULL;
     }
     return ret;
+}
+
+void HapticsDevProtection::updateAutoBrakingCustomPayload(int miid)
+{
+    PayloadBuilder* builder = new PayloadBuilder();
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+    param_id_haptics_lpass_swr_hw_reg_cfg_t *haptics_reg_cfg = NULL;
+    haptics_pkd_reg_addr_t pkedRegAddr[numberOfChannels];
+    int ret = 0;
+
+    memset(&pkedRegAddr, 0, sizeof(haptics_pkd_reg_addr_t) * numberOfChannels);
+
+    haptics_reg_cfg = (param_id_haptics_lpass_swr_hw_reg_cfg_t *) calloc(1,
+	                               sizeof(param_id_haptics_lpass_swr_hw_reg_cfg_t)
+                       + sizeof(haptics_pkd_reg_addr_t) * numberOfChannels);
+    if (haptics_reg_cfg == NULL) {
+        PAL_ERR(LOG_TAG,"Unable to allocate Memory for reg config\n");
+        goto exit;
+    }
+    haptics_reg_cfg->num_channel = numberOfChannels;
+    haptics_reg_cfg->lpass_wr_cmd_reg_phy_addr = LPASS_WR_CMD_REG_PHY_ADDR;
+    haptics_reg_cfg->lpass_rd_cmd_reg_phy_addr = LPASS_RD_CMD_REG_PHY_ADDR;
+    haptics_reg_cfg->lpass_rd_fifo_reg_phy_addr = LPASS_RD_FIFO_REG_PHY_ADDR;
+
+    pkedRegAddr[0].ab_initialize_pkd_reg_addr = AB_INITIALIZE_PKD_REG_ADDR;
+    pkedRegAddr[0].ab_trigger_pkd_reg_addr = AB_TRIGGER_PKD_REG_ADDR;
+    pkedRegAddr[0].ab_stop_pkd_reg_addr = AB_STOP_PKD_REG_ADDR;
+
+    memcpy(haptics_reg_cfg->haptics_pkd_reg_addr, pkedRegAddr, sizeof(haptics_pkd_reg_addr_t));
+
+    // Payload builder for ParamID : PARAM_ID_HAPTICS_LPASS_SWR_HW_REG_CFG
+    payloadSize = 0;
+    builder->payloadHapticsDevPConfig(&payload, &payloadSize, miid,
+            PARAM_ID_HAPTICS_LPASS_SWR_HW_REG_CFG ,(void *)haptics_reg_cfg);
+    if (payloadSize) {
+        ret = updateCustomPayload(payload, payloadSize);
+        free(payload);
+        free(haptics_reg_cfg);
+        if (0 != ret) {
+            PAL_ERR(LOG_TAG," updateCustomPayload Failed\n");
+        }
+    }
+
+exit:
+    if(builder) {
+       delete builder;
+       builder = NULL;
+    }
 }
 
 void HapticsDevProtection::updateHPcustomPayload()

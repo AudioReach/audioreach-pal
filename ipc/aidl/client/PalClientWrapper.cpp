@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -64,9 +64,6 @@ std::shared_ptr<IPAL> getPal() {
     std::lock_guard<std::mutex> guard(gLock);
     if (gPalClient == nullptr) {
         const std::string instance = std::string() + IPAL::descriptor + "/default";
-
-        // pool of threads for handling Binder transactions.
-        ABinderProcess_startThreadPool();
         auto binder = ::ndk::SpAIBinder(AServiceManager_waitForService(instance.c_str()));
         ALOGV("got binder %p", binder.get());
 

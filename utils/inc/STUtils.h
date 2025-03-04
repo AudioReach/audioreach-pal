@@ -10,6 +10,7 @@
 #ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 #include <vui_dmgr_audio_intf.h>
 #endif
+#include "ResourceManager.h"
 #include "Stream.h"
 #include "SoundTriggerPlatformInfo.h"
 
@@ -68,5 +69,7 @@ void updateCaptureProfiles();
 bool isTxConcurrencyActive();
 std::shared_ptr<CaptureProfile> GetTXMacroCaptureProfile();
 bool getLPIUsage();
+void updateDeferredSTStreams(Stream* s, bool active);
+defer_switch_state_t getSTDeferedSwitchState();
 
 #endif

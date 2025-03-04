@@ -8,7 +8,6 @@
 #include <dlfcn.h>
 
 #include "PalDefs.h"
-#include "ResourceManager.h"
 #include "Device.h"
 
 #include "STUtils.h"
@@ -42,6 +41,7 @@ std::shared_ptr<CaptureProfile> SoundTriggerCaptureProfile;
 std::shared_ptr<CaptureProfile> TXMacroCaptureProfile;
 std::unordered_map<int, pal_stream_handle_t *> mStCaptureInfo;
 std::set<Stream*> mNLPIStreams;
+std::list <Stream*> mStartDeferredStreams;
 bool use_lpi_ = true;
 bool charging_state_;
 SoundTriggerOnResourceAvailableCallback onResourceAvailCb = NULL;
@@ -1151,9 +1151,10 @@ void forceSwitchSoundTriggerStreams(bool active) {
 void stHandleDeferredSwitch()
 {
     int32_t status = 0;
-    bool active = false;
+    bool switch_to_nlpi = false;
     std::vector<pal_stream_type_t> st_streams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
     do {
         status = rm->tryLockActiveStream();
     } while (!status && rm->getSoundCardState() == CARD_STATUS_ONLINE);
@@ -1170,11 +1171,11 @@ void stHandleDeferredSwitch()
 
     if (!rm->isAnyStreamBuffering() && deferredSwitchState != NO_DEFER) {
         if (deferredSwitchState == DEFER_LPI_NLPI_SWITCH)
-            active = true;
+            switch_to_nlpi = true;
         else if (deferredSwitchState == DEFER_NLPI_LPI_SWITCH)
-            active = false;
+            switch_to_nlpi = false;
 
-        use_lpi_ = !active;
+        use_lpi_ = !switch_to_nlpi;
 
         if (rm->getActiveStreamMap().count(PAL_STREAM_VOICE_UI))
             st_streams.push_back(PAL_STREAM_VOICE_UI);
@@ -1188,6 +1189,18 @@ void stHandleDeferredSwitch()
         handleConcurrentStreamSwitch(st_streams);
         // reset the defer switch state after handling LPI/NLPI switch
         deferredSwitchState = NO_DEFER;
+
+        // now start deferred NLPI ST streams which was not started
+        // previously due to LPI to NLPI switch deferred
+        if (switch_to_nlpi) {
+            for (auto it = mStartDeferredStreams.begin();
+                      it != mStartDeferredStreams.end(); it++) {
+                (*it)->lockStreamMutex();
+                (*it)->start_l();
+                (*it)->unlockStreamMutex();
+            }
+            mStartDeferredStreams.clear();
+        }
     }
     rm->unlockActiveStream();
     PAL_DBG(LOG_TAG, "Exit");
@@ -1497,4 +1510,28 @@ bool getLPIUsage()
         nlpi_active = true;
 
     return !nlpi_active && use_lpi_;
+}
+
+defer_switch_state_t getSTDeferedSwitchState()
+{
+    defer_switch_state_t defered_state = NO_DEFER;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    rm->lockActiveStream();
+    defered_state = deferredSwitchState;
+    rm->unlockActiveStream();
+
+    return defered_state;
+}
+
+void updateDeferredSTStreams(Stream* s, bool active)
+{
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    rm->lockActiveStream();
+    if (active)
+        mStartDeferredStreams.push_back(s);
+    else
+        mStartDeferredStreams.remove(s);
+    rm->unlockActiveStream();
 }

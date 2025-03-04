@@ -73,8 +73,7 @@ const char* pal_get_version( ){
 static std::mutex pal_mutex;
 static uint32_t pal_init_ref_cnt = 0;
 
-static void notify_concurrent_stream(pal_stream_type_t type,
-                                     pal_stream_direction_t dir,
+static void notify_concurrent_stream(Stream* s,
                                      bool active)
 {
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
@@ -84,9 +83,9 @@ static void notify_concurrent_stream(pal_stream_type_t type,
         return;
     }
 
-    PAL_DBG(LOG_TAG, "Notify concurrent stream type %d, direction %d, active %d",
-        type, dir, active);
-    rm->ConcurrentStreamStatus(type, dir, active);
+    PAL_DBG(LOG_TAG, "Notify concurrent stream: %pK, active %d",
+        s, active);
+    rm->ConcurrentStreamStatus(s, active);
 }
 
 /*
@@ -310,7 +309,11 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     }
 
     s->getStreamAttributes(&sAttr);
-    notify_concurrent_stream(sAttr.type, sAttr.direction, true);
+    // For ST streams, LPI usage(relies on vendr uuid)is not known during
+    // stream opening. So delay concurrency handling to ST streams until
+    // stream configuration is retrieved.
+    if (!rm->isStStream(sAttr.type))
+        notify_concurrent_stream(s, true);
 
     if (cb)
        s->registerCallBack(cb, cookie);
@@ -376,7 +379,9 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
     }
 exit:
     s->getStreamAttributes(&sAttr);
-    notify_concurrent_stream(sAttr.type, sAttr.direction, false);
+    // concurrency notification will be triggered within ST Streams
+    if (!rm->isStStream(sAttr.type))
+        notify_concurrent_stream(s, false);
     if (sAttr.type == PAL_STREAM_VOICE_CALL)
         rm->setCRSCallEnabled(false);
     rm->eraseStreamUserCounter(s);

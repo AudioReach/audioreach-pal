@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -77,6 +77,7 @@ private:
     int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable);
     int32_t setParameters(uint32_t param_id, void *payload);
     int32_t getParameters(uint32_t param_id, void **payload) override;
+    bool ConfigSupportLPI() override;
     std::shared_ptr<ACDStreamConfig> sm_cfg_;
     std::shared_ptr<ACDPlatformInfo> acd_info_;
     std::shared_ptr<CaptureProfile> cap_prof_;
@@ -84,6 +85,7 @@ private:
     uint32_t pcm_data_buffering;
     bool paused_;
     std::map<int, bool> PCMDataInstances;
+    bool conc_notified_;
 };
 
 #endif//StreamSensorPCMData_H_

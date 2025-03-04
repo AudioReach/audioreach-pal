@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -145,7 +145,6 @@ public:
     void HandleEndTag(struct xml_userdata *data, const char *tag) override;
 
     static std::shared_ptr<SoundTriggerPlatformInfo> GetInstance();
-    static bool GetLpiEnable() { return lpi_enable_; }
     static bool GetSupportNLPISwitch() { return support_nlpi_switch_; }
     static bool GetSupportDevSwitch() { return support_device_switch_; }
     static bool GetEnableDebugDumps() { return enable_debug_dumps_; }
@@ -160,7 +159,6 @@ public:
     std::shared_ptr<CaptureProfile> GetCaptureProfileFromMap(std::string cap_prof_name);
 
 private:
-    static bool lpi_enable_;
     static bool support_nlpi_switch_;
     static bool support_device_switch_;
     static bool enable_debug_dumps_;

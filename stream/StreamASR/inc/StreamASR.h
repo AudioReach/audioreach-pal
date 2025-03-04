@@ -154,6 +154,7 @@ class StreamASR : public Stream {
     param_id_asr_config_t* GetSpeechConfig() { return recConfig;}
     param_id_asr_output_config_t* GetOutputConfig() { return outputConfig; }
     param_id_asr_input_threshold_t* GetInputBufConfig() { return inputConfig; }
+    bool ConfigSupportLPI() override;
 
  private:
     class ASREventData {
@@ -423,5 +424,6 @@ class StreamASR : public Stream {
 
     std::map<uint32_t, ASRState*> asrStates;
     std::condition_variable cv;
+    bool conc_notified_;
 };
 #endif // STREAMASR_H_

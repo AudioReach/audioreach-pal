@@ -858,9 +858,7 @@ public:
     bool isCallbackRegistered() { return (mixerEventRegisterCount > 0); }
     int handleMixerEvent(struct mixer *mixer, char *mixer_str);
     bool isAnyStreamBuffering();
-    void ConcurrentStreamStatus(pal_stream_type_t type,
-                            pal_stream_direction_t dir,
-                            bool active);
+    void ConcurrentStreamStatus(Stream* s, bool active);
     std::shared_ptr<Device> getActiveEchoReferenceRxDevices(Stream *tx_str);
     std::shared_ptr<Device> getActiveEchoReferenceRxDevices_l(Stream *tx_str);
     std::vector<Stream*> getConcurrentTxStream(
@@ -874,6 +872,7 @@ public:
     void disableInternalECRefs(Stream *s);
     void restoreInternalECRefs();
     bool isStreamActive(Stream *s);
+    bool isStStream(pal_stream_type_t type);
 
     static void endTag(void *userdata __unused, const XML_Char *tag_name);
     static void snd_reset_data_buf(struct xml_userdata *data);

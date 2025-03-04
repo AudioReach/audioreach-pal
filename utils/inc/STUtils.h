@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -26,8 +26,9 @@ int32_t voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info);
 #endif
 void GetVoiceUIProperties(struct pal_st_properties *qstp);
 bool isNLPISwitchSupported();
-void GetSoundTriggerConcurrencyCount_l(pal_stream_type_t type, int32_t *enable_count,
-                                        int32_t *disable_count);
+void registerNLPIStream(Stream* s);
+void deregisterNLPIStream(Stream* s);
+void GetSTDisableConcurrencyCount_l(pal_stream_type_t type, int32_t *disable_count);
 bool IsLowLatencyBargeinSupported();
 bool IsAudioCaptureConcurrencySupported();
 bool IsVoiceCallConcurrencySupported();
@@ -52,13 +53,9 @@ bool checkAndUpdateDeferSwitchState(bool stream_active);
 
 void handleConcurrentStreamSwtch(std::vector<pal_stream_type_t>& st_streams);
 void SwitchSoundTriggerDevices(bool connect_state, pal_device_id_t st_device);
-void GetSoundTriggerConcurrencyCount(pal_stream_type_t type, int32_t *enable_count, int32_t *disable_count);
-void GetConcurrencyInfo(pal_stream_type_t st_type,
-                     pal_stream_type_t in_type, pal_stream_direction_t dir,
-                     bool *rx_conc, bool *tx_conc, bool *conc_en);
-void HandleConcurrencyForSoundTriggerStreams(pal_stream_type_t type,
-                            pal_stream_direction_t dir,
-                            bool active);
+void GetSTDisableConcurrencyCount(pal_stream_type_t type, int32_t *disable_count);
+void GetConcurrencyInfo(Stream* s, bool *rx_conc, bool *tx_conc, bool *conc_en);
+void HandleConcurrencyForSoundTriggerStreams(Stream* s, bool active);
 void stHandleDeferredSwitch();
 void onVUIStreamRegistered();
 void onVUIStreamDeregistered();
@@ -69,9 +66,6 @@ int getSTParameter(uint32_t param_id, void **param_payload, size_t *payload_size
 std::shared_ptr<Device> GetPalDevice(Stream *streamHandle, pal_device_id_t dev_id);
 void updateCaptureProfiles();
 bool isTxConcurrencyActive();
-bool IsLPISupported();
-void setLPISupported();
-void setForceNLPI(bool enable);
 std::shared_ptr<CaptureProfile> GetTXMacroCaptureProfile();
 bool getLPIUsage();
 

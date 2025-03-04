@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -168,7 +168,8 @@ VUIStreamConfig::VUIStreamConfig() :
     pre_roll_duration_(0),
     supported_first_stage_engine_count_(1),
     enable_intra_concurrent_detection_(false),
-    curr_child_(nullptr)
+    curr_child_(nullptr),
+    lpi_enable_(true)
 {
     ext_det_prop_list_.clear();
 }
@@ -311,6 +312,9 @@ void VUIStreamConfig::HandleStartTag(const char* tag, const char** attribs)
                 UUID::StringToUUID(attribs[++i], vendor_uuid_);
                 if (vendor_uuid_.CompareUUID(qcva_uuid))
                     is_qcva_uuid_ = true;
+            } else if (!strcmp(attribs[i], "lpi_enable")) {
+                lpi_enable_ =
+                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "interface_plugin_lib")) {
                 vui_intf_plugin_lib_name_ = attribs[++i];
             } else if (!strcmp(attribs[i], "get_module_version")) {

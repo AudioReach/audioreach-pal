@@ -649,5 +649,6 @@ private:
      * from resourcemanager xml.
      */
     struct pal_device *dattr_specified_;
+    bool conc_notified_;
 };
 #endif // STREAMSOUNDTRIGGER_H_

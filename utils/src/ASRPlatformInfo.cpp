@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -108,6 +108,9 @@ void ASRStreamConfig::HandleStartTag(const char* tag, const char** attribs)
             uint32_t index = 0;
             if (!strcmp(attribs[i], "vendor_uuid")) {
                 UUID::StringToUUID(attribs[++i], vendor_uuid_);
+            } else if (!strcmp(attribs[i], "lpi_enable")) {
+                lpi_enable_ =
+                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else {
                 if (!strcmp(attribs[i], "asr_input_config_id")) {
                     index = ASR_INPUT_CONFIG;
@@ -162,7 +165,8 @@ void ASRStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
 std::shared_ptr<ASRPlatformInfo> ASRPlatformInfo::me_ = nullptr;
 
 ASRStreamConfig::ASRStreamConfig() :
-    curr_child_(nullptr)
+    curr_child_(nullptr),
+    lpi_enable_(true)
 {
     for (int i = 0; i < ASR_MAX_PARAM_IDS; i++) {
         module_tag_ids_[i] = 0;

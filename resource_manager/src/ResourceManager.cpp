@@ -945,11 +945,6 @@ ResourceManager::ResourceManager()
 
     }
 
-#ifndef SOUND_TRIGGER_FEATURES_DISABLED
-    // init use_lpi_ flag
-    setLPISupported();
-#endif
-
 #ifdef SOC_PERIPHERAL_PROT
     socPerithread = std::thread(loadSocPeripheralLib);
 #endif
@@ -2834,6 +2829,19 @@ bool ResourceManager::isStreamActive(Stream *s)
 
     PAL_DBG(LOG_TAG, "Exit, ret %d", ret);
     return ret;
+}
+
+bool ResourceManager::isStStream(pal_stream_type_t type)
+{
+    switch (type) {
+        case PAL_STREAM_VOICE_UI:
+        case PAL_STREAM_ACD:
+        case PAL_STREAM_ASR:
+        case PAL_STREAM_SENSOR_PCM_DATA:
+            return true;
+        default:
+            return false;
+    }
 }
 
 int ResourceManager::isActiveStream(pal_stream_handle_t *handle) {
@@ -9765,11 +9773,10 @@ bool ResourceManager::tryLockActiveStream() {
     return mActiveStreamMutex.try_lock();
 }
 
-void ResourceManager::ConcurrentStreamStatus(pal_stream_type_t type,
-                                            pal_stream_direction_t dir, bool active) {
+void ResourceManager::ConcurrentStreamStatus(Stream* s, bool active) {
 
 #ifndef SOUND_TRIGGER_FEATURES_DISABLED
-    HandleConcurrencyForSoundTriggerStreams(type, dir, active);
+    HandleConcurrencyForSoundTriggerStreams(s, active);
 #else
     PAL_DBG(LOG_TAG, "Invalid operation, soundtrigger not enabled");
 #endif

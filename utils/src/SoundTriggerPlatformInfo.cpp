@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -232,7 +232,6 @@ exit:
 }
 
 std::shared_ptr<SoundTriggerPlatformInfo> SoundTriggerPlatformInfo::me_ = nullptr;
-bool SoundTriggerPlatformInfo::lpi_enable_ = true;
 bool SoundTriggerPlatformInfo::support_nlpi_switch_ = true;
 bool SoundTriggerPlatformInfo::support_device_switch_ = false;
 bool SoundTriggerPlatformInfo::enable_debug_dumps_ = false;
@@ -323,9 +322,6 @@ void SoundTriggerPlatformInfo::HandleStartTag(const char* tag, const char** attr
         while (attribs[i]) {
             if (!attribs[i]) {
                 PAL_ERR(LOG_TAG,"missing attrib value for tag %s", tag);
-            } else if (!strcmp(attribs[i], "lpi_enable")) {
-                lpi_enable_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else if (!strcmp(attribs[i], "support_nlpi_switch")) {
                 support_nlpi_switch_ =
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;

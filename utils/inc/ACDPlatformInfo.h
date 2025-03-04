@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -105,6 +105,7 @@ public:
         return acd_op_modes_.at(mode_pair);
     }
     uint32_t GetAndUpdateSndMdlCnt() { return sound_model_cnt++; }
+    bool GetStreamLPIFlag() const { return lpi_enable_; }
 
 private:
     std::string name_;
@@ -112,6 +113,7 @@ private:
     uint32_t sample_rate_;
     uint32_t bit_width_;
     uint32_t out_channels_;
+    bool lpi_enable_;
     st_op_modes_t acd_op_modes_;
     std::shared_ptr<SoundTriggerXml> curr_child_;
     std::vector<std::shared_ptr<ACDSoundModelInfo>> acd_soundmodel_info_list_;

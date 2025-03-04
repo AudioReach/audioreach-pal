@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -111,7 +111,8 @@ void ACDSoundModelInfo::HandleEndTag(struct xml_userdata *data, const char* tag_
 
 ACDStreamConfig::ACDStreamConfig() :
     curr_child_(nullptr),
-    sound_model_cnt(0)
+    sound_model_cnt(0),
+    lpi_enable_(true)
 {
 }
 
@@ -177,6 +178,9 @@ void ACDStreamConfig::HandleStartTag(const char* tag, const char** attribs)
             } else if (!strcmp(attribs[i], "out_channels")) {
                 if (std::stoi(attribs[++i]) <= MAX_MODULE_CHANNELS)
                     out_channels_ = std::stoi(attribs[i]);
+            } else if (!strcmp(attribs[i], "lpi_enable")) {
+                lpi_enable_ =
+                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
             } else {
                 PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
             }

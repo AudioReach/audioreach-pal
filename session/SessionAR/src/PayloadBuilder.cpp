@@ -2874,6 +2874,14 @@ int PayloadBuilder::populateStreamKV(Stream* s,
                 "icmd_plus"));
             PAL_INFO(LOG_TAG, "ICMD + playback usecase");
         }
+    } else if (sattr->type == PAL_STREAM_RAW) {
+        PAL_DBG(LOG_TAG, "IsBitPerfect %d", sattr->info.opt_stream_info.isBitPerfect);
+        if (sattr->info.opt_stream_info.isBitPerfect) {
+            filled_selector_pairs.push_back(
+                std::make_pair(CUSTOM_CONFIG_SEL,
+                "bit_perfect"));
+            PAL_INFO(LOG_TAG, "BitPerfect Playback, hence select PCM_IMMUTABLE KV");
+        }
     }
 
     retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVector);
@@ -2997,7 +3005,6 @@ int PayloadBuilder::populateDeviceKV(Stream* s, int32_t beDevId,
         }
         goto exit;
     }
-
 
     if (beDevId > 0) {
         memset (&dAttr, 0, sizeof(struct pal_device));

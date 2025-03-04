@@ -522,6 +522,7 @@ struct pal_stream_info {
     int32_t tx_proxy_type;   /** enums defined in enum pal_stream_proxy_tx_types */
     int32_t rx_proxy_type;   /** enums defined in enum pal_stream_proxy_rx_types */
     int32_t haptics_type;    /** enums defined in enum pal_sream_haptics_types */
+    bool isBitPerfect;                    /** true if stream is bitperfect (PCM_Immutable) */
     //pal_audio_attributes_t usage;       /** Not sure if we make use of this */
 };
 

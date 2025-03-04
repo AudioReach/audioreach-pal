@@ -404,6 +404,10 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
         case PAL_STREAM_SENSOR_PCM_DATA:
             // No need to set volume ckv
         break;
+        case PAL_STREAM_RAW:
+            if (sAttr.info.opt_stream_info.isBitPerfect)
+                break;
+            [[fallthrough]]; //Intentional fallthrough
         case PAL_STREAM_LOOPBACK:
             if ((sAttr.info.opt_stream_info.loopback_type ==
                             PAL_STREAM_LOOPBACK_PLAYBACK_ONLY) ||
@@ -461,8 +465,11 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
         }
 
         if (sAttr.direction == PAL_AUDIO_OUTPUT) {
+            PAL_DBG(LOG_TAG, "is Bitperfect %d stream type %d",
+                              sAttr.info.opt_stream_info.isBitPerfect, sAttr.type);
             if (!(sAttr.type == PAL_STREAM_HAPTICS &&
-                 (sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)))
+                 (sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)) &&
+                 !(sAttr.info.opt_stream_info.isBitPerfect))
                 status = builder->populateDevicePPKV(streamHandle, be->first, streamDeviceKV, 0,
                           emptyKV);
         } else {

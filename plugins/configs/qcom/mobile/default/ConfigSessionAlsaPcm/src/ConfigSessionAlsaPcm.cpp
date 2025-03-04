@@ -312,6 +312,9 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                    (void *)asr_event_cfg, payload_size);
             free(asr_event_cfg);
         }
+    } else if (sAttr.info.opt_stream_info.isBitPerfect) {
+        PAL_DBG(LOG_TAG, "Config not needed for BitPerfect Playback");
+        goto exit;
     }
 
     switch (sAttr.direction) {

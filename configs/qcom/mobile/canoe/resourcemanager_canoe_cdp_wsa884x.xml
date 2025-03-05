@@ -153,7 +153,7 @@
         <stream name="PAL_STREAM_COMMON_PROXY" max_size="8" />
         <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" max_size="1" />
         <stream name="PAL_STREAM_ASR" max_size="1" />
-        <stream name="PAL_STREAM_CALL_TRANSLATION" max_size="1" />
+        <stream name="PAL_STREAM_CALL_TRANSLATION" max_size="2" />
     </config_max_sessions>
     <device_profile>
         <in-device>

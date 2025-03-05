@@ -536,6 +536,12 @@ struct pal_stream_info {
 };
 
 typedef enum {
+    CALL_TRANSLATION_DEFAULT = 0,
+    CALL_TRANSLATION_DIR_TX = 1,
+    CALL_TRANSLATION_DIR_RX = 2,
+} pal_call_translation_direction;
+
+typedef enum {
     INCALL_RECORD_VOICE_UPLINK = 1,
     INCALL_RECORD_VOICE_DOWNLINK,
     INCALL_RECORD_VOICE_UPLINK_DOWNLINK,
@@ -884,6 +890,7 @@ typedef enum {
     PAL_PARAM_ID_SDZ_OUTPUT = 96,
     PAL_PARAM_ID_SDZ_SET_PARAM = 97,
     PAL_PARAM_ID_SDZ_ENABLE = 98,
+    PAL_PARAM_ID_CALL_TRANSLATION_CONFIG = 99,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1503,6 +1510,27 @@ struct pal_asr_config {
     uint32_t data_size;                     /**< Additional Engine specific custom data size */
     uint8_t data[];                         /**< custom data offset from the start of this
                                                  structure */
+};
+
+struct pal_tts_config {
+    uint32_t language_code;            /**< consistente enum across ASR, Translation and TTS */
+    uint32_t speech_format;            /**< Speech output mode. Current : PCM */
+    uint32_t reserved;
+};
+
+struct pal_nmt_config {
+    uint32_t input_language_code;
+    uint32_t output_language_code;
+};
+
+/* Payload for populating the ASR, TTS and NMT modules
+ */
+struct call_translation_config {
+    bool enable;
+    pal_call_translation_direction call_translation_dir;        /** Direction for the call_translation usecase */
+    struct pal_tts_config tts_module_config;        /** TTS module config */
+    struct pal_nmt_config nmt_module_config;	    /** NMT module config */
+    struct pal_asr_config asr_module_config;        /** ASR module config */
 };
 
 #define MAX_TRANSCRIPTION_CHAR_SIZE 1024

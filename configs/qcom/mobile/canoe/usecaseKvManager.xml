@@ -148,9 +148,13 @@
         </stream>
         <!-- Call Translation stream -->
         <stream type="PAL_STREAM_CALL_TRANSLATION">
-            <keys_and_values>
-                <!-- STREAMTX - CALL_TRANSLATION -->
+            <keys_and_values Direction="TX">
+                <!-- STREAMTX - CALL_TRANSLATION_TX -->
                 <graph_kv key="0xB1000000" value="0xB1000015"/>
+            </keys_and_values>
+            <keys_and_values Direction="RX">
+                <!-- STREAMTX - CALL_TRANSLATION_RX -->
+                <graph_kv key="0xA1000000" value="0xA1000009"/>
             </keys_and_values>
         </stream>
         <!-- Generic-playback stream -->

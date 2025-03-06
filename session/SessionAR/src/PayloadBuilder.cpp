@@ -86,6 +86,8 @@
 
 #define PARAM_ID_USB_AUDIO_INTF_CFG                               0x080010D6
 
+#define PARAM_ID_MODULE_ENABLE            0x08001026
+
 /* ID of the Master Gain parameter used by MODULE_ID_VOL_CTRL. */
 #define PARAM_ID_VOL_CTRL_MASTER_GAIN 0x08001035
 /* ID of the channel mixer coeff for MODULE_ID_MFC */
@@ -438,6 +440,52 @@ void PayloadBuilder::populateChannelMap(T pcmChannel, uint8_t numChannel)
         pcmChannel[6] = PCM_CHANNEL_LB;
         pcmChannel[7] = PCM_CHANNEL_RB;
     }
+}
+
+void PayloadBuilder::payloadWNRModuleEnableDisable(uint8_t** payload, size_t* size,
+    uint32_t miid, bool mode)
+{
+    struct apm_module_param_data_t* header = NULL;
+    uint8_t* payloadInfo = NULL;
+    uint32_t param_id = 0;
+    size_t payloadSize = 0, customPayloadSize = 0;
+    param_id_module_enable_t *module_payload;
+
+    if (payload == NULL || size == NULL) {
+        PAL_ERR(LOG_TAG, "invalid payload or size.");
+        return;
+    }
+
+    param_id = PARAM_ID_MODULE_ENABLE;
+    customPayloadSize = sizeof(param_id_module_enable_t);
+
+    payloadSize = PAL_ALIGN_8BYTE(sizeof(struct apm_module_param_data_t)
+                                        + customPayloadSize);
+    payloadInfo = (uint8_t *)calloc(1, (size_t)payloadSize);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "failed to allocate memory.");
+        return;
+    }
+
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    header->module_instance_id = miid;
+    header->param_id = param_id;
+    header->error_code = 0x0;
+    header->param_size = customPayloadSize;
+
+    module_payload =
+        (param_id_module_enable_t *)(payloadInfo +
+         sizeof(struct apm_module_param_data_t));
+    module_payload->enable = (mode ? 1 : 0);
+    ar_mem_cpy(payloadInfo + sizeof(struct apm_module_param_data_t),
+                     customPayloadSize,
+                     module_payload,
+                     customPayloadSize);
+
+    *size = payloadSize;
+    *payload = payloadInfo;
+    PAL_DBG(LOG_TAG, "customPayload address %p and size %zu", payloadInfo,
+            *size);
 }
 
 void PayloadBuilder::payloadUsbAudioConfig(uint8_t** payload, size_t* size,

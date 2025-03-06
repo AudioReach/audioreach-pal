@@ -659,6 +659,11 @@ set_mixer:
                 if (session->setConfig(s, MODULE, ORIENTATION_TAG) != 0) {
                     PAL_DBG(LOG_TAG,"HDR record setting device orientation failed");
                 }
+                if (rm->isWNRModuleEnabled())
+                {
+                    status = session->enableDisableWnrModule(s);
+                    PAL_DBG(LOG_TAG, "Enabling WNR module status: %d", status);
+                }
             }
         }
         // ASR logic in ::start() begins

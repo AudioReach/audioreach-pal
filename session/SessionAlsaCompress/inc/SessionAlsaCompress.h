@@ -164,6 +164,7 @@ public:
     bool getSendNextTrackParams() { return sendNextTrackParams; };
     void setSendNextTrackParams(bool newState) { sendNextTrackParams = newState; };
     snd_codec& getSndCodec() { return codec; };
+    int enableDisableWnrModule(Stream *s);
 };
 
 #endif //SESSION_ALSACOMPRESS_H

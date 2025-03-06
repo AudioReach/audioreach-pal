@@ -7515,6 +7515,18 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             }
         }
         break;
+        case PAL_PARAM_ID_WNR_MODE:
+        {
+            pal_param_payload *payload = (pal_param_payload *) param_payload;
+            PAL_DBG(LOG_TAG, "wnr module enable state received is %d", payload->payload[0]);
+            if(rm->wnrEnableStatus == (bool)payload->payload[0]) {
+                PAL_ERR(LOG_TAG, "wnr module is already in this state : %d", rm->wnrEnableStatus);
+                goto exit;
+            }
+            rm->wnrEnableStatus = (bool)(payload->payload[0]);
+            PAL_DBG(LOG_TAG, "wnr module enable state updated to %d", rm->wnrEnableStatus);
+        }
+        break;
         default:
     #ifndef SOUND_TRIGGER_FEATURES_DISABLED
             mResourceManagerMutex.unlock();
@@ -9948,6 +9960,10 @@ int ResourceManager::getCpsMode() {
 
 int ResourceManager::getSpQuickCalTime() {
     return ResourceManager::spQuickCalTime;
+}
+
+bool ResourceManager::isWNRModuleEnabled() {
+    return wnrEnableStatus;
 }
 
 int ResourceManager::getOrientation() {

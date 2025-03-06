@@ -148,6 +148,7 @@ public:
                                     void* param_payload, size_t* payload_size, Stream *s) override;
     int32_t setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
                                     void* param_payload, size_t payload_size, Stream *s) override;
+    int enableDisableWnrModule(Stream *s);
 };
 
 #endif //SESSION_ALSAPCM_H

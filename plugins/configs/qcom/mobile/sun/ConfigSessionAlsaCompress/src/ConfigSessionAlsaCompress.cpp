@@ -443,6 +443,11 @@ int32_t compressPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 {
                     PAL_DBG(LOG_TAG,"HDR record setting device orientation failed");
                 }
+                if (rm->isWNRModuleEnabled())
+                {
+                    status = session->enableDisableWnrModule(s);
+                    PAL_DBG(LOG_TAG, "Enabling WNR module status: %d", status);
+                }
             }
             if (dAttr.id == PAL_DEVICE_IN_PROXY || dAttr.id == PAL_DEVICE_IN_RECORD_PROXY)
             {

@@ -29,7 +29,7 @@
 
 /*
 Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -265,7 +265,11 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     uint8_t* payload = nullptr;
     size_t payloadSize = 0;
     std::vector<int> pcmDevRxIds;
+    std::vector<int> pcmDevIds;
     std::shared_ptr<ResourceManager> rm = nullptr;
+    struct pal_device dAttr = {};
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
 
     PAL_DBG(LOG_TAG,"Enter");
     rm = ResourceManager::getInstance();
@@ -282,6 +286,12 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     session = static_cast<SessionAlsaVoice*>(sess);
     builder = new PayloadBuilder();
     vsid = *(reinterpret_cast<int*>(pluginPayload));
+
+    status = session->getFrontEndIds(pcmDevIds, TX_HOSTLESS);
+    if (status) {
+        PAL_ERR(LOG_TAG, "getFrontEndIds failed %d", status);
+        goto exit;
+    }
 
     status = configVSID(s, session, MODULE, vsid, RX_HOSTLESS, builder);
     if (status) {
@@ -323,6 +333,33 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         PAL_ERR(LOG_TAG,"setTaggedSlotMask failed");
         goto exit;
     }
+
+    if (rm->IsSilenceDetectionEnabledVoice()) {
+
+        status = s->getAssociatedDevices(associatedDevices);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "getAssociatedDevices Failed for Silence Detection\n");
+            goto silence_det_setup_done;
+        }
+
+        for (int i=0; i<associatedDevices.size(); i++) {
+        status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "getDeviceAttributes Failed for Silence Detection\n");
+                goto silence_det_setup_done;
+            }
+        }
+
+        if ((dAttr.id != PAL_DEVICE_IN_HANDSET_MIC) && (dAttr.id != PAL_DEVICE_IN_SPEAKER_MIC))
+            goto silence_det_setup_done;
+
+        txAifBackEnds = session->getTxBEVecRef();
+        (void) enableSilenceDetection(rm, mxr, pcmDevIds,
+                        txAifBackEnds[0].second.data(), (uint64_t)session, pluginPayload);
+
+silence_det_setup_done:
+        status = 0;
+    }
 exit:
     if (builder)
         delete builder;
@@ -336,13 +373,59 @@ exit:
  */
 int32_t voicePluginConfigSetConfigStop(Stream *s)
 {
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    struct pal_device dAttr = {};
+    std::vector<int> pcmDevIds;
+    std::shared_ptr<ResourceManager> rm = nullptr;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    Session* sess = nullptr;
+    SessionAlsaVoice* session = nullptr;
+    struct mixer* mxr = nullptr;
     int status = 0;
 
     PAL_DBG(LOG_TAG,"Enter");
+
+    session = static_cast<SessionAlsaVoice*>(sess);
+    rm = ResourceManager::getInstance();
+    status = rm->getVirtualAudioMixer(&mxr);
+    if (status) {
+        PAL_ERR(LOG_TAG, "mixer error");
+        goto exit;
+    }
+
+    if (rm->IsSilenceDetectionEnabledVoice()) {
+        txAifBackEnds = session->getTxBEVecRef();
+        status = session->getFrontEndIds(pcmDevIds, TX_HOSTLESS);
+        if (status) {
+            PAL_ERR(LOG_TAG, "getFrontEndIds failed %d", status);
+            goto exit;
+        }
+
+        status = s->getAssociatedDevices(associatedDevices);
+        if (0 != status) {
+           PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+           goto silence_det_setup_done;
+        }
+
+        for (int i = 0; i < associatedDevices.size();i++) {
+            status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                goto silence_det_setup_done;
+            }
+        }
+        if (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id ==  PAL_DEVICE_IN_SPEAKER_MIC) {
+            (void) disableSilenceDetection(rm, mxr,
+                            pcmDevIds, txAifBackEnds[0].second.data(), (uint64_t)session);
+        }
+
+silence_det_setup_done:
+        status = 0;
+    }
     /*config mute on pop suppressor*/
     setPopSuppressorMute(s);
     usleep(POP_SUPPRESSOR_RAMP_DELAY);
-
+exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
 }

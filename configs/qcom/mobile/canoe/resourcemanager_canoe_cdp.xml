@@ -96,6 +96,7 @@
         <avoid_vote_stream_type>PAL_STREAM_CONTEXT_PROXY</avoid_vote_stream_type>
     </sleep_monitor_vote_streams>
     <perf_lock library="libqti-perfd-client.so" config="0x40400000, 0x1, 0x40800000, 0x514" />
+    <silence_detection_config pcm="1" voice="1" duration="3000"/>
     <group_device_cfg>
         <upd_rx>
             <snd_device name="handset" />
@@ -162,7 +163,6 @@
             <samplerate>48000</samplerate>
             <snd_device_name>handset-mic</snd_device_name>
             <ec_enable>0</ec_enable>
-            <silence_detection_enabled>1</silence_detection_enabled>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
             </usecase>
@@ -289,7 +289,6 @@
             <samplerate>48000</samplerate>
             <channels>1</channels>
             <ec_enable>0</ec_enable>
-            <silence_detection_enabled>1</silence_detection_enabled>
             <snd_device_name>speaker-mic</snd_device_name>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>

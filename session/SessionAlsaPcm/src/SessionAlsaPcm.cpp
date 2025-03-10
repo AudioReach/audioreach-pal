@@ -56,7 +56,6 @@
 
 std::mutex SessionAlsaPcm::pcmLpmRefCntMtx;
 int SessionAlsaPcm::pcmLpmRefCnt = 0;
-bool SessionAlsaPcm::silenceEventRegistered = false;
 
 #define SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE (48000)
 #define SESSION_ALSA_MMAP_PERIOD_SIZE (SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE/1000)
@@ -1230,7 +1229,6 @@ int SessionAlsaPcm::start(Stream * s)
                 if (status) {
                     status = errno;
                     PAL_ERR(LOG_TAG, "pcm_start failed %d", status);
-                    silenceEventRegistered = false;
                     goto exit;
                 }
             }

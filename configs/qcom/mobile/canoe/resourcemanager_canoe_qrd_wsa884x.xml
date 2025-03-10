@@ -161,7 +161,7 @@
         <stream name="PAL_STREAM_HAPTICS" max_size="2" />
         <stream name="PAL_STREAM_ACD" max_size="8" />
         <stream name="PAL_STREAM_CONTEXT_PROXY" max_size="8" />
-        <stream name="PAL_STREAM_SENSOR_PCM_DATA" max_size="1" />
+        <stream name="PAL_STREAM_SENSOR_PCM_DATA" max_size="3" />
         <stream name="PAL_STREAM_ULTRASOUND" max_size="1" />
         <stream name="PAL_STREAM_SPATIAL_AUDIO" max_size="1" />
         <stream name="PAL_STREAM_COMMON_PROXY" max_size="8" />

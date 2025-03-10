@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -77,7 +77,6 @@ private:
     static std::mutex pcmLpmRefCntMtx;
     static int pcmLpmRefCnt;
     int32_t configureInCallRxMFC();
-    static bool silenceEventRegistered;
     std::mutex kvMutex;
     bool RegisterForEvents = false;
     struct pal_param_haptics_cnfg_t *hpCnfg;
@@ -141,8 +140,6 @@ public:
     uint32_t getAsrMiid() { return asrMiid; };
     bool getRegisterForEvents() { return RegisterForEvents; };
     void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
-    bool IsSilenceEventRegistered() { return silenceEventRegistered; };
-    void setSilenceEventRegistered(bool newState) { silenceEventRegistered = newState; };
     int getHapticsConfig(struct pal_param_haptics_cnfg_t *config);
     int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
                                     void* param_payload, size_t* payload_size, Stream *s) override;

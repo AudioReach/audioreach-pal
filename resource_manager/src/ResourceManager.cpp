@@ -472,8 +472,10 @@ bool ResourceManager::isUpdSetCustomGainEnabled = false;
 bool ResourceManager::isCPEnabled = false;
 bool ResourceManager::isDummyDevEnabled = false;
 bool ResourceManager::isProxyRecordActive = false;
-bool ResourceManager::isSilenceDetectionEnabled = false;
+bool ResourceManager::isSilenceDetectionEnabledPcm = false;
+bool ResourceManager::isSilenceDetectionEnabledVoice = false;
 pal_audio_event_callback ResourceManager::callback_event = nullptr;
+uint32_t ResourceManager::silenceDetectionDuration = 3000;
 int ResourceManager::max_voice_vol = -1;     /* Variable to store max volume index for voice call */
 bool ResourceManager::isSignalHandlerEnabled = false;
 static int haptics_priority;
@@ -3813,6 +3815,14 @@ int ResourceManager::handleMixerEvent(struct mixer *mixer, char *mixer_str) {
             prefix_idx = event_str.find(voicemmod_prefix);
             voice_id =  true;
             if (prefix_idx == event_str.npos) {
+                /* search for Events with VoiceModel.. pattern */
+                std::string voicemodel_searched =  event_str.substr(0,(event_str.size()-event_suffix.size()-1));
+                for (std::vector<deviceCap>::iterator it = devInfo.begin() ; it != devInfo.end(); ++it){
+                    if (!strcmp(it->name, voicemodel_searched.c_str())) {
+                        pcm_id = it->deviceId;
+                        goto acquire_event_callback;
+                    }
+                }
                 PAL_ERR(LOG_TAG, "Invalid mixer event");
                 status = -EINVAL;
                 goto exit;
@@ -3844,6 +3854,7 @@ int ResourceManager::handleMixerEvent(struct mixer *mixer, char *mixer_str) {
         pcm_id = std::stoi(event_str.substr(prefix_idx, length));
     }
 
+acquire_event_callback:
     // acquire callback/cookie with pcm dev id
     it = mixerEventCallbackMap.find(pcm_id);
     if (it != mixerEventCallbackMap.end()) {
@@ -8278,6 +8289,23 @@ bool ResourceManager::isBtDevice(pal_device_id_t id)
             return false;
     }
 }
+
+void ResourceManager::processSilenceDetectionConfig(const XML_Char **attr)
+{
+    if (!strcmp(attr[0], "pcm")) {
+        ResourceManager::isSilenceDetectionEnabledPcm = atoi(attr[1])?true:false;
+    }
+
+    if (!strcmp(attr[2], "voice")) {
+        ResourceManager::isSilenceDetectionEnabledVoice = atoi(attr[3])?true:false;
+    }
+
+    if (!strcmp(attr[4], "duration")) {
+        ResourceManager::silenceDetectionDuration = atoi(attr[5]);
+    }
+
+    return;
+}
 #ifndef PAL_MEMLOG_UNSUPPORTED
 void ResourceManager::processPerfLockConfig(const XML_Char **attr)
 {
@@ -8768,9 +8796,6 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
             std::string snddevname(data->data_buf);
             deviceInfo[size].sndDevName = snddevname;
             updateSndName(deviceInfo[size].deviceId, snddevname);
-        } else if (!strcmp(tag_name, "silence_detection_enabled")) {
-            if (atoi(data->data_buf))
-                isSilenceDetectionEnabled = true;
         } else if (!strcmp(tag_name, "qmp_enable")) {
             if (atoi(data->data_buf))
                 isQmpEnabled = true;
@@ -9220,6 +9245,9 @@ void ResourceManager::startTag(void *userdata, const XML_Char *tag_name,
         return;
     } else if (strcmp(tag_name, "config_sound_dose") == 0) {
         setSoundDose(attr);
+        return;
+    } else if (!strcmp(tag_name, "silence_detection_config")){
+        processSilenceDetectionConfig(attr);
         return;
     }
 #endif
@@ -9950,8 +9978,16 @@ bool ResourceManager::IsQmpEnabled() {
     return ResourceManager::isQmpEnabled;
 }
 
-bool ResourceManager::IsSilenceDetectionEnabled() {
-    return ResourceManager::isSilenceDetectionEnabled;
+bool ResourceManager::IsSilenceDetectionEnabledPcm() {
+    return ResourceManager::isSilenceDetectionEnabledPcm;
+}
+
+bool ResourceManager::IsSilenceDetectionEnabledVoice() {
+    return ResourceManager::isSilenceDetectionEnabledVoice;
+}
+
+int ResourceManager::SilenceDetectionDuration() {
+    return ResourceManager::silenceDetectionDuration;
 }
 
 int ResourceManager::getCpsMode() {

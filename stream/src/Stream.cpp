@@ -220,9 +220,9 @@ stream_create:
         }
         throw std::runtime_error(e.what());
     }
-    if (rm->isStreamSupported(stream, palDevsAttr, noOfDevices)) {
-    } else {
+    if (!rm->isStreamSupported(stream, palDevsAttr, noOfDevices)) {
         delete stream;
+        stream = NULL;
         PAL_ERR(LOG_TAG,"Requested config not supported");
         /* for voice ui try to fall back to Deep Buffer*/
         if(sAttr->type == PAL_STREAM_VOICE_RECOGNITION){
@@ -239,6 +239,7 @@ stream_create:
                 if (!rm->isStreamSupported(stream, palDevsAttr, noOfDevices)){
                     PAL_ERR(LOG_TAG,"Cannot fall back to deep buffer");
                     delete stream;
+                    stream = NULL;
                 }
             }
         }

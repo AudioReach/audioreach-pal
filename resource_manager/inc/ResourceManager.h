@@ -583,8 +583,12 @@ private:
     static bool isHapticsthroughWSA;
     /* Variable to store max volume index for voice call */
     static int max_voice_vol;
-    /* Variable to store if Silence Detection is enabled */
-    static bool isSilenceDetectionEnabled;
+    /*Silence Detection Enable flag for PCM session*/
+    static bool isSilenceDetectionEnabledPcm;
+    /*Silence Detection Enable flag for Voice session*/
+    static bool isSilenceDetectionEnabledVoice;
+    /*Silence Detection Duration Configuration*/
+    static uint32_t silenceDetectionDuration;
     /*variable to store MSPP linear gain*/
     pal_param_mspp_linear_gain_t linear_gain;
 #ifdef SOC_PERIPHERAL_PROT
@@ -899,6 +903,7 @@ public:
     static void processSpkrTempCtrls(const XML_Char **attr);
     static void process_max_sessions(struct xml_userdata *data, const XML_Char *tag_name, const XML_Char **attr);
     static void processPerfLockConfig(const XML_Char **attr);
+    static void processSilenceDetectionConfig(const XML_Char **attr);
     static void startTag(void *userdata __unused, const XML_Char *tag_name, const XML_Char **attr);
     static void snd_data_handler(void *userdata, const XML_Char *s, int len);
     static void processDeviceIdProp(struct xml_userdata *data, const XML_Char *tag_name);
@@ -1035,7 +1040,9 @@ public:
     bool IsVIRecordStarted();
     bool IsCRSCallEnabled();
     bool IsQmpEnabled();
-    bool IsSilenceDetectionEnabled();
+    bool IsSilenceDetectionEnabledPcm();
+    bool IsSilenceDetectionEnabledVoice();
+    int SilenceDetectionDuration();
     int getCpsMode();
     int getSpQuickCalTime();
     int getOrientation();

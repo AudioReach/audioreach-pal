@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -20,4 +20,13 @@ int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm,
                     int device, struct mixer *mixer, PayloadBuilder* builder,
                     std::vector<std::pair<int32_t, std::string>> rxAifBackEnds);
 int32_t pluginConfigSetParam(Stream* s, void* payload);
+int enableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
+                    struct mixer *mixer, const std::vector<int> &DevIds,
+                    const char *intf_name, uint64_t cookie, void* pluginPayload);
+int disableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
+                    struct mixer *mixer, const std::vector<int> &DevIds,
+                    const char *intf_name, uint64_t cookie);
+/* Forward Declaration for Silence Detection Callback */
+void handleSilenceDetectionCb(uint64_t hdl __unused,
+                uint32_t event_id, void *event_data, uint32_t event_size);
 #endif

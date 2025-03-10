@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -471,6 +471,29 @@ int32_t compressPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                     goto exit;
                 }
             }
+
+            if (rm->IsSilenceDetectionEnabledPcm() &&
+                       sAttr.type != PAL_STREAM_VOICE_CALL_RECORD) {
+                status = s->getAssociatedDevices(associatedDevices);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,"getAssociatedDevices Failed for Silence Detection\n");
+                    goto silence_det_setup_done;
+                }
+                for (int i = 0; i < associatedDevices.size();i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"get Device Attributes Failed for Silence Detection\n");
+                        goto silence_det_setup_done;
+                    }
+                }
+
+                if (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC) {
+                    (void) enableSilenceDetection(rm, mxr, compressDevIds,
+                              txAifBackEnds[0].second.data(), (uint64_t)session, pluginPayload);
+                }
+silence_det_setup_done:
+            status = 0;
+            }
             break;
         default:
             break;
@@ -532,7 +555,10 @@ int32_t compressPluginConfigSetConfigStop(Stream* s)
     struct pal_stream_attributes sAttr = {};
     std::shared_ptr<ResourceManager> rm = nullptr;
     std::vector<std::pair<int32_t, std::string>> rxAifBackEnds;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    std::vector<std::shared_ptr<Device>> associatedDevices;
     std::vector<int> compressDevIds;
+    struct pal_device dAttr = {};
     Session* sess = nullptr;
     SessionAlsaCompress* session = nullptr;
     struct mixer* mxr = nullptr;
@@ -559,6 +585,7 @@ int32_t compressPluginConfigSetConfigStop(Stream* s)
 
     session = static_cast<SessionAlsaCompress*>(sess);
     rxAifBackEnds = session->getRxBEVecRef();
+    txAifBackEnds = session->getTxBEVecRef();
     status = session->getFrontEndIds(compressDevIds);
     if (status) {
         PAL_ERR(LOG_TAG, "getFrontEndIds failed %d", status);
@@ -597,6 +624,29 @@ int32_t compressPluginConfigSetConfigStop(Stream* s)
             }
             break;
         case PAL_AUDIO_INPUT:
+            if (rm->IsSilenceDetectionEnabledPcm() && sAttr.type != PAL_STREAM_VOICE_CALL_RECORD) {
+                status = s->getAssociatedDevices(associatedDevices);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "getAssociatedDevices Failed for Silence Detection\n");
+                    goto silence_det_setup_done;
+                }
+
+                for (int i=0; i < associatedDevices.size(); i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "getDeviceAttributes failed for Silence Detection\n");
+                        goto silence_det_setup_done;
+                    }
+                }
+
+                if (dAttr.id == PAL_DEVICE_IN_HANDSET_MIC || dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC) {
+                    (void) disableSilenceDetection(rm, mxr, compressDevIds,
+                                 txAifBackEnds[0].second.data(), (uint64_t)session);
+                }
+silence_det_setup_done:
+                status = 0;
+            }
+            break;
         case PAL_AUDIO_INPUT_OUTPUT:
             break;
     }

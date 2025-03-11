@@ -950,7 +950,7 @@
         <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
         <path name="qmp2-normal" />
         <path name="qmp1-normal" />
-        <path name="qmp4-normal" />
+        <path name="qmp3-normal" />
     </path>
 
     <path name="voice-speaker-tmic">

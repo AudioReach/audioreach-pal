@@ -397,6 +397,10 @@
                 <!-- STREAMRX - RAW_PLAYBACK -->
                 <graph_kv key="0xA1000000" value="0xA1000019"/>
             </keys_and_values>
+            <keys_and_values Direction="RX" CustomConfig="bit_perfect">
+                <!-- STREAMRX - PCM_IMMUTABLE -->
+                <graph_kv key="0xA1000000" value="0xA1000008"/>
+            </keys_and_values>
             <keys_and_values Direction="TX">
                 <!-- STREAMTX - RAW_RECORD -->
                 <graph_kv key="0xB1000000" value="0xB1000009"/>
@@ -496,6 +500,10 @@
             <keys_and_values>
                 <!-- DEVICERX - USB_RX -->
                 <graph_kv key="0xA2000000" value="0xA2000005"/>
+            </keys_and_values>
+            <keys_and_values CustomConfig="bit_perfect">
+                <!-- DEVICERX - USB_RX_IMMUTABLE -->
+                <graph_kv key="0xA2000000" value="0xA2000015"/>
             </keys_and_values>
         </device>
         <!-- In Handset MIC Device -->

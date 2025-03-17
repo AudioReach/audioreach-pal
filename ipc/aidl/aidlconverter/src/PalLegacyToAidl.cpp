@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -74,6 +74,7 @@ PalStreamAttributes LegacyToAidl::convertPalStreamAttributesToAidl(
     aidlStreamInfo.isStreaming = palStreamInfo.is_streaming;
     aidlStreamInfo.loopbackType = palStreamInfo.loopback_type;
     aidlStreamInfo.hapticsType = palStreamInfo.haptics_type;
+    aidlStreamInfo.isBitPerfect = palStreamInfo.isBitPerfect;
     aidlStreamAttr.info = aidlStreamInfo;
 
     aidlStreamAttr.flags = static_cast<PalStreamFlag>(palStreamAttr->flags);

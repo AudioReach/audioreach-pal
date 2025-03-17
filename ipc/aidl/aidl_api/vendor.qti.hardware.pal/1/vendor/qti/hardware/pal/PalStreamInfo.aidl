@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,4 +32,5 @@ parcelable PalStreamInfo {
   boolean isStreaming;
   int loopbackType;
   int hapticsType;
+  boolean isBitPerfect;
 }

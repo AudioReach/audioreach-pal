@@ -209,7 +209,9 @@ int32_t getDeviceFunc(void** func, std::string name) {
             break;
         case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
         case PAL_DEVICE_OUT_BLUETOOTH_SCO:
-            PAL_VERBOSE(LOG_TAG, "BTSCO device");
+        case PAL_DEVICE_IN_BLUETOOTH_HFP:
+        case PAL_DEVICE_OUT_BLUETOOTH_HFP:
+            PAL_VERBOSE(LOG_TAG, "BTSCO/HFP device");
             *reinterpret_cast<DeviceCreate*>(func) = &CreateBtDevice;
             break;
         case PAL_DEVICE_IN_BLUETOOTH_A2DP:

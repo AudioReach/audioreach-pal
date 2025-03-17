@@ -76,6 +76,8 @@ extern "C" void CreateBtDevice(struct pal_device *device,
                 break;
             case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
             case PAL_DEVICE_OUT_BLUETOOTH_SCO:
+            case PAL_DEVICE_IN_BLUETOOTH_HFP:
+            case PAL_DEVICE_OUT_BLUETOOTH_HFP:
                 *dev = BtSco::getInstance(device, rm);
         }
     } else if ((void*)id != NULL) {
@@ -2584,12 +2586,13 @@ int32_t BtA2dp::getDeviceConfig(struct pal_device *deviceattr,
 // definition of static BtSco member variables
 std::shared_ptr<Device> BtSco::objRx = nullptr;
 std::shared_ptr<Device> BtSco::objTx = nullptr;
-bool BtSco::isScoOn = false;
 bool BtSco::isWbSpeechEnabled = false;
 int  BtSco::swbSpeechMode = SPEECH_MODE_INVALID;
 bool BtSco::isSwbLc3Enabled = false;
 audio_lc3_codec_cfg_t BtSco::lc3CodecInfo = {};
 bool BtSco::isNrecEnabled = false;
+std::shared_ptr<Device> BtSco::objHfpRx = nullptr;
+std::shared_ptr<Device> BtSco::objHfpTx = nullptr;
 
 BtSco::BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
     : Bluetooth(device, Rm)
@@ -2617,6 +2620,11 @@ bool BtSco::isDeviceReady(pal_device_id_t id)
     return isScoOn;
 }
 
+bool BtSco::isHFPRunning()
+{
+    return isHfpOn;
+}
+
 int32_t BtSco::checkAndUpdateSampleRate(uint32_t *sampleRate)
 {
     if (isWbSpeechEnabled)
@@ -2638,6 +2646,7 @@ int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
     switch (param_id) {
     case PAL_PARAM_ID_BT_SCO:
         isScoOn = param_bt_sco->bt_sco_on;
+        isHfpOn = param_bt_sco->is_bt_hfp;
         break;
     case PAL_PARAM_ID_BT_SCO_WB:
         isWbSpeechEnabled = param_bt_sco->bt_wb_speech_enabled;
@@ -2907,10 +2916,18 @@ int BtSco::stop()
 
 std::shared_ptr<Device> BtSco::getObject(pal_device_id_t id)
 {
-    if (id == PAL_DEVICE_OUT_BLUETOOTH_SCO)
-        return objRx;
-    else
-        return objTx;
+    switch (id) {
+        case PAL_DEVICE_OUT_BLUETOOTH_SCO:
+            return objRx;
+        case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
+            return objTx;
+        case PAL_DEVICE_OUT_BLUETOOTH_HFP:
+            return objHfpRx;
+        case PAL_DEVICE_IN_BLUETOOTH_HFP:
+            return objHfpTx;
+        default:
+            return nullptr;
+    }
 }
 
 std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
@@ -2922,14 +2939,29 @@ std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
             objRx = sp;
         }
         return objRx;
-    } else {
+    } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET) {
         if (!objTx) {
-            PAL_ERR(LOG_TAG,  "creating instance for  %d", device->id);
+            PAL_DBG(LOG_TAG,  "creating instance for  %d", device->id);
             std::shared_ptr<Device> sp(new BtSco(device, Rm));
             objTx = sp;
         }
         return objTx;
+    } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_HFP) {
+        if (!objHfpRx) {
+            PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
+            std::shared_ptr<Device> sp(new BtSco(device, Rm));
+            objHfpRx = sp;
+        }
+        return objHfpRx;
+    } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_HFP) {
+        if (!objHfpTx) {
+            PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
+            std::shared_ptr<Device> sp(new BtSco(device, Rm));
+            objHfpTx = sp;
+        }
+        return objHfpTx;
     }
+    return nullptr;
 }
 
 int32_t BtSco::getDeviceConfig(struct pal_device *deviceattr,

@@ -2099,38 +2099,58 @@ int setBTParameter(uint32_t param_id, void *param_payload,
             pal_param_btsco_t* param_bt_sco = nullptr;
             bool isScoOn = false;
 
-            dattr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
-            if (!rm->isDeviceAvailable(dattr.id)) {
-                dattr.id = PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
-                if (!rm->isDeviceAvailable(dattr.id)) {
-                    PAL_INFO(LOG_TAG, "SCO output and input devices are all unavailable");
-                }
-            }
+            std::vector<pal_device_id_t> scoDev;
+            std::vector<pal_device_id_t> hfpDev;
 
-            dev = Device::getInstance(&dattr, rm);
-            if (!dev) {
-                PAL_ERR(LOG_TAG, "Device getInstance failed");
-                status = -ENODEV;
-                goto exit;
-            }
-
-            isScoOn = dev->isDeviceReady(dattr.id);
+            scoDev.push_back(PAL_DEVICE_OUT_BLUETOOTH_SCO);
+            scoDev.push_back(PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET);
+            // 1. set SCO on for SCO devices if they are available.
             param_bt_sco = (pal_param_btsco_t*)param_payload;
-            if (isScoOn == param_bt_sco->bt_sco_on) {
-                PAL_INFO(LOG_TAG, "SCO already in requested state, ignoring");
-                goto exit;
-            }
-
-            status = dev->setDeviceParameter(param_id, param_payload);
-            if (status) {
-                PAL_ERR(LOG_TAG, "set Parameter %d failed\n", param_id);
-                goto exit;
+            for (auto devId: scoDev) {
+                dattr.id = devId;
+                dev = Device::getInstance(&dattr, rm);
+                if (!dev) {
+                    PAL_ERR(LOG_TAG, "Device getInstance failed");
+                    status = -ENODEV;
+                    goto exit;
+                }
+                isScoOn = rm->isDeviceReady(dattr.id);
+                if (isScoOn != param_bt_sco->bt_sco_on) {
+                    status = dev->setDeviceParameter(param_id, param_payload);
+                    if (status)
+                        PAL_ERR(LOG_TAG, "set Parameter %d failed on SCO devices", param_id);
+                } else {
+                    PAL_INFO(LOG_TAG, "SCO already in requested state, ignoring");
+                }
             }
 
             if (param_bt_sco->bt_sco_on) {
                 rm->unlockResourceManagerMutex();
                 reconfigureScoStreams();
                 rm->lockResourceManagerMutex();
+            }
+            // 2.set SCO on/HFP on for HFP devices if they are available as well.
+            hfpDev.push_back(PAL_DEVICE_OUT_BLUETOOTH_HFP);
+            hfpDev.push_back(PAL_DEVICE_IN_BLUETOOTH_HFP);
+            for (auto devId: hfpDev) {
+                dattr.id = devId;
+                if (!rm->isDeviceAvailable(dattr.id))
+                    continue;
+                dev = Device::getInstance(&dattr, rm);
+                if (!dev) {
+                    PAL_ERR(LOG_TAG, "Device getInstance failed");
+                    status = -ENODEV;
+                    goto exit;
+                }
+                isScoOn = rm->isDeviceReady(dattr.id);
+                if (isScoOn != param_bt_sco->bt_sco_on) {
+                    status = dev->setDeviceParameter(param_id, param_payload);
+                    if (status) {
+                        PAL_ERR(LOG_TAG, "set Parameter %d failed on HFP devices", param_id);
+                    }
+                } else {
+                    PAL_INFO(LOG_TAG, "SCO already in requested state for HFP device, ignoring");
+                }
             }
         }
         break;
@@ -2149,6 +2169,20 @@ int setBTParameter(uint32_t param_id, void *param_payload,
                 dev = Device::getInstance(&dattr, rm);
                 if (dev)
                     status = dev->setDeviceParameter(param_id, param_payload);
+            }
+            if (rm->isDeviceAvailable(PAL_DEVICE_OUT_BLUETOOTH_HFP)) {
+                dattr.id = PAL_DEVICE_OUT_BLUETOOTH_HFP;
+                dev = Device::getInstance(&dattr, rm);
+                if (dev) {
+                    status = dev->setDeviceParameter(param_id, param_payload);
+                }
+            }
+            if (rm->isDeviceAvailable(PAL_DEVICE_IN_BLUETOOTH_HFP)) {
+                dattr.id = PAL_DEVICE_IN_BLUETOOTH_HFP;
+                dev = Device::getInstance(&dattr, rm);
+                if (dev) {
+                    status = dev->setDeviceParameter(param_id, param_payload);
+                }
             }
             rm->lockResourceManagerMutex();
         }

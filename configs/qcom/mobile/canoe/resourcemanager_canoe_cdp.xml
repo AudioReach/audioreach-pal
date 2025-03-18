@@ -1228,7 +1228,6 @@
     <sound_trigger_platform_info>
         <common_config>
             <!-- Sound trigger streams common params -->
-            <param lpi_enable="true" />
             <param support_nlpi_switch="true" />
             <param support_device_switch="true" />
             <param enable_debug_dumps="false" />
@@ -1625,6 +1624,9 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!-- move stream container in ACDB to NLPI when this is uncommented -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI" />
                     <high_performance capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
@@ -1700,6 +1702,8 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <low_power_ns capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_FFNS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFNS" />
@@ -1725,6 +1729,8 @@
             <stream_config>
                 <name>QC_ASR</name>
                 <param vendor_uuid = "018ebfb8-1364-7417-b92e-f6ab16b55431" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <module_Info>
                     <!-- List the SPF module params Ids -->
                     <param asr_input_config_id = "0xC0000057, 0x08001AA4" />
@@ -1784,6 +1790,8 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
@@ -1855,6 +1863,8 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_RAW_NLPI" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_RAW_NLPI" />
@@ -1891,6 +1901,8 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_CUSTOM_NS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_CUSTOM_NS" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_CUSTOM_ECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_CUSTOM_ECNS" />
@@ -1918,6 +1930,8 @@
                 <param bit_width="16" />
                 <!-- Module output channels -->
                 <param out_channels="1" />
+                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
+                <!--param lpi_enable="false" /-->
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />

@@ -77,6 +77,7 @@
 
 // ASR handlecb def supports
 #include "asr_module_calibration_api.h"
+#include "sdz_api.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
@@ -289,7 +290,8 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                                      payloadListParam[i]->payloadSize;
             asr_event_cfg->is_register = 1;
             asr_event_cfg->event_id = payloadListParam[i]->eventId;
-            asr_event_cfg->module_instance_id = asrMiid;
+            asr_event_cfg->module_instance_id = asr_event_cfg->event_id == EVENT_ID_SDZ_OUTPUT ?
+                                                session->getSdzMiid() : session->getAsrMiid();
             memcpy(asr_event_cfg->event_config_payload,
                    payloadListParam[i]->payload,
                    payloadListParam[i]->payloadSize);
@@ -1240,6 +1242,13 @@ silence_det_setup_done:
             event_cfg.event_config_payload_size =  0;
             event_cfg.is_register = 0;
             event_cfg.event_id = payloadListParam[i]->eventId;
+            if (sAttr.type == PAL_STREAM_ACD) {
+                tagId = CONTEXT_DETECTION_ENGINE;
+            } else if (payloadListParam[i]->eventId == EVENT_ID_SDZ_OUTPUT) {
+                tagId = TAG_MODULE_SDZ;
+            } else {
+                tagId = TAG_MODULE_ASR;
+            }
             tagId = (sAttr.type == PAL_STREAM_ACD ? CONTEXT_DETECTION_ENGINE :
                                         TAG_MODULE_ASR);
             if (txAifBackEnds.empty() || !pcmDevIds.size()) {

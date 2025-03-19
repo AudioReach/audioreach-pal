@@ -49,6 +49,7 @@
 #include "mspp_module_calibration_api.h"
 #include "tsm_module_api.h"
 #include "asr_module_calibration_api.h"
+#include "sdz_api.h"
 #include "PalMappings.h"
 #include "SessionAR.h"
 #include "apm_api.h"
@@ -1872,6 +1873,7 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
 
     struct apm_module_param_data_t* header;
     struct param_id_asr_output_t* asrOutputParam = NULL;
+    param_id_sdz_output_t* sdzOutputParam = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
 
@@ -1895,6 +1897,12 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
         asrOutputParam->output_token = s->GetOutputToken();
         asrOutputParam->num_outputs = s->GetNumEvents();
         asrOutputParam->payload_size =  s->GetPayloadSize();
+    } else if (param_id == PARAM_ID_SDZ_OUTPUT) {
+        sdzOutputParam = (param_id_sdz_output_t *)
+                         (payloadInfo + (sizeof(struct apm_module_param_data_t)));
+        sdzOutputParam->output_token = s->GetSdzOutputToken();
+        sdzOutputParam->num_outputs = s->GetSdzNumEvents();
+        sdzOutputParam->payload_size =  s->GetSdzPayloadSize();
     }
 
     *size = payloadSize + padBytes;

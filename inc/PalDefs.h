@@ -867,6 +867,13 @@ typedef enum {
     PAL_PARAM_ID_MMA_MODE_BIT_CONFIG = 89,
     PAL_PARAM_ID_WNR_MODE = 90,
     PAL_PARAM_ID_ULTRASOUND_SET_GAIN = 91,
+    PAL_PARAM_ID_SDZ_MODEL = 92,
+    PAL_PARAM_ID_SDZ_CONFIG = 93,
+    PAL_PARAM_ID_SDZ_CUSTOM = 94,
+    PAL_PARAM_ID_SDZ_FORCE_OUTPUT = 95,
+    PAL_PARAM_ID_SDZ_OUTPUT = 96,
+    PAL_PARAM_ID_SDZ_SET_PARAM = 97,
+    PAL_PARAM_ID_SDZ_ENABLE = 98,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1483,6 +1490,7 @@ struct pal_asr_config {
     bool enable_partial_transcription;      /**< partial transcription switch enable/disable flag */
     bool enable_logger_mode;                /**< Flag to enable/disable logger mode */
     bool enable_timestamp;                  /**< Flag to enable/disable output with timestamp details */
+    bool enable_speaker_diarization;        /**< Flag to enable/disable speaker diarization */
     uint32_t threshold;                     /**< Confidence threshold for ASR transcription */
     uint32_t timeout_duration;              /**< ASR processing timeout, in milliseconds,
                                                  if silence is not detected after the speech
@@ -1504,6 +1512,7 @@ struct pal_asr_config {
 typedef enum {
     PLAIN_TEXT = 0,
     TIMESTAMP_BASED_TEXT,
+    SPEAKER_DIARIZATION,
 } eventType;
 
 struct pal_asr_engine_event {
@@ -1555,6 +1564,25 @@ struct pal_asr_ts_event {
     struct pal_asr_engine_ts_event event[];
 };
 
+/** Payload containing speaker's information */
+struct sdz_speaker_info {
+    uint32_t speaker_id;
+    uint64_t start_ts;
+    uint64_t end_ts;
+};
+
+/** Output payload for speaker diarization */
+struct sdz_output {
+    uint32_t num_speakers;
+    uint32_t overlap_detected;
+    struct sdz_speaker_info speakers_list[];
+};
+
+/** Payload for speaker diarization event */
+struct pal_sdz_event {
+    uint32_t num_outputs;
+    struct sdz_output output[];
+};
 
 struct pal_compr_gapless_mdata {
        uint32_t encoderDelay;

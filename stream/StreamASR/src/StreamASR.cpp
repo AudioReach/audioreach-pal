@@ -63,6 +63,7 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
     smCfg = nullptr;
     cmCfg = nullptr;
     deviceOpened = false;
+    enableSpeakerDiarization = false;
     currentState = STREAM_IDLE;
     asrIdle = nullptr;
     asrActive = nullptr;
@@ -185,6 +186,7 @@ int32_t StreamASR::close()
 
     if (palRecConfig) {
         free(palRecConfig);
+        palRecConfig = nullptr;
     }
 
     if (engine) {
@@ -345,36 +347,58 @@ int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
 
 void StreamASR::HandleEventData(eventPayload engEvent) {
 
-    uint32_t eventId = 0;
+    uint32_t eventId = engEvent.type;
 
-    if (engEvent.type == TIMESTAMP_BASED_TEXT) {
-        eventId = 1;
-        pal_asr_ts_event *event = (pal_asr_ts_event *)engEvent.payload;
-        PAL_INFO(LOG_TAG, "Timestamp event, event status : %d, num events : %d",
-                 event->status, event->num_events);
-         for (int i = 0; i < event->num_events; ++i) {
-             PAL_INFO(LOG_TAG, "Event no : %d, is_final : %d, confidence : %d",
-                       i, event->event[i].is_final, event->event[i].confidence);
-             PAL_INFO(LOG_TAG,"Text_size : %d, text : %s,", event->event[i].text_size,
-                       event->event[i].text);
-             PAL_INFO(LOG_TAG,"start timestamp: %lld, end timestamp : %lld",
-                       event->event[i].start_ts, event->event[i].end_ts);
-             PAL_INFO(LOG_TAG, "Number of words : %d", event->event[i].num_words);
-             for (int j = 0; j < event->event[i].num_words; j++) {
-                 PAL_INFO(LOG_TAG, "\tword : %s", event->event[i].word[j].word);
-                 PAL_INFO(LOG_TAG, "\tWord's start timestamp : %lld, end timestamp : %lld",
-                        event->event[i].word[j].start_ts, event->event[i].word[j].end_ts);
-             }
+    switch (eventId) {
+        case TIMESTAMP_BASED_TEXT : {
+            pal_asr_ts_event *tsEvent = (pal_asr_ts_event *)engEvent.payload;
+            PAL_INFO(LOG_TAG, "Timestamp event, event status : %d, num events : %d",
+                     tsEvent->status, tsEvent->num_events);
+            for (int i = 0; i < tsEvent->num_events; ++i) {
+                 PAL_DBG(LOG_TAG, "Event no : %d, is_final : %d, confidence : %d",
+                         i, tsEvent->event[i].is_final, tsEvent->event[i].confidence);
+                 PAL_DBG(LOG_TAG,"Text_size : %d, text : %s,", tsEvent->event[i].text_size,
+                         tsEvent->event[i].text);
+                 PAL_DBG(LOG_TAG,"start timestamp: %d, end timestamp : %d",
+                         tsEvent->event[i].start_ts, tsEvent->event[i].end_ts);
+                 PAL_DBG(LOG_TAG, "Number of words : %d", tsEvent->event[i].num_words);
+                 for (int j = 0; j < tsEvent->event[i].num_words; j++) {
+                     PAL_DBG(LOG_TAG, "\tWord : %s", tsEvent->event[i].word[j]);
+                     PAL_DBG(LOG_TAG, "\tWord's start timestamp : %d, end timestamp : %d",
+                        tsEvent->event[i].word[j].start_ts, tsEvent->event[i].word[j].end_ts);
+                 }
+            }
+            break;
         }
-    } else {
-        pal_asr_event *event = (pal_asr_event *)engEvent.payload;
-        PAL_INFO(LOG_TAG, "Plain text event status : %d, num events : %d",
-                 event->status, event->num_events);
-        for (int i = 0; i < event->num_events; ++i) {
-            PAL_INFO(LOG_TAG, "Event no : %d, is_final : %d, confidence : %d,",
-                      i, event->event[i].is_final, event->event[i].confidence);
-            PAL_INFO(LOG_TAG, "Text_size : %d, text : %s", event->event[i].text_size,
-                       event->event[i].text);
+        case SPEAKER_DIARIZATION : {
+            pal_sdz_event *sdzEvent = (pal_sdz_event *)engEvent.payload;
+            PAL_INFO(LOG_TAG, "Speaker diarization event, num_output: %d", sdzEvent->num_outputs);
+            for (int i = 0; i < sdzEvent->num_outputs; i++) {
+                PAL_DBG(LOG_TAG, "Number of speakers : %d, overlap detected : %d",
+                        sdzEvent->output[i].num_speakers, sdzEvent->output[i].overlap_detected);
+                for (int j = 0; j < sdzEvent->output[i].num_speakers; j++) {
+                    PAL_DBG(LOG_TAG, "speaker ID: %d, start timestamp: %ld, end timestamp: %ld",
+                            sdzEvent->output[i].speakers_list[i].speaker_id,
+                            sdzEvent->output[i].speakers_list[i].start_ts,
+                            sdzEvent->output[i].speakers_list[i].end_ts);
+                }
+            }
+            break;
+        }
+        case PLAIN_TEXT : {
+            pal_asr_event *event = (pal_asr_event *)engEvent.payload;
+            PAL_INFO(LOG_TAG, "Plain text event status : %d, num events : %d",
+                     event->status, event->num_events);
+            for (int i = 0; i < event->num_events; ++i) {
+                PAL_DBG(LOG_TAG, "Event no : %d, is_final : %d, confidence : %d,",
+                        i, event->event[i].is_final, event->event[i].confidence);
+                PAL_DBG(LOG_TAG, "Text_size : %d, text : %s", event->event[i].text_size,
+                        event->event[i].text);
+            }
+            break;
+        }
+        default : {
+            PAL_INFO(LOG_TAG, "Invalid event recieved, ignore!!!");
         }
     }
 
@@ -382,6 +406,7 @@ void StreamASR::HandleEventData(eventPayload engEvent) {
         callback((pal_stream_handle_t *)this, eventId, (uint32_t *)engEvent.payload,
                   engEvent.payloadSize, cookie);
     }
+
     PAL_INFO(LOG_TAG, "Exit.");
 }
 
@@ -404,6 +429,7 @@ void StreamASR::sendAbort() {
 
     mStreamMutex.lock();
     free(cbEvent);
+    cbEvent = NULL;
 exit:
     PAL_INFO(LOG_TAG, "Exit.");
 }
@@ -698,7 +724,8 @@ bool StreamASR::compareConfig(struct pal_asr_config *oldConfig, struct pal_asr_c
         oldConfig->timeout_duration != newConfig->timeout_duration ||
         oldConfig->silence_detection_duration != newConfig->silence_detection_duration ||
         oldConfig->enable_partial_transcription != newConfig->enable_partial_transcription ||
-        oldConfig->outputBufferMode != newConfig->outputBufferMode)
+        oldConfig->outputBufferMode != newConfig->outputBufferMode ||
+        enableSpeakerDiarization != newConfig->enable_speaker_diarization)
         return false;
 
     return true;
@@ -716,14 +743,20 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
         goto exit;
     }
 
-    if (recConfig)
+    if (recConfig) {
         free(recConfig);
+        recConfig = nullptr;
+    }
 
-    if (outputConfig)
+    if (outputConfig) {
         free(outputConfig);
+        outputConfig = nullptr;
+    }
 
-    if (palRecConfig)
+    if (palRecConfig) {
         free(palRecConfig);
+        palRecConfig = nullptr;
+    }
 
     recConfig = (param_id_asr_config_t *)calloc(1, sizeof(param_id_asr_config_t));
     if (!recConfig) {
@@ -734,19 +767,16 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
 
     outputConfig = (param_id_asr_output_config_t *)calloc(1, sizeof(param_id_asr_output_config_t));
     if (!outputConfig) {
-        free(recConfig);
         status = -ENOMEM;
         PAL_ERR(LOG_TAG, "Error:%d Failed to allocate outputConfig", status);
-        goto exit;
+        goto cleanup;
     }
 
     inputConfig = (param_id_asr_input_threshold_t *)calloc(1, sizeof(param_id_asr_input_threshold_t));
     if (!inputConfig) {
-        free(recConfig);
-        free(outputConfig);
         status = -ENOMEM;
         PAL_ERR(LOG_TAG, "Error:%d Failed to allocate inputConfig", status);
-        goto exit;
+        goto cleanup;
     }
 
     recConfig->input_language_code          = (uint32_t)asrRecCfg->input_language_code;
@@ -782,14 +812,38 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     }
 
     inputConfig->buf_duration_ms = cmCfg->GetInputBufferSize(outputConfig->output_mode);
+    enableSpeakerDiarization = asrRecCfg->enable_speaker_diarization;
+
+    if (enableSpeakerDiarization) {
+        sdzInputConfig = (param_id_sdz_input_threshold_t *)calloc(1, sizeof(param_id_sdz_input_threshold_t));
+        if (!sdzInputConfig) {
+            status = -ENOMEM;
+            PAL_ERR(LOG_TAG, "Error:%d Failed to allocate sdzInputConfig", status);
+            goto cleanup;
+        }
+
+        sdzOutputConfig = (param_id_sdz_output_config_t *)calloc(1, sizeof(param_id_sdz_output_config_t));
+        if (!sdzOutputConfig) {
+            status = -ENOMEM;
+            PAL_ERR(LOG_TAG, "Error:%d Failed to allocate sdzInputConfig", status);
+            goto cleanup;
+        }
+
+        sdzOutputConfig->output_mode  = asrRecCfg->outputBufferMode ? BUFFERED_MODE : NON_BUFFERED_MODE;
+        sdzOutputConfig->out_buf_size = cmCfg->GetSdzOutputBufferSize();
+        sdzOutputConfig->num_bufs     = 2;
+
+        sdzInputConfig->buf_duration_ms = cmCfg->GetInputBufferSize(outputConfig->output_mode);
+    }
 
     PAL_INFO(LOG_TAG, "Sending configs lang_code : %d, op_lang_code : %d, en_lang_det : %d,"
         "en_transl :%d, cont_mode : %d, threshold : %d, time_dur : %d,"
-        "sl_time_dur : %d, partial_trans : %d", recConfig->input_language_code,
-        recConfig->output_language_code, recConfig->enable_language_detection,
-        recConfig->enable_translation, recConfig->enable_continuous_mode,
-        recConfig->threshold, recConfig->timeout_duration,
-        recConfig->vad_hangover_duration, recConfig->enable_partial_transcription);
+        "sl_time_dur : %d, partial_trans : %d, enable SDZ : %d",
+        recConfig->input_language_code, recConfig->output_language_code,
+        recConfig->enable_language_detection, recConfig->enable_translation,
+        recConfig->enable_continuous_mode, recConfig->threshold, recConfig->timeout_duration,
+        recConfig->vad_hangover_duration, recConfig->enable_partial_transcription,
+        enableSpeakerDiarization);
 
     PAL_INFO(LOG_TAG, "Recieved output buffer mode : %d, logger mode : %d, sending output mode : %d",
         asrRecCfg->outputBufferMode, asrRecCfg->enable_logger_mode, outputConfig->output_mode);
@@ -813,6 +867,34 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     status = SetupDetectionEngine();
     if (status) {
         PAL_ERR(LOG_TAG, "Error: %d Failed to get engine instance", status);
+    }
+
+    goto exit;
+
+cleanup:
+    if (recConfig) {
+        free(recConfig);
+        recConfig = nullptr;
+    }
+
+    if (inputConfig) {
+        free(inputConfig);
+        inputConfig = nullptr;
+    }
+
+    if (outputConfig) {
+        free(outputConfig);
+        outputConfig = nullptr;
+    }
+
+    if (sdzOutputConfig) {
+        free(sdzOutputConfig);
+        sdzOutputConfig = nullptr;
+    }
+
+    if (sdzInputConfig) {
+        free(sdzInputConfig);
+        sdzInputConfig = nullptr;
     }
 
 exit:
@@ -1051,8 +1133,15 @@ int32_t StreamASR::ASRActive::ProcessEvent(
         }
         case ASR_EV_FORCE_OUTPUT: {
             status = asrStream.engine->setParameters(&asrStream, ASR_FORCE_OUTPUT);
-            if (status)
-                PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for force output", status);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for ASR force output", status);
+                break;
+            }
+            if (asrStream.enableSpeakerDiarization) {
+                status = asrStream.engine->setParameters(&asrStream, SDZ_FORCE_OUTPUT);
+                if (status)
+                    PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for SDZ force output", status);
+            }
             break;
         }
         case ASR_EV_DEVICE_DISCONNECTED: {
@@ -1401,6 +1490,30 @@ uint32_t StreamASR::GetPayloadSize() {
 
     if (engine)
         return engine->GetPayloadSize();
+
+    return 0;
+}
+
+uint32_t StreamASR::GetSdzOutputToken() {
+
+    if (engine)
+        return engine->GetSdzOutputToken();
+
+    return 0;
+}
+
+uint32_t StreamASR::GetSdzNumEvents() {
+
+    if (engine)
+        return engine->GetSdzNumOutput();
+
+    return 0;
+}
+
+uint32_t StreamASR::GetSdzPayloadSize() {
+
+    if (engine)
+        return engine->GetSdzPayloadSize();
 
     return 0;
 }

@@ -394,7 +394,7 @@ void ASREngine::ParseEventAndNotifyStream() {
     }
 
     PAL_INFO(LOG_TAG, "Logger mode : %d, Output mode : %d, output token : %d, num output : %d, payload size : %d",
-            loggerModeEnabled, event->asr_out_mode, event->output_token, event->num_outputs, event->payload_size);
+            loggerModeEnabled, event->event_payload_type, event->output_token, event->num_outputs, event->payload_size);
 
     if (event->num_outputs == 0) {
         PAL_ERR(LOG_TAG, "event raised without any transcript");

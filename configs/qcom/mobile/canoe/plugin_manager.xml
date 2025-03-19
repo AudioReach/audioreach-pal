@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+<!-- Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 * -->
 
@@ -90,6 +90,8 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
         <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
         <device name="PAL_DEVICE_IN_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_HFP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_HFP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
         <!--FM-->
         <device name="PAL_DEVICE_OUT_FM" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>
         <device name="PAL_DEVICE_IN_FM_TUNER" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>

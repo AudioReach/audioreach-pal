@@ -73,6 +73,7 @@ private:
     uint64_t cbCookie;
     uint32_t svaMiid;
     uint32_t asrMiid;
+    uint32_t sdzMiid;
     uint32_t vaMicChannels;
     static std::mutex pcmLpmRefCntMtx;
     static int pcmLpmRefCnt;
@@ -138,6 +139,7 @@ public:
             us_tone_renderer_ep_media_format_status_t event);
     uint32_t getsvaMiid() { return svaMiid; };
     uint32_t getAsrMiid() { return asrMiid; };
+    uint32_t getSdzMiid() { return sdzMiid; };
     bool getRegisterForEvents() { return RegisterForEvents; };
     void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
     int getHapticsConfig(struct pal_param_haptics_cnfg_t *config);

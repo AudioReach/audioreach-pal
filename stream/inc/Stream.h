@@ -192,6 +192,9 @@ public:
     virtual uint32_t GetNumEvents() { return 0; }
     virtual uint32_t GetOutputToken() { return 0; }
     virtual uint32_t GetPayloadSize() { return 0; }
+    virtual uint32_t GetSdzNumEvents() { return 0; }
+    virtual uint32_t GetSdzOutputToken() { return 0; }
+    virtual uint32_t GetSdzPayloadSize() { return 0; }
     virtual uint32_t GetMMAModelType() { return 0; }
     virtual int32_t setCustomParam(custom_payload_uc_info_t* uc_info,std::string param_str,
                            void* param_payload, size_t payload_size);

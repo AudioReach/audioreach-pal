@@ -34,7 +34,7 @@
 #ifndef ASR_PLATFORM_INFO_H
 #define ASR_PLATFORM_INFO_H
 
-#define OUT_BUF_SIZE_DEFAULT 3072 /* In bytes. Around 30sec of text */
+#define OUT_BUF_SIZE_DEFAULT 10000 /* In bytes. Around 98sec of text */
 #define VAD_HANG_OVER_DURTION_DEFAULT_MS 1000
 
 #include "ResourceManager.h"
@@ -45,6 +45,11 @@ typedef enum asr_param_id_type {
     ASR_INPUT_BUF_DURATON,
     ASR_OUTPUT,
     ASR_FORCE_OUTPUT,
+    SDZ_ENABLE,
+    SDZ_OUTPUT_CONFIG,
+    SDZ_INPUT_BUF_DURATION,
+    SDZ_OUTPUT,
+    SDZ_FORCE_OUTPUT,
     ASR_MAX_PARAM_IDS
 }asr_param_id_type_t;
 
@@ -60,6 +65,7 @@ public:
     size_t GetInputBufferSize() const { return input_buffer_size_; }
     size_t GetPartialModeInputBufferSize() const { return partial_mode_input_buffer_size_; }
     size_t GetBufferingModeOutBufferSize() const { return buffering_mode_out_buffer_size_; }
+    uint32_t GetSdzOutputBufferSize() const { return sdz_output_buffer_size_; }
     uint32_t GetInputBufferSize(int mode);
     uint32_t GetOutputBufferSize(int mode);
 
@@ -68,6 +74,7 @@ private:
     size_t input_buffer_size_;
     size_t partial_mode_input_buffer_size_;
     size_t buffering_mode_out_buffer_size_;
+    size_t sdz_output_buffer_size_;
 };
 
 class ASRStreamConfig : public SoundTriggerXml

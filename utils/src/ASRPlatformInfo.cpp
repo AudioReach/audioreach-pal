@@ -52,6 +52,8 @@ void ASRCommonConfig::HandleStartTag(const char* tag, const char** attribs __unu
                 buffering_mode_out_buffer_size_ = std::stoi(attribs[++i]);
             } else if (!strcmp(attribs[i], "partial_mode_in_lpi")) {
                 partial_mode_in_lpi_ = !strcmp(attribs[++i], "true");
+            } else if (!strcmp(attribs[i], "sdz_output_buffer_size")) {
+                sdz_output_buffer_size_ = std::stoi(attribs[++i]);
             } else {
                 PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[++i]);
             }
@@ -70,7 +72,8 @@ ASRCommonConfig::ASRCommonConfig():
     partial_mode_in_lpi_(false),
     input_buffer_size_(0),
     partial_mode_input_buffer_size_(0),
-    buffering_mode_out_buffer_size_(0)
+    buffering_mode_out_buffer_size_(0),
+    sdz_output_buffer_size_(0)
 {
 }
 
@@ -84,7 +87,7 @@ uint32_t ASRCommonConfig::GetOutputBufferSize(int mode) {
 
 uint32_t ASRCommonConfig::GetInputBufferSize(int mode) {
 
-    if (mode == BUFFERED)
+    if (mode == BUFFERED || mode == TS_BUFFERED)
         return GetInputBufferSize();
 
     return GetPartialModeInputBufferSize();
@@ -122,6 +125,16 @@ void ASRStreamConfig::HandleStartTag(const char* tag, const char** attribs)
                     index = ASR_OUTPUT;
                 } else if (!strcmp(attribs[i], "asr_force_output_id")) {
                     index = ASR_FORCE_OUTPUT;
+                } else if (!strcmp(attribs[i], "sdz_enable_id")) {
+                    index = SDZ_ENABLE;
+                } else if (!strcmp(attribs[i], "sdz_output_config_id")) {
+                    index = SDZ_OUTPUT_CONFIG;
+                } else if (!strcmp(attribs[i], "sdz_input_buffer_duration_id")) {
+                    index = SDZ_INPUT_BUF_DURATION;
+                } else if (!strcmp(attribs[i], "sdz_output_id")) {
+                    index = SDZ_OUTPUT;
+                } else if (!strcmp(attribs[i], "sdz_force_output_id")) {
+                    index = SDZ_FORCE_OUTPUT;
                 } else {
                     PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
                 }

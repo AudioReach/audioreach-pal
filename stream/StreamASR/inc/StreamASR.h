@@ -42,6 +42,7 @@
 #include "ResourceManager.h"
 #include "ASREngine.h"
 #include "asr_module_calibration_api.h"
+#include "sdz_api.h"
 
 
 typedef enum {
@@ -145,6 +146,9 @@ class StreamASR : public Stream {
     uint32_t GetNumEvents() override;
     uint32_t GetOutputToken() override;
     uint32_t GetPayloadSize() override;
+    uint32_t GetSdzNumEvents() override;
+    uint32_t GetSdzOutputToken() override;
+    uint32_t GetSdzPayloadSize() override;
     int32_t SetupStreamConfig(const struct st_uuid *vendorUuid);
     int32_t SetupDetectionEngine();
 
@@ -156,12 +160,15 @@ class StreamASR : public Stream {
     void HandleEventData(struct eventPayload event);
     void sendAbort();
     bool compareConfig(struct pal_asr_config *oldConfig, struct pal_asr_config *newConfig);
+    bool EnableSpeakerDiarization() { return enableSpeakerDiarization; }
     int32_t GetCurrentStateId();
     struct st_uuid GetVendorUuid() { return qcAsrUuid; }
     param_id_asr_config_t* GetSpeechConfig() { return recConfig;}
     param_id_asr_output_config_t* GetOutputConfig() { return outputConfig; }
     param_id_asr_input_threshold_t* GetInputBufConfig() { return inputConfig; }
     bool ConfigSupportLPI() override;
+    param_id_sdz_output_config_t* GetSdzOutputConfig() { return sdzOutputConfig; }
+    param_id_sdz_input_threshold_t* GetSdzInputBufferConfig() { return sdzInputConfig; }
 
  private:
     class ASREventData {
@@ -413,12 +420,15 @@ class StreamASR : public Stream {
 
     bool paused;
     bool deviceOpened;
+    bool enableSpeakerDiarization;
     uint64_t cookie;
     std::map<uint32_t, ASRState*> asrStates;
     struct pal_asr_config *palRecConfig;
     param_id_asr_config_t *recConfig;
     param_id_asr_output_config_t *outputConfig;
     param_id_asr_input_threshold_t *inputConfig;
+    param_id_sdz_output_config_t *sdzOutputConfig;
+    param_id_sdz_input_threshold_t *sdzInputConfig;
     pal_stream_callback callback;
 
     ASRState *asrIdle;

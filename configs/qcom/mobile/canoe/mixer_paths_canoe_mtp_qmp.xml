@@ -1326,4 +1326,9 @@
     <path name="dummy-dev">
     </path>
 
+    <path name="bt-hfp">
+    </path>
+
+    <path name="bt-hfp-mic">
+    </path>
 </mixer>

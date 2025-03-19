@@ -948,6 +948,42 @@
                 <graph_kv key="0xA3000000" value="0xA3000010"/>
             </keys_and_values>
         </device>
+        <device id="PAL_DEVICE_OUT_BLUETOOTH_HFP">
+            <keys_and_values CodecFormat="CODEC_TYPE_INVALID">
+                <!-- DEVICERX - HFP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000014"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_AD_SPEECH">
+                <!-- DEVICERX - HFP_RX -->
+            <graph_kv key="0xA2000000" value="0xA2000014"/>
+                <!-- BT_FORMAT - SWB -->
+                <graph_kv key="0xB5000000" value="0xB5000004"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_LC3">
+                <!-- DEVICERX - HFP_RX -->
+                 <graph_kv key="0xA2000000" value="0xA2000014"/>
+                <!-- BT_FORMAT - LC3 -->
+                <graph_kv key="0xB5000000" value="0xB5000005"/>
+            </keys_and_values>
+        </device>
+        <device id="PAL_DEVICE_IN_BLUETOOTH_HFP">
+            <keys_and_values CodecFormat="CODEC_TYPE_INVALID">
+                <!-- DEVICETX - HFP_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000015"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_AD_SPEECH">
+                <!-- DEVICETX - HFP_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000015"/>
+                <!-- BT_FORMAT - SWB -->
+                <graph_kv key="0xB5000000" value="0xB5000004"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_LC3">
+                <!-- DEVICETX - HFP_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000015"/>
+                <!-- BT_FORMAT - LC3 -->
+                <graph_kv key="0xB5000000" value="0xB5000005"/>
+            </keys_and_values>
+        </device>
     </devices>
     <devicepps>
         <!-- OUT Speaker DevicePPs -->
@@ -1144,6 +1180,27 @@
                 <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK  -->
                 <graph_kv key="0xAC000000" value="0xAC000004"/>
             </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK  -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
+            </keys_and_values>
+        </devicepp>
+        <!-- OUT BT HFP DevicePPs -->
+        <devicepp id="PAL_DEVICE_OUT_BLUETOOTH_HFP">
+            <keys_and_values StreamType="PAL_STREAM_DEEP_BUFFER,PAL_STREAM_PCM_OFFLOAD,PAL_STREAM_COMPRESSED,PAL_STREAM_LOW_LATENCY,PAL_STREAM_GENERIC,PAL_STREAM_SPATIAL_AUDIO">
+                <!-- DEVICERX - HFP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000014"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_AUDIO_MBDRC -->
+                <graph_kv key="0xAC000000" value="0xAC000002"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_TX">
+                <!-- DEVICERX - HFP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000014"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK  -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
+            </keys_and_values>
         </devicepp>
         <!-- OUT HDMI and AUX Digital DevicePPs -->
         <devicepp id="PAL_DEVICE_OUT_HDMI,PAL_DEVICE_OUT_AUX_DIGITAL,PAL_DEVICE_OUT_AUX_DIGITAL_1">
@@ -1185,6 +1242,12 @@
                 <graph_kv key="0xA2000000" value="0xA2000005"/>
                 <!-- DEVICEPP_RX - DEVICEPP_RX_VOICE_DEFAULT -->
                 <graph_kv key="0xAC000000" value="0xAC000005"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_LOOPBACK" SubType="PAL_STREAM_LOOPBACK_HFP_RX">
+                <!-- DEVICERX - USB_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000005"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_HFPSINK -->
+                <graph_kv key="0xAC000000" value="0xAC000004"/>
             </keys_and_values>
         </devicepp>
         <!-- OUT Device Proxy DevicePPs -->

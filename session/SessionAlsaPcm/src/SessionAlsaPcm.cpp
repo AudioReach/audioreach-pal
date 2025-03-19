@@ -51,6 +51,7 @@
 #include "PluginManager.h"
 #include "acd_api.h"
 #include "asr_module_calibration_api.h"
+#include "sdz_api.h"
 #include <errno.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
 
@@ -2138,16 +2139,26 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_ASR_FORCE_OUTPUT:
         case PAL_PARAM_ID_ASR_SET_PARAM:
         case PAL_PARAM_ID_MMA_MODE_BIT_CONFIG:
+        case PAL_PARAM_ID_SDZ_OUTPUT:
+        case PAL_PARAM_ID_SDZ_FORCE_OUTPUT:
+        case PAL_PARAM_ID_SDZ_SET_PARAM:
+        case PAL_PARAM_ID_SDZ_ENABLE:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;
             if (param_id == PAL_PARAM_ID_ASR_CONFIG ||
                 param_id == PAL_PARAM_ID_ASR_OUTPUT ||
                 param_id == PAL_PARAM_ID_ASR_FORCE_OUTPUT ||
-                param_id == PAL_PARAM_ID_ASR_SET_PARAM)
+                param_id == PAL_PARAM_ID_ASR_SET_PARAM) {
                 asrMiid = header->module_instance_id;
-            else
+            } else if (param_id == PAL_PARAM_ID_SDZ_OUTPUT ||
+                param_id == PAL_PARAM_ID_SDZ_FORCE_OUTPUT ||
+                param_id == PAL_PARAM_ID_SDZ_SET_PARAM ||
+                param_id == PAL_PARAM_ID_SDZ_ENABLE) {
+                sdzMiid = header->module_instance_id;
+            } else {
                 svaMiid = header->module_instance_id;
+            }
             paramData = (uint8_t *)payload;
             paramSize = PAL_ALIGN_8BYTE(header->param_size +
                 sizeof(struct apm_module_param_data_t));
@@ -2931,6 +2942,13 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
             configSize = s->GetPayloadSize();
             builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
                           PARAM_ID_ASR_OUTPUT, configSize);
+            break;
+        }
+        case PAL_PARAM_ID_SDZ_OUTPUT:
+        {
+            configSize = s->GetSdzPayloadSize();
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_SDZ_OUTPUT, configSize);
             break;
         }
         default:

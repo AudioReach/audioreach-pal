@@ -40,6 +40,7 @@
 #include "StreamASR.h"
 #include "PayloadBuilder.h"
 #include "asr_module_calibration_api.h"
+#include "sdz_api.h"
 
 typedef enum {
     ASR_ENG_IDLE,
@@ -78,6 +79,9 @@ public:
     uint32_t GetNumOutput() { return numOutput; }
     uint32_t GetOutputToken() { return outputToken; }
     uint32_t GetPayloadSize() { return payloadSize; }
+    uint32_t GetSdzNumOutput() { return sdzNumOutput; }
+    uint32_t GetSdzOutputToken() { return sdzOutputToken; }
+    uint32_t GetSdzPayloadSize() { return sdzPayloadSize; }
     void releaseEngine() { eng = nullptr; }
 private:
     static void EventProcessingThread(ASREngine *engine);
@@ -85,7 +89,8 @@ private:
                                       uint32_t eventSize);
 
     int32_t PopulateEventPayload();
-    void ParseEventAndNotifyStream();
+    void ParseEventAndNotifyStream(void* eventData);
+    void ParseSdzEventAndNotifyStream(void* eventData);
     void HandleSessionEvent(uint32_t eventId __unused, void *data, uint32_t size);
     bool IsEngineActive();
 
@@ -97,12 +102,15 @@ private:
     uint32_t numOutput;
     uint32_t payloadSize;
     uint32_t outputToken;
+    uint32_t sdzNumOutput;
+    uint32_t sdzPayloadSize;
+    uint32_t sdzOutputToken;
     uint32_t moduleTagIds[ASR_MAX_PARAM_IDS];
     uint32_t paramIds[ASR_MAX_PARAM_IDS];
     int32_t ecRefCount;
     int32_t devDisconnectCount;
 
-    std::queue<void *> eventQ;
+    std::queue<std::pair<uint32_t, void *>> eventQ;
     static std::shared_ptr<ASREngine> eng;
     param_id_asr_config_t *speechCfg;
     param_id_asr_output_config_t *outputCfg;

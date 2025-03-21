@@ -7,7 +7,7 @@ LOCAL_MODULE := libstream_ultrasound
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
-LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS += -fexceptions -frtti
 
 LOCAL_SRC_FILES := \
 	src/StreamUltraSound.cpp \
@@ -30,7 +30,9 @@ LOCAL_HEADER_LIBRARIES := \
     libacdb_headers \
     libaudioroute \
     libarpal_internalheaders \
-    libarmemlog_headers
+    libarmemlog_headers \
+    libsession_ar_headers \
+    libsession_pcm_headers
 
 
 LOCAL_SHARED_LIBRARIES := \
@@ -39,7 +41,9 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-	libstream_common
+	libstream_common \
+    libsession_ar \
+    libsession_pcm
 
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

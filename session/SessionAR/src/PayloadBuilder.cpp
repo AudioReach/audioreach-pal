@@ -4750,6 +4750,13 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     hpconf->channel_mask = 1;
                     hpwaveConf[0].wave_design_mode = 5;
                     hpwaveConf[0].repetition_count = 1;
+                    if ((data->amplitude * 100 > 1000)) {
+                         hpwaveConf[0].pulse_intensity = 1000;
+                    } else if (data->amplitude * 100 <= 0) {
+                         hpwaveConf[0].pulse_intensity = 100;
+                    } else {
+                         hpwaveConf[0].pulse_intensity = (data->amplitude * 100);
+                    }
                     hpwaveConf[0].num_pwl=0;
                     PAL_ERR(LOG_TAG, "PCM haptics mode %d", hpwaveConf[0].wave_design_mode);
                 }

@@ -172,6 +172,7 @@ public:
 
     virtual int32_t addRemoveEffect(pal_audio_effect_t effect, bool enable) = 0; //TBD: make this non virtual and prrovide implementation as StreamPCM and StreamCompressed are doing the same things
     virtual int32_t setParameters(uint32_t param_id, void *payload) = 0;
+    virtual int32_t setParameters_l(uint32_t param_id, void *payload) { return -ENOSYS; }
     virtual int32_t write(struct pal_buffer *buf) = 0; //TBD: make this non virtual and prrovide implementation as StreamPCM and StreamCompressed are doing the same things
     virtual int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) = 0;
     virtual int32_t getCallBack(pal_stream_callback *cb) = 0;

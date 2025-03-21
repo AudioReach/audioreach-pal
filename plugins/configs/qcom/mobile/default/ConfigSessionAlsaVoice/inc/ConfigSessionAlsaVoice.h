@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -23,12 +23,15 @@ int payloadSetVSID(Stream* s, PayloadBuilder* builder, uint32_t vsid);
 int populateVSIDLoopbackPayload(Stream* s, PayloadBuilder* builder, uint32_t vsid);
 int reconfigureSession(Stream* s, PayloadBuilder* builder,
                         uint32_t vsid, pal_stream_direction_t dir);
+int voiceSilenceDetectionConfig(uint8_t config, pal_device *dAttr, void * pluginPayload);
 int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload);
-int32_t voicePluginConfigSetConfigStop(Stream* s);
+int32_t voicePluginConfigSetConfigStop(Stream* s, void * pluginPayload);
 int32_t voicePreCommonReconfig(Stream* stream);
 int32_t voicePostCommonReconfig(Stream* s, void* pluginPayload);
 int32_t voicePostReconfig(Stream* s, void* pluginPayload);
 int32_t voicePluginConfigSetConfigPostStart(Stream* s, void* pluginPayload);
+int32_t voicePluginReconfig(Stream* s, void* pluginPayload);
+int32_t voicePluginPreReconfig(Stream* s, void* pluginPayload);
 int32_t rxMFCCoeffConfig(Stream* s, void* pluginPayload);
 
 #endif

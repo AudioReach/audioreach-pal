@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -8,6 +8,7 @@
 
 int32_t compressPluginConfigSetConfigStart(Stream* s, void* pluginConfigPayload);
 int32_t compressPluginConfigSetConfigPostStart(Stream* s, void* pluginConfigPayload);
+int32_t compressPluginPreReconfig(Stream* s, void* pluginPayload);
 int32_t compressPluginConfigSetConfigStop(Stream* s);
 int32_t compressPluginConfigSetParam(Stream* s, void* pluginConfigPayload, size_t pluginConfigPayloadSize);
 int configureEarlyEOSDelay(PayloadBuilder* builder, struct mixer* mxr,
@@ -15,5 +16,6 @@ int configureEarlyEOSDelay(PayloadBuilder* builder, struct mixer* mxr,
                         std::vector<int>& compressDevIds);
 int setCustomFormatParam(pal_audio_fmt_t audio_fmt, PayloadBuilder* builder, SessionAlsaCompress* session, struct mixer* mxr,
                         std::vector<std::pair<int32_t, std::string>>& rxAifBackEnds, std::vector<int>& compressDevIds);
+int compressSilenceDetectionConfig(uint8_t config, pal_device *dAttr,  void * pluginPayload);
 
 #endif

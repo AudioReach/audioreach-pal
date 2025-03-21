@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef _PLUGIN_MANAGER_INTF_H_
@@ -25,6 +25,7 @@
  * it impossible to know which getters(for rx or tx) to call in plugin.
  */
 struct ReconfigPluginPayload {
+    std::string config_ctrl;
     struct pal_device dAttr;
     std::vector<int> pcmDevIds;
     std::vector<std::pair<int32_t, std::string>> aifBackEnds;
@@ -68,6 +69,7 @@ typedef enum {
     PAL_PLUGIN_CONFIG_START, //after pcm_open, before pcm_start. ->PAL_PLUGIN_CONFIG_OPEN
     PAL_PLUGIN_CONFIG_POST_START, //after pcm_start. post-start logic to retain the logic for plugin uses.
     PAL_PLUGIN_CONFIG_STOP, //pcm_stop
+    PAL_PLUGIN_PRE_RECONFIG, //devswitch before stream are disconnceted;
     PAL_PLUGIN_RECONFIG, //devswitch before stream are re-connected;
     PAL_PLUGIN_POST_RECONFIG, //devswitch after stream are re-connected;
     PAL_PLUGIN_CONFIG_SETPARAM, //setParamWithTag.

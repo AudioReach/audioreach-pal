@@ -29,7 +29,7 @@
 
 /*
 Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -844,7 +844,9 @@ int SessionAlsaVoice::stop(Stream * s)
         status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(sAttr.type), plugin);
         if (plugin && !status) {
             pluginConfig = reinterpret_cast<PluginConfig>(plugin);
-            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            ReconfigPluginPayload ppld;
+            ppld.session = this;
+            ret = pluginConfig(s, PAL_PLUGIN_CONFIG_STOP, reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
             if (ret) {
                 PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
@@ -1593,6 +1595,7 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
     int txDevId = PAL_DEVICE_NONE;
     void* plugin = nullptr;
     PluginConfig pluginConfig = nullptr;
+    struct ReconfigPluginPayload ppld;
 
     PAL_DBG(LOG_TAG,"Enter");
     deviceList.push_back(deviceToDisconnect);
@@ -1620,8 +1623,11 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
     if (rxAifBackEnds.size() > 0) {
         /*config mute on pop suppressor*/
         if (streamHandle->getCurState() != STREAM_INIT) {
+            ppld.dAttr = dAttr;
+            ppld.session = this;
             //pop suppressor call now in plugin config.
-            ret = pluginConfig(streamHandle, PAL_PLUGIN_CONFIG_STOP, nullptr, 0);
+            ret = pluginConfig(streamHandle, PAL_PLUGIN_PRE_RECONFIG, reinterpret_cast<void*>(&ppld),
+                                                    sizeof(ReconfigPluginPayload));
             if (ret) {
                 PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
@@ -1660,6 +1666,23 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
                 }
             }
         }
+
+        if ((dAttr.id == PAL_DEVICE_IN_HANDSET_MIC ||
+             dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC) &&
+             (rm->IsSilenceDetectionEnabledVoice() ||
+              rm->IsSilenceDetectionEnabledPcm())) {
+            ppld.config_ctrl = "silence_detection";
+            ppld.dAttr = dAttr;
+            ppld.session = this;
+            ppld.pcmDevIds = pcmDevTxIds;
+            ppld.aifBackEnds = txAifBackEnds;
+            status = pluginConfig(streamHandle, PAL_PLUGIN_PRE_RECONFIG,
+                                  reinterpret_cast<void*>(&ppld), sizeof(ppld));
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "pluginConfig failed");
+            }
+        }
+
         status =  SessionAlsaUtils::disconnectSessionDevice(streamHandle,
                                                             streamType, rm,
                                                             dAttr, pcmDevTxIds,
@@ -1685,6 +1708,9 @@ int SessionAlsaVoice::setupSessionDevice(Stream* streamHandle,
     std::vector<std::string> aifBackEndsToConnect;
     struct pal_device dAttr;
     int status = 0;
+    void* plugin = nullptr;
+    PluginConfig pluginConfig = nullptr;
+    ReconfigPluginPayload ppld = {};
 
     deviceList.push_back(deviceToConnect);
     rm->getBackEndNames(deviceList, rxAifBackEnds, txAifBackEnds);
@@ -1709,6 +1735,31 @@ int SessionAlsaVoice::setupSessionDevice(Stream* streamHandle,
                                                        txAifBackEnds);
         if(0 != status) {
             PAL_ERR(LOG_TAG,"setupSessionDevice on TX Failed");
+        }
+        if ((dAttr.id == PAL_DEVICE_IN_HANDSET_MIC ||
+            dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC) &&
+            (rm->IsSilenceDetectionEnabledVoice())) {
+            try {
+                pm = PluginManager::getInstance();
+                if (!pm){
+                    PAL_ERR(LOG_TAG, "unable to get plugin manager instance");
+                    return -EINVAL;
+                }
+                status = pm->openPlugin(PAL_PLUGIN_MANAGER_CONFIG, streamNameLUT.at(streamType),
+                                         plugin);
+                if (plugin && !status) {
+                   pluginConfig = reinterpret_cast<PluginConfig>(plugin);
+                   ppld.config_ctrl = "silence_detection";
+                   ppld.dAttr = dAttr;
+                   ppld.pcmDevIds = pcmDevTxIds;
+                   ppld.session = this;
+                   ppld.builder = reinterpret_cast<void*>(builder);
+                   status = pluginConfig(streamHandle, PAL_PLUGIN_RECONFIG,
+                                    reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
+                }
+            } catch (const std::exception& e) {
+                      throw std::runtime_error(e.what());
+            }
         }
     }
     return status;
@@ -1835,6 +1886,19 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
             if (ret) {
                 PAL_ERR(LOG_TAG, "Config Plugin Unsuccessful.");
             }
+        }
+        //During Voice call device switch populate silence detection payload in plugin.
+        if ((dAttr.id == PAL_DEVICE_IN_HANDSET_MIC ||
+            dAttr.id == PAL_DEVICE_IN_SPEAKER_MIC) &&
+            (rm->IsSilenceDetectionEnabledVoice())) {
+            ppld.config_ctrl = "silence_detection";
+            ppld.dAttr = dAttr;
+            ppld.pcmDevIds = pcmDevTxIds;
+            ppld.session = this;
+            ppld.builder = reinterpret_cast<void*>(builder);
+            PAL_ERR(LOG_TAG, "connect post reconfig session device\n");
+            status = pluginConfig(streamHandle, PAL_PLUGIN_POST_RECONFIG,
+                                    reinterpret_cast<void*>(&ppld), sizeof(ReconfigPluginPayload));
         }
     }
 exit:

@@ -77,14 +77,13 @@ extern "C" int voicePluginConfig(Stream* stream, plugin_config_name_t config,
             status = voicePluginConfigSetConfigPostStart(stream, pluginPayload);
             break;
         case PAL_PLUGIN_CONFIG_STOP:
-            status = voicePluginConfigSetConfigStop(stream);
+            status = voicePluginConfigSetConfigStop(stream, pluginPayload);
+            break;
+        case PAL_PLUGIN_PRE_RECONFIG:
+            status = voicePluginPreReconfig(stream, pluginPayload);
             break;
         case PAL_PLUGIN_RECONFIG:
-            voicePreCommonReconfig(stream);
-            status = reconfigCommon(stream, pluginPayload);
-            if (status || voicePostCommonReconfig(stream, pluginPayload)) {
-                break;
-            }
+            status = voicePluginReconfig(stream, pluginPayload);
             break;
         case PAL_PLUGIN_POST_RECONFIG:
             status = voicePostReconfig(stream, pluginPayload);
@@ -179,6 +178,7 @@ exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
 }
+
 int32_t voicePreCommonReconfig(Stream* s)
 {
     int status = 0;
@@ -215,10 +215,39 @@ exit:
 
 int32_t voicePostReconfig(Stream* s, void* pluginPayload) {
     int status = 0;
+    struct ReconfigPluginPayload* reconfigPld = nullptr;
+    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+
     PAL_DBG(LOG_TAG,"Enter");
-    status = rxMFCCoeffConfig(s, pluginPayload);
+    if (!reconfigPld->config_ctrl.compare("silence_detection")) {
+        status = voiceSilenceDetectionConfig(SD_CONNECT, &reconfigPld->dAttr, pluginPayload);
+        if (status) {
+            goto exit;
+        }
+    } else {
+            status = rxMFCCoeffConfig(s, pluginPayload);
+    }
+
 exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    return status;
+}
+
+int32_t voicePluginPreReconfig(Stream* s, void* pluginPayload) {
+    int status = 0;
+    struct ReconfigPluginPayload* reconfigPld = nullptr;
+    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+
+    PAL_DBG(LOG_TAG,"Enter");
+    if (!reconfigPld->config_ctrl.compare("silence_detection")) {
+        status = voiceSilenceDetectionConfig(SD_DISCONNECT, &reconfigPld->dAttr, pluginPayload);
+    } else {
+        /*config mute on pop suppressor*/
+        setPopSuppressorMute(s);
+        usleep(POP_SUPPRESSOR_RAMP_DELAY);
+    }
+
+    PAL_DBG(LOG_TAG,"Exit");
     return status;
 }
 /*
@@ -280,6 +309,7 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     struct pal_device dAttr = {};
     std::vector<std::shared_ptr<Device>> associatedDevices;
     std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    ReconfigPluginPayload ppld;
 
     PAL_DBG(LOG_TAG,"Enter");
     rm = ResourceManager::getInstance();
@@ -365,7 +395,15 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
 
         txAifBackEnds = session->getTxBEVecRef();
         (void) enableSilenceDetection(rm, mxr, pcmDevIds,
-                        txAifBackEnds[0].second.data(), (uint64_t)session, pluginPayload);
+                        txAifBackEnds[0].second.data(), (uint64_t)session);
+                        ppld.session = session;
+        ppld.builder = reinterpret_cast<void*>(builder);
+        status = voiceSilenceDetectionConfig(SD_SETPARAM, nullptr, &ppld);
+        if (status != 0) {
+             PAL_ERR(LOG_TAG, "Enable Param Failed for Silence Detection\n");
+             (void) disableSilenceDetection(rm, mxr, pcmDevIds,
+                             txAifBackEnds[0].second.data(), (uint64_t)session);
+        }
 
 silence_det_setup_done:
         status = 0;
@@ -381,21 +419,22 @@ exit:
  * Logic originally in SessionAlsaVoice::stop().
  * Module-specific logic moved here. e.g. pop noise suppressor
  */
-int32_t voicePluginConfigSetConfigStop(Stream *s)
+int32_t voicePluginConfigSetConfigStop(Stream *s, void* pluginPayload)
 {
     std::vector<std::shared_ptr<Device>> associatedDevices;
     struct pal_device dAttr = {};
     std::vector<int> pcmDevIds;
     std::shared_ptr<ResourceManager> rm = nullptr;
     std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
-    Session* sess = nullptr;
     SessionAlsaVoice* session = nullptr;
     struct mixer* mxr = nullptr;
+    ReconfigPluginPayload *ppld;
     int status = 0;
 
     PAL_DBG(LOG_TAG,"Enter");
 
-    session = static_cast<SessionAlsaVoice*>(sess);
+    ppld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+    session = static_cast<SessionAlsaVoice*>(ppld->session);
     rm = ResourceManager::getInstance();
     status = rm->getVirtualAudioMixer(&mxr);
     if (status) {
@@ -1192,5 +1231,130 @@ int populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsDevice, SessionAlsa
     }
 exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    return status;
+}
+
+int voicePluginReconfig(Stream* s, void* pluginPayload)
+{
+    int status;
+    struct ReconfigPluginPayload* reconfigPld = nullptr;
+
+    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+
+    if (!reconfigPld->config_ctrl.compare("silence_detection")) {
+       status = voiceSilenceDetectionConfig(SD_ENABLE, &reconfigPld->dAttr, pluginPayload);
+    } else {
+           status = reconfigCommon(s, pluginPayload);
+           if (status) {
+               PAL_DBG(LOG_TAG,"reconfigCommon failed: %d", status);
+               return status;
+           }
+           voicePostCommonReconfig(s, pluginPayload);
+    }
+    PAL_DBG(LOG_TAG,"Exit ret: %d", status);
+    return status;
+}
+
+int voiceSilenceDetectionConfig(uint8_t config, pal_device *dAttr, void * pluginPayload) {
+    int status = 0;
+    uint32_t miid = 0;
+    size_t pad_bytes = 0, payloadSize = 0;
+    uint8_t* payload = NULL;
+    struct apm_module_param_data_t* header = NULL;
+    param_id_silence_detection_t *silence_detection_cfg = NULL;
+    std::shared_ptr<Device> dev = nullptr;
+    ReconfigPluginPayload* ppld = nullptr;
+    SessionAlsaVoice* session = nullptr;
+    struct mixer* mxr = nullptr;
+    PayloadBuilder* builder = nullptr;
+    std::vector<int> pcmDevIds;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    std::shared_ptr<ResourceManager> rm = nullptr;
+
+    if (!rm->IsSilenceDetectionEnabledVoice())
+        return 0;
+
+    ppld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+    builder = reinterpret_cast<PayloadBuilder*>(ppld->builder);
+    session = static_cast<SessionAlsaVoice*>(ppld->session);
+    rm = ResourceManager::getInstance();
+    status = rm->getVirtualAudioMixer(&mxr);
+      if (status) {
+        PAL_ERR(LOG_TAG, "mixer error");
+        goto exit;
+    }
+
+    status = session->getFrontEndIds(pcmDevIds, TX_HOSTLESS);
+    if (status) {
+        PAL_ERR(LOG_TAG, "getFrontEndIds failed %d", status);
+        goto exit;
+    }
+    txAifBackEnds = session->getTxBEVecRef();
+
+    switch(config) {
+        case SD_DISCONNECT:
+            (void) disableSilenceDetection(rm, mxr,
+                pcmDevIds, txAifBackEnds[0].second.data(), (uint64_t)session);
+            break;
+        case SD_CONNECT:
+            (void) enableSilenceDetection(rm, mxr,
+                pcmDevIds, txAifBackEnds[0].second.data(), (uint64_t)session);
+           break;
+        case SD_ENABLE:
+        case SD_SETPARAM:
+            status =  SessionAlsaUtils::getModuleInstanceId(mxr,
+                pcmDevIds.at(0), txAifBackEnds[0].second.data(), DEVICE_HW_ENDPOINT_TX, &miid);
+            if (status != 0) {
+                PAL_ERR(LOG_TAG, "Error retriving MIID for HW_ENDPOINT_TX\n");
+                return -SD_ENABLE;
+            }
+            payloadSize = sizeof(struct apm_module_param_data_t) +
+                                 sizeof(param_id_silence_detection_t);
+            pad_bytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+            payload = (uint8_t *)calloc(1, payloadSize+pad_bytes);
+            if (!payload){
+                PAL_ERR(LOG_TAG, "payload info calloc failed \n");
+                return -SD_ENABLE;
+            }
+
+            header = (struct apm_module_param_data_t *)payload;
+            header->module_instance_id = miid;
+            header->param_id =  PARAM_ID_SILENCE_DETECTION;
+            header->error_code = 0x0;
+            header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+
+            silence_detection_cfg = (param_id_silence_detection_t *)(payload +
+                sizeof(struct apm_module_param_data_t));
+            silence_detection_cfg->enable_detection = 1;
+            silence_detection_cfg->detection_duration_ms = rm->SilenceDetectionDuration();
+            if (config == SD_ENABLE) {
+                dev = Device::getInstance(dAttr, rm);
+                if (!dev) {
+                    PAL_ERR(LOG_TAG, "Device creation failed");
+                    return -SD_ENABLE;
+                }
+
+                status = dev->updateCustomPayload(payload, payloadSize);
+                dev->freeCustomPayload(&payload, &payloadSize);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "update device custom payload failed\n");
+                    return -SD_ENABLE;
+                }
+            } else {
+                status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
+                                                             payload, payloadSize);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Silence Detection enable param failed\n");
+                    builder->freeCustomPayload(&payload, &payloadSize);
+                    return -SD_ENABLE;
+                }
+            }
+            builder->freeCustomPayload(&payload, &payloadSize);
+            break;
+            default:
+                PAL_ERR(LOG_TAG, "Invalid config for Silence Detection\n");
+    };
+exit:
     return status;
 }

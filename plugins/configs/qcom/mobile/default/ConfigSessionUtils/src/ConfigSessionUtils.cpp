@@ -58,7 +58,6 @@
 #include "SessionAlsaPcm.h"
 #include "SessionAlsaUtils.h"
 #include "ConfigSessionUtils.h"
-#include "hw_intf_cmn_api.h"
 #include "apm_api.h"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -827,7 +826,7 @@ exit:
  **/
 int enableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
                 struct mixer *mixer, const std::vector<int> &devIds,
-                const char *intf_name, uint64_t cookie, void* pluginPayload)
+                const char *intf_name, uint64_t cookie)
 {
     int status = 0;
     uint32_t miid = 0;
@@ -836,14 +835,10 @@ int enableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
     struct apm_module_param_data_t* header = NULL;
     param_id_silence_detection_t *silence_detection_cfg = NULL;
     struct agm_event_reg_cfg event_cfg = {};
-    PayloadBuilder* builder = nullptr;
-    PluginPayload* ppld = nullptr;
 
     if (silenceEventRegistered == true)
         goto silence_ev_setup_done;
 
-    ppld = reinterpret_cast<PluginPayload*>(pluginPayload);
-    builder = reinterpret_cast<PayloadBuilder*>(ppld->builder);
 
     PAL_INFO(LOG_TAG, "Registering For Silence Detection Events \n");
     event_cfg.event_id = EVENT_ID_SILENCE_DETECTION;
@@ -865,50 +860,7 @@ int enableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
           PAL_ERR(LOG_TAG, "Failed to register DSP cb for silence detection Event");
           goto err_silence_ev_cb_reg;
     }
-
     PAL_INFO(LOG_TAG, "Registered CB for Silence Detection\n");
-
-    status =  SessionAlsaUtils::getModuleInstanceId(mixer,
-                   devIds.at(0), intf_name, DEVICE_HW_ENDPOINT_TX, &miid);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG, "Error retriving MIID for HW_ENDPOINT_TX\n");
-         goto err_silence_ev_setup;
-    }
-
-    payloadSize = sizeof(struct apm_module_param_data_t)+ sizeof(param_id_silence_detection_t);
-    pad_bytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
-
-    payload = (uint8_t *)calloc(1, payloadSize+pad_bytes);
-    if (!payload){
-        PAL_ERR(LOG_TAG, "payload info calloc failed \n");
-        goto err_silence_ev_setup;
-    }
-    header = (struct apm_module_param_data_t  *)payload;
-    header->module_instance_id = miid;
-    header->param_id =  PARAM_ID_SILENCE_DETECTION;
-    header->error_code = 0x0;
-    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
-
-    silence_detection_cfg = (param_id_silence_detection_t *)(payload +
-                    sizeof(struct apm_module_param_data_t));
-    silence_detection_cfg->enable_detection = 1;
-    silence_detection_cfg->detection_duration_ms = rm->SilenceDetectionDuration();
-
-    PAL_INFO(LOG_TAG, "Sending Silence Detection Custom Payload\n");
-    status = builder->updateCustomPayload (payload, (payloadSize+pad_bytes));
-    builder->freeCustomPayload(&payload, &payloadSize);
-    if (status !=0 ) {
-        PAL_ERR(LOG_TAG, "updateCustomPayload failed for SILENCE DETECTION \n");
-        goto err_silence_ev_setup;
-    }
-    builder->getCustomPayload(&payload, &payloadSize);
-    status = SessionAlsaUtils::setMixerParameter(mixer, devIds.at(0),
-                    payload, payloadSize);
-    builder->freeCustomPayload();
-    if (status !=0) {
-        PAL_ERR(LOG_TAG, "setMixerParameter failed for Silence Detection Parameter");
-        goto err_silence_ev_setup;
-    }
     silenceEventRegistered = true;
     PAL_INFO(LOG_TAG, "Silence Detection setup sucessfully \n");
 

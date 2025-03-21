@@ -7,6 +7,14 @@
 #define CONFIG_SESSION_UTILS_H
 
 #include "Stream.h"
+#include "hw_intf_cmn_api.h"
+
+typedef enum {
+    SD_CONNECT,
+    SD_ENABLE,
+    SD_SETPARAM,
+    SD_DISCONNECT,
+}sd_configs;
 
 int configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_attributes &sAttr,
             struct pal_device &dAttr, const std::vector<int> &pcmDevIds, const char* intf,
@@ -22,7 +30,7 @@ int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm,
 int32_t pluginConfigSetParam(Stream* s, void* payload);
 int enableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
                     struct mixer *mixer, const std::vector<int> &DevIds,
-                    const char *intf_name, uint64_t cookie, void* pluginPayload);
+                    const char *intf_name, uint64_t cookie);
 int disableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
                     struct mixer *mixer, const std::vector<int> &DevIds,
                     const char *intf_name, uint64_t cookie);

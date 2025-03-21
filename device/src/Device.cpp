@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -427,6 +427,11 @@ int Device::close()
            deviceStartStopCount = 0;
            if(rm->getProxyChannels() != 0)
                rm->setProxyChannels(0);
+           if (customPayload) {
+               free(customPayload);
+               customPayload = NULL;
+               customPayloadSize = 0;
+           }
        }
     }
     PAL_INFO(LOG_TAG, "Exit. deviceCount %d for device id %d (%s), exit status %d", deviceCount,

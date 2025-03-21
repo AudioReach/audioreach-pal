@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -11,8 +11,10 @@ void handleSilenceDetectionCb(uint64_t hdl __unused,
 int dump_silence_event_status(char *out_file, uint32_t channel_group, uint32_t status_ch_mask);
 int dump_registers(char *in_file_path, char *regdump_out_file);
 int dump_kernel_log(char *kmsg_out_file);
+int pcmSilenceDetectionConfig(uint8_t config, pal_device *dAttr,  void * pluginPayload);
 int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload);
 int32_t pcmPluginConfigSetConfigStop(Stream* s, void* pluginPayload);
+int32_t pcmPluginPreReconfig(Stream* s, void* pluginPayload);
 int register_asps_event(uint32_t reg, SessionAlsaPcm* session, struct mixer* mxr);
 int32_t configureInCallRxMFC(SessionAlsaPcm* session, std::shared_ptr<ResourceManager> rm,
                                                                 PayloadBuilder* builder);

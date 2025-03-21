@@ -46,6 +46,7 @@
         <param key="lpi_logging_enable" value ="false" />
         <!-- change PAL_DEVICE_OUT_ULTRASOUND_DEDICATED backend name when set it to true -->
         <param key="upd_dedicated_be" value ="false" />
+        <param key="upd_set_custom_gain" value ="false" />
         <param key="signal_handler" value ="true" />
         <param key="device_mux_config" value ="false" />
         <param key="upd_duty_cycle_enable" value="false" />

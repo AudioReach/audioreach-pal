@@ -12,6 +12,7 @@ AM_CPPFLAGS += -I ../../../device/inc
 AM_CPPFLAGS += -I ../../../session/inc
 AM_CPPFLAGS += -I ../../../stream/inc
 AM_CPPFLAGS += -I ../../../session/SessionAR/inc
+AM_CPPFLAGS += -I ../../../session/SessionAlsaPcm/inc
 AM_CPPFLAGS += -I ../../../plugins/PluginManager/inc
 AM_CPPFLAGS += -I ../../../resource_manager/inc
 AM_CPPFLAGS += -I ../../../context_manager/inc
@@ -45,8 +46,9 @@ library_includedir = $(includedir)/stream_ultrasound
 
 lib_LTLIBRARIES     = libstream_ultrasound.la
 libstream_ultrasound_la_SOURCES   = $(stream_ultrasound_sources)
-libstream_ultrasound_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
-libstream_ultrasound_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_ultrasound_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
+libstream_ultrasound_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
+libstream_ultrasound_la_LIBADD    += -L${abs_top_builddir}/session/SessionAlsaPcm/.libs -lsession_pcm
 libstream_ultrasound_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_ultrasound_la_CPPFLAGS += -std=c++14
 libstream_ultrasound_la_LDFLAGS   = -shared -avoid-version

@@ -2551,6 +2551,91 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
             }
             return 0;
         }
+        case PAL_PARAM_ID_ULTRASOUND_SET_GAIN:
+        {
+            std::vector <std::pair<int, int>> tkv;
+            const char *setParamTagControl = " setParamTag";
+            const char *streamPcm = "PCM";
+            struct mixer_ctl *ctl;
+            std::ostringstream tagCntrlName;
+            int sendToRx = 1;
+            struct agm_tag_config* tagConfig = NULL;
+            int tkv_size = 0;
+            pal_ultrasound_gain_t gain = PAL_ULTRASOUND_GAIN_MUTE;
+
+            if (!rm->IsCustomGainEnabledForUPD()) {
+                PAL_ERR(LOG_TAG, "Custom Gain not enabled for UPD, returning");
+                goto skip_ultrasound_gain;
+            }
+
+            /* Search for the tag in Rx path first */
+            device = pcmDevRxIds.at(0);
+            status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
+                    rxAifBackEnds[0].second.data(),
+                    tagId, &miid);
+
+            /* Rx search failed, Check if we can find the tag in Tx path */
+            if ((0 != status) || (0 == miid)) {
+                PAL_DBG(LOG_TAG, "Fail to find module in Rx path status(%d), Now checking in Tx path", status);
+                device = pcmDevTxIds.at(0);
+                status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
+                        txAifBackEnds[0].second.data(),
+                        tagId, &miid);
+                sendToRx = 0;
+            }
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
+                goto skip_ultrasound_gain;
+            }
+
+            PAL_INFO(LOG_TAG, "Found module with TAG_ULTRASOUND_GAIN, miid = 0x%04x", miid);
+            gain = *((pal_ultrasound_gain_t *)payload);
+
+            tkv.clear();
+            tkv.push_back(std::make_pair(TAG_KEY_ULTRASOUND_GAIN, (uint32_t)gain));
+            PAL_INFO(LOG_TAG, "Setting TAG_KEY_ULTRASOUND_GAIN, Value %d\n", gain);
+
+            tagConfig = (struct agm_tag_config*)malloc(sizeof(struct agm_tag_config) +
+                    (tkv.size() * sizeof(agm_key_value)));
+
+            if (!tagConfig) {
+                status = -EINVAL;
+                goto skip_ultrasound_gain;
+            }
+
+            status = SessionAlsaUtils::getTagMetadata(TAG_ULTRASOUND_GAIN, tkv, tagConfig);
+            if (0 != status)
+                goto skip_ultrasound_gain;
+
+            if (sendToRx) {
+                tagCntrlName<<streamPcm<<pcmDevRxIds.at(0)<<setParamTagControl;
+                ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
+                if (!ctl) {
+                    PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
+                    status = -EINVAL;
+                    goto skip_ultrasound_gain;
+                }
+                tkv_size = tkv.size()*sizeof(struct agm_key_value);
+                status = mixer_ctl_set_array(ctl, tagConfig, sizeof(struct agm_tag_config) + tkv_size);
+            } else {
+                tagCntrlName<<streamPcm<<pcmDevTxIds.at(0)<<setParamTagControl;
+                ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
+                if (!ctl) {
+                    PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
+                    status = -EINVAL;
+                    goto skip_ultrasound_gain;
+                }
+                tkv_size = tkv.size()*sizeof(struct agm_key_value);
+                status = mixer_ctl_set_array(ctl, tagConfig, sizeof(struct agm_tag_config) + tkv_size);
+            }
+
+skip_ultrasound_gain:
+            if (tagConfig)
+                free(tagConfig);
+            if (status)
+                PAL_ERR(LOG_TAG, "Failed to set Ultrasound Gain %d", status);
+            return 0;
+        }
 
         default:
             status = -EINVAL;

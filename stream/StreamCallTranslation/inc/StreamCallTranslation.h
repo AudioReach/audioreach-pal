@@ -53,7 +53,7 @@ public:
     int32_t registerCallBack(pal_stream_callback cb, uint64_t cookie) override { return 0; };
     int32_t getCallBack(pal_stream_callback *cb) override { return 0; };
     int32_t getParameters(uint32_t param_id, void **payload) override { return 0; };
-    int32_t setParameters(uint32_t param_id, void *payload) override { return 0; };
+    int32_t setParameters(uint32_t param_id, void *payload) override;
     int32_t isSampleRateSupported(uint32_t sampleRate) override { return 0; };
     int32_t isChannelSupported(uint32_t numChannels) override { return 0; };
     int32_t isBitWidthSupported(uint32_t bitWidth) override { return 0; };

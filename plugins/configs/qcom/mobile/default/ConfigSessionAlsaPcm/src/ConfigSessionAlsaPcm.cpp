@@ -650,6 +650,85 @@ set_mixer:
                 }
             }
         }
+        if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+            uint8_t* paramData = NULL;
+            size_t paramSize = 0;
+            uint32_t miid = 0;
+            pal_asr_config* asr_payload;
+            pal_tts_config* tts_payload;
+            pal_nmt_config* nmt_payload;
+
+            asr_payload = &s->callTranslationConfigPayload->asr_module_config;
+
+            PAL_DBG(LOG_TAG, ": asr_payload : input_language_code=%d, output_language_code=%d, enable_language_detection=%d, enable_translation=%d,"
+                             "enable_continuous_mode=%d, enable_partial_transcription=%d, threshold=%d, timeout_duration=%d, vad_hangover_duration=%d",
+                             asr_payload->input_language_code, asr_payload->output_language_code, asr_payload->enable_language_detection,
+                             asr_payload->enable_translation, asr_payload->enable_continuous_mode, asr_payload->enable_partial_transcription,
+                             asr_payload->threshold, asr_payload->timeout_duration, asr_payload->silence_detection_duration);
+
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_ASR, &miid);
+
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                goto exit;
+            }
+            builder->payloadASRConfig(&paramData, &paramSize, miid, asr_payload);
+            if (paramSize && paramData) {
+                PAL_INFO(LOG_TAG, ": update custom payload for ASR module config.");
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+            tts_payload = &s->callTranslationConfigPayload->tts_module_config;
+
+            PAL_DBG(LOG_TAG, "tts_payload : language_code=%d, speech_format=%d",
+                             tts_payload->language_code, tts_payload->speech_format);
+
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_TTS, &miid);
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                break;
+            }
+            builder->payloadTTSConfig(&paramData, &paramSize, miid, tts_payload);
+            if (paramSize && paramData) {
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+            nmt_payload = &s->callTranslationConfigPayload->nmt_module_config;
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_NMT, &miid);
+
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                break;
+            }
+            builder->payloadNMTConfig(&paramData, &paramSize, miid, nmt_payload);
+            if (paramSize && paramData) {
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+            if (paramSize) {
+                status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0), paramData, paramSize);
+                builder->freeCustomPayload();
+            }
+            goto exit;
+        }
 
         if (rm->IsSilenceDetectionEnabledPcm() && sAttr.type != PAL_STREAM_VOICE_CALL_RECORD) {
             status = s->getAssociatedDevices(associatedDevices);
@@ -704,6 +783,86 @@ silence_det_setup_done:
             }
             if (0 != status) {
                 PAL_INFO(LOG_TAG, "Unable to configure MFC voice call has not started %d", status);
+            }
+            goto exit;
+        }
+        if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+            uint8_t* paramData = NULL;
+            size_t paramSize = 0;
+            uint32_t miid = 0;
+            pal_asr_config* asr_payload;
+            pal_tts_config* tts_payload;
+            pal_nmt_config* nmt_payload;
+
+            asr_payload = &s->callTranslationConfigPayload->asr_module_config;
+
+            PAL_DBG(LOG_TAG, ": asr_payload : input_language_code=%d, output_language_code=%d, enable_language_detection=%d, enable_translation=%d,"
+                             "enable_continuous_mode=%d, enable_partial_transcription=%d, threshold=%d, timeout_duration=%d, vad_hangover_duration=%d",
+                             asr_payload->input_language_code, asr_payload->output_language_code, asr_payload->enable_language_detection,
+                             asr_payload->enable_translation, asr_payload->enable_continuous_mode, asr_payload->enable_partial_transcription,
+                             asr_payload->threshold, asr_payload->timeout_duration, asr_payload->silence_detection_duration);
+
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_ASR, &miid);
+
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                goto exit;
+            }
+            builder->payloadASRConfig(&paramData, &paramSize, miid, asr_payload);
+            if (paramSize && paramData) {
+                PAL_INFO(LOG_TAG, ": update custom payload for ASR module config.");
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+            tts_payload = &s->callTranslationConfigPayload->tts_module_config;
+
+            PAL_DBG(LOG_TAG, "tts_payload : language_code=%d, speech_format=%d",
+                             tts_payload->language_code, tts_payload->speech_format);
+
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_TTS, &miid);
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                break;
+            }
+            builder->payloadTTSConfig(&paramData, &paramSize, miid, tts_payload);
+            if (paramSize && paramData) {
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+
+            nmt_payload = &s->callTranslationConfigPayload->nmt_module_config;
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", TRANSLATION_NMT, &miid);
+
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                break;
+            }
+            builder->payloadNMTConfig(&paramData, &paramSize, miid, nmt_payload);
+            if (paramSize && paramData) {
+                status = builder->updateCustomPayload(paramData, paramSize);
+                builder->freeCustomPayload(&paramData, &paramSize);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                    goto exit;
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+
+            if (paramSize) {
+                status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0), paramData, paramSize);
+                builder->freeCustomPayload();
             }
             goto exit;
         }

@@ -50,6 +50,8 @@
 #include "tsm_module_api.h"
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
+#include "tts_module_calibration_api.h"
+#include "nmt_module_calibration_api.h"
 #include "PalMappings.h"
 #include "SessionAR.h"
 #include "apm_api.h"
@@ -182,7 +184,7 @@ struct param_id_dtmf_gen_tone_cfg_t
         @h2xmle_range       {100...4000}
         @h2xmle_policy      {Basic} */
 
-	int32_t duration_ms;
+    int32_t duration_ms;
    /**< @h2xmle_description {Duration of the tone in milliseconds. The duration includes
                              ramp-up and ramp-down periods of 1 ms and 2 ms, respectively.}
         @h2xmle_default     {0}
@@ -2147,6 +2149,135 @@ void PayloadBuilder::payloadRATConfig(uint8_t** payload, size_t* size,
     PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", payloadInfo,
                 *size);
 }
+
+void PayloadBuilder::payloadASRConfig(uint8_t** payload, size_t* size, uint32_t miid, struct pal_asr_config *data) {
+    struct apm_module_param_data_t* header = NULL;
+    struct param_id_asr_config_t *asrConf;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0;
+    if (!data) {
+        PAL_ERR(LOG_TAG, "Invalid input parameters");
+        return;
+    }
+    payloadSize = sizeof(struct apm_module_param_data_t) + sizeof(struct param_id_asr_config_t);
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+        return;
+    }
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    asrConf = (struct param_id_asr_config_t*)(payloadInfo + sizeof(struct apm_module_param_data_t));
+
+    header->module_instance_id = miid;
+    header->param_id = PARAM_ID_ASR_CONFIG;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
+                      header->module_instance_id, header->param_id,
+                      header->error_code, header->param_size);
+
+    asrConf->input_language_code          = (uint32_t)data->input_language_code;
+    asrConf->output_language_code         = (uint32_t)data->output_language_code;
+    asrConf->enable_language_detection    = (uint32_t)data->enable_language_detection;
+    asrConf->enable_translation           = (uint32_t)data->enable_translation;
+    asrConf->enable_continuous_mode       = (uint32_t)data->enable_continuous_mode;
+    asrConf->enable_partial_transcription = (uint32_t)data->enable_partial_transcription;
+    asrConf->threshold                    = data->threshold;
+    asrConf->timeout_duration             = data->timeout_duration;
+    asrConf->vad_hangover_duration        = data->silence_detection_duration;
+    PAL_INFO(LOG_TAG, "asr_payload : input_language_code=%d, output_language_code=%d, enable_language_detection=%d, enable_translation=%d, "
+                      "enable_continuous_mode=%d, enable_partial_transcription=%d, threshold=%d, timeout_duration=%d, vad_hangover_duration=%d",
+                       asrConf->input_language_code, asrConf->output_language_code, asrConf->enable_language_detection, asrConf->enable_translation,
+                       asrConf->enable_continuous_mode, asrConf->enable_partial_transcription, asrConf->threshold, asrConf->timeout_duration,
+                       asrConf->vad_hangover_duration);
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+}
+
+
+void PayloadBuilder::payloadTTSConfig(uint8_t** payload, size_t* size, uint32_t miid, struct pal_tts_config *data) {
+
+    struct apm_module_param_data_t* header = NULL;
+    struct param_id_tts_config_t *ttsConf;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0;
+
+    if (!data) {
+        PAL_ERR(LOG_TAG, "Invalid input parameters");
+        return;
+    }
+
+    payloadSize = sizeof(struct apm_module_param_data_t) + sizeof(struct param_id_tts_config_t);
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+        return;
+    }
+
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    ttsConf = (struct param_id_tts_config_t*)(payloadInfo + sizeof(struct apm_module_param_data_t));
+
+    header->module_instance_id = miid;
+    header->param_id = PARAM_ID_TTS_CONFIG;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
+                      header->module_instance_id, header->param_id,
+                      header->error_code, header->param_size);
+
+    ttsConf->language_code          = (uint32_t)data->language_code;
+    ttsConf->speech_format          = (uint32_t)data->speech_format;
+    PAL_INFO(LOG_TAG, "tts_payload : language_code=%d, speech_format=%d",
+                       ttsConf->language_code, ttsConf->speech_format);
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+}
+
+
+void PayloadBuilder::payloadNMTConfig(uint8_t** payload, size_t* size, uint32_t miid, struct pal_nmt_config *data) {
+
+    struct apm_module_param_data_t* header = NULL;
+    struct param_id_nmt_config_t *nmtConf;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0;
+
+    if (!data) {
+        PAL_ERR(LOG_TAG, "Invalid input parameters");
+        return;
+    }
+
+    payloadSize = sizeof(struct apm_module_param_data_t) + sizeof(struct param_id_nmt_config_t);
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+        return;
+    }
+
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    nmtConf = (struct param_id_nmt_config_t*)(payloadInfo + sizeof(struct apm_module_param_data_t));
+
+    header->module_instance_id = miid;
+    header->param_id = PARAM_ID_NMT_CONFIG;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
+                      header->module_instance_id, header->param_id,
+                      header->error_code, header->param_size);
+
+    nmtConf->input_language_code          = (uint32_t)data->input_language_code;
+    nmtConf->output_language_code         = (uint32_t)data->output_language_code;
+    PAL_INFO(LOG_TAG, "nmt_payload : input_language_code=%d, output_language_code=%d",
+                       nmtConf->input_language_code, nmtConf->output_language_code);
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+}
+
 
 void PayloadBuilder::payloadPcmCnvConfig(uint8_t** payload, size_t* size,
         uint32_t miid, struct pal_media_config *data, bool isRx)

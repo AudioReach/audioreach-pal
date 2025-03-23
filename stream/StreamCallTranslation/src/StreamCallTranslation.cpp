@@ -98,6 +98,13 @@ StreamCallTranslation::StreamCallTranslation(const struct pal_stream_attributes 
                 dev->setBitWidth(inDeviceInfo.bit_width);
         }
     }
+
+    callTranslationConfigPayload = (call_translation_config *)malloc(sizeof(call_translation_config));
+    if (callTranslationConfigPayload == nullptr) {
+        PAL_ERR(LOG_TAG, "callTranslationConfigPayload Memory allocation failed");
+        return;
+    }
+
     for (int i = 0; i < no_of_devices; i++) {
         //Check with RM if the configuration given can work or not
         //for e.g., if incoming stream needs 24 bit device thats also
@@ -393,5 +400,46 @@ int32_t StreamCallTranslation::stop()
     PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
 
     mStreamMutex.unlock();
+    return status;
+}
+
+int32_t  StreamCallTranslation::setParameters(uint32_t param_id, void *payload)
+{
+    int32_t status = 0;
+    PAL_INFO(LOG_TAG, "Enter, set parameter %u, session handle - %p", param_id, session);
+    pal_param_payload *param_payload = NULL;
+    if (!payload) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "wrong params");
+        goto exit;
+    }
+    mStreamMutex.lock();
+    if (currentState == STREAM_IDLE) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid stream state: IDLE for param ID: %d", param_id);
+        mStreamMutex.unlock();
+        goto exit;
+    }
+    // Check if session is not null
+    if (session != NULL) {
+        PAL_DBG(LOG_TAG, ": Found a session. Copy the payload to stream object callTranslationConfigPayload.");
+        param_payload = (pal_param_payload *)payload;
+        ar_mem_cpy(callTranslationConfigPayload, sizeof(call_translation_config), param_payload->payload, sizeof(call_translation_config));
+        PAL_DBG(LOG_TAG, ": callTranslationConfigPayload : enable=%d, call_translation_dir=%d, asr_module_config: input_language_code=%d, output_language_code=%d,"
+                         " enable_language_detection=%d, enable_translation=%d, enable_continuous_mode=%d, enable_partial_transcription=%d, threshold=%d, timeout_duration=%d,"
+                         " silence_detection_duration=%d, outputBufferMode=%d, nmt_module_config: input_language_code=%d, output_language_code=%d,"
+                         " tts_module_config: language_code=%d, speech_format=%d", callTranslationConfigPayload->enable, callTranslationConfigPayload->call_translation_dir, callTranslationConfigPayload->asr_module_config.input_language_code,
+                         callTranslationConfigPayload->asr_module_config.output_language_code, callTranslationConfigPayload->asr_module_config.enable_language_detection, callTranslationConfigPayload->asr_module_config.enable_translation,
+                         callTranslationConfigPayload->asr_module_config.enable_continuous_mode, callTranslationConfigPayload->asr_module_config.enable_partial_transcription, callTranslationConfigPayload->asr_module_config.threshold,
+                         callTranslationConfigPayload->asr_module_config.timeout_duration, callTranslationConfigPayload->asr_module_config.silence_detection_duration, callTranslationConfigPayload->asr_module_config.outputBufferMode,
+                         callTranslationConfigPayload->nmt_module_config.input_language_code, callTranslationConfigPayload->nmt_module_config.output_language_code, callTranslationConfigPayload->tts_module_config.language_code,
+                         callTranslationConfigPayload->tts_module_config.speech_format);
+    } else {
+        PAL_ERR(LOG_TAG, "session is null");
+        status = -EINVAL;
+    }
+    mStreamMutex.unlock();
+exit:
+    PAL_DBG(LOG_TAG, "exit, session parameter %u set with status %d", param_id, status);
     return status;
 }

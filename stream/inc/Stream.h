@@ -141,6 +141,7 @@ public:
     Stream();
     virtual ~Stream();
     struct pal_volume_data* mVolumeData = NULL;
+    call_translation_config *callTranslationConfigPayload = nullptr;
     pal_stream_callback streamCb;
     uint64_t cookie;
     bool isPaused = false;

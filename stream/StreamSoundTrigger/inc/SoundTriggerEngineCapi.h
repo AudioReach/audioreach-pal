@@ -37,6 +37,9 @@
 #define SOUNDTRIGGERENGINECAPI_H
 
 #include "capi_v2.h"
+#ifndef PAL_MEMLOG_UNSUPPORTED
+#include "capi_v2_extn.h"
+#endif
 #include "PalRingBuffer.h"
 #include "SoundTriggerEngine.h"
 

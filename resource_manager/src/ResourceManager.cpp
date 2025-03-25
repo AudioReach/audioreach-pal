@@ -49,10 +49,10 @@
 #include "Device.h"
 #include "Stream.h"
 #include "SndCardMonitor.h"
-#include "StreamUltraSound.h"
 #include "AudioHapticsInterface.h"
 #include "PluginManager.h"
 #ifndef PAL_MEMLOG_UNSUPPORTED
+#include "PerfLock.h"
 #include "mem_logger.h"
 #endif
 
@@ -64,7 +64,6 @@
 #include "BTUtils.h"
 #endif
 
-#include "PerfLock.h"
 
 
 #ifdef PAL_CUTILS_SUPPORTED
@@ -8207,7 +8206,7 @@ bool ResourceManager::isBtDevice(pal_device_id_t id)
             return false;
     }
 }
-
+#ifndef PAL_MEMLOG_UNSUPPORTED
 void ResourceManager::processPerfLockConfig(const XML_Char **attr)
 {
     if (strcmp(attr[0], "library") != 0) {
@@ -8236,7 +8235,7 @@ void ResourceManager::processPerfLockConfig(const XML_Char **attr)
 
     PerfLock::setPerfLockOpt(perfConfig);
 }
-
+#endif
 std::string ResourceManager::getSpkrTempCtrl(int channel)
 {
     std::map<int, std::string>::iterator iter;
@@ -9125,11 +9124,13 @@ void ResourceManager::startTag(void *userdata, const XML_Char *tag_name,
         if (attr[1])
             usb_vendor_uuid_list.push_back(attr[1]);
         return;
-    } else if (!strcmp(tag_name, "perf_lock")) {
+    } 
+#ifndef PAL_MEMLOG_UNSUPPORTED
+    else if (!strcmp(tag_name, "perf_lock")) {
         processPerfLockConfig(attr);
         return;
     }
-
+#endif
     if (data->card_parsed)
         return;
 

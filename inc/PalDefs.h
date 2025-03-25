@@ -1459,6 +1459,7 @@ struct __attribute__((__packed__)) version_arch_payload {
 typedef enum {
     PAL_ASR_EVENT_STATUS_SUCCESS = 0,
     PAL_ASR_EVENT_STATUS_ABORTED = 1,
+    PAL_ASR_EVENT_STATUS_TIMEOUT = 2,
 } pal_asr_event_status_t;
 
 typedef enum {

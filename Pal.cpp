@@ -51,8 +51,8 @@
 #include "PalCommon.h"
 #ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
-#endif
 #include "PerfLock.h"
+#endif
 #include "PluginManager.h"
 #ifndef PAL_MEMLOG_UNSUPPORTED
 #include "MemLogBuilder.h"
@@ -250,8 +250,8 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
                         pal_stream_callback cb, uint64_t cookie,
                         pal_stream_handle_t **stream_handle)
 {
-    PerfLock perflock(__func__);
 #ifndef ATRACE_UNSUPPORTED
+    PerfLock perflock(__func__);
     ATRACE_CALL();
 #endif
     uint64_t *stream = NULL;
@@ -389,8 +389,8 @@ exit:
 
 int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
 {
-    PerfLock perflock(__func__);
 #ifndef ATRACE_UNSUPPORTED
+    PerfLock perflock(__func__);
     ATRACE_CALL();
 #endif
     Stream *s = NULL;

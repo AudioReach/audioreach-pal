@@ -4035,6 +4035,8 @@ bool StreamSoundTrigger::isLPIProfile() {
     } else {
         return false;
     }
+}
+
 int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_param_t *model) {
 
     int32_t status = 0;

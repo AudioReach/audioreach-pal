@@ -480,7 +480,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     PAL_DBG(LOG_TAG, "Enter.");
 
     int32_t status = 0;
-    bool eventStatus = false;
+    int32_t eventStatus = 0;
     size_t eventSize = 0;
     void *payload = nullptr;
     uint8_t *temp = nullptr;
@@ -543,8 +543,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         eventPayload->num_events = eventHeader->num_outputs;
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
-            eventStatus = ev[i].status == 0 ? true : false;
-            if (!eventStatus) {
+            if (ev[i].status == ASR_FAIL) {
                 PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
                 goto cleanup;
             } else if (ev[i].num_words >= MAX_NUM_WORDS) {
@@ -552,6 +551,8 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
                 goto cleanup;
             }
 
+            eventPayload->status = ev[i].status == ASR_TIMEOUT ? PAL_ASR_EVENT_STATUS_TIMEOUT :
+                                                        PAL_ASR_EVENT_STATUS_SUCCESS;
             eventPayload->event[i].is_final = ev[i].is_final;
             eventPayload->event[i].confidence = ev[i].confidence;
             eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
@@ -573,7 +574,6 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
                     eventPayload->event[i].word[j].word[k] = words[j].word[k];
             }
         }
-        eventPayload->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
     } else {
         asr_output_status_t *ev = (asr_output_status_t *)(temp + sizeof(struct param_id_asr_output_t));
         pal_asr_event *eventPayload = nullptr;
@@ -590,18 +590,18 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         eventPayload->num_events = eventHeader->num_outputs;
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
-            eventStatus = ev[i].status == 0 ? true : false;
-            if (!eventStatus) {
+            if (ev[i].status == ASR_FAIL) {
                 PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
                 goto cleanup;
             }
+            eventPayload->status = ev[i].status == ASR_TIMEOUT ? PAL_ASR_EVENT_STATUS_TIMEOUT :
+                                                        PAL_ASR_EVENT_STATUS_SUCCESS;
             eventPayload->event[i].is_final = ev[i].is_final;
             eventPayload->event[i].confidence = ev[i].confidence;
             eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
             for (int j = 0; j < ev[i].text_size; ++j)
                 eventPayload->event[i].text[j] = ev[i].text[j];
         }
-        eventPayload->status = PAL_ASR_EVENT_STATUS_SUCCESS ;
     }
 
 

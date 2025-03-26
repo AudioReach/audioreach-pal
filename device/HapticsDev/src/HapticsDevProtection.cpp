@@ -1922,7 +1922,7 @@ int HapticsDevProtection::getLraFrequency()
         goto exit;
     }
 
-    vi << std::hex << lra_f0;
+    vi << lra_f0;
     vi >> fresHzQ20;
 
     PAL_INFO(LOG_TAG,"lra_frequency_hz = %d", fresHzQ20);
@@ -2141,7 +2141,7 @@ int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)
 
     if (isPmicAutoResonanceEnabled() == TRUE) {
         status = getLraFrequency();
-        if (status) {
+        if (status < 0) {
             PAL_ERR(LOG_TAG, "getLraFrequency failed");
         }
     }

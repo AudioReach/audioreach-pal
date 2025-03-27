@@ -1,9 +1,6 @@
 PLUGINS_BASE_PATH := $(call my-dir)
 
 include $(PLUGINS_BASE_PATH)/codecs/Android.mk
-include $(PLUGINS_BASE_PATH)/customva_intf/Android.mk
-include $(PLUGINS_BASE_PATH)/hotword_intf/Android.mk
-include $(PLUGINS_BASE_PATH)/vui_interface/Android.mk
 include $(PLUGINS_BASE_PATH)/PluginManager/Android.mk
 
 # Config Plugin; which BA ? use board-specific or default ?

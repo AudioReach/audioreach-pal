@@ -17,6 +17,7 @@ LOCAL_SRC_FILES := \
 	src/ACDEngine.cpp
 
 LOCAL_CFLAGS        += -DACD_SM_FILEPATH=\"/vendor/etc/models/acd/\"
+LOCAL_CPPFLAGS      += -DPAL_CUTILS_SUPPORTED
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/inc

@@ -8,6 +8,7 @@ LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CPPFLAGS += -fexceptions  -frtti
+LOCAL_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
 
 LOCAL_SRC_FILES := \
    src/ConfigSessionAlsaPcm.cpp

@@ -15,6 +15,7 @@ LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/utils/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/context_manager/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/plugins/codecs
 LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/plugins/PluginManager/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS += $(LOCAL_PATH)/stream/StreamCommon/StreamUltrasSound/inc/
 
 LOCAL_VENDOR_MODULE := true
 
@@ -38,7 +39,7 @@ ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
 LOCAL_CFLAGS        += -DSOC_PERIPHERAL_PROT
 endif
 LOCAL_CPPFLAGS      += -fexceptions -frtti -Wno-ignored-attributes
-
+LOCAL_CPPFLAGS      += -DPAL_CUTILS_SUPPORTED
 LOCAL_C_INCLUDES := \
     $(TOP)/system/media/audio_route/include \
     $(TOP)/system/media/audio/include
@@ -105,7 +106,6 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutilscallstack \
     libagmclient \
-    libvui_intf \
     libarmemlog \
     libhidlbase
 

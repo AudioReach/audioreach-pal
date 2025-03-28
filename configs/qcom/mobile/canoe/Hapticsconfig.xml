@@ -414,5 +414,22 @@
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
             <wave_design_mode>3</wave_design_mode>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>1</f0_tracking_en>
+            <rtcl_mode>0</rtcl_mode>
+            <pmic_autobrake_en>0</pmic_autobrake_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
+            <override_flag>7</override_flag>
      </ringtone_effect>
+     <pcm_effect>
+            <num_channels>1</num_channels>
+            <channel_mask>1</channel_mask>
+            <wave_design_mode>5</wave_design_mode>
+            <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
+            <f0_tracking_en>1</f0_tracking_en>
+            <rtcl_mode>0</rtcl_mode>
+            <pmic_autobrake_en>0</pmic_autobrake_en>
+            <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
+            <override_flag>7</override_flag>
+     </pcm_effect>
 </haptics_param_values>

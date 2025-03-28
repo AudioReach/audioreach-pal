@@ -48,6 +48,9 @@
 std::shared_ptr<AudioHapticsInterface> AudioHapticsInterface::me_ = nullptr;
 std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::predefined_haptics_info;
 std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::oneshot_haptics_info;
+std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::ringtone_haptics_info;
+std::vector<haptics_wave_designer_config_v2_t> AudioHapticsInterface::pcm_haptics_info;
+
 int AudioHapticsInterface::ringtone_haptics_wave_design_mode;
 
 AudioHapticsInterface::AudioHapticsInterface()
@@ -73,6 +76,8 @@ int AudioHapticsInterface::init()
     int bytes_read;
     predefined_haptics_info.clear();
     oneshot_haptics_info.clear();
+    ringtone_haptics_info.clear();
+    pcm_haptics_info.clear();
 
     ret = AudioHapticsInterface::XmlParser(HAPTICS_XML_FILE);
     if (ret) {
@@ -95,6 +100,8 @@ void AudioHapticsInterface::startTag(void *userdata, const XML_Char *tag_name,
         data->hapticstag = TAG_ONESHOT_EFFECT;
     } else if (!strcmp(tag_name, "ringtone_effect")) {
         data->hapticstag = TAG_RINGTONE_EFFECT;
+    } else if (!strcmp(tag_name, "pcm_effect")) {
+        data->hapticstag = TAG_PCM_EFFECT;
     } else {
         PAL_INFO(LOG_TAG, "No matching Tag found");
     }
@@ -310,11 +317,11 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
             size = oneshot_haptics_info.size() - 1;
             oneshot_haptics_info[size].f0_tracking_en =  atoi(data->data_buf);
         } else if (!strcmp(tag_name, "rtcl_mode")) {
-            size = predefined_haptics_info.size() - 1;
-            predefined_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
+            size = oneshot_haptics_info.size() - 1;
+            oneshot_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
         } else if (!strcmp(tag_name, "pmic_autobrake_en")) {
-            size = predefined_haptics_info.size() - 1;
-            predefined_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
+            size = oneshot_haptics_info.size() - 1;
+            oneshot_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
         } else if (!strcmp(tag_name, "f0_tracking_param_reset_flag")) {
             size = oneshot_haptics_info.size() - 1;
             oneshot_haptics_info[size].f0_tracking_param_reset_flag =  atoi(data->data_buf);
@@ -388,8 +395,64 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
     }
 
     if (data->hapticstag == TAG_RINGTONE_EFFECT) {
-        if (!strcmp(tag_name, "wave_design_mode")) {
-            ringtone_haptics_wave_design_mode =  atoi(data->data_buf);
+        if (!strcmp(tag_name, "num_channels")) {
+            HapticsCnfg.num_channels = atoi(data->data_buf);
+            ringtone_haptics_info.push_back(HapticsCnfg);
+        } else if (!strcmp(tag_name, "channel_mask")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].channel_mask =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "wave_design_mode")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].wave_design_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "auto_overdrive_brake_en")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].auto_overdrive_brake_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "f0_tracking_en")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].f0_tracking_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "rtcl_mode")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "pmic_autobrake_en")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "f0_tracking_param_reset_flag")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].f0_tracking_param_reset_flag =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "override_flag")) {
+            size = ringtone_haptics_info.size() - 1;
+            ringtone_haptics_info[size].override_flag =  atoi(data->data_buf);
+        }
+    }
+
+    if (data->hapticstag == TAG_PCM_EFFECT) {
+        if (!strcmp(tag_name, "num_channels")) {
+            HapticsCnfg.num_channels = atoi(data->data_buf);
+            pcm_haptics_info.push_back(HapticsCnfg);
+        } else if (!strcmp(tag_name, "channel_mask")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].channel_mask =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "wave_design_mode")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].wave_design_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "auto_overdrive_brake_en")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].auto_overdrive_brake_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "f0_tracking_en")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].f0_tracking_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "rtcl_mode")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].rtcl_mode =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "pmic_autobrake_en")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].pmic_autobrake_en =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "f0_tracking_param_reset_flag")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].f0_tracking_param_reset_flag =  atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "override_flag")) {
+            size = pcm_haptics_info.size() - 1;
+            pcm_haptics_info[size].override_flag =  atoi(data->data_buf);
         }
     }
     PAL_ERR(LOG_TAG, "%s \n", data->data_buf);
@@ -413,4 +476,26 @@ void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, ha
         }
     }
     PAL_DBG(LOG_TAG, "getTouchHapticsEffectConfiguration exit\n");
+}
+
+void AudioHapticsInterface::getRingtoneHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
+{
+    if (*HConfig == NULL) {
+        *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(ringtone_haptics_info[0]));
+        if (*HConfig)
+            memcpy(*HConfig, &ringtone_haptics_info[0],
+                                        sizeof(ringtone_haptics_info[0]));
+    }
+    PAL_DBG(LOG_TAG, "getRingtoneHapticsEffectConfiguration exit\n");
+}
+
+void AudioHapticsInterface::getPcmHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
+{
+    if (*HConfig == NULL) {
+        *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(pcm_haptics_info[0]));
+        if (*HConfig)
+            memcpy(*HConfig, &pcm_haptics_info[0],
+                                        sizeof(pcm_haptics_info[0]));
+    }
+    PAL_DBG(LOG_TAG, "getPcmHapticsEffectConfiguration exit\n");
 }

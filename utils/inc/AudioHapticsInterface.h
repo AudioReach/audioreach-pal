@@ -52,6 +52,7 @@ typedef enum {
     TAG_HAPTICS_EFFECT,
     TAG_ONESHOT_EFFECT,
     TAG_RINGTONE_EFFECT,
+    TAG_PCM_EFFECT,
 } haptics_xml_tag;
 
 struct haptics_wave_designer_config_v2_t {
@@ -100,12 +101,15 @@ public:
     static void resetDataBuf(struct haptics_xml_data *data);
     static void process_haptics_info(struct haptics_xml_data *data, const XML_Char *tag_name);
     void getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig);
-    int getRingtoneHapticsEffectConfiguration() {return ringtone_haptics_wave_design_mode;}
+    void getRingtoneHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig);
+    void getPcmHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig);
     static int init();
     static std::shared_ptr<AudioHapticsInterface> GetInstance();
 private:
     static std::vector<haptics_wave_designer_config_v2_t> predefined_haptics_info;
     static std::vector<haptics_wave_designer_config_v2_t> oneshot_haptics_info;
+    static std::vector<haptics_wave_designer_config_v2_t> ringtone_haptics_info;
+    static std::vector<haptics_wave_designer_config_v2_t> pcm_haptics_info;
     static std::shared_ptr<AudioHapticsInterface> me_;
     static int ringtone_haptics_wave_design_mode;
 };

@@ -4778,6 +4778,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     }
                     free(HConfig);
                 } else if(data->mode == PAL_STREAM_HAPTICS_RINGTONE) {
+                    hap_info->getRingtoneHapticsEffectConfiguration(&HConfig);
                     payloadSize = sizeof(struct apm_module_param_data_t) +
                                    sizeof(param_id_haptics_wave_designer_config_v2_t) +
                                    (sizeof(rx_wave_designer_config_v2_h));
@@ -4793,11 +4794,44 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     hpwaveConf = (rx_wave_designer_config_v2_h *) (payloadInfo +
                                 sizeof(struct apm_module_param_data_t)
                                 + sizeof(param_id_haptics_wave_designer_config_v2_t));
-                    hpconf->num_channels = 1;
-                    hpconf->channel_mask = 1;
-                    hpwaveConf[0].wave_design_mode = hap_info->getRingtoneHapticsEffectConfiguration();
-                    PAL_ERR(LOG_TAG, "ringtone haptics mode %d", hpwaveConf[0].wave_design_mode);
+                    hpconf->num_channels = HConfig->num_channels;
+                    hpconf->channel_mask = HConfig->channel_mask;
+                    hpwaveConf[0].wave_design_mode = (uint32_t)HConfig->wave_design_mode;
+                        PAL_DBG(LOG_TAG, " Ringtone Haptics Effect, desgn mode %d",
+                                                 hpwaveConf[0].wave_design_mode);
+                        hpwaveConf[0].auto_overdrive_brake_en =
+                                           HConfig->auto_overdrive_brake_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, auto_ov_b_en %d",
+                                                hpwaveConf[0].auto_overdrive_brake_en);
+                        hpwaveConf[0].f0_tracking_en =
+                                          HConfig->f0_tracking_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .f0_tracking_en %d",
+                                                hpwaveConf[0].f0_tracking_en);
+                        hpwaveConf[0].rtcl_mode =
+                                          HConfig->rtcl_mode;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .rtcl_mode %d",
+                                                hpwaveConf[0].rtcl_mode);
+                        hpwaveConf[0].pmic_autobrake_en =
+                                          HConfig->pmic_autobrake_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .pmic_autobrake_en %d",
+                                                hpwaveConf[0].pmic_autobrake_en);
+                        hpwaveConf[0].f0_tracking_param_reset_flag =
+                                         HConfig->f0_tracking_param_reset_flag;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .f0_param_reset_flag %d",
+                                         hpwaveConf[0].f0_tracking_param_reset_flag);
+                        hpwaveConf[0].override_flag =
+                                           HConfig->override_flag;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .override_flag %d",
+                                                      hpwaveConf[0].override_flag);
+                        hpwaveConf[0].num_pwl = 0;
+                        free(HConfig);
                 } else if(data->mode == PAL_STREAM_HAPTICS_PCM) {
+                    hap_info->getPcmHapticsEffectConfiguration(&HConfig);
+                    if (HConfig == nullptr) {
+                        PAL_ERR(LOG_TAG, "HapticsConfig is not found.");
+                        return;
+                    }
+
                     payloadSize = sizeof(struct apm_module_param_data_t) +
                                    sizeof(param_id_haptics_wave_designer_config_v2_t) +
                                    (sizeof(rx_wave_designer_config_v2_h));
@@ -4813,10 +4847,37 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     hpwaveConf = (rx_wave_designer_config_v2_h *) (payloadInfo +
                                 sizeof(struct apm_module_param_data_t)
                                 + sizeof(param_id_haptics_wave_designer_config_v2_t));
-                    hpconf->num_channels = 1;
-                    hpconf->channel_mask = 1;
-                    hpwaveConf[0].wave_design_mode = 5;
-                    hpwaveConf[0].repetition_count = 1;
+                    hpconf->num_channels = HConfig->num_channels;
+                    hpconf->channel_mask = HConfig->channel_mask;
+                    hpwaveConf[0].wave_design_mode = (uint32_t)HConfig->wave_design_mode;
+                        PAL_DBG(LOG_TAG, "Pcm Haptics Effect, desgn mode %d",
+                                                 hpwaveConf[0].wave_design_mode);
+                        hpwaveConf[0].auto_overdrive_brake_en =
+                                           HConfig->auto_overdrive_brake_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, auto_ov_b_en %d",
+                                                hpwaveConf[0].auto_overdrive_brake_en);
+                        hpwaveConf[0].f0_tracking_en =
+                                          HConfig->f0_tracking_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .f0_tracking_en %d",
+                                                hpwaveConf[0].f0_tracking_en);
+                        hpwaveConf[0].rtcl_mode =
+                                          HConfig->rtcl_mode;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .rtcl_mode %d",
+                                                hpwaveConf[0].rtcl_mode);
+                        hpwaveConf[0].pmic_autobrake_en =
+                                          HConfig->pmic_autobrake_en;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .pmic_autobrake_en %d",
+                                                hpwaveConf[0].pmic_autobrake_en);
+                        hpwaveConf[0].f0_tracking_param_reset_flag =
+                                         HConfig->f0_tracking_param_reset_flag;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .f0_param_reset_flag %d",
+                                         hpwaveConf[0].f0_tracking_param_reset_flag);
+                        hpwaveConf[0].override_flag =
+                                           HConfig->override_flag;
+                        PAL_DBG(LOG_TAG, "Haptics Effect, .override_flag %d",
+                                                      hpwaveConf[0].override_flag);
+                        hpwaveConf[0].repetition_count = 1;
+                        hpwaveConf[0].num_pwl = 0;
                     if ((data->amplitude * 100 > 1000)) {
                          hpwaveConf[0].pulse_intensity = 1000;
                     } else if (data->amplitude * 100 <= 0) {
@@ -4824,8 +4885,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     } else {
                          hpwaveConf[0].pulse_intensity = (data->amplitude * 100);
                     }
-                    hpwaveConf[0].num_pwl=0;
-                    PAL_ERR(LOG_TAG, "PCM haptics mode %d", hpwaveConf[0].wave_design_mode);
+                    free(HConfig);
                 }
             }
             break;

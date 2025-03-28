@@ -729,6 +729,24 @@ silence_det_setup_done:
             } else if(sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
                 status = session->getHapticsConfig(hpCnfg);
             }
+
+            if (hpCnfg != NULL) {
+                if (hpCnfg->mode == PAL_STREAM_HAPTICS_PCM) {
+                    builder->payloadHapticsDevPConfig(&payload, &payloadSize,
+                        miid, PARAM_ID_HAPTICS_RX_PCMV_PLAYBACK,(void *)hpCnfg);
+
+                    if (payloadSize && payload) {
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        free(payload);
+                        if (0 != status) {
+                            PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                            free(hpCnfg);
+                            goto exit;
+                        }
+                    }
+                }
+            }
+
             if (hpCnfg != nullptr && status == 0) {
                 builder->payloadHapticsDevPConfig(&payload, &payloadSize,
                             miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);

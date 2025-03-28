@@ -4190,7 +4190,7 @@ uint32_t StreamSoundTrigger::GetMMAModelType() {
     if (vui_intf_) {
         param.stream = this;
         status = vui_intf_->GetParameter(PARAM_MMA_MODE_BIT_CONFIG, &param);
-        if (!status) {
+        if (!status && param.data) {
             mode_bit = *(uint32_t *)param.data;
             if (mode_bit & (1 << NVD))
                 return MMA_NVD;

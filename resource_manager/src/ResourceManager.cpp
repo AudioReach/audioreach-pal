@@ -5719,6 +5719,7 @@ error:
 int32_t ResourceManager::streamDevConnect_l(std::vector <std::tuple<Stream *, struct pal_device *>> streamDevConnectList){
     int status = 0;
     std::vector <std::tuple<Stream *, struct pal_device *>>::iterator sIter;
+    std::set<Stream *> connected_streams;
 
     PAL_DBG(LOG_TAG, "Enter");
     /* connect active list from the current devices they are attached to */
@@ -5732,7 +5733,9 @@ int32_t ResourceManager::streamDevConnect_l(std::vector <std::tuple<Stream *, st
                 PAL_DBG(LOG_TAG,"connected stream %pK from device %d",
                         std::get<0>(*sIter), (std::get<1>(*sIter))->id);
             }
-            std::get<0>(*sIter)->unlockStreamMutex();
+            auto result = connected_streams.insert(std::get<0>(*sIter));
+            if (result.second)
+                std::get<0>(*sIter)->unlockStreamMutex();
         }
     }
 

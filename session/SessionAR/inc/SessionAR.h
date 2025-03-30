@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -109,6 +109,8 @@ typedef enum {
 #define VOLUME_LVL 53
 #define DTMF_DETECT_ENABLE 54
 #define DTMF_DETECT_DISABLE 55
+#define MUX_DEMUX_VOICE 56
+#define MUX_DEMUX_VOIP 57
 
 #define MSPP_SOFT_PAUSE_DELAY 150
 #define DEFAULT_RAMP_PERIOD 0x28

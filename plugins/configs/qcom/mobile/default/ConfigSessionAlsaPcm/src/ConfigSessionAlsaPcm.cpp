@@ -157,6 +157,7 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     int DeviceId = 0;
     int tagId = 0;
     int payload_size = 0;
+    uint32_t tag = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
     memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
@@ -449,6 +450,32 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                         }
                     }
                 }
+                if (sAttr.type == PAL_STREAM_VOIP_TX) {
+                    bool isVoiceActive = false;
+                    bool isTranslationActive = false;
+                    pal_stream_attributes streamAttr = {};
+                    for (auto& stream_itr: rm->getActiveStreamList()) {
+                        PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the Mux-Demux module.");
+                        stream_itr->getStreamAttributes(&streamAttr);
+                        if (streamAttr.type == PAL_STREAM_VOICE_CALL) {
+                            isVoiceActive = true;
+                        } else if (streamAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+                            isTranslationActive = true;
+                        }
+                    }
+                    if (isVoiceActive && isTranslationActive) {
+                        tag = MUX_DEMUX_VOICE;
+                        PAL_DBG(LOG_TAG, "ongoing voice with Call Translation found, set TKV value as :%d", tag);
+                        status = session->setConfig(s, MODULE, tag);
+                        if (status) {
+                            PAL_ERR(LOG_TAG, "Failed setconfig for mux-demux tag = %d", status);
+                            goto set_mixer;
+                        }
+                    } else {
+                        PAL_ERR(LOG_TAG, "Cannot set the mux-demux tag, as ongoing voice with Call Translation not found");
+                        goto set_mixer;
+                    }
+                }
 configure_pspfmfc:
             status = s->getAssociatedDevices(associatedDevices);
             if (0 != status) {
@@ -674,7 +701,6 @@ set_mixer:
             }
             builder->payloadASRConfig(&paramData, &paramSize, miid, asr_payload);
             if (paramSize && paramData) {
-                PAL_INFO(LOG_TAG, ": update custom payload for ASR module config.");
                 status = builder->updateCustomPayload(paramData, paramSize);
                 builder->freeCustomPayload(&paramData, &paramSize);
                 if (0 != status) {
@@ -726,6 +752,27 @@ set_mixer:
             if (paramSize) {
                 status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0), paramData, paramSize);
                 builder->freeCustomPayload();
+            }
+            if (status) {
+                PAL_ERR(LOG_TAG, "setmixer, status = %d", status);
+                goto exit;
+            }
+            // configure the voice and voip mux_demux using tag.
+            for (auto& stream_itr: rm->getActiveStreamList()) {
+                PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the Mux-Demux module.");
+                stream_itr->getStreamAttributes(&sAttr);
+                if (sAttr.type == PAL_STREAM_VOICE_CALL) {
+                    tag = MUX_DEMUX_VOICE;
+                    break;
+                } else if (sAttr.type == PAL_STREAM_VOIP_TX) {
+                    tag = MUX_DEMUX_VOIP;
+                    break;
+                }
+            }
+            status = session->setConfig(s, MODULE, tag);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to set mux-demux tag data, status = %d", status);
+                goto exit;
             }
             goto exit;
         }
@@ -810,7 +857,6 @@ silence_det_setup_done:
             }
             builder->payloadASRConfig(&paramData, &paramSize, miid, asr_payload);
             if (paramSize && paramData) {
-                PAL_INFO(LOG_TAG, ": update custom payload for ASR module config.");
                 status = builder->updateCustomPayload(paramData, paramSize);
                 builder->freeCustomPayload(&paramData, &paramSize);
                 if (0 != status) {
@@ -863,6 +909,26 @@ silence_det_setup_done:
             if (paramSize) {
                 status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0), paramData, paramSize);
                 builder->freeCustomPayload();
+            }
+            if (status) {
+                PAL_ERR(LOG_TAG, "setmixer, status = %d", status);
+                goto exit;
+            }
+            for (auto& stream_itr: rm->getActiveStreamList()) {
+                PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the Mux-Demux module.");
+                stream_itr->getStreamAttributes(&sAttr);
+                if (sAttr.type == PAL_STREAM_VOICE_CALL) {
+                    tag = MUX_DEMUX_VOICE;
+                    break;
+                } else if (sAttr.type == PAL_STREAM_VOIP_RX) {
+                    tag = MUX_DEMUX_VOIP;
+                    break;
+                }
+            }
+            status = session->setConfig(s, MODULE, tag);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to set mux-demux tag data, status = %d", status);
+                goto exit;
             }
             goto exit;
         }
@@ -1172,6 +1238,32 @@ silence_det_setup_done:
                 PAL_ERR(LOG_TAG, "setMixerParameter failed");
                 status = 0;
                 goto exit;
+            }
+        }
+        if (sAttr.type == PAL_STREAM_VOIP_RX) {
+            bool isVoiceActive = false;
+            bool isTranslationActive = false;
+            pal_stream_attributes streamAttr = {};
+            for (auto& stream_itr: rm->getActiveStreamList()) {
+                PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the Mux-Demux module.");
+                stream_itr->getStreamAttributes(&streamAttr);
+                if (streamAttr.type == PAL_STREAM_VOICE_CALL) {
+                    isVoiceActive = true;
+                } else if (streamAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+                    isTranslationActive = true;
+                }
+            }
+            if (isVoiceActive && isTranslationActive) {
+                tag = MUX_DEMUX_VOICE;
+                PAL_DBG(LOG_TAG, "ongoing voice with Call Translation found, set TKV value as :%d", tag);
+                status = session->setConfig(s, MODULE, tag);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Failed setconfig for mux-demux tag = %d", status);
+                    goto set_mixer;
+                } else {
+                    PAL_ERR(LOG_TAG, "Cannot set the mux-demux tag, as ongoing voice with Call Translation not found");
+                    goto set_mixer;
+                }
             }
         }
         break;

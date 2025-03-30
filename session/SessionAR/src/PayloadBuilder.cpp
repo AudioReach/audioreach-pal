@@ -4044,6 +4044,14 @@ int PayloadBuilder::populateTagKeyVector(Stream *s, std::vector <std::pair<int,i
        tkv.push_back(std::make_pair(TAG_KEY_MUX_DEMUX_CONFIG, TAG_VALUE_MUX_DEMUX_CONFIG_UPLINK_DOWNLINK_STEREO));
        *gsltag = TAG_STREAM_MUX_DEMUX;
        break;
+    case MUX_DEMUX_VOICE:
+       tkv.push_back(std::make_pair(TAG_KEY_MUX_DEMUX_CONFIG, TAG_VALUE_MUX_DEMUX_CONFIG_VOICE));
+       *gsltag = TAG_STREAM_MUX_DEMUX;
+       break;
+    case MUX_DEMUX_VOIP:
+       tkv.push_back(std::make_pair(TAG_KEY_MUX_DEMUX_CONFIG, TAG_VALUE_MUX_DEMUX_CONFIG_VOIP));
+       *gsltag = TAG_STREAM_MUX_DEMUX;
+       break;
     case LPI_LOGGING_ON:
        tkv.push_back(std::make_pair(LOGGING, LOGGING_ON));
        *gsltag = TAG_DATA_LOGGING;

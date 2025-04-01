@@ -368,7 +368,7 @@ exit:
 }
 
 void SoundDoseUtility::getSoundDoseMelValues() {
-    PAL_DBG(LOG_TAG, "%p getSoundDoseMelValues for %d", this, toString(&mPalDevice).c_str());
+    PAL_DBG(LOG_TAG, "%p getSoundDoseMelValues for %s", this, toString(&mPalDevice).c_str());
     int ret = 0;
     uint32_t miid = 0;
     const char *getParamControl = "getParam";

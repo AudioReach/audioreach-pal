@@ -457,7 +457,14 @@ int setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_stream_at
     rm->getVirtualAudioMixer(&mixer);
 
     if (groupDevConfig) {
-        tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, groupDevConfig->grp_dev_hwep_cfg.slot_mask));
+        if (0 == groupDevConfig->grp_dev_hwep_cfg.slot_mask) {
+            slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
+                         slotMaskBwLUT.at(dAttr.config.bit_width);
+            tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, slot_mask));
+        } else {
+            tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK,
+                               groupDevConfig->grp_dev_hwep_cfg.slot_mask));
+        }
     } else if (rm->IsDeviceMuxConfigEnabled()) {
          slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
                          slotMaskBwLUT.at(dAttr.config.bit_width);

@@ -185,19 +185,23 @@
                 <name>PAL_STREAM_DEEP_BUFFER</name>
                 <ec_enable>1</ec_enable>
                 <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
                 </custom-config>
             </usecase>
@@ -213,19 +217,23 @@
                 <name>PAL_STREAM_COMPRESSED</name>
                 <ec_enable>1</ec_enable>
                 <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
                 </custom-config>
             </usecase>
@@ -272,19 +280,23 @@
                 <name>PAL_STREAM_RAW</name>
                 <snd_device_name>handset-mic-unprocessed</snd_device_name>
                 <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
                 </custom-config>
             </usecase>
@@ -312,19 +324,23 @@
                 <name>PAL_STREAM_DEEP_BUFFER</name>
                 <ec_enable>1</ec_enable>
                 <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
                 </custom-config>
             </usecase>
@@ -340,19 +356,23 @@
                 <name>PAL_STREAM_COMPRESSED</name>
                 <ec_enable>1</ec_enable>
                 <custom-config key="unprocessed-hdr-mic-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-landscape">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
                 </custom-config>
                 <custom-config key="unprocessed-hdr-mic-inverted-portrait">
-                    <channels>4</channels>
+                    <channels>2</channels>
+                    <bit_width>16</bit_width>
                     <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
                 </custom-config>
             </usecase>

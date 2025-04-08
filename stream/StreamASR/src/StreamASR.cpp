@@ -361,7 +361,7 @@ void StreamASR::HandleEventData(eventPayload engEvent) {
                        event->event[i].start_ts, event->event[i].end_ts);
              PAL_INFO(LOG_TAG, "Number of words : %d", event->event[i].num_words);
              for (int j = 0; j < event->event[i].num_words; j++) {
-                 PAL_INFO(LOG_TAG, "\tword : %s", event->event[i].word[j]);
+                 PAL_INFO(LOG_TAG, "\tword : %s", event->event[i].word[j].word);
                  PAL_INFO(LOG_TAG, "\tWord's start timestamp : %lld, end timestamp : %lld",
                         event->event[i].word[j].start_ts, event->event[i].word[j].end_ts);
              }

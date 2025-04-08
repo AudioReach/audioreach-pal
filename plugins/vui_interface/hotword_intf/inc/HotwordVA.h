@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
-#ifndef HOTWORD_INTERFACE_H
-#define HOTWORD_INTERFACE_H
+#ifndef HOTWORD_H
+#define HOTWORD_H
 
 #include "VoiceUIInterface.h"
 #include "detection_cmn_api.h"
@@ -13,10 +13,10 @@
 #include <stdexcept>
 #endif
 
-class HotwordInterface: public VoiceUIInterface {
+class HotwordVA: public VoiceUIInterface {
   public:
-    HotwordInterface(vui_intf_param_t *model);
-    ~HotwordInterface();
+    HotwordVA(vui_intf_param_t *model);
+    ~HotwordVA();
 
     void DetachStream(void *stream) override;
 

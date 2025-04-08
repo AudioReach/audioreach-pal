@@ -10,8 +10,9 @@
 
 #include "VoiceUIInterface.h"
 #include "detection_cmn_api.h"
+#include "mma_api.h"
 #include "ar_osal_mem_op.h"
-#include "VoiceUIInterfaceUtils.h"
+#include "VUIInterfaceUtils.h"
 
 class SVAInterface: public VoiceUIInterface {
   public:
@@ -50,9 +51,10 @@ class SVAInterface: public VoiceUIInterface {
                                   listen_model_indicator_enum type,
                                   int32_t *level);
 
-    void SetSecondStageDetLevels(void *s,
-                                 listen_model_indicator_enum type,
-                                 int32_t level);
+    void SetSecondStageDetStats(void *s,
+                               listen_model_indicator_enum type,
+                               struct st_det_engine_stats *info,
+                               int32_t level);
 
     int32_t ParseDetectionPayload(void *s, void *event, uint32_t size);
     void* GetDetectedStream(void *event);
@@ -60,10 +62,17 @@ class SVAInterface: public VoiceUIInterface {
     void GetKeywordIndex(void *s, struct keyword_index *index);
     void GetKeywordStats(void *s, struct keyword_stats *stats);
     void UpdateIndices(void * s, struct keyword_index index);
+    void UpdateFtrtData(void * s, uint8_t *data, uint32_t size);
     void UpdateDetectionResult(void *s, uint32_t result);
+    int32_t SetDetectionPropList(void *s, detection_prop_list_t *det_prop_list);
+    uint32_t GetExtendedPayloadSize(void *s);
+    void FillExtendedDetectionPayload(void *s, uint8_t *data, uint32_t size);
     int32_t GenerateCallbackEvent(void *s,
                                   struct pal_st_recognition_event **event,
                                   uint32_t *event_size);
+    int32_t PackDetectionOpaqueData(void *s,
+                                    uint8_t *opaque_data,
+                                    uint32_t ext_payload_size);
 
     int32_t UpdateEngineModel(void *s, uint8_t *data,
                 uint32_t data_size, bool add);
@@ -85,6 +94,7 @@ class SVAInterface: public VoiceUIInterface {
                                  uint32_t version);
     int32_t ParseDetectionPayloadPDK(void *s, void *event_data);
     int32_t ParseDetectionPayloadGMM(void *s, void *event_data);
+    int32_t ParseDetectionPayloadMMA(void *s, void *event_data);
     void UpdateKeywordIndex(void *s, uint64_t kwd_start_timestamp,
                             uint64_t kwd_end_timestamp,
                             uint64_t ftrt_start_timestamp);
@@ -100,6 +110,7 @@ class SVAInterface: public VoiceUIInterface {
     void CheckAndSetDetectionConfLevels(void *s);
     void* GetPDKDetectedStream(void *event);
     void* GetGMMDetectedStream(void *event);
+    void* GetMMADetectedStream(void *event);
 
     int32_t AddSoundModel(void *s, uint8_t *data, uint32_t data_size);
     int32_t DeleteSoundModel(void *s);
@@ -136,6 +147,7 @@ class SVAInterface: public VoiceUIInterface {
     sound_model_info_map_t sm_info_map_;
     struct pal_stream_attributes str_attr_;
     SoundModelInfo *sound_model_info_;
+    bool perf_mode_;
 
     st_confidence_levels_info *st_conf_levels_;
     st_confidence_levels_info_v2 *st_conf_levels_v2_;
@@ -146,14 +158,19 @@ class SVAInterface: public VoiceUIInterface {
     struct param_id_detection_engine_multi_model_buffering_config_t buffering_config_;
     struct param_id_detection_engine_per_model_reset_t per_model_reset_config_;
     struct detection_engine_config_voice_wakeup wakeup_config_;
+    struct param_id_mma_context_ml_model_config_t *mma_model_;
+    struct param_id_mma_history_buffer_size_t mma_buffering_config_;
     uint8_t *wakeup_payload_;
     uint32_t wakeup_payload_size_;
+    uint8_t *ftrt_data_;
+    uint32_t ftrt_data_size_;
 
     bool sm_merged_;
     struct detection_event {
         union {
             struct detection_event_info event_info_;
             struct detection_event_info_pdk pdk_event_info_;
+            struct detection_event_info_mma mma_event_info_;
         };
         uint32_t det_model_id_;
         uint64_t ftrt_size_us_;

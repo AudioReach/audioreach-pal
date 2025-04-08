@@ -26,16 +26,16 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
-#define LOG_TAG "PAL: HotwordInterface"
+#define LOG_TAG "PAL: HotwordVA"
 //#define LOG_NDEBUG 0
 
 #include <log/log.h>
-#include "HotwordInterface.h"
+#include "HotwordVA.h"
 
 extern "C" int32_t get_vui_interface(struct vui_intf_t *intf,
     vui_intf_param_t *model) {
@@ -49,7 +49,7 @@ extern "C" int32_t get_vui_interface(struct vui_intf_t *intf,
     config = (sound_model_config_t *)model->data;
     switch (config->module_type) {
         case ST_MODULE_TYPE_HW:
-            intf->interface = std::make_shared<HotwordInterface>(model);
+            intf->interface = std::make_shared<HotwordVA>(model);
             break;
         default:
             ALOGE("%s: %d: Unsupported module type %d",
@@ -74,7 +74,7 @@ extern "C" int32_t release_vui_interface(struct vui_intf_t *intf) {
     return status;
 }
 
-HotwordInterface::HotwordInterface(
+HotwordVA::HotwordVA(
     vui_intf_param_t *model) {
 
     int32_t status = 0;
@@ -95,7 +95,7 @@ HotwordInterface::HotwordInterface(
     config = (sound_model_config_t *)model->data;
     sound_model = (struct pal_st_sound_model *)config->sound_model;
     module_type_ = config->module_type;
-    status = HotwordInterface::ParseSoundModel(sound_model, model_list);
+    status = HotwordVA::ParseSoundModel(sound_model, model_list);
     if (status) {
         ALOGE("%s: %d: Failed to parse sound model, status = %d",
             __func__, __LINE__, status);
@@ -110,7 +110,7 @@ HotwordInterface::HotwordInterface(
     }
 }
 
-HotwordInterface::~HotwordInterface() {
+HotwordVA::~HotwordVA() {
     ALOGD("%s: %d: Enter", __func__, __LINE__);
 
     if (custom_event_)
@@ -119,11 +119,11 @@ HotwordInterface::~HotwordInterface() {
     ALOGD("%s: %d: Exit", __func__, __LINE__);
 }
 
-void HotwordInterface::DetachStream(void *stream) {
+void HotwordVA::DetachStream(void *stream) {
     DeregisterModel(stream);
 }
 
-int32_t HotwordInterface::SetParameter(
+int32_t HotwordVA::SetParameter(
     intf_param_id_t param_id, vui_intf_param_t *param) {
 
     int32_t status = 0;
@@ -172,7 +172,7 @@ int32_t HotwordInterface::SetParameter(
     return status;
 }
 
-int32_t HotwordInterface::GetParameter(
+int32_t HotwordVA::GetParameter(
     intf_param_id_t param_id, vui_intf_param_t *param) {
 
     int32_t status = 0;
@@ -238,7 +238,7 @@ int32_t HotwordInterface::GetParameter(
     return status;
 }
 
-int32_t HotwordInterface::ParseSoundModel(
+int32_t HotwordVA::ParseSoundModel(
     struct pal_st_sound_model *sound_model,
     std::vector<sound_model_data_t *> &model_list) {
 
@@ -324,7 +324,7 @@ error_exit:
     return status;
 }
 
-int32_t HotwordInterface::ParseRecognitionConfig(void *s,
+int32_t HotwordVA::ParseRecognitionConfig(void *s,
     struct pal_st_recognition_config *config) {
 
     int32_t status = 0;
@@ -356,7 +356,7 @@ exit:
     return status;
 }
 
-void HotwordInterface::GetBufferingConfigs(void *s,
+void HotwordVA::GetBufferingConfigs(void *s,
     struct buffer_config *config) {
 
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
@@ -367,7 +367,7 @@ void HotwordInterface::GetBufferingConfigs(void *s,
     }
 }
 
-int32_t HotwordInterface::ParseDetectionPayload(void *event, uint32_t size) {
+int32_t HotwordVA::ParseDetectionPayload(void *event, uint32_t size) {
     int32_t status = 0;
 
     if (!event || size == 0) {
@@ -388,7 +388,7 @@ int32_t HotwordInterface::ParseDetectionPayload(void *event, uint32_t size) {
     return status;
 }
 
-void* HotwordInterface::GetDetectedStream() {
+void* HotwordVA::GetDetectedStream() {
     ALOGD("%s: %d: Enter", __func__, __LINE__);
     if (sm_info_map_.empty()) {
         ALOGE("%s: %d: Unexpected, No streams attached to engine!",
@@ -403,7 +403,7 @@ void* HotwordInterface::GetDetectedStream() {
     }
 }
 
-int32_t HotwordInterface::GenerateCallbackEvent(void *s,
+int32_t HotwordVA::GenerateCallbackEvent(void *s,
     struct pal_st_recognition_event **event,
     uint32_t *size) {
 
@@ -509,13 +509,13 @@ exit:
     return status;
 }
 
-void HotwordInterface::UpdateDetectionResult(void *s, uint32_t result) {
+void HotwordVA::UpdateDetectionResult(void *s, uint32_t result) {
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
         sm_info_map_[s]->det_result = result;
     }
 }
 
-int32_t HotwordInterface::GetSoundModelLoadPayload(vui_intf_param_t *param) {
+int32_t HotwordVA::GetSoundModelLoadPayload(vui_intf_param_t *param) {
     void *s = nullptr;
     sound_model_data_t *sm_data = nullptr;
 
@@ -542,7 +542,7 @@ int32_t HotwordInterface::GetSoundModelLoadPayload(vui_intf_param_t *param) {
     return 0;
 }
 
-int32_t HotwordInterface::GetBufferingPayload(vui_intf_param_t *param) {
+int32_t HotwordVA::GetBufferingPayload(vui_intf_param_t *param) {
     void *s = nullptr;
     struct sound_model_info *info = nullptr;
 
@@ -575,7 +575,7 @@ int32_t HotwordInterface::GetBufferingPayload(vui_intf_param_t *param) {
     return 0;
 }
 
-void HotwordInterface::SetStreamAttributes(
+void HotwordVA::SetStreamAttributes(
     struct pal_stream_attributes *attr) {
 
     if (!attr) {
@@ -587,7 +587,7 @@ void HotwordInterface::SetStreamAttributes(
         attr, sizeof(struct pal_stream_attributes));
 }
 
-int32_t HotwordInterface::RegisterModel(void *s,
+int32_t HotwordVA::RegisterModel(void *s,
     struct pal_st_sound_model *model,
     const std::vector<sound_model_data_t *> model_list) {
 
@@ -615,7 +615,7 @@ exit:
     return status;
 }
 
-void HotwordInterface::DeregisterModel(void *s) {
+void HotwordVA::DeregisterModel(void *s) {
     sound_model_data_t *sm_data = nullptr;
 
     auto iter = sm_info_map_.find(s);
@@ -638,7 +638,7 @@ void HotwordInterface::DeregisterModel(void *s) {
     }
 }
 
-uint32_t HotwordInterface::UsToBytes(uint64_t input_us) {
+uint32_t HotwordVA::UsToBytes(uint64_t input_us) {
     uint32_t bytes = 0;
 
     bytes = str_attr_.in_media_config.sample_rate *

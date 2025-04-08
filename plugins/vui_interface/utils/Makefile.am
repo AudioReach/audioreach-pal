@@ -2,7 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vui_interface_utils.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
-h_sources = $(top_srcdir)/utils/inc/VoiceUIInterfaceUtils.h
+h_sources = $(top_srcdir)/utils/inc/VUIInterfaceUtils.h
 
 
 AM_CPPFLAGS := -DVUI_USE_SYSLOG @GLIB_CFLAGS@ -include glib.h
@@ -17,7 +17,7 @@ library_includedir = $(includedir)/vui_interface_utils
 
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
 
-c_sources := $(top_srcdir)/utils/src/VoiceUIInterfaceUtils.cpp
+c_sources := $(top_srcdir)/utils/src/VUIInterfaceUtils.cpp
 
 lib_LTLIBRARIES = libvuiinterface_utils.la
 libvuiinterface_utils_la_SOURCES = $(c_sources)

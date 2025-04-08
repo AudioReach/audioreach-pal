@@ -26,26 +26,22 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
-#define LOG_TAG "PAL: CustomVAInterface"
+#define LOG_TAG "PAL: CustomVA"
 //#define LOG_NDEBUG 0
 
-#ifndef PAL_USE_SYSLOG
 #include <log/log.h>
-#endif
-#include "CustomVAInterface.h"
+#include "CustomVA.h"
 #ifdef FEATURE_IPQ_OPENWRT
 #include <stdexcept>
 #include <cstring>
 #include <memory>
 #endif
-#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
-#endif
 
 #define ST_MAX_FSTAGE_CONF_LEVEL  (100)
 #define CUSTOM_CONFIG_OPAQUE_DATA_SIZE 12
@@ -64,7 +60,7 @@ extern "C" int32_t get_vui_interface(struct vui_intf_t *intf,
     switch (config->module_type) {
         case ST_MODULE_TYPE_CUSTOM_1:
         case ST_MODULE_TYPE_CUSTOM_2:
-            intf->interface = std::make_shared<CustomVAInterface>(model);
+            intf->interface = std::make_shared<CustomVA>(model);
             break;
         default:
             ALOGE("%s: %d: Unsupported module type %d",
@@ -89,7 +85,7 @@ extern "C" int32_t release_vui_interface(struct vui_intf_t *intf) {
     return status;
 }
 
-CustomVAInterface::CustomVAInterface(
+CustomVA::CustomVA(
     vui_intf_param_t *model) {
 
     int32_t status = 0;
@@ -117,7 +113,7 @@ CustomVAInterface::CustomVAInterface(
      */
     char value[256] = {0};
 
-#ifndef FEATURE_IPQ_OPENWRT || PAL_CUTILS_SUPPORTED
+#ifndef FEATURE_IPQ_OPENWRT
     property_get("vendor.audio.use_qc_wakeup_config", value, "");
     if (!strcmp("true", value))
         use_qc_wakeup_config_ = true;
@@ -131,7 +127,7 @@ CustomVAInterface::CustomVAInterface(
     config = (sound_model_config_t *)model->data;
     sound_model = (struct pal_st_sound_model *)config->sound_model;
     module_type_ = config->module_type;
-    status = CustomVAInterface::ParseSoundModel(sound_model, model_list);
+    status = CustomVA::ParseSoundModel(sound_model, model_list);
     if (status) {
         ALOGE("%s: %d: Failed to parse sound model, status = %d",
             __func__, __LINE__, status);
@@ -146,7 +142,7 @@ CustomVAInterface::CustomVAInterface(
     }
 }
 
-CustomVAInterface::~CustomVAInterface() {
+CustomVA::~CustomVA() {
     ALOGD("%s: %d: Enter", __func__, __LINE__);
 
     if (custom_event_)
@@ -163,11 +159,11 @@ CustomVAInterface::~CustomVAInterface() {
     ALOGD("%s: %d: Exit", __func__, __LINE__);
 }
 
-void CustomVAInterface::DetachStream(void *stream) {
+void CustomVA::DetachStream(void *stream) {
     DeregisterModel(stream);
 }
 
-int32_t CustomVAInterface::SetParameter(
+int32_t CustomVA::SetParameter(
     intf_param_id_t param_id, vui_intf_param_t *param) {
 
     int32_t status = 0;
@@ -224,7 +220,7 @@ int32_t CustomVAInterface::SetParameter(
     return status;
 }
 
-int32_t CustomVAInterface::GetParameter(
+int32_t CustomVA::GetParameter(
     intf_param_id_t param_id, vui_intf_param_t *param) {
 
     int32_t status = 0;
@@ -311,7 +307,7 @@ int32_t CustomVAInterface::GetParameter(
     return status;
 }
 
-int32_t CustomVAInterface::Process(intf_process_id_t type,
+int32_t CustomVA::Process(intf_process_id_t type,
     vui_intf_param_t *in_out_param) {
 
     int32_t status = 0;
@@ -339,7 +335,7 @@ exit:
     return status;
 }
 
-int32_t CustomVAInterface::ParseSoundModel(
+int32_t CustomVA::ParseSoundModel(
     struct pal_st_sound_model *sound_model,
     std::vector<sound_model_data_t *> &model_list) {
 
@@ -510,7 +506,7 @@ error_exit:
     return status;
 }
 
-int32_t CustomVAInterface::ParseRecognitionConfig(void *s,
+int32_t CustomVA::ParseRecognitionConfig(void *s,
     struct pal_st_recognition_config *config) {
 
     int32_t status = 0;
@@ -743,7 +739,7 @@ exit:
     return status;
 }
 
-void CustomVAInterface::GetBufferingConfigs(void *s,
+void CustomVA::GetBufferingConfigs(void *s,
     struct buffer_config *config) {
 
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
@@ -754,7 +750,7 @@ void CustomVAInterface::GetBufferingConfigs(void *s,
     }
 }
 
-void CustomVAInterface::GetSecondStageConfLevels(void *s,
+void CustomVA::GetSecondStageConfLevels(void *s,
     listen_model_indicator_enum type, uint32_t *level) {
 
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
@@ -768,7 +764,7 @@ void CustomVAInterface::GetSecondStageConfLevels(void *s,
     }
 }
 
-void CustomVAInterface::SetSecondStageDetLevels(void *s,
+void CustomVA::SetSecondStageDetLevels(void *s,
     listen_model_indicator_enum type, uint32_t level) {
 
     bool sec_det_level_exist = false;
@@ -788,7 +784,7 @@ void CustomVAInterface::SetSecondStageDetLevels(void *s,
     }
 }
 
-int32_t CustomVAInterface::ParseDetectionPayload(void *event, uint32_t size) {
+int32_t CustomVA::ParseDetectionPayload(void *event, uint32_t size) {
     int32_t status = 0;
 
     if (use_qc_wakeup_config_) {
@@ -818,10 +814,11 @@ int32_t CustomVAInterface::ParseDetectionPayload(void *event, uint32_t size) {
     return status;
 }
 
-void* CustomVAInterface::GetDetectedStream() {
+void* CustomVA::GetDetectedStream() {
     void *st = nullptr;
     struct sound_model_info *sm_info = nullptr;
     SoundModelInfo *info = nullptr;
+
     ALOGD("%s: %d: Enter", __func__, __LINE__);
     if (sm_info_map_.empty()) {
         ALOGE("%s: %d: Unexpected, No streams attached to engine!",
@@ -857,7 +854,7 @@ void* CustomVAInterface::GetDetectedStream() {
                 continue;
             for (auto &iter: sm_info_map_) {
                 info = (SoundModelInfo *)iter.second->info;
-                for (uint32_t k = 0; k < iter.second->info->GetNumKeyPhrases(); k++) {
+                for (uint32_t k = 0; k < info->GetNumKeyPhrases(); k++) {
                     if (!strcmp(sound_model_info_->GetKeyPhrases()[i],
                                 info->GetKeyPhrases()[k])) {
                         return iter.first;
@@ -882,14 +879,14 @@ void* CustomVAInterface::GetDetectedStream() {
     return nullptr;
 }
 
-void* CustomVAInterface::GetDetectionEventInfo() {
+void* CustomVA::GetDetectionEventInfo() {
     if (IS_MODULE_TYPE_PDK(module_type_)) {
        return &detection_event_info_multi_model_;
     }
     return &detection_event_info_;
 }
 
-int32_t CustomVAInterface::GenerateCallbackEvent(void *s,
+int32_t CustomVA::GenerateCallbackEvent(void *s,
     struct pal_st_recognition_event **event, uint32_t *size) {
 
     struct sound_model_info *sm_info = nullptr;
@@ -1101,7 +1098,7 @@ exit:
 }
 
 // Protected APIs
-int32_t CustomVAInterface::ParseOpaqueConfLevels(
+int32_t CustomVA::ParseOpaqueConfLevels(
     struct sound_model_info *info,
     void *opaque_conf_levels,
     uint32_t version,
@@ -1222,7 +1219,7 @@ exit:
     return status;
 }
 
-int32_t CustomVAInterface::FillConfLevels(
+int32_t CustomVA::FillConfLevels(
     struct sound_model_info *info,
     struct pal_st_recognition_config *config,
     uint8_t **out_conf_levels,
@@ -1361,7 +1358,7 @@ exit:
     return status;
 }
 
-int32_t CustomVAInterface::FillOpaqueConfLevels(
+int32_t CustomVA::FillOpaqueConfLevels(
     uint32_t model_id,
     const void *sm_levels_generic,
     uint8_t **out_payload,
@@ -1623,7 +1620,7 @@ exit:
     return status;
 }
 
-int32_t CustomVAInterface::ParseDetectionPayloadPDK(void *event_data) {
+int32_t CustomVA::ParseDetectionPayloadPDK(void *event_data) {
     int32_t status = 0;
     uint32_t payload_size = 0;
     uint32_t parsed_size = 0;
@@ -1808,7 +1805,7 @@ exit :
     return status;
 }
 
-int32_t CustomVAInterface::ParseDetectionPayloadGMM(void *event_data) {
+int32_t CustomVA::ParseDetectionPayloadGMM(void *event_data) {
     int32_t status = 0;
     int32_t i = 0;
     uint32_t parsed_size = 0;
@@ -1941,7 +1938,7 @@ exit:
     return status;
 }
 
-void CustomVAInterface::UpdateKeywordIndex(uint64_t kwd_start_timestamp,
+void CustomVA::UpdateKeywordIndex(uint64_t kwd_start_timestamp,
     uint64_t kwd_end_timestamp, uint64_t ftrt_start_timestamp) {
 
     ALOGV("%s: %d: kwd start timestamp: %llu, kwd end timestamp: %llu",
@@ -1963,13 +1960,14 @@ void CustomVAInterface::UpdateKeywordIndex(uint64_t kwd_start_timestamp,
         __func__, __LINE__, start_index_, end_index_);
 }
 
-void CustomVAInterface::PackEventConfLevels(struct sound_model_info *sm_info,
+void CustomVA::PackEventConfLevels(struct sound_model_info *sm_info,
     uint8_t *opaque_data) {
 
     struct st_confidence_levels_info *conf_levels = nullptr;
     struct st_confidence_levels_info_v2 *conf_levels_v2 = nullptr;
     uint32_t i = 0, j = 0, k = 0, user_id = 0, num_user_levels = 0;
     SoundModelInfo *info = (SoundModelInfo *)sm_info->info;
+
     ALOGV("%s: %d: Enter", __func__, __LINE__);
 
     /*
@@ -2074,7 +2072,7 @@ void CustomVAInterface::PackEventConfLevels(struct sound_model_info *sm_info,
     ALOGV("%s: %d: Exit", __func__, __LINE__);
 }
 
-void CustomVAInterface::FillCallbackConfLevels(
+void CustomVA::FillCallbackConfLevels(
     struct sound_model_info *sm_info,
     uint8_t *opaque_data,
     uint32_t det_keyword_id,
@@ -2148,9 +2146,10 @@ void CustomVAInterface::FillCallbackConfLevels(
     }
 }
 
-void CustomVAInterface::CheckAndSetDetectionConfLevels(void *s) {
-    ALOGD("%s: %d: Enter", __func__, __LINE__);
+void CustomVA::CheckAndSetDetectionConfLevels(void *s) {
     SoundModelInfo *info = nullptr;
+    ALOGD("%s: %d: Enter", __func__, __LINE__);
+
     if (!s) {
         ALOGE("%s: %d: Invalid detected stream", __func__, __LINE__);
         return;
@@ -2185,13 +2184,13 @@ void CustomVAInterface::CheckAndSetDetectionConfLevels(void *s) {
             info->GetDetConfLevels()[i]);
 }
 
-void CustomVAInterface::UpdateDetectionResult(void *s, uint32_t result) {
+void CustomVA::UpdateDetectionResult(void *s, uint32_t result) {
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
         sm_info_map_[s]->det_result = result;
     }
 }
 
-int32_t CustomVAInterface::GetSoundModelLoadPayload(vui_intf_param_t *param) {
+int32_t CustomVA::GetSoundModelLoadPayload(vui_intf_param_t *param) {
     void *s = nullptr;
     sound_model_data_t *sm_data = nullptr;
 
@@ -2218,7 +2217,7 @@ int32_t CustomVAInterface::GetSoundModelLoadPayload(vui_intf_param_t *param) {
     return 0;
 }
 
-int32_t CustomVAInterface::GetCustomPayload(vui_intf_param_t *param) {
+int32_t CustomVA::GetCustomPayload(vui_intf_param_t *param) {
     void *s = nullptr;
     struct sound_model_info *info = nullptr;
 
@@ -2245,7 +2244,7 @@ int32_t CustomVAInterface::GetCustomPayload(vui_intf_param_t *param) {
     return 0;
 }
 
-int32_t CustomVAInterface::GetBufferingPayload(vui_intf_param_t *param) {
+int32_t CustomVA::GetBufferingPayload(vui_intf_param_t *param) {
     void *s = nullptr;
     struct sound_model_info *info = nullptr;
 
@@ -2278,7 +2277,7 @@ int32_t CustomVAInterface::GetBufferingPayload(vui_intf_param_t *param) {
     return 0;
 }
 
-void CustomVAInterface::SetStreamAttributes(
+void CustomVA::SetStreamAttributes(
     struct pal_stream_attributes *attr) {
 
     if (!attr) {
@@ -2290,7 +2289,7 @@ void CustomVAInterface::SetStreamAttributes(
         attr, sizeof(struct pal_stream_attributes));
 }
 
-int32_t CustomVAInterface::RegisterModel(void *s,
+int32_t CustomVA::RegisterModel(void *s,
     struct pal_st_sound_model *model,
     const std::vector<sound_model_data_t *> model_list) {
 
@@ -2318,7 +2317,7 @@ exit:
     return status;
 }
 
-void CustomVAInterface::DeregisterModel(void *s) {
+void CustomVA::DeregisterModel(void *s) {
     sound_model_data_t *sm_data = nullptr;
 
     auto iter = sm_info_map_.find(s);
@@ -2349,13 +2348,13 @@ void CustomVAInterface::DeregisterModel(void *s) {
     }
 }
 
-void CustomVAInterface::GetKeywordIndex(struct keyword_index *index) {
+void CustomVA::GetKeywordIndex(struct keyword_index *index) {
 
     index->start_index = start_index_;
     index->end_index = end_index_;
 }
 
-uint32_t CustomVAInterface::UsToBytes(uint64_t input_us) {
+uint32_t CustomVA::UsToBytes(uint64_t input_us) {
     uint32_t bytes = 0;
 
     bytes = str_attr_.in_media_config.sample_rate *

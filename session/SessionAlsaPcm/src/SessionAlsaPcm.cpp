@@ -2930,8 +2930,7 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
         }
         case PAL_PARAM_ID_ASR_OUTPUT:
         {
-            configSize = sizeof(param_id_asr_output_t) +
-                          (s->GetNumEvents() * sizeof(asr_output_status_t));
+            configSize = s->GetPayloadSize();
             builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
                           PARAM_ID_ASR_OUTPUT, configSize);
             break;

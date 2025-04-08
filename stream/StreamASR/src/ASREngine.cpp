@@ -449,7 +449,11 @@ void ASREngine::ParseEventAndNotifyStream() {
             if (!eventStatus) {
                 PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
                 goto cleanup;
+            } else if (ev[i].num_words >= MAX_NUM_WORDS) {
+                PAL_INFO(LOG_TAG, "Recieved event, with more words than allowed!!!");
+                goto cleanup;
             }
+
             eventPayload->event[i].is_final = ev[i].is_final;
             eventPayload->event[i].confidence = ev[i].confidence;
             eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
@@ -458,18 +462,17 @@ void ASREngine::ParseEventAndNotifyStream() {
             eventPayload->event[i].end_ts = ((uint64_t)ev[i].segment_end_time_ms_msw << 32 |
                                             (uint64_t)ev[i].segment_end_time_ms_lsw);
             eventPayload->event[i].num_words = ev[i].num_words;
-            words = (asr_word_status_t *)(&ev[i] + sizeof(asr_output_status_v2_t));
-            for (int j = 0; j < ev[i].text_size; ++j)
+            words = (asr_word_status_t *)(((uint8_t *)&ev[i]) + sizeof(asr_output_status_v2_t));
+            for (int j = 0; j < eventPayload->event[i].text_size; ++j)
                 eventPayload->event[i].text[j] = ev[i].text[j];
             for (int j = 0; j < ev[i].num_words; j++) {
                 eventPayload->event[i].word[j].word_confidence = words[j].word_confidence;
                 eventPayload->event[i].word[j].start_ts = ((uint64_t)words[j].word_start_time_ms_msw << 32 |
-                                                           (uint64_t)words[j].word_start_time_ms_lsw);
+                                                          (uint64_t)words[j].word_start_time_ms_lsw);
                 eventPayload->event[i].word[j].end_ts = ((uint64_t)words[j].word_end_time_ms_msw << 32 |
-                                                         (uint64_t)words[j].word_end_time_ms_lsw);
+                                                        (uint64_t)words[j].word_end_time_ms_lsw);
                 for (int k = 0; k < words[j].word_size; k++)
                     eventPayload->event[i].word[j].word[k] = words[j].word[k];
-                words += sizeof(asr_word_status_t);
             }
         }
         eventPayload->status = PAL_ASR_EVENT_STATUS_SUCCESS ;

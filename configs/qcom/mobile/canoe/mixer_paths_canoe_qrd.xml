@@ -1177,9 +1177,9 @@
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX DEC4 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX1" value="SWR_MIC5" />
-        <ctl name="TX SMIC MUX2" value="SWR_MIC9" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC4" />
-        <ctl name="TX SMIC MUX4" value="SWR_MIC8" />
+        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
+        <ctl name="TX SMIC MUX3" value="SWR_MIC8" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC9" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />

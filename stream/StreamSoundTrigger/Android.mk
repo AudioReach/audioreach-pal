@@ -45,7 +45,6 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-    libvui_intf \
     libsession_ar
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

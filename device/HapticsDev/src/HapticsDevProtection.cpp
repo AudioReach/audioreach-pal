@@ -789,6 +789,26 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
             goto err_pcm_open;
         }
     }
+    if (VIscale) {
+        param_id_haptics_rx_visense_t RxViScale;
+        payloadSize = 0;
+        RxViScale.vsens_scale_q24[0] = VIscale->vsens_scale_q24;
+        RxViScale.isens_scale_q24[0] = VIscale->isens_scale_q24;
+        RxViScale.vsens_scale_q24[1] = 0;
+        RxViScale.isens_scale_q24[1] = 0;
+
+        builder->payloadHapticsDevPConfig(&payload, &payloadSize, miid,
+                PARAM_ID_HAPTICS_RX_VISENSE_CFG, &RxViScale);
+
+        if (payloadSize) {
+            ret = updateCustomPayload(payload, payloadSize);
+            free(payload);
+            if (0 != ret) {
+                PAL_ERR(LOG_TAG," updateCustomPayload HAPTICS_RX_VISENSE_CFG Failed\n");
+                goto err_pcm_open;
+            }
+        }
+    }
 
     // Setting the values for Haptics RX module
     if (customPayloadSize) {
@@ -847,16 +867,18 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
                 PAL_ERR(LOG_TAG, "Unable to open file for write");
             } else {
                 PAL_DBG(LOG_TAG, "Write calibrated values to file");
-                size_t chunkSize = 0;
+                size_t calChunkSize = 0;
+                size_t payloadChunkSize = 0;
                 for (int i = 0; i < numberOfChannels; i++) {
-                    chunkSize += sizeof(cbCalData.Re_ohm_Cal_q24[i]) + sizeof(cbCalData.Fres_Hz_Cal_q20[i]) +
+                    calChunkSize += sizeof(cbCalData.Re_ohm_Cal_q24[i]) + sizeof(cbCalData.Fres_Hz_Cal_q20[i]) +
                                 sizeof(cbCalData.Bl_q24[i]) + sizeof(cbCalData.Rms_KgSec_q24[i]) +
                                 sizeof(cbCalData.Blq_ftm_q24[i]) + sizeof(cbCalData.Le_mH_ftm_q24[i]) +
                                 sizeof(cbCalData.Fres_offset_Hz_q20[i]) + sizeof(cbCalData.Tuned_LRA_ID[i]);
                 }
-                std::unique_ptr<uint8_t[]> buffer(new uint8_t[chunkSize * numberOfChannels]);
+                payloadChunkSize = sizeof(cbCalData.payload_size) + cbCalData.payload_size;
+                std::unique_ptr<uint8_t[]> buffer(new uint8_t[(calChunkSize * numberOfChannels) + payloadChunkSize]);
                 for (int i = 0; i < numberOfChannels; i++) {
-                    uint8_t *ptr = buffer.get() + i * chunkSize;
+                    uint8_t *ptr = buffer.get() + i * calChunkSize;
                     memcpy(ptr, &cbCalData.Re_ohm_Cal_q24[i], sizeof(cbCalData.Re_ohm_Cal_q24[i]));
                     ptr += sizeof(cbCalData.Re_ohm_Cal_q24[i]);
                     memcpy(ptr, &cbCalData.Fres_Hz_Cal_q20[i], sizeof(cbCalData.Fres_Hz_Cal_q20[i]));
@@ -873,12 +895,15 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
                     ptr += sizeof(cbCalData.Fres_offset_Hz_q20[i]);
                     memcpy(ptr, &cbCalData.Tuned_LRA_ID[i], sizeof(cbCalData.Tuned_LRA_ID[i]));
                 }
-                outFile.write(reinterpret_cast<char*>(buffer.get()), (chunkSize * numberOfChannels));
+                outFile.write(reinterpret_cast<char*>(buffer.get()), (calChunkSize * numberOfChannels));
                 if((cbCalData.payload_size > 0) && cbCalData.payload_data) {
-                    outFile.write(reinterpret_cast<char*>(cbCalData.payload_data),
+                    outFile.write(reinterpret_cast<char*>(&cbCalData.payload_size),
                                     sizeof(cbCalData.payload_size));
+                    outFile.write(reinterpret_cast<char*>(cbCalData.payload_data),
+                                    cbCalData.payload_size);
                     free(cbCalData.payload_data);
                     cbCalData.payload_data = nullptr;
+                    cbCalData.payload_size = 0;
                 }
                 hapticsDevCalState = HAPTICS_DEV_CALIBRATED;
                 outFile.close();
@@ -1473,6 +1498,24 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             }
         }
         updateAutoBrakingCustomPayload(miid);
+        if (VIscale) {
+            param_id_haptics_rx_visense_t RxViScale;
+            RxViScale.vsens_scale_q24[0] = VIscale->vsens_scale_q24;
+            RxViScale.isens_scale_q24[0] = VIscale->isens_scale_q24;
+            RxViScale.vsens_scale_q24[1] = 0;
+            RxViScale.isens_scale_q24[1] = 0;
+
+            payloadSize = 0;
+            builder->payloadHapticsDevPConfig(&payload, &payloadSize, miid,
+                    PARAM_ID_HAPTICS_RX_VISENSE_CFG, (void *)&RxViScale);
+            if (payloadSize) {
+                ret = updateCustomPayload(payload, payloadSize);
+                free(payload);
+                if (0 != ret) {
+                    PAL_ERR(LOG_TAG," updateCustomPayload Failed\n");
+                }
+            }
+        }
         enableDevice(audioRoute, mSndDeviceName_vi);
         PAL_DBG(LOG_TAG, "pcm start for TX");
         if (pcm_start(txPcm) < 0) {
@@ -1731,7 +1774,7 @@ SetParam:
             ret = 0;
         }
     }
-    exit :
+exit :
     if(builder) {
        delete builder;
        builder = NULL;

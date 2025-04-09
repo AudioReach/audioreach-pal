@@ -4599,6 +4599,25 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 memcpy(hpConf, data,  sizeof(param_id_haptics_ex_vi_persistent));
             }
          break;
+      case PARAM_ID_HAPTICS_RX_VISENSE_CFG:
+            {
+                param_id_haptics_rx_visense_t *rxViScale;
+                param_id_haptics_rx_visense_t *data;
+                data = (param_id_haptics_rx_visense_t *) param;
+                payloadSize = sizeof(struct apm_module_param_data_t) +
+                                    sizeof(param_id_haptics_rx_visense_t);
+                padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+                payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+                if (!payloadInfo) {
+                    PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+                    return;
+                }
+                header = (struct apm_module_param_data_t*) payloadInfo;
+                rxViScale = (param_id_haptics_rx_visense_t *) (payloadInfo +
+                                  sizeof(struct apm_module_param_data_t));
+                memcpy(rxViScale, data, sizeof(param_id_haptics_rx_visense_t));
+            }
+         break;
       case PARAM_ID_HAPTICS_EX_VI_DYNAMIC_PARAM:
             {
                 wsa_haptics_ex_lra_param_t *data;

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<plugin_manager_info>
+    <version>1.0</version>
+    <!-- .so mapping for all streams supported on target-->
+    <streams>
+        <stream name="PAL_STREAM_DEEP_BUFFER" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_GENERIC" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PCM_OFFLOAD" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOOPBACK" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PROXY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_RAW" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOICE_RECOGNITION" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_COMPRESSED" lib="libstream_compress.so" entryFunction="CreateCompressStream"/>
+        <stream name="PAL_USE_ACDB_STREAM" lib="libstream_acdb.so" entryFunction="CreateACDBStream"/>
+        <stream name="PAL_STREAM_PLAYBACK_BUS" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_CAPTURE_BUS" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+    </streams>
+    <sessions>
+        <session name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_GENERIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOOPBACK" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_RAW" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_COMMON_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_COMPRESSED" lib="libsession_compress.so" entryFunction="CreateCompressSession"/>
+        <session name="PAL_STREAM_PLAYBACK_BUS" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_CAPTURE_BUS" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+    </sessions>
+    <devices>
+        <!--Handset-->
+        <device name="PAL_DEVICE_OUT_HANDSET" lib="libdev_handset.so" entryFunction="CreateHandsetDevice"/>
+        <device name="PAL_DEVICE_IN_HANDSET_MIC" lib="libdev_handset_mic.so" entryFunction="CreateHandsetMicDevice"/>
+        <!--Speaker-->
+        <device name="PAL_DEVICE_OUT_SPEAKER" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_SPEAKER_MIC" lib="libdev_speaker_mic.so" entryFunction="CreateSpeakerMicDevice"/>
+
+        <!--Headphone -->
+        <device name="PAL_DEVICE_OUT_WIRED_HEADSET" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>
+        <device name="PAL_DEVICE_OUT_WIRED_HEADPHONE" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>
+        <!--Headset-->
+        <device name="PAL_DEVICE_IN_WIRED_HEADSET" lib="libdev_headset_mic.so" entryFunction="CreateHeadsetMicDevice"/>
+        <!--Bluetooth-->
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_SCO" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_A2DP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_A2DP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <!--HFP-->
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_HFP" lib="libdev_hfpuplink.so" entryFunction="CreateHfpUplinkDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_HFP" lib="libdev_hfpdownlink.so" entryFunction="CreateHfpDownlinkDevice"/>
+        <!--FM-->
+        <device name="PAL_DEVICE_OUT_FM" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>
+        <device name="PAL_DEVICE_IN_FM_TUNER" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>
+        <!--USB-->
+        <device name="PAL_DEVICE_OUT_USB_DEVICE" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_DEVICE" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_OUT_USB_HEADSET" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_HEADSET" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_ACCESSORY" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <!--Ultrasound-->
+        <!--Proxy-->
+        <device name="PAL_DEVICE_OUT_RECORD_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_IN_RECORD_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_OUT_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_IN_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <!--Display-->
+        <!--Dummy-->
+        <device name="PAL_DEVICE_OUT_DUMMY" lib="libdev_dummy.so" entryFunction="CreateDummyDevice"/>
+        <device name="PAL_DEVICE_IN_DUMMY" lib="libdev_dummy.so" entryFunction="CreateDummyDevice"/>
+        <device name="PAL_DEVICE_IN_EXT_EC_REF" lib="libdev_ext_ec.so" entryFunction="CreateExtEcDevice"/>
+        <device name="PAL_DEVICE_IN_ECHO_REF" lib="libdev_ec_ref.so" entryFunction="CreateECRefDevice"/>
+    </devices>
+</plugin_manager_info>

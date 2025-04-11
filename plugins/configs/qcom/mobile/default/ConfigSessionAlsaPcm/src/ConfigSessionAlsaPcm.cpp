@@ -226,11 +226,6 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     } else if (sAttr.type == PAL_STREAM_ACD) {
         std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
         session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty()) {
-            PAL_ERR(LOG_TAG, "payload list is empty!!!");
-            status = -EINVAL;
-            goto exit;
-        }
         for (int i = 0; i < payloadListParam.size(); i++) {
             payload_size = sizeof(struct agm_event_reg_cfg) +
                            payloadListParam[i]->payloadSize;

@@ -79,9 +79,14 @@ struct sound_model_info {
     struct buffer_config buf_config;
     sec_stage_level_t sec_threshold;
     sec_stage_level_t sec_det_level;
+    struct st_det_engine_stats sec_kw_det_info;
+    struct st_det_engine_stats sec_uv_det_info;
+    std::vector<uint32_t> det_prop_list;
     uint32_t det_result;
     void *info;
     bool state;
+    uint8_t *ftrt_data_;
+    uint32_t ftrt_data_size_;
 };
 
 /*

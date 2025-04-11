@@ -319,6 +319,12 @@ struct __attribute__((__packed__)) st_det_engine_stats
     uint32_t total_capi_get_param_duration;
 };
 
+struct __attribute__((__packed__)) st_channel_index_info
+{
+    uint32_t version; /* value: 0x01 */
+    uint32_t channel_index; /* range: {0..15} */
+};
+
 typedef enum st_sound_model_type {
     ST_SM_TYPE_NONE,
     ST_SM_TYPE_KEYWORD_DETECTION,
@@ -357,6 +363,22 @@ struct model_stats
     uint32_t kw_end_timestamp_msw;
     uint32_t detection_timestamp_lsw;
     uint32_t detection_timestamp_msw;
+};
+
+struct detection_event_info_mma
+{
+    uint32_t context_id;
+    uint32_t mode_mask_bits;
+    uint32_t detection_event_bits;
+    uint32_t detection_event_bits_after_mask;
+    int32_t multi_modal_detection_flag;
+    int32_t curr_detection_timer_enabled_flag;
+    int32_t curr_detection_timer_counter_in_frames;
+    int32_t detection_timeout_in_frames;
+    int32_t continuous_listen_enabled_flag;
+    int32_t continuous_listen_mode_on_flag_after_detection;
+    int32_t continuous_listen_timer_counter_in_frames;
+    int32_t continuous_listen_timeout_in_frames;
 };
 
 struct detection_event_info_pdk

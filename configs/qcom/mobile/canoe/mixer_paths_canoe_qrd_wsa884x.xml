@@ -1261,21 +1261,21 @@
 
     <path name="ultrasound-mic">
         <ctl name="TX_SWR_DMIC Enable" value="1" />
-        <ctl name="TX DEC3 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
-        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX7" value="SWR_MIC5" />
+        <ctl name="TX_AIF2_CAP Mixer DEC7" value="1" />
         <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
         <path name="qmp2-normal" />
     </path>
 
     <path name="ultrasound-dmic">
         <ctl name="TX_SWR_DMIC Enable" value="1" />
-        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
-        <ctl name="TX DEC2 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX0" value="SWR_MIC5" />
-        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
-        <ctl name="TX_AIF2_CAP Mixer DEC0" value="1" />
-        <ctl name="TX_AIF2_CAP Mixer DEC2" value="1" />
+        <ctl name="TX DEC6 MUX" value="SWR_MIC" />
+        <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX6" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX7" value="SWR_MIC4" />
+        <ctl name="TX_AIF2_CAP Mixer DEC6" value="1" />
+        <ctl name="TX_AIF2_CAP Mixer DEC7" value="1" />
         <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
         <path name="qmp2-normal" />
         <path name="qmp1-normal" />

@@ -1934,8 +1934,12 @@ int SessionAlsaCompress::setParamWithTag(Stream *s, int tagId, uint32_t param_id
                  * again even if it comes from hal as it will not change.
                  */
                 if (isCodecConfigNeeded(audio_fmt, sAttr.direction)) {
-                    PAL_DBG(LOG_TAG, "Setting params for second clip for gapless");
-                    status = compress_set_codec_params(compress, &codec);
+                    status = compress_next_track(compress);
+                    PAL_INFO(LOG_TAG, "out of compress next track, status %d", status);
+                    if (status == 0) {
+                        PAL_DBG(LOG_TAG, "Setting params for second clip for gapless");
+                        status = compress_set_codec_params(compress, &codec);
+                    }
                 } else {
                     PAL_INFO(LOG_TAG, "No need to send params for second clip fmt %x", audio_fmt);
                 }

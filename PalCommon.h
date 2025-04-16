@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -56,8 +55,7 @@ extern uint32_t pal_log_lvl;
 
 #define PAL_FATAL(log_tag, arg,...)                                       \
     if (pal_log_lvl & PAL_LOG_ERR) {                              \
-        ALOGE("%s: %d: "  arg, __func__, __LINE__, ##__VA_ARGS__);\
-        abort();                                                  \
+        LOG_FATAL("%s: %d: "  arg, __func__, __LINE__, ##__VA_ARGS__);\
     }
 
 #define PAL_ERR(log_tag, arg,...)                                          \

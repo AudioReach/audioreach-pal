@@ -217,6 +217,10 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
                  */
                 event_id_asr_output_event_t *event = (event_id_asr_output_event_t *)
                                      calloc(1, sizeof(event_id_asr_output_event_t));
+                if (event == nullptr) {
+                    PAL_ERR(LOG_TAG, "Failed to allocate memory for ASR output event");
+                    goto exit;
+                }
                 event->output_token = 0;
                 event->num_outputs = 1;
                 event->payload_size = outputBufSize;

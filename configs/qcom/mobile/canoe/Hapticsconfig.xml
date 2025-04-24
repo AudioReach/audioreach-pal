@@ -59,7 +59,7 @@
         <Hapticseffect effect="2">
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
-            <wave_design_mode>4</wave_design_mode>
+            <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
             <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
@@ -83,7 +83,7 @@
         <Hapticseffect effect="3">
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
-            <wave_design_mode>1</wave_design_mode>
+            <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
             <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
@@ -110,7 +110,7 @@
         <Hapticseffect effect="4">
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
-            <wave_design_mode>1</wave_design_mode>
+            <wave_design_mode>4</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
             <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
@@ -137,7 +137,7 @@
         <Hapticseffect effect="5">
             <num_channels>1</num_channels>
             <channel_mask>1</channel_mask>
-            <wave_design_mode>1</wave_design_mode>
+            <wave_design_mode>4</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
             <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>

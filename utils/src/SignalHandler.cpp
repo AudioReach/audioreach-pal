@@ -72,7 +72,8 @@ void SignalHandler::invokeDefaultHandler(std::shared_ptr<struct sigaction> sAct,
 void SignalHandler::invokeDefaultHandler(std::shared_ptr<struct sigaction> sAct,
             int code, struct siginfo *si, void *sc) {
 #endif
-    ALOGE("%s: invoke default handler for signal %d from pid %d", __func__, code, si->si_pid);
+    ALOGE("%s: invoke default handler for signal %d si->si_code %d from pid %d"
+         , __func__, code, si->si_code, si->si_pid);
     // Remove custom handler so that default handler is invoked
     sigaction(code, sAct.get(), NULL);
 

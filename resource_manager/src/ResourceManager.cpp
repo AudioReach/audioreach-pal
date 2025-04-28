@@ -1464,24 +1464,7 @@ int ResourceManager::init_audio()
                 PAL_INFO(LOG_TAG, "mixer_open success. snd_card_num = %d, snd_card_name %s",
                 snd_hw_card, snd_card_name);
 
-                /* TODO: Needs to extend for new targets */
-                if (strstr(snd_card_name, "kona") ||
-                    strstr(snd_card_name, "sm8150") ||
-                    strstr(snd_card_name, "lahaina") ||
-                    strstr(snd_card_name, "waipio") ||
-                    strstr(snd_card_name, "kalama") ||
-                    strstr(snd_card_name, "pineapple") ||
-                    strstr(snd_card_name, "cliffs") ||
-                    strstr(snd_card_name, "pitti") ||
-                    strstr(snd_card_name, "volcano") ||
-                    strstr(snd_card_name, "anorak") ||
-                    strstr(snd_card_name, "diwali") ||
-                    strstr(snd_card_name, "qcm6490") ||
-                    strstr(snd_card_name, "bengal") ||
-                    strstr(snd_card_name, "qcs8300") ||
-                    strstr(snd_card_name, "qcs9100") ||
-                    strstr(snd_card_name, "qcs9075") ||
-                    strstr(snd_card_name, "monaco")) {
+                if (strstr(snd_card_name, VENDOR_SKU)) {
                     PAL_DBG(LOG_TAG, "Found Codec sound card, %s", VENDOR_SKU);
                     snd_card_found = true;
                     audio_hw_mixer = tmp_mixer;

@@ -103,7 +103,7 @@ void AudioHapticsInterface::startTag(void *userdata, const XML_Char *tag_name,
     } else if (!strcmp(tag_name, "pcm_effect")) {
         data->hapticstag = TAG_PCM_EFFECT;
     } else {
-        PAL_INFO(LOG_TAG, "No matching Tag found");
+        PAL_VERBOSE(LOG_TAG, "No matching Tag found");
     }
 }
 
@@ -455,7 +455,7 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
             pcm_haptics_info[size].override_flag =  atoi(data->data_buf);
         }
     }
-    PAL_ERR(LOG_TAG, "%s \n", data->data_buf);
+    PAL_VERBOSE(LOG_TAG, "%s \n", data->data_buf);
 }
 
 void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig)

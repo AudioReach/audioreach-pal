@@ -10,7 +10,7 @@ AM_CPPFLAGS := -DVUI_USE_SYSLOG @GLIB_CFLAGS@ -include glib.h
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/sva_interface
 
-AM_CPPFLAGS += @SPFHEADER_CFLAGS@
+AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @VUIINTERFACEHEADERS_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 AM_CPPFLAGS += @PALHEADERS_CFLAGS@

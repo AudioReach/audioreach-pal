@@ -53,7 +53,7 @@ AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/inc
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += -I $(top_srcdir)/
-AM_CPPFLAGS += -I $(top_srcdir)/api/vui-interface
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 AM_CPPFLAGS += @AGM_CFLAGS@
 AM_CPPFLAGS += @PALHEADERS_CFLAGS@
 AM_CPPFLAGS += @SPF_CFLAGS@
@@ -88,9 +88,10 @@ libpal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT
 libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress -lagmclientwrapper
 libpal_la_LIBADD   += -lar-gsl -lacdbdata
-libpal_la_CPPFLAGS := -DFEATURE_IPQ_OPENWRT
+libpal_la_CPPFLAGS  = -DFEATURE_IPQ_OPENWRT
 else
 libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress
+libpal_la_CPPFLAGS  =  -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 if IS_SDXLEMUR
 libpal_la_LIBADD    += -lagmclientwrapper
@@ -98,15 +99,11 @@ endif
 if IS_SA525M
 libpal_la_LIBADD    += -lagmclientwrapper
 endif
-libpal_la_CPPFLAGS = $(AM_CPPFLAGS)
+libpal_la_CPPFLAGS += $(AM_CPPFLAGS)
 libpal_la_CPPFLAGS += -std=c++14
 libpal_la_LDFLAGS   = -shared -avoid-version
 libpal_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libpal_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
-
-if BUILDSYSTEM_QLI
-libpal_la_CPPFLAGS +=  -DPAL_USE_SYSLOG -DLINUX_ENABLED -DPAL_MEMLOG_UNSUPPORTED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
-endif
 
 if USE_SYSLOG
 libpal_la_CPPFLAGS += -DPAL_USE_SYSLOG
@@ -127,23 +124,23 @@ libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_
 
 if BUILDSYSTEM_QLI
 
-libpal_la_list      = ./configs/qcm6490/mixer_paths_qcm6490_idp.xml \
-                      ./configs/qcm6490/resourcemanager_qcm6490_idp.xml \
-                      ./configs/qcm6490/mixer_paths_qcm6490_rb3.xml \
-                      ./configs/qcm6490/resourcemanager_qcm6490_rb3.xml \
-                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_vision.xml \
-                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_vision.xml \
-                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_vc.xml \
-                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_vc.xml \
-                      ./configs/qcm6490/usecaseKvManager.xml \
-                      ./configs/qcm6490/mixer_paths_qcm6490_rb3_ia.xml \
-                      ./configs/qcm6490/resourcemanager_qcm6490_rb3_ia.xml \
-                      ./configs/qcs8300/mixer_paths_qcs8300_ridesx.xml \
-                      ./configs/qcs8300/resourcemanager_qcs8300_ridesx.xml \
-                      ./configs/qcs9075/mixer_paths_qcs9075_rb8.xml \
-                      ./configs/qcs9075/resourcemanager_qcs9075_rb8.xml \
-                      ./configs/qcs9100/mixer_paths_qcs9100_ridesx.xml \
-                      ./configs/qcs9100/resourcemanager_qcs9100_ridesx.xml
+libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
+                      ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_idp.xml \
+                      ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3.xml \
+                      ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_rb3.xml \
+                      ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3_vision.xml \
+                      ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_rb3_vision.xml \
+                      ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3_vc.xml \
+                      ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_rb3_vc.xml \
+                      ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
+                      ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3_ia.xml \
+                      ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_rb3_ia.xml \
+                      ./configs/qcom/IoT/qcs8300/mixer_paths_qcs8300_ridesx.xml \
+                      ./configs/qcom/IoT/qcs8300/resourcemanager_qcs8300_ridesx.xml \
+                      ./configs/qcom/IoT/qcs9075/mixer_paths_qcs9075_rb8.xml \
+                      ./configs/qcom/IoT/qcs9075/resourcemanager_qcs9075_rb8.xml \
+                      ./configs/qcom/IoT/qcs9100/mixer_paths_qcs9100_ridesx.xml \
+                      ./configs/qcom/IoT/qcs9100/resourcemanager_qcs9100_ridesx.xml
 
 # install essential xml files under /etc
 root_etcdir      = "/etc"

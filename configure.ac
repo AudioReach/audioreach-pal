@@ -202,14 +202,14 @@ device/RTProxy/dev_proxy.pc \
 plugins/Makefile plugins/plugins.pc \
 plugins/configs/Makefile \
 plugins/configs/session_configs.pc \
-plugins/configs/ConfigSessionUtils/Makefile \
-plugins/configs/ConfigSessionUtils/session_utils_config.pc \
-plugins/configs/ConfigSessionAlsaPcm/Makefile \
-plugins/configs/ConfigSessionAlsaPcm/session_pcm_config.pc \
-plugins/configs/ConfigSessionAlsaCompress/Makefile \
-plugins/configs/ConfigSessionAlsaCompress/session_compress_config.pc \
-plugins/configs/ConfigSessionAlsaVoice/Makefile \
-plugins/configs/ConfigSessionAlsaVoice/session_voice_config.pc \
+plugins/configs/qcom/mobile/default/ConfigSessionUtils/Makefile \
+plugins/configs/qcom/mobile/default/ConfigSessionUtils/session_utils_config.pc \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaPcm/Makefile \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaPcm/session_pcm_config.pc \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaCompress/Makefile \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaCompress/session_compress_config.pc \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaVoice/Makefile \
+plugins/configs/qcom/mobile/default/ConfigSessionAlsaVoice/session_voice_config.pc \
 plugins/PluginManager/Makefile \
 plugins/PluginManager/plugin_manager.pc \
 plugins/codecs/Makefile \

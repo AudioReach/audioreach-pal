@@ -35,7 +35,7 @@ AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
-AM_CPPFLAGS += -I $(top_srcdir)/api/vui-interface
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
@@ -48,9 +48,6 @@ stream_soundtrigger_sources = $(top_srcdir)/stream/StreamSoundTrigger/src/Stream
                               $(top_srcdir)/stream/StreamSoundTrigger/src/SoundTriggerEngine.cpp \
                               $(top_srcdir)/stream/StreamSoundTrigger/src/PalRingBuffer.cpp
 
-endif
-if BUILDSYSTEM_QLI
-AM_CPPFLAGS += -DQLI_SPECIFIC
 endif
 
 library_includedir = $(includedir)/stream_soundtrigger
@@ -71,7 +68,7 @@ libstream_soundtrigger_la_LIBADD += -lglib-2.0 -llog
 endif
 
 if BUILDSYSTEM_QLI
-libstream_soundtrigger_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DPAL_MEMLOG_UNSUPPORTED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libstream_soundtrigger_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED

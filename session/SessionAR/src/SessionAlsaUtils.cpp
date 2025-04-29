@@ -1108,6 +1108,90 @@ int SessionAlsaUtils::getModuleInstanceId(struct mixer *mixer, int device, const
     return ret;
 }
 
+int SessionAlsaUtils::getModuleInstanceId(struct mixer *mixer, int device, const char *intf_name,
+                       int tag_id, std::vector<uint32_t> &miids)
+{
+    char *pcmDeviceName = NULL;
+    char const *control = "getTaggedInfo";
+    char *mixer_str;
+    struct mixer_ctl *ctl;
+    int ctl_len = 0,ret = -1, i;
+    void *payload;
+    struct gsl_tag_module_info *tag_info;
+    struct gsl_tag_module_info_entry *tag_entry;
+    int offset = 0;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    pcmDeviceName = rm->getDeviceNameFromID(device);
+    if(!pcmDeviceName){
+        PAL_ERR(LOG_TAG, "Device name from id %d not found", device);
+        return -EINVAL;
+    }
+
+    ret = setStreamMetadataType(mixer, device, intf_name);
+    if (ret)
+        return ret;
+
+    ctl_len = strlen(pcmDeviceName) + 1 + strlen(control) + 1;
+    mixer_str = (char *)calloc(1, ctl_len);
+    if (!mixer_str)
+        return -ENOMEM;
+
+    snprintf(mixer_str, ctl_len, "%s %s", pcmDeviceName, control);
+
+    PAL_DBG(LOG_TAG, "- mixer -%s-\n", mixer_str);
+    ctl = mixer_get_ctl_by_name(mixer, mixer_str);
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", mixer_str);
+        free(mixer_str);
+        return ENOENT;
+    }
+
+    payload = calloc(1024, sizeof(char));
+    if (!payload) {
+        free(mixer_str);
+        return -ENOMEM;
+    }
+
+    ret = mixer_ctl_get_array(ctl, payload, 1024);
+    if (ret < 0) {
+        PAL_ERR(LOG_TAG, "Failed to mixer_ctl_get_array\n");
+        free(payload);
+        free(mixer_str);
+        return ret;
+    }
+    tag_info = (struct gsl_tag_module_info *)payload;
+    PAL_DBG(LOG_TAG, "num of tags associated with stream %d is %d\n", device, tag_info->num_tags);
+    tag_entry = (struct gsl_tag_module_info_entry *)(&tag_info->tag_module_entry[0]);
+    offset = 0;
+    for (i = 0; i < tag_info->num_tags; i++) {
+        tag_entry += offset/sizeof(struct gsl_tag_module_info_entry);
+
+        PAL_DBG(LOG_TAG, "tag id[%d] = 0x%x, num_modules = 0x%x\n", i, tag_entry->tag_id, tag_entry->num_modules);
+        offset = sizeof(struct gsl_tag_module_info_entry) + (tag_entry->num_modules * sizeof(struct gsl_module_id_info_entry));
+        if (tag_entry->tag_id == tag_id) {
+            struct gsl_module_id_info_entry *mod_info_entry;
+
+            for (int j = 0; j < tag_entry->num_modules; j++) {
+                 mod_info_entry = &tag_entry->module_entry[j];
+                 miids.push_back(mod_info_entry->module_iid); // Append MIID to vector
+                 PAL_DBG(LOG_TAG, "MIID is 0x%x\n", mod_info_entry->module_iid);
+            }
+            ret = 0;
+            break;
+        }
+    }
+
+    if (miids.empty()) {
+         ret = -EINVAL;
+         PAL_ERR(LOG_TAG, "No matching MIID found for tag: 0x%x, error:%d", tag_id, ret);
+    }
+
+    free(payload);
+    free(mixer_str);
+    return ret;
+}
+
 int SessionAlsaUtils::getTagsWithModuleInfo(struct mixer *mixer, int device, const char *intf_name,
                                             uint8_t *payload)
 {

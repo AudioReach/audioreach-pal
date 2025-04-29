@@ -158,6 +158,7 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     int tagId = 0;
     int payload_size = 0;
     uint32_t tag = 0;
+    std::vector<uint32_t> MIIDs;
 
     PAL_DBG(LOG_TAG, "Enter");
     memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
@@ -321,19 +322,23 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 if (sAttr.type != PAL_STREAM_VOICE_CALL_RECORD)
                     status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
                                                                 txAifBackEnds[0].second.data(),
-                                                                TAG_STREAM_MFC_SR, &miid);
+                                                                TAG_STREAM_MFC_SR, MIIDs);
                 else
                     status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
-                                                                "ZERO", TAG_STREAM_MFC_SR, &miid);
+                                                                "ZERO", TAG_STREAM_MFC_SR, MIIDs);
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
                     goto exit;
                 }
                 if (sAttr.type != PAL_STREAM_VOICE_CALL_RECORD) {
-                    PAL_ERR(LOG_TAG, "miid : %x id = %d, data %s\n", miid,
+                    for (const auto& miids : MIIDs) {
+                        PAL_ERR(LOG_TAG, "miid : %x id = %d, data %s\n", miids,
                         pcmDevIds.at(0), txAifBackEnds[0].second.data());
+                    }
                 } else {
-                    PAL_ERR(LOG_TAG, "miid : %x id = %d\n", miid, pcmDevIds.at(0));
+                    for (const auto& miids : MIIDs) {
+                        PAL_ERR(LOG_TAG, "miid : %x id = %d\n", miids, pcmDevIds.at(0));
+                    }
                 }
 
                 if (isPalPCMFormat(sAttr.in_media_config.aud_fmt_id))
@@ -344,13 +349,15 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 streamData.sampleRate = sAttr.in_media_config.sample_rate;
                 streamData.numChannel = sAttr.in_media_config.ch_info.channels;
                 streamData.ch_info = nullptr;
-                builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
-                if (payloadSize && payload) {
-                    status = builder->updateCustomPayload(payload, payloadSize);
-                    builder->freeCustomPayload(&payload, &payloadSize);
-                    if (0 != status) {
-                        PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
-                        goto exit;
+                for (const auto& miids : MIIDs) {
+                    builder->payloadMFCConfig(&payload, &payloadSize, miids, &streamData);
+                    if (payloadSize && payload) {
+                        status = builder->updateCustomPayload(payload, payloadSize);
+                        builder->freeCustomPayload(&payload, &payloadSize);
+                        if (0 != status) {
+                            PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                            goto exit;
+                        }
                     }
                 }
                 if (sAttr.type == PAL_STREAM_VOIP_TX) {
@@ -836,7 +843,62 @@ silence_det_setup_done:
         if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
             uint8_t* paramData = NULL;
             size_t paramSize = 0;
+            uint8_t* paramData1 = NULL;
+            size_t paramSize1 = 0;
             uint32_t miid = 0;
+            sessionToPayloadParam deviceData = {};
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),"ZERO", DEVICE_MFC, &miid);
+            if (status) {
+                PAL_ERR(LOG_TAG, "getModuleInstanceId failed %d", status);
+                break;
+            }
+            for (auto& stream_itr: rm->getActiveStreamList()) {
+                PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the Device MFC.");
+                stream_itr->getStreamAttributes(&sAttr);
+                if (sAttr.type == PAL_STREAM_VOICE_CALL || sAttr.type == PAL_STREAM_VOIP_RX) {
+                    status = stream_itr->getAssociatedDevices(associatedDevices);
+                    break;
+                }
+            }
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                status = 0;
+                goto exit;
+            }
+            for (int i = 0; i < associatedDevices.size();i++) {
+                status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                    status = 0;
+                    goto exit;
+                }
+                deviceData.bitWidth = dAttr.config.bit_width;
+                deviceData.sampleRate = dAttr.config.sample_rate;
+                deviceData.numChannel = dAttr.config.ch_info.channels;
+                deviceData.ch_info = nullptr;
+                builder->payloadMFCConfig(&paramData, &paramSize, miid, &deviceData);
+                if (paramSize && paramData) {
+                    PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", paramData,paramSize);
+                    status = builder->updateCustomPayload(paramData, paramSize);
+                    builder->freeCustomPayload(&paramData, &paramSize);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
+                        status = 0;
+                        goto exit;
+                    }
+                }
+            }
+            builder->getCustomPayload(&paramData, &paramSize);
+            status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
+                                                        paramData, paramSize);
+            builder->freeCustomPayload();
+
+            if (status != 0) {
+                PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                status = 0;
+                goto exit;
+            }
+
             pal_asr_config* asr_payload;
             pal_tts_config* tts_payload;
             pal_nmt_config* nmt_payload;

@@ -136,6 +136,8 @@ public:
                     std::vector<std::pair<std::string, int>> &freeDeviceMetaData);
     static int getModuleInstanceId(struct mixer *mixer, int device, const char *intf_name,
                        int tag_id, uint32_t *miid);
+    static int getModuleInstanceId(struct mixer *mixer, int device, const char *intf_name,
+                       int tag_id, std::vector<uint32_t> &miids);
     static int getTagsWithModuleInfo(struct mixer *mixer, int device, const char *intf_name,
                        uint8_t *payload);
     static int setMixerParameter(struct mixer *mixer, int device,

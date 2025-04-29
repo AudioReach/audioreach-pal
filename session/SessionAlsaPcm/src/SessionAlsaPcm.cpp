@@ -27,7 +27,6 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
- *
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -2097,7 +2096,7 @@ void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t pa
 {
     eventPayload *event = NULL;
 
-    event = (struct eventPayload *)calloc(1, sizeof(struct eventPayload));
+    event = (eventPayload *)calloc(1, sizeof(eventPayload));
     if (!event) {
         PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload struct");
         return;

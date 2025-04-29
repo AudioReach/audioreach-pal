@@ -307,7 +307,9 @@ int32_t StreamSoundTrigger::close() {
         }
 
         currentState = STREAM_IDLE;
+#ifndef PAL_MEMLOG_UNSUPPORTED
         palStateEnqueue(this, PAL_STATE_CLOSED, status);
+#endif
     }
 
     currentState = STREAM_IDLE;

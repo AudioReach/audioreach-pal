@@ -36,7 +36,9 @@
 
 #include "CallTranslationNMTEngine.h"
 #include <cmath>
+#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/trace.h>
+#endif
 #include <string.h>
 #include "Session.h"
 #include "SessionAR.h"

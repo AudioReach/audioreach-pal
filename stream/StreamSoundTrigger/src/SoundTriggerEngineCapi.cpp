@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef ATRACE_UNSUPPORTED
@@ -853,10 +852,14 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi Process\n");
         capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage uv process");
+#endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
+#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -875,10 +878,14 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi get param for result\n");
         capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage TI-UV get result");
+#endif
         rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
             STAGE2_UV_WRAPPER_ID_RESULT, nullptr, &capi_result);
+#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
+#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_get_param_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(

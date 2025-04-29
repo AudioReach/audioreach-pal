@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -89,7 +89,9 @@ void STUtilsDeinit() {
             vui_deferred_switch_thread_.join();
         PAL_DBG(LOG_TAG, "VoiceUI deferred switch thread joined");
     }
+#ifndef VUI_DMGR_AUDIO_UNSUPPORTED
     voiceuiDmgrManagerDeInit();
+#endif
 }
 
 #ifndef VUI_DMGR_AUDIO_UNSUPPORTED

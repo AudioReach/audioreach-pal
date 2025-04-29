@@ -1319,7 +1319,7 @@ BtA2dp::BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
             property_get_bool("ro.bluetooth.a2dp_offload.supported", false) &&
             !property_get_bool("persist.bluetooth.a2dp_offload.disabled", false);
 #else
-  isA2dpOffloadSupported =true;
+  mIsA2dpOffloadSupported =true;
 #endif
     PAL_DBG(LOG_TAG, "A2DP offload supported = %d",
             mIsA2dpOffloadSupported);

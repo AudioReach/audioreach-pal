@@ -28,7 +28,7 @@ AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
-AM_CPPFLAGS += -I $(top_srcdir)/api/vui-interface
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 AM_CPPFLAGS += -I ${top_srcdir}/plugins/codecs
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
@@ -52,7 +52,7 @@ libsession_compress_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_compress_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if BUILDSYSTEM_QLI
-libsession_compress_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DPAL_MEMLOG_UNSUPPORTED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libsession_compress_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if BUILDSYSTEM_OPENWRT

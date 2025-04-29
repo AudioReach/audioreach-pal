@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -36,7 +36,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#ifndef ANDROID_ASHMEM_UNSUPPORTED
 #include <cutils/ashmem.h>
+#endif
 #include <fstream>
 
 #include "StreamASR.h"
@@ -306,18 +308,29 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
 
     void* mapAddr = nullptr;
     int32_t outFd;
+    struct stat statbuf;
 
     PAL_INFO(LOG_TAG, "Enter, fd %d size %d", fd, size);
     if (fd < 0) {
         PAL_ERR(LOG_TAG, " Invalid FD, value of Fd is %d", fd);
         return -errno;
+#ifndef ANDROID_ASHMEM_UNSUPPORTED
     } else if(!ashmem_valid(fd)) {
         PAL_ERR(LOG_TAG, "ashmem_valid(fd) validation failed");
         return -errno;
     } else if(size != ashmem_get_size_region(fd)) {
         PAL_ERR(LOG_TAG, "Size passed not same as memory region, passed size: %d, memory size: %d",
-               size, ashmem_get_size_region(fd));
+            size, ashmem_get_size_region(fd));
         return -errno;
+#else
+    } else if(fstat(fd, &statbuf) == -1) {
+        PAL_ERR(LOG_TAG, "fstat failed: %s", strerror(errno));
+        return -errno;
+    } else if(size != statbuf.st_size) {
+        PAL_ERR(LOG_TAG, "Size mismatch: passed size %d, file size %ld",
+            size, statbuf.st_size);
+        return -EINVAL;
+#endif
     }
 
     mapAddr = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);

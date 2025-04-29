@@ -12,7 +12,7 @@ AM_CPPFLAGS += -I ../../session/inc
 AM_CPPFLAGS += -I ../../stream/inc
 AM_CPPFLAGS += -I ../../session/SessionAR/inc
 AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
-AM_CPPFLAGS += -I ../../api/vui-interface
+AM_CPPFLAGS += -I ../../plugins/vui_interface/api/vui-interface
 AM_CPPFLAGS += -I ../../resource_manager/inc
 AM_CPPFLAGS += -I ../../context_manager/inc
 

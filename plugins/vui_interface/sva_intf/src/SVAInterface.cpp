@@ -501,7 +501,6 @@ int32_t SVAInterface::ParseSoundModel(
     int32_t i = 0;
     struct pal_st_phrase_sound_model *phrase_sm = nullptr;
     struct pal_st_sound_model *common_sm = nullptr;
-    uint8_t *ptr = nullptr;
     uint8_t *sm_payload = nullptr;
     uint8_t *sm_data = nullptr;
     int32_t sm_size = 0;
@@ -542,19 +541,11 @@ int32_t SVAInterface::ParseSoundModel(
                 *first_stage_type =
                     (st_module_type_t)(big_sm->versionMajor & 0xFF);
                 sm_size = big_sm->size;
-                sm_data = (uint8_t *)calloc(1, sm_size);
-                if (!sm_data) {
-                    status = -ENOMEM;
-                    ALOGE("%s: %d: sm_data allocation failed, status %d",
-                        __func__, __LINE__, status);
-                    goto error_exit;
-                }
-                ptr = (uint8_t *)sm_payload +
+                sm_data = (uint8_t *)sm_payload +
                     sizeof(SML_GlobalHeaderType) +
                     sizeof(SML_HeaderTypeV3) +
                     (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                     big_sm->offset;
-                ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
 
                 model_data = (sound_model_data_t *)calloc(1,
                     sizeof(sound_model_data_t));
@@ -578,19 +569,11 @@ int32_t SVAInterface::ParseSoundModel(
                     continue;
                 }
                 sm_size = big_sm->size;
-                ptr = (uint8_t *)sm_payload +
+                sm_data = (uint8_t *)sm_payload +
                     sizeof(SML_GlobalHeaderType) +
                     sizeof(SML_HeaderTypeV3) +
                     (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                     big_sm->offset;
-                sm_data = (uint8_t *)calloc(1, sm_size);
-                if (!sm_data) {
-                    status = -ENOMEM;
-                    ALOGE("%s: %d: Failed to alloc memory for sm_data",
-                        __func__, __LINE__);
-                    goto error_exit;
-                }
-                ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
 
                 model_data = (sound_model_data_t *)calloc(1,
                     sizeof(sound_model_data_t));
@@ -612,16 +595,8 @@ int32_t SVAInterface::ParseSoundModel(
          * of combined sound model in the opaque data
          */
         if (*first_stage_type == ST_MODULE_TYPE_MMA) {
-            ptr = sm_payload + sm_payload_size - sizeof(uint32_t);
+            sm_data = sm_payload + sm_payload_size - sizeof(uint32_t);
             sm_size = sizeof(uint32_t);
-            sm_data = (uint8_t *)calloc(1, sm_size);
-            if (!sm_data) {
-                status = -ENOMEM;
-                ALOGE("%s: %d: Failed to alloc memory for sm_data",
-                    __func__, __LINE__);
-                goto error_exit;
-            }
-            ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
 
             model_data = (sound_model_data_t *)calloc(1,
                 sizeof(sound_model_data_t));
@@ -638,14 +613,7 @@ int32_t SVAInterface::ParseSoundModel(
         }
     } else {
         sm_size = sm_payload_size;
-        sm_data = (uint8_t *)calloc(1, sm_size);
-        if (!sm_data) {
-            ALOGE("%s: %d: Failed to allocate memory for sm_data",
-                __func__, __LINE__);
-            status = -ENOMEM;
-            goto error_exit;
-        }
-        ar_mem_cpy(sm_data, sm_size, sm_payload, sm_size);
+        sm_data = sm_payload;
 
         model_data = (sound_model_data_t *)calloc(1,
             sizeof(sound_model_data_t));
@@ -669,14 +637,10 @@ error_exit:
     for (int i = 0; i < model_list.size(); i++) {
         model_data = model_list[i];
         if (model_data) {
-            if (model_data->data)
-                free(model_data->data);
             free(model_data);
         }
     }
     model_list.clear();
-    if (sm_data)
-        free(sm_data);
 
     ALOGD("%s: %d: Exit", __func__, __LINE__);
     return status;
@@ -4016,8 +3980,6 @@ void SVAInterface::DeregisterModel(void *s) {
         for (int i = 0; i < sm_info_map_[s]->model_list.size(); i++) {
             sm_data = sm_info_map_[s]->model_list[i];
             if (sm_data) {
-                if (sm_data->data)
-                    free(sm_data->data);
                 free(sm_data);
             }
         }

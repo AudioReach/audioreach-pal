@@ -444,6 +444,13 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
     vui_intf_param_t param;
 
     PAL_DBG(LOG_TAG, "Enter");
+
+    status = UpdateUVScratchParam();
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to update UV scratch param");
+        goto exit;
+    }
+
     if (!reader_) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
@@ -707,6 +714,10 @@ exit:
         free(result_cfg_ptr);
     if (uv_cfg_ptr)
         free(uv_cfg_ptr);
+    if (scratch_param_.scratch_ptr) {
+        free(scratch_param_.scratch_ptr);
+        scratch_param_.scratch_ptr = nullptr;
+    }
 
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
@@ -1245,6 +1256,41 @@ int32_t SoundTriggerEngineCapi::UpdateConfThreshold(StreamSoundTrigger *s)
     return 0;
 }
 
+int32_t SoundTriggerEngineCapi::UpdateUVScratchParam()
+{
+    int32_t status = 0;
+    capi_v2_err_t rc = CAPI_V2_EOK;
+    capi_v2_buf_t capi_uv_ptr;
+
+    if (!scratch_param_.scratch_size) {
+        PAL_DBG(LOG_TAG, "skip param update as scratch param size is 0");
+        return 0;
+    }
+
+    capi_uv_ptr.data_ptr = (int8_t *)&scratch_param_;
+    capi_uv_ptr.actual_data_len = sizeof(scratch_param_);
+    capi_uv_ptr.max_data_len = sizeof(scratch_param_);
+    scratch_param_.scratch_ptr = (int8_t *)calloc(1, scratch_param_.scratch_size);
+    PAL_INFO(LOG_TAG, "Allocated scratch memory with size %d", scratch_param_.scratch_size);
+    if (scratch_param_.scratch_ptr == NULL) {
+        PAL_ERR(LOG_TAG, "failed to allocate the scratch memory");
+        return -ENOMEM;
+    }
+
+    PAL_VERBOSE(LOG_TAG, "Issuing capi_set STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM");
+    rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                       STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM,
+                       NULL,
+                       &capi_uv_ptr);
+    if (CAPI_V2_EFAILED == rc) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "capi set param STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM failed, status %d", status);
+        free(scratch_param_.scratch_ptr);
+        scratch_param_.scratch_ptr = NULL;
+    }
+    return status;
+}
+
 int32_t SoundTriggerEngineCapi::LoadSoundModel(StreamSoundTrigger *s __unused,
     uint8_t *data, uint32_t data_size)
 {
@@ -1344,29 +1390,6 @@ int32_t SoundTriggerEngineCapi::LoadSoundModel(StreamSoundTrigger *s __unused,
                 PAL_ERR(LOG_TAG, "capi get param STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM failed, %d",
                         rc);
                 goto exit;
-            }
-
-            capi_uv_ptr.data_ptr = (int8_t *)&scratch_param_;
-            capi_uv_ptr.actual_data_len = sizeof(scratch_param_);
-            capi_uv_ptr.max_data_len = sizeof(scratch_param_);
-            scratch_param_.scratch_ptr = (int8_t *)calloc(1, scratch_param_.scratch_size);
-
-            if (scratch_param_.scratch_ptr == NULL) {
-                PAL_ERR(LOG_TAG, "failed to allocate the scratch memory");
-                return -ENOMEM;
-            }
-
-            PAL_VERBOSE(LOG_TAG, "Issuing capi_set STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM");
-            rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-                               STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM,
-                               NULL,
-                               &capi_uv_ptr);
-
-            if (CAPI_V2_EFAILED == rc) {
-                status = -EINVAL;
-                PAL_ERR(LOG_TAG, "capi set param STAGE2_UV_WRAPPER_ID_SCRATCH_PARAM failed, status %d", status);
-                free(scratch_param_.scratch_ptr);
-                scratch_param_.scratch_ptr = NULL;
             }
         }
     }

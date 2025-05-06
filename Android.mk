@@ -268,6 +268,7 @@ include $(CLEAR_VARS)
 
 LOCAL_CFLAGS += -Wno-tautological-compare
 LOCAL_CFLAGS += -Wno-macro-redefined
+LOCAL_CFLAGS += -D_ANDROID_
 
 LOCAL_SRC_FILES  := test/PalUsecaseTest.c \
                     test/PalTest_main.c
@@ -280,7 +281,8 @@ LOCAL_HEADER_LIBRARIES := \
     libarpal_headers
 
 LOCAL_SHARED_LIBRARIES := \
-                          libpalclient
+                          libpalclient \
+                          libbinder_ndk
 LOCAL_VENDOR_MODULE := true
 
 include $(BUILD_EXECUTABLE)

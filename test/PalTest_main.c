@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
  */
 
 #include <unistd.h>
@@ -32,6 +37,9 @@
 #include <string.h>
 #include <signal.h>
 #include "PalUsecaseTest.h"
+#ifdef _ANDROID_
+#include <android/binder_process.h>
+#endif
 
 int enable_usecase(int usecaseType)
 {
@@ -81,6 +89,10 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigint_handler);
     signal(SIGHUP, sigint_handler);
     signal(SIGTERM, sigint_handler);
+
+#ifdef _ANDROID_
+    ABinderProcess_startThreadPool();
+#endif
 
     if (argc > 2 && !strcmp(argv[2], "-T")) {
        if (argc < 4) {

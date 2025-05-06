@@ -245,7 +245,6 @@ int32_t HotwordVA::ParseSoundModel(
     int32_t status = 0;
     struct pal_st_phrase_sound_model *phrase_sm = nullptr;
     struct pal_st_sound_model *common_sm = nullptr;
-    uint8_t *ptr = nullptr;
     uint8_t *sm_data = nullptr;
     int32_t sm_size = 0;
     sound_model_data_t *model_data = nullptr;
@@ -256,15 +255,7 @@ int32_t HotwordVA::ParseSoundModel(
         // handle for phrase sound model
         phrase_sm = (struct pal_st_phrase_sound_model *)sound_model;
         sm_size = phrase_sm->common.data_size;
-        sm_data = (uint8_t *)calloc(1, sm_size);
-        if (!sm_data) {
-            ALOGE("%s: %d: Failed to allocate memory for sm_data",
-                __func__, __LINE__);
-            status = -ENOMEM;
-            goto error_exit;
-        }
-        ptr = (uint8_t*)phrase_sm + phrase_sm->common.data_offset;
-        ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+        sm_data = (uint8_t*)phrase_sm + phrase_sm->common.data_offset;
 
         model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
         if (!model_data) {
@@ -281,15 +272,7 @@ int32_t HotwordVA::ParseSoundModel(
         // handle for generic sound model
         common_sm = sound_model;
         sm_size = common_sm->data_size;
-        sm_data = (uint8_t *)calloc(1, sm_size);
-        if (!sm_data) {
-            ALOGE("%s: %d: Failed to allocate memory for sm_data",
-                __func__, __LINE__);
-            status = -ENOMEM;
-            goto error_exit;
-        }
-        ptr = (uint8_t*)common_sm + common_sm->data_offset;
-        ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+        sm_data = (uint8_t*)common_sm + common_sm->data_offset;
 
         model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
         if (!model_data) {
@@ -311,14 +294,10 @@ error_exit:
     for (int i = 0; i < model_list.size(); i++) {
         model_data = model_list[i];
         if (model_data) {
-            if (model_data->data)
-                free(model_data->data);
             free(model_data);
         }
     }
     model_list.clear();
-    if (sm_data)
-        free(sm_data);
 
     ALOGD("%s: %d: Exit, status %d", __func__, __LINE__, status);
     return status;
@@ -623,8 +602,6 @@ void HotwordVA::DeregisterModel(void *s) {
         for (int i = 0; i < sm_info_map_[s]->model_list.size(); i++) {
             sm_data = sm_info_map_[s]->model_list[i];
             if (sm_data) {
-                if (sm_data->data)
-                    free(sm_data->data);
                 free(sm_data);
             }
         }

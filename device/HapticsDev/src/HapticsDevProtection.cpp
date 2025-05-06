@@ -2071,7 +2071,7 @@ int32_t HapticsDevProtection::setParameter(uint32_t param_id, void *param)
     (void ) param;
     if (param_id == PAL_HAP_MODE_FACTORY_TEST)
         HapticsDevProtectionFTM();
-    else if (param_id == PAL_SP_MODE_DYNAMIC_CAL)
+    else if (param_id == PAL_HAP_MODE_DYNAMIC_CAL)
         HapticsDevProtectionDynamicCal();
     else if (param_id ==  PARAM_ID_HAPTICS_EX_VI_PERSISTENT)
         getAndsetPersistentParameter(true);

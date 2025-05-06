@@ -16,6 +16,8 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload);
 int32_t pcmPluginConfigSetConfigStop(Stream* s, void* pluginPayload);
 int32_t pcmPluginPreReconfig(Stream* s, void* pluginPayload);
 int register_asps_event(uint32_t reg, SessionAlsaPcm* session, struct mixer* mxr);
+int32_t configureCallTranslationModules(Stream* s, PayloadBuilder* builder, struct mixer *mxr, SessionAlsaPcm* session, std::shared_ptr<ResourceManager> rm);
+int32_t configureCallTranslationRxDeviceMFC(PayloadBuilder* builder, struct mixer *mxr, SessionAlsaPcm* session, std::shared_ptr<ResourceManager> rm);
 int32_t configureInCallRxMFC(SessionAlsaPcm* session, std::shared_ptr<ResourceManager> rm,
                                                                 PayloadBuilder* builder);
 int reconfigureModule(SessionAlsaPcm* session, PayloadBuilder* builder, uint32_t tagID,

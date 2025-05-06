@@ -580,6 +580,7 @@ release:
                 PAL_ERR(LOG_TAG, "Device close failed, status %d", ret);
                 status = ret;
             }
+            mDevices[0]->setSndName("");
         }
     } else if (param_id == PAL_PARAM_ID_VENDOR_UUID) {
         pal_payload = (pal_param_payload *)(*payload);

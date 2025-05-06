@@ -109,6 +109,7 @@ private:
     int32_t StartUserVerification();
     int32_t StartTIUserVerification();
     int32_t UpdateConfThreshold(StreamSoundTrigger *s);
+    int32_t UpdateUVScratchParam();
     static void BufferThreadLoop(SoundTriggerEngineCapi *capi_engine);
 
     std::string lib_name_;

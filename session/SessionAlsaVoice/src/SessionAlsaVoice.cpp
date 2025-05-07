@@ -630,31 +630,6 @@ int SessionAlsaVoice::start(Stream * s)
         }
     }
 
-    volume = (struct pal_volume_data *)malloc(sizeof(uint32_t) +
-                                                (sizeof(struct pal_channel_vol_kv)));
-    if (!volume) {
-        status = -ENOMEM;
-        PAL_ERR(LOG_TAG, "volume malloc failed %s", strerror(errno));
-        goto err_pcm_open;
-    }
-
-    /*if no volume is set set a default volume*/
-    if ((s->getVolumeData(volume))) {
-        PAL_INFO(LOG_TAG, "no volume set, setting default vol to %f",
-                 default_volume);
-        volume->no_of_volpair = 1;
-        volume->volume_pair[0].channel_mask = 1;
-        volume->volume_pair[0].vol = default_volume;
-        /*call will cache the volume but not apply it as stream has not moved to start state*/
-        s->setVolume(volume);
-    };
-    /*call to apply volume*/
-    if (rm->IsCRSCallEnabled()) {
-        setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-    } else {
-        setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
-    }
-
     /*set tty mode*/
     if (ttyMode) {
         palPayload = (pal_param_payload *)calloc(1,
@@ -685,6 +660,36 @@ int SessionAlsaVoice::start(Stream * s)
         }
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
+    }
+
+    if (status != 0) {
+        PAL_ERR(LOG_TAG,"setMixerParameter failed");
+        goto err_pcm_open;
+    }
+
+    volume = (struct pal_volume_data *)malloc(sizeof(uint32_t) +
+                                                (sizeof(struct pal_channel_vol_kv)));
+    if (!volume) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "volume malloc failed %s", strerror(errno));
+        goto err_pcm_open;
+    }
+
+    /*if no volume is set set a default volume*/
+    if ((s->getVolumeData(volume))) {
+        PAL_INFO(LOG_TAG, "no volume set, setting default vol to %f",
+                 default_volume);
+        volume->no_of_volpair = 1;
+        volume->volume_pair[0].channel_mask = 1;
+        volume->volume_pair[0].vol = default_volume;
+        /*call will cache the volume but not apply it as stream has not moved to start state*/
+        s->setVolume(volume);
+    };
+    /*call to apply volume*/
+    if (rm->IsCRSCallEnabled()) {
+        setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
+    } else {
+        setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
     }
 
     if (ResourceManager::isLpiLoggingEnabled()) {

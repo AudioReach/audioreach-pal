@@ -1876,6 +1876,7 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
     struct apm_module_param_data_t* header;
     struct param_id_asr_output_t* asrOutputParam = NULL;
     param_id_sdz_output_t* sdzOutputParam = NULL;
+    struct param_id_nmt_output_t* nmtOutputParam = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
 
@@ -1905,7 +1906,16 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
         sdzOutputParam->output_token = s->GetSdzOutputToken();
         sdzOutputParam->num_outputs = s->GetSdzNumEvents();
         sdzOutputParam->payload_size =  s->GetSdzPayloadSize();
-    }
+    } else if (param_id == PARAM_ID_NMT_OUTPUT) {
+        nmtOutputParam = (struct param_id_nmt_output_t *)
+                         (payloadInfo + (sizeof(struct apm_module_param_data_t)));
+        nmtOutputParam->token = s->getParameters(PAL_PARAM_NMT_GET_OUTPUT_TOKEN,
+                                                 (void**)payload);
+        nmtOutputParam->num_outputs = s->getParameters(PAL_PARAM_NMT_GET_NUM_EVENT,
+                                                       (void**)payload);
+        nmtOutputParam->payload_size = s->getParameters(PAL_PARAM_NMT_GET_PAYLOAD_SIZE,
+                                                        (void**)payload);
+   }
 
     *size = payloadSize + padBytes;
     *payload = payloadInfo;

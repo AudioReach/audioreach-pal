@@ -51,6 +51,7 @@
 #include "acd_api.h"
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
+#include "nmt_module_calibration_api.h"
 #include <errno.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
 
@@ -168,7 +169,9 @@ int SessionAlsaPcm::open(Stream * s)
     }
 
     // Register for Soft pause events
-    if (sAttr.direction == PAL_AUDIO_OUTPUT  && sAttr.type != PAL_STREAM_HAPTICS)
+    if (sAttr.direction == PAL_AUDIO_OUTPUT &&
+        sAttr.type != PAL_STREAM_HAPTICS &&
+        sAttr.type != PAL_STREAM_CALL_TRANSLATION)
         registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
 
     // enable dual mono
@@ -410,6 +413,7 @@ int SessionAlsaPcm::open(Stream * s)
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
+        sAttr.type == PAL_STREAM_CALL_TRANSLATION ||
        (sAttr.type == PAL_STREAM_HAPTICS &&
         sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)) {
         switch (sAttr.type) {
@@ -418,6 +422,7 @@ int SessionAlsaPcm::open(Stream * s)
             case PAL_STREAM_ACD:
             case PAL_STREAM_ASR:
             case PAL_STREAM_HAPTICS:
+            case PAL_STREAM_CALL_TRANSLATION:
                 pcmId = pcmDevIds;
                 break;
             case PAL_STREAM_ULTRASOUND:
@@ -670,10 +675,14 @@ uint32_t SessionAlsaPcm::getMIID(const char *backendName, uint32_t tagId, uint32
         status = SessionAlsaUtils::getModuleInstanceId(mixer,
             device, backendName, tagId, miid);
     } else {
-        status = SessionAlsaUtils::getModuleInstanceId(mixer,
-            device, txAifBackEnds[0].second.data(), tagId, miid);
+        if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+            status = SessionAlsaUtils::getModuleInstanceId(mixer,
+                device,"ZERO", tagId, miid);
+        } else {
+            status = SessionAlsaUtils::getModuleInstanceId(mixer,
+                device, txAifBackEnds[0].second.data(), tagId, miid);
+        }
     }
-
 exit:
     if (0 != status)
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
@@ -1665,6 +1674,7 @@ int SessionAlsaPcm::close(Stream * s)
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
+        sAttr.type ==PAL_STREAM_CALL_TRANSLATION ||
         (sAttr.type == PAL_STREAM_HAPTICS &&
         sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)) {
         switch (sAttr.type) {
@@ -1672,6 +1682,7 @@ int SessionAlsaPcm::close(Stream * s)
             case PAL_STREAM_ACD:
             case PAL_STREAM_ASR:
             case PAL_STREAM_CONTEXT_PROXY:
+            case PAL_STREAM_CALL_TRANSLATION:
             case PAL_STREAM_HAPTICS:
                 pcmId = pcmDevIds;
                 break;
@@ -2182,6 +2193,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_SDZ_ENABLE:
         case PAL_PARAM_ID_FORCE_RECOGNITION:
         case PAL_PARAM_ID_BUFFERING_MODE:
+        case PAL_PARAM_ID_NMT_OUTPUT:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;
@@ -2195,6 +2207,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                 param_id == PAL_PARAM_ID_SDZ_SET_PARAM ||
                 param_id == PAL_PARAM_ID_SDZ_ENABLE) {
                 sdzMiid = header->module_instance_id;
+            } else if (param_id == PAL_PARAM_ID_NMT_OUTPUT) {
+                nmtMiid = header->module_instance_id;
             } else {
                 svaMiid = header->module_instance_id;
             }
@@ -2912,6 +2926,7 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
     const char *control = "getParam";
     const char *stream = "PCM";
     struct mixer_ctl *ctl;
+    struct pal_stream_attributes sAttr;
     std::ostringstream CntrlName;
     PAL_INFO(LOG_TAG, "Enter, param id 0x%x, tag id : 0x%x", param_id, tagId);
 
@@ -2942,6 +2957,19 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
                 tagId, &miid);
         if (status)
             miid = 0;
+    }
+
+    status = s->getStreamAttributes(&sAttr);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to get stream attributes");
+        status = -EINVAL;
+        goto exit;
+    }
+    if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+         status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevIds.at(0),"ZERO", TRANSLATION_NMT, &miid);
+         PAL_DBG(LOG_TAG, "nmt miid: 0x%x", miid);
+         if (status)
+             miid = 0;
     }
 
     if (miid == 0 && param_id != PAL_PARAM_ID_SVA_WAKEUP_MODULE_VERSION) {
@@ -2988,6 +3016,14 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
             configSize = s->GetSdzPayloadSize();
             builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
                           PARAM_ID_SDZ_OUTPUT, configSize);
+            break;
+        }
+        case PAL_PARAM_ID_NMT_OUTPUT:
+        {
+            configSize = s->getParameters(PAL_PARAM_NMT_GET_PAYLOAD_SIZE,
+                                           payload);
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_NMT_OUTPUT, configSize);
             break;
         }
         default:

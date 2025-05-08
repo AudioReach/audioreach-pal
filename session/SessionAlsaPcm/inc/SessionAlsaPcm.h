@@ -74,6 +74,7 @@ private:
     uint32_t svaMiid;
     uint32_t asrMiid;
     uint32_t sdzMiid;
+    uint32_t nmtMiid;
     uint32_t vaMicChannels;
     static std::mutex pcmLpmRefCntMtx;
     static int pcmLpmRefCnt;
@@ -140,6 +141,7 @@ public:
     uint32_t getsvaMiid() { return svaMiid; };
     uint32_t getAsrMiid() { return asrMiid; };
     uint32_t getSdzMiid() { return sdzMiid; };
+    uint32_t getNmtMiid() { return nmtMiid; };
     bool getRegisterForEvents() { return RegisterForEvents; };
     void setRegisterForEvents(bool newState) { RegisterForEvents = newState; };
     int getHapticsConfig(struct pal_param_haptics_cnfg_t *config);

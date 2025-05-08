@@ -406,6 +406,9 @@ class StreamASR : public Stream {
     int32_t SetRecognitionConfig(struct pal_asr_config *config);
     int32_t GenerateCallbackEvent(struct pal_asr_event **event,
                                   uint32_t *eventSize);
+
+    int32_t storeModelToFile(int32_t fd, uint32_t size);
+    int32_t deleteModelFile();
     /* Currently model is not loaded from HLOS, hence using this hardcoded UUID,
      * Later when loading is supported, we need to remove it from here, and
      * get it from model, to check which sm_config it supports to

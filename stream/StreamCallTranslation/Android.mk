@@ -8,10 +8,11 @@ LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS += -fexceptions -frtti
 
 LOCAL_SRC_FILES := \
     src/StreamCallTranslation.cpp \
-    # ../src/StreamCommon.cpp
+    src/CallTranslationNMTEngine.cpp
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/inc
@@ -31,7 +32,8 @@ LOCAL_HEADER_LIBRARIES := \
     libacdb_headers \
     libaudioroute \
     libarpal_internalheaders \
-    libarmemlog_headers
+    libarmemlog_headers \
+    libsession_ar_headers
 
 
 LOCAL_SHARED_LIBRARIES := \
@@ -40,7 +42,8 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal \
     libar-pal \
     libexpat \
-    libstream_common
+    libstream_common \
+    libsession_ar
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)

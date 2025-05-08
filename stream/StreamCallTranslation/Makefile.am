@@ -16,7 +16,8 @@ AM_CPPFLAGS += -I ../../resource_manager/inc
 AM_CPPFLAGS += -I ../../context_manager/inc
 
 
-stream_calltranslation_sources = ./src/StreamCallTranslation.cpp
+stream_calltranslation_sources = ./src/StreamCallTranslation.cpp \
+                                 ./src/CallTranslationNMTEngine.cpp
 
 library_includedir = $(includedir)/stream_calltranslation
 

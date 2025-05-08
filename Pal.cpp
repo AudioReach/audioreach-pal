@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -465,25 +465,29 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
     }
 
     if (rm->callback_event != NULL) {
-        config.streamAttributes = sAttr;
-        int32_t currentDeviceNumber = 0;
-        if(!palDevices.empty()) {
-            config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
-        }
-        if (!config.currentDevices) {
-            status = -ENOMEM;
-            PAL_ERR(LOG_TAG, "Memory alloc failed");
-            goto exit;
-        }
-        for (auto &dev : palDevices) {
-            config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
-            currentDeviceNumber++;
-        }
-        config.noOfCurrentDevices = currentDeviceNumber;
-        rm->callback_event(&config, PAL_NOTIFY_START, false);
-        if (config.currentDevices) {
-            free(config.currentDevices);
-            config.currentDevices = NULL;
+        if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+            rm->callback_event(&config, PAL_NOTIFY_CALL_TRANSLATION_TEXT, false);
+        } else {
+            config.streamAttributes = sAttr;
+            int32_t currentDeviceNumber = 0;
+            if (!palDevices.empty()) {
+                config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+            }
+            if (!config.currentDevices) {
+                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "Memory alloc failed");
+                goto exit;
+            }
+            for (auto &dev : palDevices) {
+                 config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+                 currentDeviceNumber++;
+            }
+            config.noOfCurrentDevices = currentDeviceNumber;
+            rm->callback_event(&config, PAL_NOTIFY_START, false);
+            if (config.currentDevices) {
+                free(config.currentDevices);
+                config.currentDevices = NULL;
+            }
         }
     }
 exit:
@@ -553,24 +557,28 @@ int32_t pal_stream_stop(pal_stream_handle_t *stream_handle)
     }
 
     if (rm->callback_event != NULL) {
-        int32_t currentDeviceNumber = 0;
-        if(!palDevices.empty())
-            config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
-        if (!config.currentDevices) {
-            status = -ENOMEM;
-            PAL_ERR(LOG_TAG, "Memory alloc failed");
-            goto exit;
-        }
-        for (auto &dev : palDevices) {
-            config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
-            currentDeviceNumber++;
-        }
-        config.noOfCurrentDevices = currentDeviceNumber;
-        config.streamAttributes = sAttr;
-        rm->callback_event(&config, PAL_NOTIFY_STOP, false);
-        if (config.currentDevices) {
-            free(config.currentDevices);
-            config.currentDevices = NULL;
+        if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+            rm->callback_event(&config, PAL_NOTIFY_CALL_TRANSLATION_TEXT, false);
+        } else {
+            int32_t currentDeviceNumber = 0;
+            if (!palDevices.empty())
+                config.currentDevices = (pal_device_id_t *) calloc(palDevices.size(), sizeof(pal_device_id_t));
+            if (!config.currentDevices) {
+                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "Memory alloc failed");
+                goto exit;
+            }
+            for (auto &dev : palDevices) {
+                config.currentDevices[currentDeviceNumber] = ((pal_device_id_t)dev->getSndDeviceId());
+                currentDeviceNumber++;
+            }
+            config.noOfCurrentDevices = currentDeviceNumber;
+            config.streamAttributes = sAttr;
+            rm->callback_event(&config, PAL_NOTIFY_STOP, false);
+            if (config.currentDevices) {
+                free(config.currentDevices);
+                config.currentDevices = NULL;
+            }
         }
     }
 exit:

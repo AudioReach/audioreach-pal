@@ -1,6 +1,33 @@
 /*
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ *       copyright notice, this list of conditions and the following
+ *       disclaimer in the documentation and/or other materials provided
+ *       with the distribution.
+ *     * Neither the name of The Linux Foundation nor the names of its
+ *       contributors may be used to endorse or promote products derived
+ *       from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -30,6 +57,9 @@ StreamCallTranslation::StreamCallTranslation(const struct pal_stream_attributes 
 
     session = NULL;
     mGainLevel = -1;
+    outputTxConfig = nullptr;
+    outputRxConfig = nullptr;
+    palCallTranslationConfig = nullptr;
     std::shared_ptr<Device> dev = nullptr;
     mStreamAttr = (struct pal_stream_attributes *)nullptr;
     mDevices.clear();
@@ -135,6 +165,12 @@ StreamCallTranslation::StreamCallTranslation(const struct pal_stream_attributes 
     }
     mStreamMutex.unlock();
     rm->registerStream(this);
+
+    NMTEngine = CallTranslationNMTEngine::GetInstance(this);
+    if (!NMTEngine) {
+        PAL_ERR(LOG_TAG, "Error:%d NMT engine creation failed");
+        throw std::runtime_error("failed to create NMT engine");
+    }
     PAL_DBG(LOG_TAG, "Exit. state %d", currentState);
     return;
 }
@@ -213,7 +249,6 @@ int32_t  StreamCallTranslation::close()
 
     PAL_DBG(LOG_TAG, "Enter. session handle - %pK device count - %zu stream_type - %d state %d",
              session, mDevices.size(), mStreamAttr->type, currentState);
-
     if (currentState == STREAM_STARTED || currentState == STREAM_PAUSED) {
         mStreamMutex.unlock();
         status = stop();
@@ -241,6 +276,14 @@ int32_t  StreamCallTranslation::close()
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
     mStreamMutex.unlock();
 
+    if (callTranslationConfigPayload) {
+        free(callTranslationConfigPayload);
+        callTranslationConfigPayload = nullptr;
+    }
+    if (palCallTranslationConfig) {
+        free(palCallTranslationConfig);
+        palCallTranslationConfig = nullptr;
+    }
     PAL_DBG(LOG_TAG, "Exit. closed the stream successfully %d status %d",
              currentState, status);
     return status;
@@ -270,6 +313,13 @@ int32_t StreamCallTranslation::start()
             goto exit;
         }
         PAL_VERBOSE(LOG_TAG, "device started successfully");
+        if (NMTEngine) {
+            status = NMTEngine->StartEngine(this);
+            if (0 != status) {
+                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "Error:%d Start NMT engine failed", status);
+            }
+        }
         status = startSession();
         if (0 != status) {
             rm->unlockGraph();
@@ -367,6 +417,13 @@ int32_t StreamCallTranslation::stop()
         rm->lockActiveStream();
         mStreamMutex.lock();
         currentState = STREAM_STOPPED;
+
+        if (NMTEngine) {
+            status = NMTEngine->StopEngine(this);
+            if (status) {
+               PAL_ERR(LOG_TAG, "Error:%d Stop NMT engine failed", status);
+            }
+        }
         for (int i = 0; i < mDevices.size(); i++) {
             rm->deregisterDevice(mDevices[i], this);
         }
@@ -403,11 +460,160 @@ int32_t StreamCallTranslation::stop()
     return status;
 }
 
+int32_t StreamCallTranslation::getParameters(uint32_t param_id, void **payload)
+{
+    int32_t ret = 0;
+
+    if (!NMTEngine) {
+        PAL_ERR(LOG_TAG, "Error: NMTEngine is null");
+        return -EINVAL;
+    }
+    if (param_id == PAL_PARAM_NMT_GET_NUM_EVENT) {
+        ret = NMTEngine->GetNumOutput();
+    } else if (param_id == PAL_PARAM_NMT_GET_OUTPUT_TOKEN) {
+        ret = NMTEngine->GetOutputToken();
+    } else if (param_id == PAL_PARAM_NMT_GET_PAYLOAD_SIZE) {
+        ret = NMTEngine->GetPayloadSize();
+    }
+    return ret;
+}
+
+bool StreamCallTranslation::compareConfig(struct call_translation_config *oldConfig,
+                                          struct call_translation_config *newConfig)
+{
+    if (newConfig == nullptr)
+        return true;
+    if (oldConfig == nullptr ||
+        oldConfig->enable != newConfig->enable ||
+        oldConfig->call_translation_dir != newConfig->call_translation_dir ||
+        oldConfig->nmt_module_config.input_language_code != newConfig->nmt_module_config.input_language_code ||
+        oldConfig->nmt_module_config.output_language_code != newConfig->nmt_module_config.output_language_code) {
+        return false;
+    }
+    return true;
+}
+
+int32_t StreamCallTranslation::setNMTConfig(struct pal_nmt_config *nmt_payload)
+{
+    int32_t status = 0;
+
+    nmtConfig.input_language_code  = (uint32_t)nmt_payload->input_language_code;
+    nmtConfig.output_language_code = (uint32_t)nmt_payload->output_language_code;
+    if (mStreamAttr->direction == PAL_AUDIO_INPUT) {
+        if (outputTxConfig) {
+            free(outputTxConfig);
+            outputTxConfig = nullptr;
+        }
+        outputTxConfig = (param_id_nmt_output_config_t *)calloc(1, sizeof(param_id_nmt_output_config_t));
+        if (!outputTxConfig) {
+            status = -ENOMEM;
+            PAL_ERR(LOG_TAG, "Error:%d Failed to allocate outputTxConfig", status);
+            goto cleanup;
+        }
+        outputTxConfig->output_mode  = NMT::NON_BUFFERED;
+        outputTxConfig->out_buf_size = (uint32_t)OUT_BUF_SIZE_DEFAULT;
+        outputTxConfig->num_bufs     = 1;
+    } else if (mStreamAttr->direction == PAL_AUDIO_OUTPUT) {
+        if (outputRxConfig) {
+            free(outputRxConfig);
+            outputRxConfig = nullptr;
+        }
+        outputRxConfig = (param_id_nmt_output_config_t *)calloc(1, sizeof(param_id_nmt_output_config_t));
+        if (!outputRxConfig) {
+            status = -ENOMEM;
+            PAL_ERR(LOG_TAG, "Error:%d Failed to allocate outputRxConfig", status);
+            goto cleanup;
+        }
+        outputRxConfig->output_mode  = NMT::NON_BUFFERED;
+        outputRxConfig->out_buf_size = (uint32_t)OUT_BUF_SIZE_DEFAULT;
+        outputRxConfig->num_bufs     = 1;
+    }
+    goto exit;
+
+cleanup:
+    if (outputTxConfig) {
+        free(outputTxConfig);
+        outputTxConfig = nullptr;
+    }
+    if (outputRxConfig) {
+        free(outputRxConfig);
+        outputRxConfig = nullptr;
+    }
+
+exit:
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+    return status;
+}
+
+int32_t StreamCallTranslation::setCallTranslationConfig(struct call_translation_config *payload)
+{
+    PAL_INFO(LOG_TAG, "Enter");
+
+    int32_t status = 0;
+    if (!payload) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "wrong params");
+        return status;
+    }
+
+    if (compareConfig(palCallTranslationConfig, payload)) {
+        PAL_DBG(LOG_TAG, "Same NMT config, no need to set it again!!!");
+        return status;
+    }
+
+    pal_nmt_config* nmt_payload = nullptr;
+    pal_call_translation_direction call_translation_dir = payload->call_translation_dir;
+
+    if (palCallTranslationConfig) {
+        free(palCallTranslationConfig);
+        palCallTranslationConfig = nullptr;
+    }
+
+    if (call_translation_dir == CALL_TRANSLATION_DIR_TX ||
+        call_translation_dir == CALL_TRANSLATION_DIR_RX) {
+        nmt_payload = &(payload->nmt_module_config);
+        if (!nmt_payload) {
+            status = -EINVAL;
+            goto exit;
+        }
+        if (payload->enable) {
+            status = setNMTConfig(nmt_payload);
+            if (status) {
+                goto exit;
+            }
+        }
+    }
+    palCallTranslationConfig = (struct call_translation_config *)calloc(1,
+        sizeof(struct call_translation_config));
+    if (!palCallTranslationConfig) {
+        PAL_ERR(LOG_TAG, "Error: Failed to allocate memory for palCallTranslationConfig");
+        status = -ENOMEM;
+        goto exit;
+    }
+    status = ar_mem_cpy(palCallTranslationConfig, sizeof(struct call_translation_config),
+                                         payload, sizeof(struct call_translation_config));
+    if (status) {
+        PAL_ERR(LOG_TAG, "Error: Failed to copy call translation config");
+        free(palCallTranslationConfig);
+        palCallTranslationConfig = nullptr;
+    }
+exit:
+    PAL_DBG(LOG_TAG, "exit, process parameter status %d", status);
+    return status;
+}
+
 int32_t  StreamCallTranslation::setParameters(uint32_t param_id, void *payload)
 {
     int32_t status = 0;
     PAL_INFO(LOG_TAG, "Enter, set parameter %u, session handle - %p", param_id, session);
     pal_param_payload *param_payload = NULL;
+
+    if (param_id == PAL_PARAM_ID_NMT_OUTPUT) {
+        if (NMTEngine) {
+            NMTEngine->setParameters(this, (pal_param_id_type_t) param_id);
+            goto exit;
+        }
+    }
     if (!payload) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "wrong params");
@@ -434,6 +640,10 @@ int32_t  StreamCallTranslation::setParameters(uint32_t param_id, void *payload)
                          callTranslationConfigPayload->asr_module_config.timeout_duration, callTranslationConfigPayload->asr_module_config.silence_detection_duration, callTranslationConfigPayload->asr_module_config.outputBufferMode,
                          callTranslationConfigPayload->nmt_module_config.input_language_code, callTranslationConfigPayload->nmt_module_config.output_language_code, callTranslationConfigPayload->tts_module_config.language_code,
                          callTranslationConfigPayload->tts_module_config.speech_format);
+        status = setCallTranslationConfig(callTranslationConfigPayload);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Error:%d process translation cfg", status);
+        }
     } else {
         PAL_ERR(LOG_TAG, "session is null");
         status = -EINVAL;
@@ -442,4 +652,64 @@ int32_t  StreamCallTranslation::setParameters(uint32_t param_id, void *payload)
 exit:
     PAL_DBG(LOG_TAG, "exit, session parameter %u set with status %d", param_id, status);
     return status;
+}
+
+void StreamCallTranslation::HandleEventData(eventPayload engEvent)
+{
+     std::lock_guard<std::mutex> lock(mStreamMutex);
+     if (!engEvent.payload) {
+          return;
+     }
+
+     pal_callback_config_t config = {};
+     uint32_t eventId = engEvent.type;
+     bool validEvent = true;
+     int status = 0;
+     switch (eventId) {
+         case  CALL_TRANSLATION_INOUT_TEXT : {
+             pal_nmt_event*event = (pal_nmt_event *)engEvent.payload;
+             PAL_INFO(LOG_TAG, "Call translation IO text event, event status : %d, num events : %d",
+                      event->status, event->num_events);
+             for (int i = 0; i < event->num_events; ++i) {
+                  PAL_DBG(LOG_TAG, "Event no : %d,input text_size : %d, input text : %s", i,
+                          event->event[i].input_text_size, event->event[i].input_text);
+                  PAL_DBG(LOG_TAG, "Event no : %d,output text_size : %d, output text : %s", i,
+                          event->event[i].output_text_size, event->event[i].output_text);
+             }
+             break;
+         }
+         case CALL_TRANSLATION_IN_TEXT : {
+             pal_nmt_event *event = (pal_nmt_event *)engEvent.payload;
+             PAL_INFO(LOG_TAG, "Call translation IN text event, event status : %d, num events : %d",
+                      event->status, event->num_events);
+             for (int i = 0; i < event->num_events; ++i) {
+                  PAL_DBG(LOG_TAG, "Event no : %d,input text_size : %d, input text : %s", i,
+                          event->event[i].input_text_size, event->event[i].input_text);
+             }
+             break;
+         }
+         case CALL_TRANSLATION_OUT_TEXT : {
+             pal_nmt_event *event = (pal_nmt_event *)engEvent.payload;
+             PAL_INFO(LOG_TAG, "Call translation OUT text event, event status : %d, num events : %d",
+                      event->status, event->num_events);
+             for (int i = 0; i < event->num_events; ++i) {
+                  PAL_DBG(LOG_TAG, "Event no : %d, text_size : %d, text : %s", i,
+                  event->event[i].output_text_size, event->event[i].output_text);
+             }
+             break;
+
+         }
+         default : {
+             validEvent = false;
+             PAL_INFO(LOG_TAG, "Invalid event recieved, ignore!!!");
+         }
+     }
+
+     if (validEvent && rm->callback_event != NULL) {
+         config.event = (uint32_t *)engEvent.payload;
+         status = rm->callback_event(&config, PAL_NOTIFY_CALL_TRANSLATION_TEXT, false);
+         if (status != 0) {
+             PAL_ERR(LOG_TAG, "Error: Callback event failed with status %d", status);
+         }
+     }
 }

@@ -105,7 +105,8 @@ typedef enum {
 } pal_audio_fmt_t;
 
 typedef enum {
-    PAL_NOTIFY_START = 1,
+    PAL_NOTIFY_CALL_TRANSLATION_TEXT = 0,
+    PAL_NOTIFY_START,
     PAL_NOTIFY_STOP,
     PAL_NOTIFY_DEVICESWITCH
 } pal_notification_t;
@@ -641,14 +642,6 @@ struct pal_stream_attributes {
     char* address;                               /**<  address */
 };
 
-typedef struct pal_callback_config {
-    int32_t noOfPrevDevices;
-    int32_t noOfCurrentDevices;
-    pal_device_id_t *prevDevices;
-    pal_device_id_t *currentDevices;
-    struct pal_stream_attributes streamAttributes;
-} pal_callback_config_t;
-
 /**< Key value pair to identify the topology of a usecase from default  */
 struct modifier_kv  {
     uint32_t key;
@@ -893,6 +886,10 @@ typedef enum {
     PAL_PARAM_ID_CALL_TRANSLATION_CONFIG = 99,
     PAL_PARAM_ID_FORCE_RECOGNITION = 100,
     PAL_PARAM_ID_BUFFERING_MODE = 101,
+    PAL_PARAM_ID_NMT_OUTPUT = 102,
+    PAL_PARAM_NMT_GET_NUM_EVENT = 103,
+    PAL_PARAM_NMT_GET_OUTPUT_TOKEN = 104,
+    PAL_PARAM_NMT_GET_PAYLOAD_SIZE = 105,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1544,6 +1541,10 @@ typedef enum {
     PLAIN_TEXT = 0,
     TIMESTAMP_BASED_TEXT,
     SPEAKER_DIARIZATION,
+    CALL_TRANSLATION_TEXT,
+    CALL_TRANSLATION_OUT_TEXT = CALL_TRANSLATION_TEXT,
+    CALL_TRANSLATION_IN_TEXT = CALL_TRANSLATION_TEXT + 1,
+    CALL_TRANSLATION_INOUT_TEXT = CALL_TRANSLATION_TEXT + 2,
 } eventType;
 
 struct pal_asr_engine_event {
@@ -1614,6 +1615,36 @@ struct pal_sdz_event {
     uint32_t num_outputs;
     struct sdz_output output[];
 };
+
+struct pal_nmt_engine_event {
+    uint32_t is_final;                             /**< payload is partial output of NMT or complete */
+    uint32_t output_text_size;                     /**< Output size of text to sent to the client */
+    char output_text[MAX_TRANSCRIPTION_CHAR_SIZE]; /**< Text to be sent to the client */
+    uint32_t input_text_size;                      /**< Input size of text to sent to the client */
+    char input_text[MAX_TRANSCRIPTION_CHAR_SIZE];  /**< Text to be sent to the client */
+    uint32_t json_size;                            /**< size of JSON output, to be sent to client */
+    char result_json[MAX_JSON_CHAR_SIZE];          /**< JSON result */
+    uint32_t data_size;                            /**< event payload size */
+    uint8_t data[];                                /**< event payload offset from the start of this structure */
+};
+
+struct pal_nmt_event {
+    int32_t status;
+    int32_t input_language_code;
+    int32_t output_language_code;
+    pal_stream_direction_t direction;
+    uint32_t num_events;
+    struct pal_nmt_engine_event event[];
+};
+
+typedef struct pal_callback_config {
+    int32_t noOfPrevDevices;
+    int32_t noOfCurrentDevices;
+    pal_device_id_t *prevDevices;
+    pal_device_id_t *currentDevices;
+    struct pal_stream_attributes streamAttributes;
+    uint32_t *event;
+} pal_callback_config_t;
 
 struct pal_compr_gapless_mdata {
        uint32_t encoderDelay;

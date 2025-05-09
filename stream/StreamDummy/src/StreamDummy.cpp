@@ -27,8 +27,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -122,3 +122,12 @@ StreamDummy::StreamDummy(const struct pal_stream_attributes *sattr, struct pal_d
     return;
 }
 
+StreamDummy::~StreamDummy()
+{
+    if (session) {
+        delete session;
+        session = nullptr;
+        if (Session::pm)
+            Session::pm->closePlugin(PAL_PLUGIN_MANAGER_SESSION, "PAL_STREAM_DUMMY");
+    }
+}

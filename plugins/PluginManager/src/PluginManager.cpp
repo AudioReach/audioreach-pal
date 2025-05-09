@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -141,7 +141,7 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
     int32_t status = 0;
     std::vector<pm_item_t> *pluginList = nullptr;
 
-    PAL_DBG(LOG_TAG, "Enter");
+    PAL_DBG(LOG_TAG, "Enter plugin type:%d keyName:%s", type, keyName.c_str());
     mPluginManagerMutex.lock();
     status = getRegisteredPluginList(type, &pluginList);
     if (status || !pluginList) {
@@ -175,7 +175,8 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
                 }
                 item.refCount++;
                 plugin = item.plugin;
-                PAL_DBG(LOG_TAG, "found plugin object for  %s", keyName.c_str());
+                PAL_DBG(LOG_TAG, "found plugin object for %s refCount:%d"
+                        , keyName.c_str(), item.refCount);
                 break;
             }
             if (plugin)
@@ -198,7 +199,7 @@ int32_t  PluginManager::closePlugin(pal_plugin_manager_t type, std::string keyNa
     bool_t found = false;
     std::vector<pm_item_t> *pluginList = nullptr;
 
-    PAL_DBG(LOG_TAG, "Enter");
+    PAL_DBG(LOG_TAG, "Enter plugin type:%d keyName:%s", type, keyName.c_str());
     mPluginManagerMutex.lock();
     status = getRegisteredPluginList(type, &pluginList);
 
@@ -209,18 +210,24 @@ int32_t  PluginManager::closePlugin(pal_plugin_manager_t type, std::string keyNa
     for (auto& item : *pluginList) {
         for (auto& key : item.keyNames) {
             if (key == keyName) {
+                found = true;
+                PAL_DBG(LOG_TAG, "item:%p refCount:%d", &item, item.refCount);
+                if (item.refCount > 0) {
                     item.refCount--;
-                    if (!item.refCount){
-                        dlclose(item.handle);
-                        item.handle = nullptr;
-                        item.plugin = nullptr;
-                    }
-                    found = true;
+                } else {
+                    PAL_ERR(LOG_TAG, "refCount is %d no need dlclose", item.refCount);
                     break;
-            }
-            if (found)
+                }
+                if (!item.refCount){
+                    dlclose(item.handle);
+                    item.handle = nullptr;
+                    item.plugin = nullptr;
+                }
                 break;
+            }
         }
+        if (found)
+            break;
     }
     if (!found) {
         PAL_ERR(LOG_TAG, "could not find a registered plugin for key %s cannot close", keyName.c_str())

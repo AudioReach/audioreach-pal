@@ -359,12 +359,12 @@ void StreamASR::HandleEventData(eventPayload engEvent) {
                          i, tsEvent->event[i].is_final, tsEvent->event[i].confidence);
                  PAL_DBG(LOG_TAG,"Text_size : %d, text : %s,", tsEvent->event[i].text_size,
                          tsEvent->event[i].text);
-                 PAL_DBG(LOG_TAG,"start timestamp: %d, end timestamp : %d",
+                 PAL_DBG(LOG_TAG,"start timestamp: %ld, end timestamp : %ld",
                          tsEvent->event[i].start_ts, tsEvent->event[i].end_ts);
                  PAL_DBG(LOG_TAG, "Number of words : %d", tsEvent->event[i].num_words);
                  for (int j = 0; j < tsEvent->event[i].num_words; j++) {
-                     PAL_DBG(LOG_TAG, "\tWord : %s", tsEvent->event[i].word[j]);
-                     PAL_DBG(LOG_TAG, "\tWord's start timestamp : %d, end timestamp : %d",
+                     PAL_DBG(LOG_TAG, "\tWord : %s", tsEvent->event[i].word[j].word);
+                     PAL_DBG(LOG_TAG, "\tWord's start timestamp : %ld, end timestamp : %ld",
                         tsEvent->event[i].word[j].start_ts, tsEvent->event[i].word[j].end_ts);
                  }
             }

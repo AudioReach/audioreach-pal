@@ -178,6 +178,7 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_QCS6490_RB3Gen2.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_LEMANS_EVK.xml
+endif
 
 if COMPILE_ADSPRPCD
 adsprpc_sources = adsprpcd/adsprpcd.c
@@ -186,8 +187,6 @@ bin_PROGRAMS = audioadsprpcd
 audioadsprpcd_SOURCES = $(adsprpc_sources)
 audioadsprpcd_LDADD = -ldl
 audioadsprpcd_la_CFLAGS = -fPIC
-endif
-
 endif
 
 SUBDIRS =  plugins . session stream device plugins/configs

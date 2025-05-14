@@ -234,4 +234,11 @@ plugins/PluginManager/Makefile \
 plugins/PluginManager/plugin_manager.pc \
 plugins/codecs/Makefile \
 plugins/codecs/codecs.pc ])
+
+AC_ARG_WITH([adsprpcd],
+    AS_HELP_STRING([compile adsprpcd (default is no)]),
+    [with_adsprpcd=$withval],
+    [with_adsprpcd=no])
+AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
+
 AC_OUTPUT

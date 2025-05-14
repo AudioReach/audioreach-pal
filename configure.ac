@@ -116,6 +116,12 @@ AC_ARG_WITH([compress],
     [with_compress=no])
 AM_CONDITIONAL([COMPILE_COMPRESS], [test "x${with_compress}" = "xyes"])
 
+AC_ARG_WITH([adsprpcd],
+    AS_HELP_STRING([compile adsprpcd (default is no)]),
+    [with_adsprpcd=$withval],
+    [with_adsprpcd=no])
+AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
+
 AC_CONFIG_FILES([ Makefile \
 pal.pc \
 stream/Makefile \

@@ -1244,7 +1244,7 @@ silence_det_setup_done:
     } else if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_ASR) {
         std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
         session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty()) {
+        if (payloadListParam.empty() && sAttr.type == PAL_STREAM_ASR) {
             PAL_ERR(LOG_TAG, "payload list is empty!!!");
             status = -EINVAL;
             goto exit;

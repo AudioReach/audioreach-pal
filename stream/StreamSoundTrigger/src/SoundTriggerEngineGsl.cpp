@@ -241,6 +241,11 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
             kw_transfer_begin = std::chrono::steady_clock::now();
         }
 
+        // make sure history data is drained when LPI EC is setup
+        if (ftrt_size == 0 && sm_cfg_->GetEnableBufferingEC() && use_lpi_) {
+            ftrt_size = UsToBytes(buffer_config_.hist_buffer_duration_in_ms * 1000);
+        }
+
         PAL_VERBOSE(LOG_TAG, "request read %zu from gsl", buf.size);
         // read data from session
 #ifndef ATRACE_UNSUPPORTED
@@ -1804,6 +1809,8 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             return status;
         }
         if (force_enable || ec_ref_count_ == 1) {
+            if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+                session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, true);
             status = session_->setECRef(s, dev, is_enable);
             if (status) {
                 PAL_ERR(LOG_TAG, "Failed to set EC Ref for rx device %s",
@@ -1824,6 +1831,8 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             if (ec_ref_count_ > 0) {
                 ec_ref_count_--;
                 if (ec_ref_count_ == 0) {
+                    if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+                        session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, false);
                     status = session_->setECRef(s, dev, is_enable);
                     if (status == -ENETRESET) {
                         PAL_DBG(LOG_TAG, "Handle Reset EC Ref in case of SSR");

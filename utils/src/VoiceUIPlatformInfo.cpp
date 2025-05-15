@@ -214,6 +214,7 @@ VUIStreamConfig::VUIStreamConfig() :
     pre_roll_duration_(0),
     supported_first_stage_engine_count_(1),
     enable_intra_concurrent_detection_(false),
+    enable_buffering_ec_(false),
     curr_child_(nullptr),
     lpi_enable_(true),
     batch_size_in_ms_(0)
@@ -410,6 +411,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             ReadDetectionPropertyList(value.c_str());
         } else if (key == "batch_size_in_ms") {
             batch_size_in_ms_ = std::stoi(value);
+        } else if (key == "enable_buffering_ec") {
+            enable_buffering_ec_ = (value == "true");
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

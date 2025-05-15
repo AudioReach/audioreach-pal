@@ -124,6 +124,7 @@ public:
     uint32_t GetSupportedEngineCount() const {
                         return supported_first_stage_engine_count_; }
     bool GetEnableIntraConcurrentDetection() const { return enable_intra_concurrent_detection_; }
+    bool GetEnableBufferingEC() const { return enable_buffering_ec_; }
     int32_t GetOperatingMode(std::string tag);
     st_module_type_t GetVUIModuleType();
     std::shared_ptr<VUISecondStageConfig> GetVUISecondStageConfig(
@@ -163,6 +164,7 @@ private:
     uint32_t out_channels_;
     uint32_t supported_first_stage_engine_count_;
     bool enable_intra_concurrent_detection_;
+    bool enable_buffering_ec_;
     bool lpi_enable_;
     uint32_t batch_size_in_ms_;
     st_op_modes_t vui_op_modes_;

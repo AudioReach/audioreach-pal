@@ -26,4 +26,4 @@ lib_LTLIBRARIES =  libsva_intf.la
 libsva_intf_la_SOURCES = $(c_sources)
 libsva_intf_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsva_intf_la_LDFLAGS  = -shared -avoid-version
-libsva_intf_la_LIBADD = -lar_osal @GLIB_LIBS@ $(top_builddir)/utils/libvuiinterface_utils.la
+libsva_intf_la_LIBADD = -lar-osal @GLIB_LIBS@ $(top_builddir)/utils/libvuiinterface_utils.la

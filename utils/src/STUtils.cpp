@@ -708,6 +708,7 @@ bool checkAndUpdateDeferSwitchState(bool stream_active)
 {
     std::unique_lock<std::mutex> lck(vui_switch_mutex_);
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    std::list<Stream*> activeSTStreams;
 
     /*
      * When switching from NLPI to LPI:
@@ -725,7 +726,8 @@ bool checkAndUpdateDeferSwitchState(bool stream_active)
      *    and exit the sleep in voiceUIDeferredSwitchLoop.
      */
     if (!stream_active) {
-        if (IsLowLatencyBargeinSupported()) {
+        rm->getActiveStreamByType_l(activeSTStreams, PAL_STREAM_VOICE_UI);
+        if (IsLowLatencyBargeinSupported() && activeSTStreams.size()) {
             deferredSwitchState =
                 (deferredSwitchState == DEFER_LPI_NLPI_SWITCH) ? NO_DEFER :
                  DEFER_NLPI_LPI_SWITCH;

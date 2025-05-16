@@ -421,6 +421,7 @@ class StreamASR : public Stream {
     bool paused;
     bool deviceOpened;
     bool enableSpeakerDiarization;
+    bool enableEc;
     uint64_t cookie;
     std::map<uint32_t, ASRState*> asrStates;
     struct pal_asr_config *palRecConfig;
@@ -430,6 +431,7 @@ class StreamASR : public Stream {
     param_id_sdz_output_config_t *sdzOutputConfig;
     param_id_sdz_input_threshold_t *sdzInputConfig;
     pal_stream_callback callback;
+    std::shared_ptr<Device> ecDev;
 
     ASRState *asrIdle;
     ASRState *asrLoaded;

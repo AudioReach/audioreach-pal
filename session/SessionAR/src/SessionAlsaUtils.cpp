@@ -2418,11 +2418,13 @@ int SessionAlsaUtils::setupSessionDevice(Stream* streamHandle, pal_stream_type_t
         PAL_ERR(LOG_TAG, "get device KV failed %d", status);
         goto exit;
     }
-    if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first))
-        status = builder->populateDevicePPKV(streamHandle,
-                aifBackEndsToConnect[0].first, streamDeviceKV,
-                0, emptyKV);
-    else {
+    if (SessionAlsaUtils::isRxDevice(aifBackEndsToConnect[0].first)) {
+        if (!(sAttr.info.opt_stream_info.isBitPerfect)) {
+            status = builder->populateDevicePPKV(streamHandle,
+                     aifBackEndsToConnect[0].first, streamDeviceKV,
+                     0, emptyKV);
+        }
+    } else {
         rmHandle->getDeviceInfo(dAttr.id, streamType,
                                 dAttr.custom_config.custom_key, &devinfo);
         status = builder->populateDevicePPKV(streamHandle, 0, emptyKV,

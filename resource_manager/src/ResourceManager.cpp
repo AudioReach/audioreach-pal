@@ -5007,7 +5007,7 @@ void ResourceManager::deinit()
        chargerListenerDeinit();
 
 #ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-    voiceuiDmgrManagerDeInit();
+    STUtilsDeinit();
     AudioFeatureStatsDeInit();
 #endif
 

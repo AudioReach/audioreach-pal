@@ -19,6 +19,7 @@ typedef void (*SoundTriggerOnResourceAvailableCallback)(uint64_t cookie);
 static void voiceUIDeferredSwitchLoop(std::shared_ptr<ResourceManager> rm);
 void onChargingStateChange();
 void STUtilsInit();
+void STUtilsDeinit();
 #ifndef VUI_DMGR_AUDIO_UNSUPPORTED
 void voiceuiDmgrManagerInit();
 void voiceuiDmgrManagerDeInit();

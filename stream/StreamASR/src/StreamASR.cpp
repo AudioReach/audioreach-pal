@@ -64,6 +64,7 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
     cmCfg = nullptr;
     deviceOpened = false;
     enableSpeakerDiarization = false;
+    enableEc = false;
     currentState = STREAM_IDLE;
     asrIdle = nullptr;
     asrActive = nullptr;
@@ -483,6 +484,7 @@ int32_t StreamASR::setECRef_l(std::shared_ptr<Device> dev, bool isEnable)
         PAL_ERR(LOG_TAG, "Error:%d Failed to handle ec ref event", status);
     }
 
+    ecDev = dev;
 exit:
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
     return status;
@@ -993,6 +995,13 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
                 PAL_ERR(LOG_TAG, "Error:%d Start asr engine failed", status);
                 goto err_exit;
             }
+            if (asrStream.enableEc) {
+                status = asrStream.engine->setECRef(&asrStream, asrStream.ecDev, true, true);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Error:%d Failed to set EC Ref in engine", status);
+                }
+                asrStream.enableEc = false;
+            }
             TransitTo(ASR_STATE_ACTIVE);
             break;
         err_exit:
@@ -1043,6 +1052,13 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
             asrStream.mDevices.push_back(dev);
         connect_err:
             break;
+        }
+        case ASR_EV_EC_REF: {
+             ASRECRefEventData *data = (ASRECRefEventData *)evCfg->data.get();
+             Stream *s = static_cast<Stream *>(&asrStream);
+             PAL_INFO(LOG_TAG, "EC enable : %d", data->isEnable);
+             asrStream.enableEc = data->isEnable;
+             PAL_INFO(LOG_TAG, "EC will be handled after engine start!!!");
         }
         case ASR_EV_PAUSE: {
             asrStream.paused = true;
@@ -1248,8 +1264,9 @@ int32_t StreamASR::ASRActive::ProcessEvent(
         case ASR_EV_EC_REF: {
             ASRECRefEventData *data = (ASRECRefEventData *)evCfg->data.get();
             Stream *s = static_cast<Stream *>(&asrStream);
-            PAL_ERR(LOG_TAG, "EC enable : %d", data->isEnable);
-            status = asrStream.engine->setECRef(s, data->dev, data->isEnable);
+            PAL_INFO(LOG_TAG, "EC enable : %d", data->isEnable);
+            status = asrStream.engine->setECRef(s, data->dev, data->isEnable,
+                                                asrStream.ecDev == data->dev);
             if (status) {
                 PAL_ERR(LOG_TAG, "Error:%d Failed to set EC Ref in engine", status);
             }

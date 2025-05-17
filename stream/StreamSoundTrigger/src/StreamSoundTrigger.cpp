@@ -4174,14 +4174,6 @@ int32_t StreamSoundTrigger::ReleaseVUIInterface(struct vui_intf_t *intf) {
     return status;
 }
 
-bool StreamSoundTrigger::isLPIProfile() {
-    if (cap_prof_ && strstr(cap_prof_->GetSndName().c_str(), "lpi")) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 uint32_t StreamSoundTrigger::GetMMAModelType() {
     int32_t status = 0;
     uint32_t mode_bit = 0;

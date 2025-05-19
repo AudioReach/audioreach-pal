@@ -217,15 +217,17 @@ int32_t voicePostReconfig(Stream* s, void* pluginPayload) {
     int status = 0;
     struct ReconfigPluginPayload* reconfigPld = nullptr;
     reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+    std::shared_ptr<ResourceManager> rm = nullptr;
 
     PAL_DBG(LOG_TAG,"Enter");
+    rm = ResourceManager::getInstance();
     if (!reconfigPld->config_ctrl.compare("silence_detection")) {
         status = voiceSilenceDetectionConfig(SD_CONNECT, &reconfigPld->dAttr, pluginPayload);
         if (status) {
             goto exit;
         }
-    } else {
-            status = rxMFCCoeffConfig(s, pluginPayload);
+    } else if (rm->IsCRSCallEnabled()) {
+        status = rxMFCCoeffConfig(s, pluginPayload);
     }
 
 exit:
@@ -256,8 +258,13 @@ int32_t voicePluginPreReconfig(Stream* s, void* pluginPayload) {
  */
 int32_t voicePluginConfigSetConfigPostStart(Stream* s, void* pluginPayload) {
     int status = 0;
+    std::shared_ptr<ResourceManager> rm = nullptr;
+
     PAL_DBG(LOG_TAG,"Enter");
-    status = rxMFCCoeffConfig(s, pluginPayload);
+    rm = ResourceManager::getInstance();
+    if (rm->IsCRSCallEnabled()) {
+        status = rxMFCCoeffConfig(s, pluginPayload);
+    }
 exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;

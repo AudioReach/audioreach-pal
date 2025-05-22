@@ -1112,7 +1112,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-RX-1</back_end_name>
+            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-6</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>

@@ -234,10 +234,8 @@
 
 <!-- WCD File Contents  -->
 
-    <!-- WCD939x enable PCM path by default -->
-    <ctl name="RX_HPH PCM" value="1" />
-    <ctl name="HPH PCM Enable" value="1" />
-    <!-- Headphone class-H mode  -->
+    <!-- Headphone class-H mode -->
+    <ctl name="RX_HPH_PWR_MODE" value="ULP" />
     <ctl name="RX HPH Mode" value="CLS_H_ULP" />
 
     <!-- These are actual sound device specific mixer settings -->
@@ -332,10 +330,12 @@
         <ctl name="RX INT1_1 MIX1 INP0" value="RX1" />
         <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
         <ctl name="RX INT1 DEM MUX" value="CLSH_DSM_OUT" />
-        <ctl name="HPHL Compander" value="1" />
-        <ctl name="HPHR Compander" value="1" />
-        <ctl name="HPHL_RDAC Switch" value="1" />
+        <ctl name="RX_COMP1 Switch" value="1" />
+        <ctl name="RX_COMP2 Switch" value="1" />
+        <ctl name="HPHL_COMP Switch" value="1" />
+        <ctl name="HPHR_COMP Switch" value="1" />
         <ctl name="HPHR_RDAC Switch" value="1" />
+        <ctl name="HPHL_RDAC Switch" value="1" />
     </path>
 
     <path name="headphones-and-haptics">
@@ -345,8 +345,12 @@
         <ctl name="RX INT1_1 MIX1 INP0" value="RX1" />
         <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
         <ctl name="RX INT1 DEM MUX" value="CLSH_DSM_OUT" />
-        <ctl name="HPHL Compander" value="1" />
-        <ctl name="HPHR Compander" value="1" />
+        <ctl name="RX_COMP1 Switch" value="1" />
+        <ctl name="RX_COMP2 Switch" value="1" />
+        <ctl name="HPH_L Switch" value="1" />
+        <ctl name="HPH_R Switch" value="1" />
+        <ctl name="HPHL_COMP Switch" value="1" />
+        <ctl name="HPHR_COMP Switch" value="1" />
         <ctl name="HPHL_RDAC Switch" value="1" />
         <ctl name="HPHR_RDAC Switch" value="1" />
         <ctl name="SWR DAC_Port Switch" value="1" />
@@ -362,9 +366,17 @@
     </path>
 
     <path name="hph-highquality-mode">
+        <ctl name="RX_HPH_PWR_MODE" value="LOHIFI" />
+        <ctl name="RX HPH Mode" value="CLS_H_LOHIFI" />
     </path>
 
     <path name="hph-lowpower-mode">
+        <ctl name="RX_HPH_PWR_MODE" value="ULP" />
+        <ctl name="RX HPH Mode" value="CLS_H_ULP" />
+    </path>
+
+    <path name="hph-class-ab-mode">
+        <ctl name="RX HPH Mode" value="CLS_AB" />
     </path>
 
     <path name="true-native-mode">
@@ -736,7 +748,8 @@
         <ctl name="RX_MACRO RX0 MUX" value="AIF1_PB" />
         <ctl name="RX INT0_1 MIX1 INP0" value="RX0" />
         <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
-        <ctl name="HPHL Compander" value="1" />
+        <ctl name="RX_COMP1 Switch" value="1" />
+        <ctl name="HPHL_COMP Switch" value="1" />
         <ctl name="HPHL_RDAC Switch" value="1" />
     </path>
 

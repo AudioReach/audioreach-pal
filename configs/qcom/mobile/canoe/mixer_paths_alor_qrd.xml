@@ -593,7 +593,7 @@
         <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
     </path>
 
-    <path name="handset">
+    <path name="handset-wsa">
         <ctl name="RX_MACRO RX2 MUX" value="AIF2_PB" />
         <ctl name="RX INT2_1 MIX1 INP0" value="RX2" />
         <ctl name="EAR_RDAC Switch" value="1" />
@@ -611,7 +611,7 @@
         <ctl name="TX_DEC2 Volume" value="102" />
     </path>
 
-    <path name="ultrasound-handset">
+    <path name="ultrasound-handset-wsa">
         <ctl name="RX_MACRO RX2 MUX" value="AIF2_PB" />
         <ctl name="RX INT2_1 MIX1 INP0" value="RX2" />
         <ctl name="EAR_RDAC Switch" value="1" />
@@ -632,11 +632,11 @@
     </path>
 
     <path name="speaker-ultrasound">
-        <path name="ultrasound-handset" />
+        <path name="ultrasound-handset-wsa" />
     </path>
 
     <path name="ultrasound-handset-vbat">
-        <path name="ultrasound-handset" />
+        <path name="ultrasound-handset-wsa" />
     </path>
 
     <path name="ultrasound-mic">
@@ -711,23 +711,23 @@
     </path>
 
     <path name="voice-handset">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-handset-tmus">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-handset-hac">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-handset-hdk">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-handset-tmus-hdk">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-speaker">
@@ -1520,12 +1520,12 @@
     </path>
 
     <path name="voice-tty-hco-handset">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
 
     <path name="voice-tty-hco-handset-hdk">
-        <path name="handset" />
+        <path name="handset-wsa" />
     </path>
 
     <path name="voice-tty-full-headset-mic">

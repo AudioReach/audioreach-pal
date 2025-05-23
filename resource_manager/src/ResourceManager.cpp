@@ -1015,7 +1015,6 @@ ResourceManager::~ResourceManager()
 
     STInstancesLists.clear();
     devicePcmId.clear();
-    PCMDataInstances.clear();
 
     for (auto it: frontEndIdMap) {
         it.second.clear();
@@ -8064,17 +8063,6 @@ int ResourceManager::resetStreamInstanceID(Stream *str, uint32_t sInstanceID) {
             str->setInstanceId(0);
             break;
         }
-        case PAL_STREAM_SENSOR_PCM_DATA: {
-            for (auto instance : PCMDataInstances) {
-                if (sInstanceID == instance.first) {
-                    PAL_DBG(LOG_TAG, "Reset Sensor PCM Data instance: %d to false", sInstanceID);
-                    PCMDataInstances[instance.first] = false;
-                    break;
-                }
-            }
-            str->setInstanceId(0);
-            break;
-        }
         default: {
             if (StrAttr.direction == PAL_AUDIO_INPUT) {
                 in_stream_instances[StrAttr.type - 1] &= ~(1 << (sInstanceID - 1));
@@ -8169,32 +8157,6 @@ int ResourceManager::getStreamInstanceID(Stream *str) {
                 str->setInstanceId(instanceId);
                 PAL_DBG(LOG_TAG, "NT instance id %d", instanceId);
             }
-            break;
-        }
-        case PAL_STREAM_SENSOR_PCM_DATA: {
-            int instanceId = str->getInstanceId();
-            uint32_t num_instances = PCMDataInstances.size();
-
-            if (!instanceId) {
-                for (auto instance : PCMDataInstances) {
-                    if (false == instance.second) {
-                        PAL_DBG(LOG_TAG,
-                                "Found an available instance id: %d in PCMDataInstances",
-                                instance.first);
-                        instanceId = instance.first;
-                        PCMDataInstances[instance.first] = true;
-                        goto done;
-                    }
-                }
-                instanceId = num_instances + 1;
-                PCMDataInstances.insert(std::make_pair(instanceId, true));
-done:
-                str->setInstanceId(instanceId);
-                PAL_DBG(LOG_TAG,
-                        "Sensor PCM Data instance id: %d, number of instances: %d",
-                        instanceId, PCMDataInstances.size());
-            }
-            status = instanceId;
             break;
         }
         default: {

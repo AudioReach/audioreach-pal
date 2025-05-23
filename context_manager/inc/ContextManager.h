@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef CONTEXTMANAGER_H
@@ -47,6 +47,17 @@ enum PCM_DATA_EFFECT {
     PCM_DATA_EFFECT_RAW = 1,
     PCM_DATA_EFFECT_NS = 2,
 };
+
+typedef enum {
+    SPCM_TYPE_V1,
+    SPCM_TYPE_V2,
+    SPCM_INVLIAD  = 0xF,
+} spcm_type_t;
+
+typedef struct spcm_param {
+    uint32_t pcm_data_buffering;
+    spcm_type_t spcm_type;
+} spcm_param_t;
 
 class ContextManager; /* forward declaration for RequestCommand */
 class ACDPlatformInfo;

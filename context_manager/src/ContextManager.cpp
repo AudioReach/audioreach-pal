@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1388,24 +1387,29 @@ int32_t UsecasePCMData::Configure()
     int32_t rc = 0;
     pal_param_payload *pal_param = NULL;
     pal_audio_effect_t effect = PAL_AUDIO_EFFECT_NONE;
+    spcm_param_t *spcm_param = NULL;
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x, pcm_data_type:%d",
                 this->usecase_id, this->pcm_data_type);
 
+    // payload[0] is pcm_data_buffering for V2 usecase
+    // payload[1] is pcm data usecase type, V1 or V2
+    pal_param = (pal_param_payload *) calloc(1, sizeof(pal_param_payload) + sizeof(spcm_param_t));
+    if (!pal_param) {
+        rc = -ENOMEM;
+        goto exit;
+    }
+    pal_param->payload_size = sizeof(spcm_param_t);
+    spcm_param = (spcm_param_t *)pal_param->payload;
+    spcm_param->spcm_type = SPCM_TYPE_V1;
     if (this->usecase_id == ASPS_USECASE_ID_PCM_DATA_V2) {
-        pal_param = (pal_param_payload *) calloc(1, sizeof(pal_param_payload) + sizeof(uint32_t));
-        if (!pal_param) {
-            rc = -ENOMEM;
-            goto exit;
-        }
-
-        pal_param->payload_size = sizeof(uint32_t);
-        memcpy(pal_param->payload, &(this->pcm_data_buffering), sizeof(uint32_t));
-        rc = pal_stream_set_param(this->pal_stream, PAL_PARAM_ID_CUSTOM_CONFIGURATION, pal_param);
-        if (rc) {
-            PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x", rc, this->usecase_id);
-            goto exit;
-        }
+        spcm_param->pcm_data_buffering = this->pcm_data_buffering;
+        spcm_param->spcm_type = SPCM_TYPE_V2;
+    }
+    rc = pal_stream_set_param(this->pal_stream, PAL_PARAM_ID_CUSTOM_CONFIGURATION, pal_param);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x", rc, this->usecase_id);
+        goto exit;
     }
 
     if (this->pcm_data_type == PCM_DATA_EFFECT_NS)

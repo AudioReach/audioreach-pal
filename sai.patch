@@ -1,0 +1,200 @@
+commit 44d0a2700288883dbbd2c6e7b37c2f3f77303235
+Author: ffrancis <ffrancis@qti.qualcomm.com>
+Date:   Fri May 23 11:27:00 2025 +0530
+
+    CI: Update pre_merge workflow to use centralized reusable workflows
+    
+    * Replace existing GitHub Actions workflows with references to shared workflows
+      from https://github.com/Audioreach/audioreach-workflows to promote consistency
+      and reduce redundancy.
+    
+    * Retain only essential scripts in the ci/ directory:
+    1. build.sh:
+            Build commands are added in here
+    2. sync.sh:
+            Dependency Syncs are called here
+    3. apply_patch.sh:
+            If any patch is required, we will add here.
+    4. config.sh:
+            Dependency Syncs are added in here
+    5. build_options.txt :
+            Receipes depedencies are added here
+    6. files_to_copy.sh:
+            Copying from Source and to Target Artifacts are added here.
+    
+    * Configure shared workflows to consume these scripts for builds and tests.
+    * Centralize workflow logic to improve maintainability and simplify future updates.
+    * Remove redundant YAML workflow files to streamline the repository.
+    
+    Signed-off-by: ffrancis <ffrancis@qti.qualcomm.com>
+
+diff --git a/.github/workflows/pre_merge_build.yml b/.github/workflows/pre_merge_build.yml
+new file mode 100644
+index 0000000..4ccde20
+--- /dev/null
++++ b/.github/workflows/pre_merge_build.yml
+@@ -0,0 +1,45 @@
++---
++name: pre_merge_build
++run-name: Pre Merge Build (PR:${{ github.event.pull_request.number }})
++
++on:
++  workflow_dispatch:
++  pull_request:
++    types: [opened, synchronize, reopened]
++    branches:
++      - qclinux1.0
++    paths-ignore:
++      - '.github/**'
++
++jobs:
++  load_parameters:
++    uses: Audioreach/audioreach-workflows/.github/workflows/loading.yml@master
++    with:
++      event_name: ${{ github.event_name }}
++      pr_ref: ${{ github.event.pull_request.head.ref }}
++      pr_repo: ${{ github.event.pull_request.head.repo.full_name }}
++
++  build:
++    needs: load_parameters
++    uses: Audioreach/audioreach-workflows/.github/workflows/build.yml@master
++    secrets: inherit
++    with:
++      build_args: ${{ needs.load_parameters.outputs.build_args }}
++      event_name: ${{ github.event_name }}
++      pr_ref: ${{ github.event.pull_request.head.ref }}
++      pr_repo: ${{ github.event.pull_request.head.repo.full_name }}
++
++  process_image:
++    needs: [ load_parameters, build ]
++    uses: Audioreach/audioreach-workflows/.github/workflows/process_image.yml@master
++    secrets: inherit
++    with:
++      event_name: ${{ github.event_name }}
++      pr_ref: ${{ github.event.pull_request.head.ref }}
++      pr_repo: ${{ github.event.pull_request.head.repo.full_name }}
++
++  trigger_lava:
++    needs: [ load_parameters, build, process_image ]
++    uses: Audioreach/audioreach-workflows/.github/workflows/test.yml@master
++    secrets: inherit
++
+diff --git a/.github/workflows/qli-checkers.yml b/.github/workflows/qli-checkers.yml
+new file mode 100644
+index 0000000..6ca6840
+--- /dev/null
++++ b/.github/workflows/qli-checkers.yml
+@@ -0,0 +1,19 @@
++name: qli-checkers
++on:
++  pull_request_target:
++    branches: [ qclinux1.0 ]
++  push:
++    branches: [ qclinux1.0 ]
++  workflow_dispatch:
++
++jobs:
++  checker:
++    uses: qualcomm-linux/qli-actions/.github/workflows/multi-checker.yml@main
++    with:
++        repolinter: true # default: true
++        semgrep: true # default: true
++        copyright-license-detector: true # default: true
++        pr-check-emails: true # default: true
++
++    secrets:
++      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+diff --git a/ci/build.sh b/ci/build.sh
+new file mode 100644
+index 0000000..5d9b036
+--- /dev/null
++++ b/ci/build.sh
+@@ -0,0 +1,19 @@
++#!/bin/bash
++# SPDX-License-Identifier: BSD-3-Clause-Clear
++#
++# Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
++set -ex
++echo "Running build script..."
++# Build/Compile audioreach-graphservices
++source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-poky-linux
++
++# make sure we are in the right directory
++cd ${GITHUB_WORKSPACE}
++
++autoreconf -Wcross --verbose --install --force --exclude=autopoint
++autoconf --force
++
++# Run the configure script with the specified arguments
++./configure \${BUILD_ARGS} --with-glib --with-syslog
++# make
++make DESTDIR=${GITHUB_WORKSPACE}/build install
+diff --git a/ci/build_options.txt b/ci/build_options.txt
+new file mode 100644
+index 0000000..bf1b73b
+--- /dev/null
++++ b/ci/build_options.txt
+@@ -0,0 +1,19 @@
++--build=x86_64-linux
++--host=aarch64-poky-linux
++--prefix=/usr
++--exec_prefix=/usr
++--bindir=/usr/bin
++--sbindir=/usr/sbin
++--libexecdir=/usr/libexec
++--datadir=/usr/share
++--sysconfdir=/etc
++--sharedstatedir=/com
++--localstatedir=/var
++--libdir=/usr/lib
++--includedir=/usr/include
++--oldincludedir=/usr/include
++--infodir=/usr/share/info
++--mandir=/usr/share/man
++--disable-silent-rules
++--disable-dependency-tracking
++--disable-static
+diff --git a/ci/config.sh b/ci/config.sh
+new file mode 100644
+index 0000000..097f688
+--- /dev/null
++++ b/ci/config.sh
+@@ -0,0 +1,10 @@
++#!/bin/bash
++# SPDX-License-Identifier: BSD-3-Clause-Clear
++#
++# Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
++# This file is part of the Audioreach CI configuration.
++# It defines the repositories and patches used in the CI process.
++REPOS=(
++  "arpal-lx|https://github.com/Audioreach/arpal-lx.git"
++)
++
+diff --git a/ci/sync.sh b/ci/sync.sh
+new file mode 100644
+index 0000000..b4b9a58
+--- /dev/null
++++ b/ci/sync.sh
+@@ -0,0 +1,22 @@
++#!/bin/bash
++# SPDX-License-Identifier: BSD-3-Clause-Clear
++#
++# Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
++set -ex
++# This script synchronizes the repositories and patches defined in config.sh.
++CONFIG_SCRIPT_PATH="${CONFIG_SCRIPT:-$(dirname "${BASH_SOURCE[0]}")/config.sh}"
++source "$CONFIG_SCRIPT_PATH"
++
++for entry in "${REPOS[@]}"; do
++    IFS='|' read -r name url <<< "$entry"
++    dir="$GITHUB_WORKSPACE/../$name"
++    if [ -d "$dir" ]; then
++        echo "Updating $name..."
++        git -C "$dir" fetch origin
++        git -C "$dir" reset --hard origin/main
++        git -C "$dir" clean -fdx
++    else
++        echo "Cloning $name..."
++        git clone "$url" "$dir"
++    fi
++done

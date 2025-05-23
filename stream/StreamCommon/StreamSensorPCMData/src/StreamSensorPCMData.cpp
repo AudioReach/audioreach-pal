@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -44,6 +43,11 @@
 #include "MemLogBuilder.h"
 #endif
 #include "STUtils.h"
+
+std::set<int> StreamSensorPCMData::InstAllocator::available_ids = {
+                                INSTANCE_ID_1,
+                                INSTANCE_ID_2,
+                                INSTANCE_ID_3};
 
 extern "C" Stream* CreateSensorPCMDataStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -98,7 +102,7 @@ StreamSensorPCMData::StreamSensorPCMData(const struct pal_stream_attributes *sat
 StreamSensorPCMData::~StreamSensorPCMData()
 {
     PAL_DBG(LOG_TAG, "Enter");
-    rm->resetStreamInstanceID(this);
+    InstAllocator::release(spcm_param.spcm_type);
     rm->deregisterStream(this);
     PAL_DBG(LOG_TAG, "Exit");
 }
@@ -449,7 +453,10 @@ int32_t StreamSensorPCMData::SetupStreamConfig(const struct st_uuid *vendor_uuid
     }
 
     mStreamSelector = sm_cfg_->GetStreamConfigName();
-    mInstanceID = rm->getStreamInstanceID(this);
+    mInstanceID = InstAllocator::allocate(spcm_param.spcm_type);
+    if (mInstanceID < 0) {
+        status = -EINVAL;
+    }
 
 exit:
     if (status)
@@ -538,7 +545,7 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
         else if (bit_width == 24)
             capture_profile_name.append("24BIT_");
 
-        if (pcm_data_buffering == 1)
+        if (spcm_param.pcm_data_buffering == 1)
             capture_profile_name.append("RAW_LPI_TX_MACRO");
         else
             capture_profile_name.append("RAW_LPI_NO_BUFFER_TX_MACRO");
@@ -865,6 +872,7 @@ int32_t StreamSensorPCMData::setParameters(uint32_t param_id, void *payload)
 {
     int32_t status = 0;
     pal_param_payload *param_payload = (pal_param_payload *)payload;
+    spcm_param_t *spcm_param_payload = NULL;
 
     if (!param_payload) {
         PAL_ERR(LOG_TAG, "Error: Invalid payload for param ID: %d", param_id);
@@ -876,7 +884,9 @@ int32_t StreamSensorPCMData::setParameters(uint32_t param_id, void *payload)
     std::lock_guard<std::mutex> lck(mStreamMutex);
     switch (param_id) {
         case PAL_PARAM_ID_CUSTOM_CONFIGURATION: {
-            pcm_data_buffering = *((uint32_t *) param_payload->payload);
+            spcm_param_payload = (spcm_param_t *) param_payload->payload;
+            spcm_param.pcm_data_buffering = spcm_param_payload->pcm_data_buffering;
+            spcm_param.spcm_type = spcm_param_payload->spcm_type;
             break;
         }
         default: {

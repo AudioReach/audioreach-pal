@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -39,6 +38,12 @@
 #include "Session.h"
 #include "StreamCommon.h"
 #include "ACDPlatformInfo.h"
+
+typedef enum {
+    INSTANCE_ID_1 = 1,
+    INSTANCE_ID_2 = 2,
+    INSTANCE_ID_3 = 3,
+} spcm_inst_t;
 
 extern "C" Stream* CreateSensorPCMDataStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -83,10 +88,40 @@ private:
     std::shared_ptr<ACDPlatformInfo> acd_info_;
     std::shared_ptr<CaptureProfile> cap_prof_;
     uint32_t pcm_data_stream_effect;
-    uint32_t pcm_data_buffering;
+    spcm_param_t spcm_param;
     bool paused_;
-    std::map<int, bool> PCMDataInstances;
     bool conc_notified_;
+
+    class InstAllocator {
+    private:
+        static std::set<int> available_ids;
+
+    public:
+        static int allocate(spcm_type_t type) {
+            if (type == SPCM_TYPE_V1) {
+                for (int id : {INSTANCE_ID_1, INSTANCE_ID_2}) {
+                    if (available_ids.find(id) != available_ids.end()) {
+                        available_ids.erase(id);
+                        return id;
+                    }
+                }
+                return -EINVAL;
+            } else if (type == SPCM_TYPE_V2) {
+                if (available_ids.find(INSTANCE_ID_3) != available_ids.end()) {
+                    available_ids.erase(INSTANCE_ID_3);
+                    return INSTANCE_ID_3;
+                }
+                return -EINVAL;
+            } else {
+                PAL_ERR(LOG_TAG, "unknown SPCM type: %d requested", type);
+                return -EINVAL;
+            }
+        }
+
+        static void release(int id) {
+            available_ids.insert(id);
+        }
+    };
 };
 
 #endif//StreamSensorPCMData_H_

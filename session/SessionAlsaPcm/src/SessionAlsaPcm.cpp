@@ -169,7 +169,7 @@ int SessionAlsaPcm::open(Stream * s)
     }
 
     // Register for Soft pause events
-    if (sAttr.direction == PAL_AUDIO_OUTPUT)
+    if (sAttr.direction == PAL_AUDIO_OUTPUT  && sAttr.type != PAL_STREAM_HAPTICS)
         registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
 
     // enable dual mono

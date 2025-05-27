@@ -26,11 +26,9 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
-* Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-*
-* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+* Changes from Qualcomm Technologies, Inc. are provided under the following license:
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
-*
 */
 
 #define LOG_TAG "PAL: SessionAlsaUtils"
@@ -1080,7 +1078,7 @@ int SessionAlsaUtils::getModuleInstanceId(struct mixer *mixer, int device, const
     }
     tag_info = (struct gsl_tag_module_info *)payload;
     PAL_DBG(LOG_TAG, "num of tags associated with stream %d is %d\n", device, tag_info->num_tags);
-    ret = -1;
+    ret = -EINVAL;
     tag_entry = (struct gsl_tag_module_info_entry *)(&tag_info->tag_module_entry[0]);
     offset = 0;
     for (i = 0; i < tag_info->num_tags; i++) {
@@ -1101,8 +1099,7 @@ int SessionAlsaUtils::getModuleInstanceId(struct mixer *mixer, int device, const
         }
     }
 
-    if (*miid == 0) {
-         ret = -EINVAL;
+    if (ret) {
          PAL_ERR(LOG_TAG, "No matching MIID found for tag: 0x%x, error:%d", tag_id, ret);
     }
 

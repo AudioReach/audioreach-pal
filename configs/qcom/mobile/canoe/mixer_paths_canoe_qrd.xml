@@ -192,7 +192,7 @@
         <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
         <ctl name="SA1 Rx Channel Select" value="CH1" />
         <ctl name="SA1 OT23 Usage Mode" value="8" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="60" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="66" />
     </path>
 
     <path name="handset">
@@ -210,7 +210,7 @@
         <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
         <ctl name="SA1 Rx Channel Select" value="CH2" />
         <ctl name="SA1 OT23 Usage Mode" value="0" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="speaker-hdk">
@@ -637,7 +637,7 @@
 
     <path name="speaker-mic">
         <path name="amic3" />
-        <ctl name="TX_DEC2 Volume" value="102" />
+        <ctl name="TX_DEC2 Volume" value="96" />
     </path>
 
     <path name="voice-speaker-mic">

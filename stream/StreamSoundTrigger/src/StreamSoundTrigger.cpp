@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -614,7 +614,8 @@ int32_t StreamSoundTrigger::setParameters(uint32_t param_id, void *payload) {
     pal_param_payload *param_payload = (pal_param_payload *)payload;
     struct pal_st_recognition_config *new_rec_config = nullptr;
 
-    if (param_id != PAL_PARAM_ID_STOP_BUFFERING && !param_payload) {
+    if (param_id != PAL_PARAM_ID_STOP_BUFFERING &&
+        param_id != PAL_PARAM_ID_FORCE_RECOGNITION && !param_payload) {
         PAL_ERR(LOG_TAG, "Invalid payload for param ID: %d", param_id);
         return -EINVAL;
     }
@@ -655,6 +656,12 @@ int32_t StreamSoundTrigger::setParameters(uint32_t param_id, void *payload) {
             }
             break;
         }
+        case PAL_PARAM_ID_FORCE_RECOGNITION: {
+            std::shared_ptr<StEventConfig> ev_cfg(
+                new StForceRecognitionConfig());
+            status = cur_state_->ProcessEvent(ev_cfg);
+            break;
+        }
         default: {
             status = -EINVAL;
             PAL_ERR(LOG_TAG, "Unsupported param %u", param_id);
@@ -686,9 +693,19 @@ int32_t StreamSoundTrigger::HandleConcurrentStream(bool active) {
     PAL_DBG(LOG_TAG, "Enter");
     new_cap_prof = GetCurrentCaptureProfile();
     if (cap_prof_ != new_cap_prof) {
-        std::shared_ptr<StEventConfig> ev_cfg(
-            new StConcurrentStreamEventConfig(active));
-        status = cur_state_->ProcessEvent(ev_cfg);
+        if (model_type_ != ST_MODULE_TYPE_HIST_CAP) {
+            std::shared_ptr<StEventConfig> ev_cfg(
+                new StConcurrentStreamEventConfig(active));
+            status = cur_state_->ProcessEvent(ev_cfg);
+        } else if (active) {
+            std::shared_ptr<StEventConfig> ev_cfg(
+                new StDeviceConnectedEventConfig(new_cap_prof->GetDevId()));
+            status = cur_state_->ProcessEvent(ev_cfg);
+        } else {
+            std::shared_ptr<StEventConfig> ev_cfg(
+                new StDeviceDisconnectedEventConfig(cap_prof_->GetDevId()));
+            status = cur_state_->ProcessEvent(ev_cfg);
+        }
     } else {
         PAL_DBG(LOG_TAG, "Same capture pofile, no need to update");
     }
@@ -1578,6 +1595,7 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
     uint32_t client_capture_read_delay = 0;
     uint32_t ring_buffer_len = 0;
     uint32_t ring_buffer_size = 0;
+    uint32_t mmap_buf_len = 0;
     vui_intf_param_t param {};
     struct buffer_config buf_config;
 
@@ -1676,7 +1694,9 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
 
     // update input buffer size for mmap usecase
     if (vui_ptfm_info_->GetMmapEnable()) {
+        mmap_buf_len = vui_ptfm_info_->GetMmapBufferDuration();
         inBufSize = vui_ptfm_info_->GetMmapFrameLength() *
+            ((hist_buffer_duration + mmap_buf_len - 1) / mmap_buf_len) *
             sm_cfg_->GetSampleRate() * sm_cfg_->GetBitWidth() *
             sm_cfg_->GetOutChannels() / (MS_PER_SEC * BITS_PER_BYTE);
         if (!inBufSize) {
@@ -3088,6 +3108,12 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
             TransitTo(ST_STATE_SSR);
             break;
         }
+        case ST_EV_FORCE_RECOGNITION: {
+            status = st_stream_.gsl_engine_->ForceRecognition(&st_stream_);
+            if (status)
+                PAL_ERR(LOG_TAG, "Failed to force recognition, status %d", status);
+            break;
+        }
         default: {
             PAL_DBG(LOG_TAG, "Unhandled event %d", ev_cfg->id_);
             break;
@@ -4102,6 +4128,7 @@ int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_pa
     switch (config->module_type) {
         case ST_MODULE_TYPE_GMM:
         case ST_MODULE_TYPE_PDK:
+        case ST_MODULE_TYPE_HIST_CAP:
         case ST_MODULE_TYPE_HW:
         case ST_MODULE_TYPE_CUSTOM_1:
         case ST_MODULE_TYPE_CUSTOM_2:

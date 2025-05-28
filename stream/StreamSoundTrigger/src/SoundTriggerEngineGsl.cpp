@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef ATRACE_UNSUPPORTED
@@ -797,7 +797,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
                 goto exit;
             }
         }
-    } else {
+    } else if (module_type_ != ST_MODULE_TYPE_HIST_CAP) {
         status = UpdateSessionPayload(s, LOAD_SOUND_MODEL);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to update session payload, status = %d", status);
@@ -929,9 +929,13 @@ int32_t SoundTriggerEngineGsl::UpdateConfigsToSession(StreamSoundTrigger *s) {
     int32_t status = 0;
 
     if (is_qc_wakeup_config_) {
-        status = UpdateSessionPayload(s, WAKEUP_CONFIG);
+        if (module_type_ != ST_MODULE_TYPE_HIST_CAP) {
+            status = UpdateSessionPayload(s, WAKEUP_CONFIG);
+        } else {
+            status = UpdateSessionPayload(s, BUFFERING_MODE_CONFIG);
+        }
         if (0 != status) {
-            PAL_ERR(LOG_TAG, "Failed to set wake up config, status = %d",
+            PAL_ERR(LOG_TAG, "Failed to set VA module config, status = %d",
                 status);
             goto exit;
         }
@@ -961,6 +965,7 @@ int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
     int32_t status = 0;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
     struct pal_mmap_position mmap_pos;
+    uint32_t hist_buffer_size_in_bytes = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
     rm->acquireWakeLock();
@@ -979,6 +984,12 @@ int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
     }
 
     if (mmap_buffer_size_ != 0 && !mmap_buffer_.buffer) {
+        hist_buffer_size_in_bytes =
+            (buffer_config_.hist_buffer_duration_in_ms / MS_PER_SEC) *
+            sample_rate_ * bit_width_ * channels_ / BITS_PER_BYTE;
+        if (mmap_buffer_size_ < hist_buffer_size_in_bytes)
+            mmap_buffer_size_ = hist_buffer_size_in_bytes;
+
         status = session_->createMmapBuffer(s, BytesToFrames(mmap_buffer_size_),
             &mmap_buffer_);
         if (0 != status) {
@@ -1951,6 +1962,15 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 intf_param.size = sizeof(uint32_t);
             }
             break;
+        case TRIGGER_DETECTION_CONFIG:
+            intf_param.data = nullptr;
+            intf_param.size = 0;
+            break;
+        case BUFFERING_MODE_CONFIG:
+            intf_param.size = sm_cfg_->GetBatchSizeInMs();
+            status = vui_intf_->GetParameter(PARAM_BUFFERING_MODE_CONFIG, &intf_param);
+            ses_param_id = PAL_PARAM_ID_BUFFERING_MODE;
+            break;
         default:
             PAL_ERR(LOG_TAG, "Invalid param id %u", param);
             return -EINVAL;
@@ -2100,4 +2120,17 @@ bool SoundTriggerEngineGsl::UpdateGlobalDetectionStatus(bool is_active) {
     }
 
     return true;
+}
+
+int32_t SoundTriggerEngineGsl::ForceRecognition(StreamSoundTrigger *s) {
+    int32_t status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    std::unique_lock<std::mutex> lck(mutex_);
+
+    status = UpdateSessionPayload(s, TRIGGER_DETECTION_CONFIG);
+    if (0!= status)
+        PAL_ERR(LOG_TAG, "Failed to trigger detection event");
+
+    return status;
 }

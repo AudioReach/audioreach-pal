@@ -136,6 +136,10 @@ int32_t VUIFirstStageConfig::GetIndex(std::string param_name) {
         index = ENGINE_PER_MODEL_RESET;
     } else if (param_name == "mode_bit_config_ids") {
         index = MMA_MODE_BIT_CONFIG;
+    } else if (param_name == "trigger_detection_ids") {
+        index = TRIGGER_DETECTION_CONFIG;
+    } else if (param_name == "buffering_mode_ids") {
+        index = BUFFERING_MODE_CONFIG;
     } else {
         PAL_ERR(LOG_TAG, "Invalid param name %s", param_name.c_str());
     }
@@ -158,6 +162,8 @@ int32_t VUIFirstStageConfig::GetModuleType(std::string tag) {
         type = ST_MODULE_TYPE_CUSTOM_2;
     } else if (tag == "MMA") {
         type = ST_MODULE_TYPE_MMA;
+    } else if (tag == "HIST_CAP") {
+        type = ST_MODULE_TYPE_HIST_CAP;
     } else {
         PAL_ERR(LOG_TAG, "Invalid module type %s", tag.c_str());
     }
@@ -209,7 +215,8 @@ VUIStreamConfig::VUIStreamConfig() :
     supported_first_stage_engine_count_(1),
     enable_intra_concurrent_detection_(false),
     curr_child_(nullptr),
-    lpi_enable_(true)
+    lpi_enable_(true),
+    batch_size_in_ms_(0)
 {
     ext_det_prop_list_.clear();
 }
@@ -401,6 +408,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
                 out_channels_ = std::stoi(value);
         } else if (key == "detection_property_list") {
             ReadDetectionPropertyList(value.c_str());
+        } else if (key == "batch_size_in_ms") {
+            batch_size_in_ms_ = std::stoi(value);
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

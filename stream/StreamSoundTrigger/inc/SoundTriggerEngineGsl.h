@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -107,6 +107,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     int32_t SetBufferReader(PalRingBufferReader *reader) { return -ENOSYS;}
     int32_t ResetBufferReaders(std::vector<PalRingBufferReader *> &reader_list) override;
     bool CheckForStartRecognition() override;
+    int32_t ForceRecognition(StreamSoundTrigger* s) override;
 
  private:
     static void EventProcessingThread(SoundTriggerEngineGsl *gsl_engine);

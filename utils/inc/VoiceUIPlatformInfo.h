@@ -142,6 +142,7 @@ public:
     void ReadDetectionPropertyList(const char *prop_string);
     bool IsDetPropSupported(uint32_t prop) const;
     bool GetStreamLPIFlag() const { return lpi_enable_; }
+    uint32_t GetBatchSizeInMs() const { return batch_size_in_ms_; }
 
 private:
     std::string name_;
@@ -163,6 +164,7 @@ private:
     uint32_t supported_first_stage_engine_count_;
     bool enable_intra_concurrent_detection_;
     bool lpi_enable_;
+    uint32_t batch_size_in_ms_;
     st_op_modes_t vui_op_modes_;
     std::shared_ptr<SoundTriggerXml> curr_child_;
     std::map<uint32_t, std::shared_ptr<VUISecondStageConfig>> vui_2nd_stage_cfg_list_;

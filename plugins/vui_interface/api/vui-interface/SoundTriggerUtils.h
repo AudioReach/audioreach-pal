@@ -27,9 +27,9 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -116,6 +116,7 @@ typedef enum {
     ST_MODULE_TYPE_CUSTOM_1 = 102, // Reserved for Custom Engine 1
     ST_MODULE_TYPE_CUSTOM_2 = 103, // Reserved for Custom Engine 2
     ST_MODULE_TYPE_MMA      = 200, // MMA usecase
+    ST_MODULE_TYPE_HIST_CAP = 300, // History buffer capture usecase
 } st_module_type_t;
 
 typedef struct _SML_GlobalHeaderType {
@@ -172,23 +173,57 @@ typedef struct _SML_ModelType {
 #define ST_MAX_USERS 10
 
 enum st_param_key {
+    // For key payload, use st_confidence_levels_info_v2/st_confidence_levels_info
     ST_PARAM_KEY_CONFIDENCE_LEVELS = 0x0,
+
+    // For key payload, use st_hist_buffer_info
     ST_PARAM_KEY_HISTORY_BUFFER_CONFIG = 0x1,
+
+    // For key payload, use st_keyword_indices_info
     ST_PARAM_KEY_KEYWORD_INDICES = 0x2,
+
+    // For key payload, use st_timestamp_info
     ST_PARAM_KEY_TIMESTAMP = 0x3,
+
+    // For key payload, use st_det_perf_mode_info
     ST_PARAM_KEY_DETECTION_PERF_MODE = 0x4,
+
+    // For key payload, use acd_recognition_cfg
     ST_PARAM_KEY_CONTEXT_RECOGNITION_INFO = 0x5,
+
+    // For key payload, use acd_context_event
     ST_PARAM_KEY_CONTEXT_EVENT_INFO = 0x6,
+
+    // For key payload, use st_channel_index_info
     ST_PARAM_KEY_DETECTION_CH_INFO = 0x7,
+
+    // For key payload, use capi_mma_context_threshold_struct_t
     ST_PARAM_KEY_MMA_THRESHOLD_CONFIG = 0x8,
+
+    // For key payload, use event_id_mma_detection_event_t
     ST_PARAM_KEY_MMA_DETECTION_RESULT = 0x9,
+
+    // For key payload, use tiuv_threshold_config
     ST_PARAM_KEY_TIUV_THRESHOLD_CONFIG = 0xA,
+
+    // For key payload, use tiuv_detection_result
     ST_PARAM_KEY_TIUV_DETECTION_RESULT = 0xB,
 
-    // Keys for optional detection payload information
+    // For key payload, use param_id_history_buffer_mode_t
+    ST_PARAM_KEY_HIST_CAPTURE_MODE = 0xC,
+
+    // Below Keys are for optional detection payload information
+
+    // For key payload, use pcm data
     ST_PARAM_KEY_KEYWORD_BUFFER = 0x10001,
+
+    // For key payload, use st_det_engine_stats
     ST_PARAM_KEY_SSTAGE_KW_ENGINE_INFO = 0x10002,
+
+    // For key payload, use st_det_engine_stats
     ST_PARAM_KEY_SSTAGE_UV_ENGINE_INFO = 0x10003,
+
+    // For key payload, use st_det_perf_mode_info
     ST_PARAM_KEY_IS_BARGEIN = 0x10004,
 };
 
@@ -346,6 +381,8 @@ typedef enum st_param_id_type {
     MODULE_VERSION,
     CUSTOM_CONFIG,
     MMA_MODE_BIT_CONFIG,
+    TRIGGER_DETECTION_CONFIG,
+    BUFFERING_MODE_CONFIG,
     MAX_PARAM_IDS
 } st_param_id_type_t;
 

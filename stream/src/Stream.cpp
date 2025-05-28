@@ -26,8 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -209,6 +210,13 @@ stream_create:
                                 modifiers,
                                 noOfModifiers,
                                 rm);
+                if (sAttr->type == PAL_STREAM_COMPRESSED && stream == nullptr) {
+                    PAL_ERR(LOG_TAG, "StreamCompress create failed");
+                    if (palDevsAttr) {
+                        free(palDevsAttr);
+                    }
+                    return nullptr;
+                }
             } else {
                 PAL_ERR(LOG_TAG, "unable to get plugin for stream type %s", streamNameLUT.at(sAttr->type).c_str());
             }

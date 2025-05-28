@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -11,6 +11,7 @@
 #include "VoiceUIInterface.h"
 #include "detection_cmn_api.h"
 #include "mma_api.h"
+#include "history_buffer_api.h"
 #include "ar_osal_mem_op.h"
 #include "VUIInterfaceUtils.h"
 
@@ -129,6 +130,7 @@ class SVAInterface: public VoiceUIInterface {
     int32_t GetEngineResetPayload(vui_intf_param_t *param);
     int32_t GetMMAModeBitPayload(vui_intf_param_t *param);
     int32_t GetTIUVThresholdConfig(vui_intf_param_t *param);
+    int32_t GetBufferingModeConfig(vui_intf_param_t *param);
 
     int32_t SetModelState(void *s, bool state);
     void SetStreamAttributes(struct pal_stream_attributes *attr);
@@ -164,6 +166,7 @@ class SVAInterface: public VoiceUIInterface {
     struct param_id_mma_history_buffer_size_t mma_buffering_config_;
     struct tiuv_threshold_config tiuv_threshold_config_;
     struct tiuv_detection_result tiuv_detection_result_;
+    param_id_history_buffer_mode_t hist_cap_mode_config_;
     uint32_t mma_mode_bit_config_;
     uint8_t *wakeup_payload_;
     uint32_t wakeup_payload_size_;

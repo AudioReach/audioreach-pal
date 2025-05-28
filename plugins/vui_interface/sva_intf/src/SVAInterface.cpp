@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -84,6 +84,7 @@ extern "C" int32_t get_vui_interface(struct vui_intf_t *intf,
         case ST_MODULE_TYPE_GMM:
         case ST_MODULE_TYPE_PDK:
         case ST_MODULE_TYPE_MMA:
+        case ST_MODULE_TYPE_HIST_CAP:
             intf->interface = SVAInterface::GetInstance(model);
             break;
         default:
@@ -217,6 +218,7 @@ SVAInterface::SVAInterface(st_module_type_t module_type) {
     std::memset(&buffering_config_, 0, sizeof(buffering_config_));
     std::memset(&wakeup_config_, 0, sizeof(wakeup_config_));
     std::memset(&mma_buffering_config_, 0, sizeof(mma_buffering_config_));
+    std::memset(&hist_cap_mode_config_, 0, sizeof(hist_cap_mode_config_));
 }
 
 SVAInterface::~SVAInterface() {
@@ -481,6 +483,9 @@ int32_t SVAInterface::GetParameter(intf_param_id_t param_id,
             break;
         case PARAM_TIUV_THRESHOLD_CONFIG:
             status = GetTIUVThresholdConfig(param);
+            break;
+        case PARAM_BUFFERING_MODE_CONFIG:
+            status = GetBufferingModeConfig(param);
             break;
         default:
             ALOGE("%s: %d: Unsupported param id %d",
@@ -793,6 +798,23 @@ int32_t SVAInterface::ParseRecognitionConfig(void *s,
                     opaque_ptr += sizeof(struct st_param_header) +
                         param_hdr->payload_size;
                     break;
+                case ST_PARAM_KEY_HIST_CAPTURE_MODE:
+                    if (param_hdr->payload_size !=
+                        sizeof(struct param_id_history_buffer_mode_t)) {
+                        ALOGE("%s: %d: Opaque data format error, exiting",
+                            __func__, __LINE__);
+                        status = -EINVAL;
+                        goto error_exit;
+                    }
+                    ar_mem_cpy(&hist_cap_mode_config_, param_hdr->payload_size,
+                        opaque_ptr + sizeof(struct st_param_header),
+                        param_hdr->payload_size);
+
+                    opaque_size += sizeof(struct st_param_header) +
+                        param_hdr->payload_size;
+                    opaque_ptr += sizeof(struct st_param_header) +
+                        param_hdr->payload_size;
+                    break;
                 default:
                     ALOGE("%s: %d: Unsupported opaque data key id, exiting",
                         __func__, __LINE__);
@@ -800,7 +822,7 @@ int32_t SVAInterface::ParseRecognitionConfig(void *s,
                     goto error_exit;
             }
         }
-    } else {
+    } else if (sm_info->type == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
         status = FillConfLevels(sm_info, config, &conf_levels, &num_conf_levels);
         if (status) {
             ALOGE("%s: %d: Failed to parse conf levels from rc config",
@@ -3699,7 +3721,8 @@ int32_t SVAInterface::GetBufferingPayload(vui_intf_param_t *param) {
         return -EINVAL;
     }
 
-    if (module_type_ == ST_MODULE_TYPE_GMM) {
+    if (module_type_ == ST_MODULE_TYPE_GMM ||
+        module_type_ == ST_MODULE_TYPE_HIST_CAP) {
         memset(&buffering_config_, 0, sizeof(buffering_config_));
         for (auto iter: sm_info_map_) {
             info = iter.second;
@@ -3801,6 +3824,27 @@ int32_t SVAInterface::GetTIUVThresholdConfig(vui_intf_param_t *param) {
 
     param->data = (void *)&tiuv_threshold_config_;
     param->size = sizeof(tiuv_threshold_config_t);
+
+    return 0;
+}
+
+int32_t SVAInterface::GetBufferingModeConfig(vui_intf_param_t *param) {
+    if (!param) {
+        ALOGE("%s: %d: Invalid param", __func__, __LINE__);
+        return -EINVAL;
+    }
+
+    if (hist_cap_mode_config_.data_flow_mode) {
+        if (param->size == 0) {
+            ALOGE("%s: %d: Invalid batch size for batching mode",
+                __func__, __LINE__);
+            return -EINVAL;
+        } else {
+            hist_cap_mode_config_.batch_size_ms = param->size;
+        }
+    }
+    param->data = (void *)&hist_cap_mode_config_;
+    param->size = sizeof(param_id_history_buffer_mode_t);
 
     return 0;
 }
@@ -3949,11 +3993,17 @@ int32_t SVAInterface::RegisterModel(void *s,
     sm_info_map_[s]->type = model->type;
 
     // update mma mode bit config
-    if (module_type_ == ST_MODULE_TYPE_MMA) {
+    if (module_type_ == ST_MODULE_TYPE_MMA ||
+        module_type_ == ST_MODULE_TYPE_HIST_CAP) {
         for (auto iter: model_list) {
             if ((*iter).type == ST_SM_ID_SVA_F_STAGE_GMM) {
                 if ((*iter).size == sizeof(uint32_t)) {
-                    mma_mode_bit_config_ = *(uint32_t *)(*iter).data;
+                    if (module_type_ == ST_MODULE_TYPE_MMA) {
+                        mma_mode_bit_config_ = *(uint32_t *)(*iter).data;
+                    } else if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+                        hist_cap_mode_config_.data_flow_mode =
+                            *(uint32_t *)(*iter).data;
+                    }
                 }
             }
         }

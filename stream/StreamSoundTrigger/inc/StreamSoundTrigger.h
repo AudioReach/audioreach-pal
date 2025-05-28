@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -113,6 +113,7 @@ enum {
     ST_EV_EC_REF,
     ST_EV_INTERNAL_PAUSE,
     ST_EV_INTERNAL_RESUME,
+    ST_EV_FORCE_RECOGNITION,
 };
 
 class ResourceManager;
@@ -474,6 +475,12 @@ private:
      public:
         StSSROnlineConfig() : StEventConfig(ST_EV_SSR_ONLINE) { }
         ~StSSROnlineConfig() {}
+    };
+
+    class StForceRecognitionConfig : public StEventConfig {
+     public:
+        StForceRecognitionConfig() : StEventConfig(ST_EV_FORCE_RECOGNITION) { }
+        ~StForceRecognitionConfig() {}
     };
 
     class StState {

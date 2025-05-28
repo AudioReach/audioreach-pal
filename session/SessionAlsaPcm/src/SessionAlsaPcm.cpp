@@ -2181,6 +2181,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_SDZ_FORCE_OUTPUT:
         case PAL_PARAM_ID_SDZ_SET_PARAM:
         case PAL_PARAM_ID_SDZ_ENABLE:
+        case PAL_PARAM_ID_FORCE_RECOGNITION:
+        case PAL_PARAM_ID_BUFFERING_MODE:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;

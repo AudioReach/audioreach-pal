@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -108,6 +108,7 @@ public:
     virtual int32_t SetBufferReader(PalRingBufferReader *reader) = 0;
     virtual int32_t ResetBufferReaders(std::vector<PalRingBufferReader *> &reader_list) = 0;
     virtual bool CheckForStartRecognition() { return false; }
+    virtual int32_t ForceRecognition(StreamSoundTrigger* s) { return 0; }
 
     uint32_t UsToBytes(uint64_t input_us);
     uint32_t FrameToBytes(uint32_t frames);

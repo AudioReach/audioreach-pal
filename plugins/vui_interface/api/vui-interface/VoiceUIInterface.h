@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -150,7 +150,8 @@ typedef enum {
     PARAM_MMA_MODE_BIT_CONFIG = 36,
     PARAM_TIUV_THRESHOLD_CONFIG = 37,
     PARAM_TIUV_DETECTION_RESULT = 38,
-    PARAM_ID_MAX = 39,
+    PARAM_BUFFERING_MODE_CONFIG = 39,
+    PARAM_ID_MAX = 40,
     // custom param id should be in format like
     // PARAM_ID_MAX + x
 } intf_param_id_t;

@@ -26,11 +26,10 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
- *
  */
 
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
@@ -287,6 +286,12 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     try {
         s = Stream::create(attributes, devices, no_of_devices, modifiers,
                            no_of_modifiers);
+        if (s == nullptr && attributes->type == PAL_STREAM_COMPRESSED) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "StreamCompress create failed");
+            Stream::handleStreamException(attributes, cb, cookie);
+            goto exit;
+        }
     } catch (const std::exception& e) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Stream create failed: %s", e.what());

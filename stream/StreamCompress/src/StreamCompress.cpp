@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -65,7 +65,13 @@
 extern "C" Stream* CreateCompressStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
                                const uint32_t no_of_modifiers, const std::shared_ptr<ResourceManager> rm) {
-    return new StreamCompress(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    try {
+        return new StreamCompress(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    } catch (const std::exception& e) {
+         PAL_ERR(LOG_TAG, "StreamCompress create failed for stream type %s: %s",
+                streamNameLUT.at(sattr->type).c_str(), e.what());
+        return nullptr;
+    }
 }
 
 StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -130,7 +136,6 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
     PAL_VERBOSE(LOG_TAG,"Create new Devices with no_of_devices - %d", no_of_devices);
     bool str_registered = false;
     for (uint32_t i = 0; i < no_of_devices; i++) {
-
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);
         if (dev == nullptr) {
             PAL_ERR(LOG_TAG, "Device creation is failed");

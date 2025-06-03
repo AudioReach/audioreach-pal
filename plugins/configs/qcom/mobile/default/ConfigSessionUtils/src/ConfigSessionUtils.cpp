@@ -676,10 +676,12 @@ int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm, Stream *s,
                  /* This has to be done after sending all mixer controls and
                   * before connect
                   */
+                std::string aifBackendName;
+                rm->getBackendName(dAttr.id, aifBackendName);
                 status =
                         SessionAlsaUtils::getModuleInstanceId(mixer,
                                                               device,
-                                                              rxAifBackEnds[i].second.data(),
+                                                              aifBackendName.c_str(),
                                                               mfc_tag, &miid);
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
@@ -716,6 +718,7 @@ int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm, Stream *s,
                     PAL_ERR(LOG_TAG, "setMixerParameter failed");
                     return status;
                 }
+                break;
             }
         }
     }

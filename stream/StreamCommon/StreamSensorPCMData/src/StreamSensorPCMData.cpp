@@ -444,7 +444,7 @@ int32_t StreamSensorPCMData::SetupStreamConfig(const struct st_uuid *vendor_uuid
     PAL_DBG(LOG_TAG, "Enter");
     GetUUID(&uuid, vendor_uuid);
 
-    if (NULL == sm_cfg_) {
+    if (!sm_cfg_) {
         sm_cfg_ = acd_info_->GetStreamConfig(uuid);
         if (!sm_cfg_) {
             status = -EINVAL;

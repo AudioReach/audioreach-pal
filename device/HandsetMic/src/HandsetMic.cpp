@@ -25,6 +25,9 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: HandsetMic"
@@ -38,28 +41,22 @@
 
 extern "C" void CreateHandsetMicDevice(struct pal_device *device,
                                         const std::shared_ptr<ResourceManager> rm,
-                                        pal_device_id_t id, bool createDevice,
                                         std::shared_ptr<Device> *dev) {
-    if (createDevice)
-        *dev = HandsetMic::getInstance(device, rm);
-    else
-        *dev = HandsetMic::getObject();
+    *dev = HandsetMic::getInstance(device, rm);
 
 }
 
 std::shared_ptr<Device> HandsetMic::obj = nullptr;
 
-std::shared_ptr<Device> HandsetMic::getObject()
-{
-    return obj;
-}
-
 std::shared_ptr<Device> HandsetMic::getInstance(struct pal_device *device,
                                                 std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        std::shared_ptr<Device> sp(new HandsetMic(device, Rm));
-        obj = sp;
+        std::lock_guard<std::mutex> lock(Device::mInstMutex);
+        if (!obj) {
+            std::shared_ptr<Device> sp(new HandsetMic(device, Rm));
+            obj = sp;
+        }
     }
     return obj;
 }

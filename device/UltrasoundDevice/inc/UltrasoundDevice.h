@@ -25,6 +25,9 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef ULTRASOUNDDEVICE_H
@@ -35,7 +38,6 @@
 
 extern "C" void CreateUltrasoundDevice(struct pal_device *device,
                                         const std::shared_ptr<ResourceManager> rm,
-                                        pal_device_id_t id, bool createDevice,
                                         std::shared_ptr<Device> *dev);
 
 class UltrasoundDevice : public Device
@@ -47,7 +49,6 @@ protected:
 public:
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *sAttr) override;
     virtual ~UltrasoundDevice();

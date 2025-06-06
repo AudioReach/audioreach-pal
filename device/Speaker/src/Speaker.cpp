@@ -25,7 +25,6 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -41,50 +40,43 @@
 
 extern "C" void CreateSpeakerDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev) {
-    if (createDevice)
-        *dev = Speaker::getInstance(device, rm);
-    else
-        *dev = Speaker::getObject();
+    *dev = Speaker::getInstance(device, rm);
 
 }
 
 std::shared_ptr<Device> Speaker::obj = nullptr;
 
-std::shared_ptr<Device> Speaker::getObject()
-{
-    return obj;
-}
-
-
 std::shared_ptr<Device> Speaker::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        if (ResourceManager::IsSpeakerProtectionEnabled()) {
-            std::shared_ptr<Device> sp;
-            switch (Rm->getWsaUsed()) {
-                case WSA883X:
-                    sp = std::make_shared<SpeakerProtectionwsa883x>(device, Rm);
-                    break;
-                case WSA884X:
-                    sp = std::make_shared<SpeakerProtectionwsa884x>(device, Rm);
-                    break;
-                case WSA885X:
-                    sp = std::make_shared<SpeakerProtectionwsa885x>(device, Rm);
-                    break;
-                case WSA885X_I2S:
-                    sp = std::make_shared<SpeakerProtectionwsa885xI2s>(device, Rm);
-                    break;
-                default:
-                    PAL_ERR(LOG_TAG, "Wrong CPS mode set in RM XML");
-                    return nullptr;
+        std::lock_guard<std::mutex> lock(Device::mInstMutex);
+        if (!obj) {
+            if (ResourceManager::IsSpeakerProtectionEnabled()) {
+                std::shared_ptr<Device> sp;
+                switch (Rm->getWsaUsed()) {
+                    case WSA883X:
+                        sp = std::make_shared<SpeakerProtectionwsa883x>(device, Rm);
+                        break;
+                    case WSA884X:
+                        sp = std::make_shared<SpeakerProtectionwsa884x>(device, Rm);
+                        break;
+                    case WSA885X:
+                        sp = std::make_shared<SpeakerProtectionwsa885x>(device, Rm);
+                        break;
+                    case WSA885X_I2S:
+                        sp = std::make_shared<SpeakerProtectionwsa885xI2s>(device, Rm);
+                        break;
+                    default:
+                        PAL_ERR(LOG_TAG, "Wrong CPS mode set in RM XML");
+                        return nullptr;
+                }
+                obj = sp;
+            } else {
+                std::shared_ptr<Device> sp(new Speaker(device, Rm));
+                obj = sp;
             }
-            obj = sp;
-        } else {
-            std::shared_ptr<Device> sp(new Speaker(device, Rm));
-            obj = sp;
         }
     }
     return obj;

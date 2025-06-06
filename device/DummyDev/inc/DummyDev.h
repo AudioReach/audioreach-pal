@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -10,7 +10,6 @@
 
 extern "C" void CreateDummyDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev);
 
 class DummyDev : public Device
@@ -22,7 +21,6 @@ protected:
 public:
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     virtual ~DummyDev();
 };
 #endif //DUMMY_DEV_H

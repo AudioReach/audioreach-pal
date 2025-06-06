@@ -25,10 +25,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -141,7 +139,6 @@ typedef int (*audio_sink_close_t)(void);
 
 extern "C" void CreateBtDevice(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
-                                pal_device_id_t id, bool createDevice,
                                 std::shared_ptr<Device> *dev);
 // Abstract base class
 class Bluetooth : public Device
@@ -284,7 +281,6 @@ public:
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *sAttr) override;
 
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
     virtual ~BtA2dp();
@@ -321,7 +317,6 @@ public:
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *sAttr) override;
 
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
     virtual ~BtSco();

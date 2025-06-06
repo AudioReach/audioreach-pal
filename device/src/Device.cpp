@@ -54,6 +54,7 @@
 
 typedef void (*write_qmp_mode)(const char *hdr_custom_key);
 std::shared_ptr<PluginManager> Device::pm = nullptr;
+std::mutex Device::mInstMutex;
 
 std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
                                             std::shared_ptr<ResourceManager> Rm)
@@ -86,7 +87,7 @@ std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
         status = pm->openPlugin(PAL_PLUGIN_MANAGER_DEVICE, deviceName, plugin);
         if (plugin && !status) {
             deviceCreate = reinterpret_cast<DeviceCreate>(plugin);
-            deviceCreate(device, Rm, device->id, true, &devPtr);
+            deviceCreate(device, Rm, &devPtr);
             if (devPtr == nullptr) {
                 PAL_ERR(LOG_TAG, "Device create failed for type %s",
                     deviceNameLUT.at(device->id).c_str());
@@ -101,49 +102,6 @@ std::shared_ptr<Device> Device::getInstance(struct pal_device *device,
     catch (const std::exception& e) {
         PAL_ERR(LOG_TAG, "Device create failed for type %s",
             deviceNameLUT.at(device->id).c_str());
-    }
-
-    return nullptr;
-}
-
-std::shared_ptr<Device> Device::getObject(pal_device_id_t dev_id)
-{
-    uint32_t status;
-    std::string deviceName;
-    std::shared_ptr<Device> devPtr = nullptr;
-    void* plugin = nullptr;
-    DeviceCreate deviceCreate = NULL;
-
-    //There is no registered plugin for device type none, so return null
-    if (dev_id == PAL_DEVICE_NONE) {
-        return nullptr;
-    }
-
-    pm = PluginManager::getInstance();
-    if (!pm) {
-        PAL_ERR(LOG_TAG, "Unable to get plugin manager instance");
-        return NULL;
-    }
-
-    PAL_VERBOSE(LOG_TAG, "Enter device id %d", dev_id);
-
-    deviceName = (std::string) deviceNameLUT.at(dev_id);
-    try {
-        status = pm->openPlugin(PAL_PLUGIN_MANAGER_DEVICE, deviceName,
-                                plugin);
-        if (plugin) {
-            deviceCreate = reinterpret_cast<DeviceCreate>(plugin);
-            deviceCreate(nullptr, nullptr, dev_id, false, &devPtr);
-            return devPtr;
-        }
-        else {
-            PAL_ERR(LOG_TAG, "unable to get plugin for device type %s",
-                    deviceName.c_str());
-        }
-    }
-    catch (const std::exception& e) {
-        PAL_ERR(LOG_TAG, "exception: Device getObject failed for type %s",
-            deviceNameLUT.at(dev_id).c_str());
     }
 
     return nullptr;

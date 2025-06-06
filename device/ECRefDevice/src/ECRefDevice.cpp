@@ -28,6 +28,9 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: ECRefDevice"
@@ -43,28 +46,22 @@
 
 extern "C" void CreateECRefDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev) {
-    if (createDevice)
-        *dev = ECRefDevice::getInstance(device, rm);
-    else
-        *dev = ECRefDevice::getObject();
+    *dev = ECRefDevice::getInstance(device, rm);
 
 }
 
 std::shared_ptr<Device> ECRefDevice::obj = nullptr;
 
-std::shared_ptr<Device> ECRefDevice::getObject()
-{
-    return obj;
-}
-
 std::shared_ptr<Device> ECRefDevice::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-        std::shared_ptr<Device> sp(new ECRefDevice(device, Rm));
-        obj = sp;
+        std::lock_guard<std::mutex> lock(Device::mInstMutex);
+        if (!obj) {
+            std::shared_ptr<Device> sp(new ECRefDevice(device, Rm));
+            obj = sp;
+        }
     }
     return obj;
 }
@@ -139,7 +136,7 @@ int ECRefDevice::start()
 
     rm->getBackendName(mDeviceAttr.id, backEndName);
 
-    status = rm->getActiveStream_l(activestreams, getObject());
+    status = rm->getActiveStream_l(activestreams, obj);
     if ((0 != status) || (activestreams.size() == 0)) {
         PAL_ERR(LOG_TAG, "no active stream available");
         status = -EINVAL;

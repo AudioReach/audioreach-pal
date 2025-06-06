@@ -5177,12 +5177,14 @@ void ResourceManager::getSharedBEActiveStreamDevs(std::vector <std::tuple<Stream
     std::vector <Stream *> activeStreams;
     std::vector <std::tuple<Stream *, uint32_t>>::iterator sIter;
     bool dup = false;
+    struct pal_device dattr;
 
     if (isValidDevId(dev_id) && (dev_id != PAL_DEVICE_NONE))
         backEndName = listAllBackEndIds[dev_id].second;
     for (int i = PAL_DEVICE_OUT_MIN; i < PAL_DEVICE_IN_MAX; i++) {
         if (backEndName == listAllBackEndIds[i].second) {
-            dev = Device::getObject((pal_device_id_t) i);
+            dattr.id = (pal_device_id_t) i;
+            dev = Device::getInstance(&dattr , rm);
             if(dev) {
                 std::list<Stream*>::iterator it;
                 for(it = mActiveStreams.begin(); it != mActiveStreams.end(); it++) {
@@ -5677,7 +5679,9 @@ int ResourceManager::restoreDeviceConfigForUPD(
 
     if (sAttr.type == PAL_STREAM_ULTRASOUND &&
         devId == PAL_DEVICE_OUT_HANDSET) {
-        hs_dev = Device::getObject(PAL_DEVICE_OUT_HANDSET);
+        struct pal_device dattr;
+        dattr.id = PAL_DEVICE_OUT_HANDSET;
+        hs_dev = Device::getInstance(&dattr, rm);
         if (hs_dev)
             hs_dev->getDeviceAttributes(&curDevAttr);
 

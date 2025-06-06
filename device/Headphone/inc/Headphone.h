@@ -25,9 +25,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -42,7 +41,6 @@
 
 extern "C" void CreateHeadphoneDevice(struct pal_device *device,
                                         const std::shared_ptr<ResourceManager> rm,
-                                        pal_device_id_t id, bool createDevice,
                                         std::shared_ptr<Device> *dev);
 
 class Headphone : public Device
@@ -61,7 +59,6 @@ public:
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *sAttr) override;
     bool isPluginPlaybackDevice(pal_device_id_t id) override { return true; }
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     int start() override;
     int stop() override;
 

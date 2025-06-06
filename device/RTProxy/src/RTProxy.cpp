@@ -25,9 +25,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -45,9 +44,8 @@
 
 extern "C" void CreateRTProxyDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev) {
-    if (createDevice && device != nullptr) {
+    if (device != nullptr) {
         switch (device->id) {
             case PAL_DEVICE_OUT_PROXY:
             case PAL_DEVICE_OUT_RECORD_PROXY:
@@ -58,18 +56,6 @@ extern "C" void CreateRTProxyDevice(struct pal_device *device,
             case PAL_DEVICE_IN_RECORD_PROXY:
             case PAL_DEVICE_IN_TELEPHONY_RX:
                 *dev = RTProxyIn::getInstance(device, rm);
-        }
-    } else if ((void *)id != NULL) {
-        switch (id) {
-            case PAL_DEVICE_OUT_PROXY:
-            case PAL_DEVICE_OUT_RECORD_PROXY:
-            case PAL_DEVICE_OUT_HEARING_AID:
-                *dev = RTProxyOut::getObject(id);
-                break;
-            case PAL_DEVICE_IN_PROXY:
-            case PAL_DEVICE_IN_RECORD_PROXY:
-            case PAL_DEVICE_IN_TELEPHONY_RX:
-                *dev = RTProxyIn::getObject(id);
         }
     } else {
         PAL_ERR(LOG_TAG, "Invalid input parameters");
@@ -113,37 +99,28 @@ int32_t RTProxyIn::isBitWidthSupported(uint32_t bitWidth)
 std::shared_ptr<Device> RTProxyIn::objPlay = nullptr;
 std::shared_ptr<Device> RTProxyIn::objRecord = nullptr;
 
-
-std::shared_ptr<Device> RTProxyIn::getObject(pal_device_id_t id)
-{
-    std::shared_ptr<Device> obj = nullptr;
-
-    if (id == PAL_DEVICE_IN_TELEPHONY_RX ||
-       id == PAL_DEVICE_IN_PROXY) {
-        obj = objPlay;
-    }
-    if (id == PAL_DEVICE_IN_RECORD_PROXY) {
-        obj = objRecord;
-    }
-    return obj;
-}
 std::shared_ptr<Device> RTProxyIn::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     std::shared_ptr<Device> obj = nullptr;
-
     if (device->id == PAL_DEVICE_IN_TELEPHONY_RX ||
        device->id == PAL_DEVICE_IN_PROXY) {
         if (!objPlay) {
-            std::shared_ptr<Device> sp(new RTProxyIn(device, Rm));
-            objPlay = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objPlay) {
+                std::shared_ptr<Device> sp(new RTProxyIn(device, Rm));
+                objPlay = sp;
+            }
         }
         obj = objPlay;
     }
     if (device->id == PAL_DEVICE_IN_RECORD_PROXY) {
         if (!objRecord) {
-            std::shared_ptr<Device> sp(new RTProxyIn(device, Rm));
-            objRecord = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objRecord) {
+                std::shared_ptr<Device> sp(new RTProxyIn(device, Rm));
+                objRecord = sp;
+            }
         }
         obj = objRecord;
     }
@@ -287,20 +264,6 @@ RTProxyOut::RTProxyOut(struct pal_device *device, std::shared_ptr<ResourceManage
     setDeviceAttributes(*device);
 }
 
-std::shared_ptr<Device> RTProxyOut::getObject(pal_device_id_t id)
-{
-    std::shared_ptr<Device> obj = nullptr;
-
-    if (id == PAL_DEVICE_OUT_HEARING_AID ||
-       id == PAL_DEVICE_OUT_PROXY) {
-        obj = objPlay;
-    }
-    if (id == PAL_DEVICE_OUT_RECORD_PROXY) {
-        obj = objRecord;
-    }
-    return obj;
-}
-
 std::shared_ptr<Device> RTProxyOut::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
@@ -309,15 +272,21 @@ std::shared_ptr<Device> RTProxyOut::getInstance(struct pal_device *device,
     if (device->id == PAL_DEVICE_OUT_HEARING_AID ||
        device->id == PAL_DEVICE_OUT_PROXY) {
         if (!objPlay) {
-            std::shared_ptr<Device> sp(new RTProxyOut(device, Rm));
-            objPlay = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objPlay) {
+                std::shared_ptr<Device> sp(new RTProxyOut(device, Rm));
+                objPlay = sp;
+            }
         }
         obj = objPlay;
     }
     if (device->id == PAL_DEVICE_OUT_RECORD_PROXY) {
         if (!objRecord) {
-            std::shared_ptr<Device> sp(new RTProxyOut(device, Rm));
-            objRecord = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objRecord) {
+                std::shared_ptr<Device> sp(new RTProxyOut(device, Rm));
+                objRecord = sp;
+            }
         }
         obj = objRecord;
     }

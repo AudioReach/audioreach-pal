@@ -25,9 +25,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -38,14 +37,12 @@
 
 extern "C" void CreateHapticsDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev);
 
 class HapticsDev : public Device
 {
 protected:
     static std::shared_ptr<Device> obj;
-    static std::mutex InstMutex;
     HapticsDev(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
 public:
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
@@ -55,7 +52,6 @@ public:
     int32_t isBitWidthSupported(uint32_t bitWidth) override;
     int32_t getDeviceConfig(struct pal_device *deviceattr,
                             struct pal_stream_attributes *sAttr) override;
-    static std::shared_ptr<Device> getObject();
     virtual ~HapticsDev();
 };
 

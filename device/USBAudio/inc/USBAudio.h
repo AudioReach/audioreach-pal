@@ -59,6 +59,9 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef USB_H
@@ -167,7 +170,6 @@ public:
 
 extern "C" void CreateUsbDevice(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
-                                pal_device_id_t id, bool createDevice,
                                 std::shared_ptr<Device> *dev);
 
 class USB : public Device
@@ -206,7 +208,6 @@ public:
                             struct pal_stream_attributes *sAttr) override;
     bool isPluginDevice(pal_device_id_t id) override { return true; };
     bool isPluginPlaybackDevice(pal_device_id_t id) override;
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     ~USB();
 
   private:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -13,42 +13,35 @@
 
 extern "C" void CreateDummyDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev) {
-    if (createDevice)
-        *dev = DummyDev::getInstance(device, rm);
-    else
-        *dev = DummyDev::getObject(id);
+    *dev = DummyDev::getInstance(device, rm);
 
 }
 
 std::shared_ptr<Device> DummyDev::objRx = nullptr;
 std::shared_ptr<Device> DummyDev::objTx = nullptr;
 
-std::shared_ptr<Device> DummyDev::getObject(pal_device_id_t id)
-{
-    if (id == PAL_DEVICE_OUT_DUMMY)
-        return objRx;
-    else
-        return objTx;
-}
-
-
 std::shared_ptr<Device> DummyDev::getInstance(struct pal_device *device,
                                               std::shared_ptr<ResourceManager> Rm)
 {
     if (device->id == PAL_DEVICE_OUT_DUMMY) {
         if (!objRx) {
-            PAL_INFO(LOG_TAG, "creating instance for %d", device->id);
-            std::shared_ptr<Device> sp(new DummyDev(device, Rm));
-            objRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objRx) {
+                PAL_INFO(LOG_TAG, "creating instance for %d", device->id);
+                std::shared_ptr<Device> sp(new DummyDev(device, Rm));
+                objRx = sp;
+            }
         }
         return objRx;
     } else {
         if (!objTx) {
-            PAL_INFO(LOG_TAG, "creating instance for %d", device->id);
-            std::shared_ptr<Device> sp(new DummyDev(device, Rm));
-            objTx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objTx) {
+                PAL_INFO(LOG_TAG, "creating instance for %d", device->id);
+                std::shared_ptr<Device> sp(new DummyDev(device, Rm));
+                objTx = sp;
+            }
         }
         return objTx;
     }

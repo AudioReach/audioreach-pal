@@ -25,6 +25,9 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: ExtEC"
@@ -35,30 +38,22 @@
 
 extern "C" void CreateExtEcDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev) {
-    if (createDevice)
-        *dev = ExtEC::getInstance(device, rm);
-    else
-        *dev = ExtEC::getObject();
+    *dev = ExtEC::getInstance(device, rm);
 
 }
 
 std::shared_ptr<Device> ExtEC::obj = nullptr;
 
-std::shared_ptr<Device> ExtEC::getObject()
-{
-    return obj;
-}
-
-
 std::shared_ptr<Device> ExtEC::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
 {
     if (!obj) {
-
-        std::shared_ptr<Device> sp(new ExtEC(device, Rm));
-        obj = sp;
+        std::lock_guard<std::mutex> lock(Device::mInstMutex);
+        if (!obj) {
+            std::shared_ptr<Device> sp(new ExtEC(device, Rm));
+            obj = sp;
+        }
     }
     return obj;
 }

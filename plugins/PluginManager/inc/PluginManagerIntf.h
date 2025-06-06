@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef _PLUGIN_MANAGER_INTF_H_
@@ -100,7 +100,6 @@ typedef Session* (*SessionCreate)(const std::shared_ptr<ResourceManager> rm);
 /*device plugin entry function typedef*/
 typedef void (*DeviceCreate)(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
-                                pal_device_id_t id, bool createDevice,
                                 std::shared_ptr<Device> *dev);
 
 /* control plugin entry point setter and getter*/

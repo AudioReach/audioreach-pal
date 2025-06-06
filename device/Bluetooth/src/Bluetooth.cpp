@@ -25,10 +25,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -63,9 +61,8 @@
 
 extern "C" void CreateBtDevice(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
-                                pal_device_id_t id, bool createDevice,
                                 std::shared_ptr<Device> *dev) {
-    if (createDevice && device != nullptr) {
+    if (device != nullptr) {
         switch (device->id) {
             case PAL_DEVICE_IN_BLUETOOTH_A2DP:
             case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
@@ -79,19 +76,6 @@ extern "C" void CreateBtDevice(struct pal_device *device,
             case PAL_DEVICE_IN_BLUETOOTH_HFP:
             case PAL_DEVICE_OUT_BLUETOOTH_HFP:
                 *dev = BtSco::getInstance(device, rm);
-        }
-    } else if ((void*)id != NULL) {
-        switch (id) {
-            case PAL_DEVICE_IN_BLUETOOTH_A2DP:
-            case PAL_DEVICE_OUT_BLUETOOTH_A2DP:
-            case PAL_DEVICE_IN_BLUETOOTH_BLE:
-            case PAL_DEVICE_OUT_BLUETOOTH_BLE:
-            case PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST:
-                *dev = BtA2dp::getObject(id);
-                break;
-            case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
-            case PAL_DEVICE_OUT_BLUETOOTH_SCO:
-                *dev = BtSco::getObject(id);
         }
     } else {
         PAL_ERR(LOG_TAG, "Invalid input parameters");
@@ -2521,60 +2505,57 @@ int32_t BtA2dp::getDeviceParameter(uint32_t param_id, void **param)
     return 0;
 }
 
-std::shared_ptr<Device> BtA2dp::getObject(pal_device_id_t id)
-{
-    if (id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) {
-        return objRx;
-    }
-    else if (id == PAL_DEVICE_IN_BLUETOOTH_A2DP) {
-        return objTx;
-    }
-    else if (id == PAL_DEVICE_OUT_BLUETOOTH_BLE) {
-        return objBleRx;
-    }
-    else if (id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST) {
-        return objBleBroadcastRx;
-    } else {
-        return objBleTx;
-    }
-}
-
 std::shared_ptr<Device>
 BtA2dp::getInstance(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
 {
     if (device->id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) {
         if (!objRx) {
-            PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-            objRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objRx) {
+                PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
+                objRx = sp;
+            }
         }
         return objRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_A2DP) {
         if (!objTx) {
-            PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-            objTx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objTx) {
+                PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
+                objTx = sp;
+            }
         }
         return objTx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_BLE) {
         if (!objBleRx) {
-            PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-            objBleRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objBleRx) {
+                PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
+                objBleRx = sp;
+            }
         }
         return objBleRx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST) {
         if (!objBleBroadcastRx) {
-            PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-            objBleBroadcastRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objBleBroadcastRx) {
+                PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
+                objBleBroadcastRx = sp;
+            }
         }
         return objBleBroadcastRx;
     } else {
         if (!objBleTx) {
-            PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-            objBleTx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objBleTx) {
+                PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
+                objBleTx = sp;
+            }
         }
         return objBleTx;
     }
@@ -2935,50 +2916,46 @@ int BtSco::stop()
     return status;
 }
 
-std::shared_ptr<Device> BtSco::getObject(pal_device_id_t id)
-{
-    switch (id) {
-        case PAL_DEVICE_OUT_BLUETOOTH_SCO:
-            return objRx;
-        case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
-            return objTx;
-        case PAL_DEVICE_OUT_BLUETOOTH_HFP:
-            return objHfpRx;
-        case PAL_DEVICE_IN_BLUETOOTH_HFP:
-            return objHfpTx;
-        default:
-            return nullptr;
-    }
-}
-
 std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
                                            std::shared_ptr<ResourceManager> Rm)
 {
     if (device->id == PAL_DEVICE_OUT_BLUETOOTH_SCO) {
         if (!objRx) {
-            std::shared_ptr<Device> sp(new BtSco(device, Rm));
-            objRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objRx) {
+                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                objRx = sp;
+            }
         }
         return objRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET) {
         if (!objTx) {
-            PAL_DBG(LOG_TAG,  "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtSco(device, Rm));
-            objTx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objTx) {
+                PAL_DBG(LOG_TAG,  "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                objTx = sp;
+            }
         }
         return objTx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_HFP) {
         if (!objHfpRx) {
-            PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtSco(device, Rm));
-            objHfpRx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objHfpRx) {
+                PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                objHfpRx = sp;
+            }
         }
         return objHfpRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_HFP) {
         if (!objHfpTx) {
-            PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
-            std::shared_ptr<Device> sp(new BtSco(device, Rm));
-            objHfpTx = sp;
+            std::lock_guard<std::mutex> lock(Device::mInstMutex);
+            if (!objHfpTx) {
+                PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
+                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                objHfpTx = sp;
+            }
         }
         return objHfpTx;
     }

@@ -25,12 +25,9 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
- *
  */
 
 #ifndef DISPLAYPORT_H
@@ -102,7 +99,6 @@ typedef struct edidAudioInfo {
 
 extern "C" void CreateDisplayDevice(struct pal_device *device,
                                     const std::shared_ptr<ResourceManager> rm,
-                                    pal_device_id_t id, bool createDevice,
                                     std::shared_ptr<Device> *dev);
 class DisplayPort : public Device
 {
@@ -120,7 +116,6 @@ public:
     int deinit(pal_param_device_connection_t device_conn);
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
-    static std::shared_ptr<Device> getObject(pal_device_id_t id);
     int32_t isSampleRateSupported(uint32_t sampleRate);
     int32_t isChannelSupported(uint32_t numChannels);
     int32_t isBitWidthSupported(uint32_t bitWidth) override;

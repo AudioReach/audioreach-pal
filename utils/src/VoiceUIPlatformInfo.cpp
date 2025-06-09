@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -55,39 +55,51 @@ VUISecondStageConfig::VUISecondStageConfig() :
 {
 }
 
-void VUISecondStageConfig::HandleStartTag(const char *tag, const char **attribs)
-{
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+int32_t VUISecondStageConfig::GetDetectionType(const std::string& tag) {
 
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!strcmp(attribs[i], "sm_detection_type")) {
-                i++;
-                if (!strcmp(attribs[i], "KEYWORD_DETECTION")) {
-                    detection_type_ = ST_SM_TYPE_KEYWORD_DETECTION;
-                } else if (!strcmp(attribs[i], "USER_VERIFICATION")) {
-                    detection_type_ = ST_SM_TYPE_USER_VERIFICATION;
-                } else if (!strcmp(attribs[i], "CUSTOM_DETECTION")) {
-                    detection_type_ = ST_SM_TYPE_CUSTOM_DETECTION;
-                }
-            } else if (!strcmp(attribs[i], "sm_id")) {
-                sm_id_ = std::strtoul(attribs[++i], nullptr, 16);
-            } else if (!strcmp(attribs[i], "module_lib")) {
-                module_lib_ = attribs[++i];
-            } else if (!strcmp(attribs[i], "sample_rate")) {
-                sample_rate_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "bit_width")) {
-                bit_width_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "channel_count")) {
-                channels_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "proc_frame_size")) {
-                proc_frame_size_ = std::stoi(attribs[++i]);
+    int32_t type = -1;
+
+    if (tag == "KEYWORD_DETECTION") {
+        type = ST_SM_TYPE_KEYWORD_DETECTION;
+    } else if (tag == "USER_VERIFICATION") {
+        type = ST_SM_TYPE_USER_VERIFICATION;
+    } else if (tag == "CUSTOM_DETECTION") {
+        type = ST_SM_TYPE_CUSTOM_DETECTION;
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid detection type %s", tag.c_str());
+    }
+    return type;
+}
+
+void VUISecondStageConfig::HandleStartTag(const std::string& tag, const char **attribs)
+{
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
+
+    if (tag == "param") {
+        std::string key = attribs[0];
+        std::string value = attribs[1];
+        if (key ==  "sm_detection_type") {
+            int32_t type = GetDetectionType(value);
+            if (type == -1) {
+                PAL_ERR(LOG_TAG, "Invalid detection type %s", value.c_str());
+                return;
             }
-            ++i;
+            detection_type_ = (st_sound_model_type)type;
+        } else if (key == "sm_id") {
+            sm_id_ = std::strtoul(value.c_str(), nullptr, 16);
+        } else if (key == "module_lib") {
+            module_lib_ = value;
+        } else if (key == "sample_rate") {
+            sample_rate_ = std::stoi(value);
+        } else if (key == "bit_width") {
+            bit_width_ = std::stoi(value);
+        } else if (key == "channel_count") {
+            channels_ = std::stoi(value);
+        } else if (key == "proc_frame_size") {
+            proc_frame_size_ = std::stoi(value);
         }
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", tag);
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
 }
 
@@ -102,65 +114,88 @@ VUIFirstStageConfig::VUIFirstStageConfig() :
     }
 }
 
-void VUIFirstStageConfig::HandleStartTag(const char *tag, const char **attribs)
+int32_t VUIFirstStageConfig::GetIndex(std::string param_name) {
+
+    int32_t index = -1;
+
+    if (param_name == "load_sound_model_ids") {
+        index = LOAD_SOUND_MODEL;
+    } else if (param_name == "unload_sound_model_ids") {
+        index = UNLOAD_SOUND_MODEL;
+    } else if (param_name == "wakeup_config_ids") {
+        index = WAKEUP_CONFIG;
+    } else if (param_name == "buffering_config_ids") {
+        index = BUFFERING_CONFIG;
+    } else if (param_name == "engine_reset_ids") {
+        index = ENGINE_RESET;
+    } else if (param_name == "custom_config_ids") {
+        index = CUSTOM_CONFIG;
+    } else if (param_name == "version_ids") {
+        index = MODULE_VERSION;
+    } else if (param_name == "engine_per_model_reset_ids") {
+        index = ENGINE_PER_MODEL_RESET;
+    } else if (param_name == "mode_bit_config_ids") {
+        index = MMA_MODE_BIT_CONFIG;
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid param name %s", param_name.c_str());
+    }
+    return index;
+}
+
+int32_t VUIFirstStageConfig::GetModuleType(std::string tag) {
+
+    int32_t type = -1;
+
+    if (tag == "GMM") {
+        type = ST_MODULE_TYPE_GMM;
+    } else if (tag == "PDK") {
+        type = ST_MODULE_TYPE_PDK;
+    } else if (tag == "HOTWORD") {
+        type = ST_MODULE_TYPE_HW;
+    } else if (tag == "CUSTOM1") {
+        type = ST_MODULE_TYPE_CUSTOM_1;
+    } else if (tag == "CUSTOM2") {
+        type = ST_MODULE_TYPE_CUSTOM_2;
+    } else if (tag == "MMA") {
+        type = ST_MODULE_TYPE_MMA;
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid module type %s", tag.c_str());
+    }
+    return type;
+}
+
+void VUIFirstStageConfig::HandleStartTag(const std::string& tag, const char **attribs)
 {
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
+    std::string key = attribs[0];
+    std::string value = attribs[1];
 
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-
-        while (attribs[i]) {
-            if (!strcmp(attribs[i], "module_type")) {
-                i++;
-                module_name_ = attribs[i];
-                if (!strcmp(attribs[i], "GMM")) {
-                    module_type_ = ST_MODULE_TYPE_GMM;
-                } else if (!strcmp(attribs[i], "PDK")) {
-                    module_type_ = ST_MODULE_TYPE_PDK;
-                } else if (!strcmp(attribs[i], "HOTWORD")) {
-                    module_type_ = ST_MODULE_TYPE_HW;
-                } else if (!strcmp(attribs[i], "CUSTOM1")) {
-                    module_type_ = ST_MODULE_TYPE_CUSTOM_1;
-                } else if (!strcmp(attribs[i], "CUSTOM2")) {
-                    module_type_ = ST_MODULE_TYPE_CUSTOM_2;
-                } else if (!strcmp(attribs[i], "MMA")) {
-                    module_type_ = ST_MODULE_TYPE_MMA;
-                }
-                PAL_DBG(LOG_TAG, "Module name:%s, type:%d",
-                        module_name_.c_str(), module_type_);
-            } else if (!strcmp(attribs[i], "lpi_supported")) {
-                lpi_supported_ = !strcmp(attribs[++i], "true");
-            } else {
-                uint32_t index = 0;
-
-                if (!strcmp(attribs[i], "load_sound_model_ids")) {
-                    index = LOAD_SOUND_MODEL;
-                } else if (!strcmp(attribs[i], "unload_sound_model_ids")) {
-                    index = UNLOAD_SOUND_MODEL;
-                } else if (!strcmp(attribs[i], "wakeup_config_ids")) {
-                    index = WAKEUP_CONFIG;
-                } else if (!strcmp(attribs[i], "buffering_config_ids")) {
-                    index = BUFFERING_CONFIG;
-                } else if (!strcmp(attribs[i], "engine_reset_ids")) {
-                    index = ENGINE_RESET;
-                } else if (!strcmp(attribs[i], "custom_config_ids")) {
-                    index = CUSTOM_CONFIG;
-                } else if (!strcmp(attribs[i], "version_ids")) {
-                    index = MODULE_VERSION;
-                } else if (!strcmp(attribs[i], "engine_per_model_reset_ids")) {
-                    index = ENGINE_PER_MODEL_RESET;
-                } else if (!strcmp(attribs[i], "mode_bit_config_ids")) {
-                    index = MMA_MODE_BIT_CONFIG;
-                }
-                sscanf(attribs[++i], "%x, %x", &module_tag_ids_[index],
-                       &param_ids_[index]);
-                PAL_DBG(LOG_TAG, "index : %u, module_id : %x, param : %x",
-                        index, module_tag_ids_[index], param_ids_[index]);
+    if (tag == "param") {
+        if (key == "module_type") {
+            module_name_ = value;
+            int32_t type = GetModuleType(value);
+            if (type == -1) {
+                PAL_ERR(LOG_TAG, "Invalid module type %s", value.c_str());
+                return;
             }
-            ++i;
+            module_type_ = (st_module_type_t)type;
+            PAL_VERBOSE(LOG_TAG, "Module name:%s, type:%d",
+                    module_name_.c_str(), module_type_);
+        } else if (key == "lpi_supported") {
+            lpi_supported_ = (value == "true");
+        } else {
+            uint32_t index = GetIndex(key);
+            if (index == -1) {
+                PAL_ERR(LOG_TAG, "Invalid param name %s", key.c_str());
+                return;
+            }
+            sscanf(value.c_str(), "%x, %x", &module_tag_ids_[index],
+                   &param_ids_[index]);
+            PAL_VERBOSE(LOG_TAG, "index : %u, module_id : %x, param : %x",
+                    index, module_tag_ids_[index], param_ids_[index]);
         }
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", tag);
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
 }
 
@@ -231,9 +266,9 @@ std::shared_ptr<VUIFirstStageConfig> VUIStreamConfig::GetVUIFirstStageConfig(con
 {
     uint32_t module_type = type;
 
-    PAL_DBG(LOG_TAG, "search module for model type %u", type);
+    PAL_VERBOSE(LOG_TAG, "search module for model type %u", type);
     if (IS_MODULE_TYPE_PDK(type)) {
-        PAL_DBG(LOG_TAG, "PDK module");
+        PAL_VERBOSE(LOG_TAG, "PDK module");
         module_type = ST_MODULE_TYPE_PDK;
     }
 
@@ -267,7 +302,7 @@ void VUIStreamConfig::ReadDetectionPropertyList(const char *prop_string)
     }
 
     for (int i = 0; i < ext_det_prop_list_.size(); i++) {
-        PAL_INFO(LOG_TAG, "Found extension detection property 0x%x",
+        PAL_VERBOSE(LOG_TAG, "Found extension detection property 0x%x",
             ext_det_prop_list_[i]);
     }
 }
@@ -279,8 +314,23 @@ bool VUIStreamConfig::IsDetPropSupported(uint32_t prop) const {
 
     return iter != ext_det_prop_list_.end();
 }
+int32_t VUIStreamConfig::GetOperatingMode(std::string tag) {
 
-void VUIStreamConfig::HandleStartTag(const char* tag, const char** attribs)
+    int32_t mode = -1;
+
+    if (tag == "low_power") {
+       mode = ST_OPERATING_MODE_LOW_POWER;
+    } else if (tag == "high_performance") {
+       mode = ST_OPERATING_MODE_HIGH_PERF;
+    } else if (tag == "high_performance_and_charging") {
+        mode = ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING;
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
+    }
+
+    return mode;
+}
+void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attribs)
 {
     /* Delegate to child element if currently active */
     if (curr_child_) {
@@ -288,95 +338,90 @@ void VUIStreamConfig::HandleStartTag(const char* tag, const char** attribs)
         return;
     }
 
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
+    if (tag == "operating_modes" ||
+        tag == "sound_model_info" ||
+        tag == "name") {
+        PAL_VERBOSE(LOG_TAG, "tag:%s appeared, nothing to do", tag.c_str());
+        return;
+    }
 
-    if (!strcmp(tag, "first_stage_module_params")) {
+    if (tag == "first_stage_module_params") {
         auto st_module_info_ = std::make_shared<VUIFirstStageConfig>();
         vui_uuid_1st_stage_cfg_list_.insert(std::make_pair(vendor_uuid_, st_module_info_));
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(st_module_info_);
         return;
     }
 
-    if (!strcmp(tag, "arm_ss_module_params")) {
+    if (tag == "arm_ss_module_params") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
             std::make_shared<VUISecondStageConfig>());
         return;
     }
 
-    if (!strcmp(tag, "operating_modes") || !strcmp(tag, "sound_model_info")
-                                        || !strcmp(tag, "name")) {
-        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag);
-        return;
-    }
-
-    std::shared_ptr<SoundTriggerPlatformInfo> st_info = SoundTriggerPlatformInfo::GetInstance();
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!strcmp(attribs[i], "vendor_uuid")) {
-                UUID::StringToUUID(attribs[++i], vendor_uuid_);
-                if (vendor_uuid_.CompareUUID(qcva_uuid))
-                    is_qcva_uuid_ = true;
-            } else if (!strcmp(attribs[i], "lpi_enable")) {
-                lpi_enable_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "interface_plugin_lib")) {
-                vui_intf_plugin_lib_name_ = attribs[++i];
-            } else if (!strcmp(attribs[i], "get_module_version")) {
-                get_module_version_supported_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "merge_first_stage_sound_models")) {
-                merge_first_stage_sound_models_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "pdk_first_stage_max_engine_count")) {
-                supported_first_stage_engine_count_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "enable_intra_va_engine_concurrent_detection")) {
-                enable_intra_concurrent_detection_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "capture_keyword")) {
-                capture_keyword_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "client_capture_read_delay")) {
-                client_capture_read_delay_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "pre_roll_duration")) {
-                pre_roll_duration_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "kw_start_tolerance")) {
-                kw_start_tolerance_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "kw_end_tolerance")) {
-                kw_end_tolerance_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "data_before_kw_start")) {
-                data_before_kw_start_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "data_after_kw_end")) {
-                data_after_kw_end_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "sample_rate")) {
-                sample_rate_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "bit_width")) {
-                bit_width_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "out_channels")) {
-                if (std::stoi(attribs[++i]) <= MAX_MODULE_CHANNELS)
-                    out_channels_ = std::stoi(attribs[i]);
-            } else if (!strcmp(attribs[i], "detection_property_list")) {
-                ReadDetectionPropertyList(attribs[++i]);
-            } else {
-                PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
-            }
-            ++i; /* move to next attribute */
-        }
-    } else if (!strcmp(tag, "low_power")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER, attribs, vui_op_modes_);
-    } else if (!strcmp(tag, "high_performance")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF, attribs, vui_op_modes_);
-    } else if (!strcmp(tag, "high_performance_and_charging")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING, attribs, vui_op_modes_);
+    if (tag == "param") {
+        std::string key = attribs[0];
+        std::string value = attribs[1];
+        if (key == "vendor_uuid") {
+            UUID::StringToUUID(value, vendor_uuid_);
+            if (vendor_uuid_.CompareUUID(qcva_uuid))
+                is_qcva_uuid_ = true;
+        } else if (key == "lpi_enable") {
+            lpi_enable_ = (value == "true");
+        } else if (key == "interface_plugin_lib") {
+            vui_intf_plugin_lib_name_ = value;
+        } else if (key == "get_module_version") {
+            get_module_version_supported_ = (value == "true");
+        } else if (key == "merge_first_stage_sound_models") {
+            merge_first_stage_sound_models_ = (value == "true");
+        } else if (key == "pdk_first_stage_max_engine_count") {
+            supported_first_stage_engine_count_ = std::stoi(value);
+        } else if (key == "enable_intra_va_engine_concurrent_detection") {
+            enable_intra_concurrent_detection_ = (value == "true");
+        } else if (key == "capture_keyword") {
+            capture_keyword_ = std::stoi(value);
+        } else if (key == "client_capture_read_delay") {
+            client_capture_read_delay_ = std::stoi(value);
+        } else if (key == "pre_roll_duration") {
+            pre_roll_duration_ = std::stoi(value);
+        } else if (key == "kw_start_tolerance") {
+            kw_start_tolerance_ = std::stoi(value);
+        } else if (key == "kw_end_tolerance") {
+            kw_end_tolerance_ = std::stoi(value);
+        } else if (key == "data_before_kw_start") {
+            data_before_kw_start_ = std::stoi(value);
+        } else if (key == "data_after_kw_end") {
+            data_after_kw_end_ = std::stoi(value);
+        } else if (key == "sample_rate") {
+            sample_rate_ = std::stoi(value);
+        } else if (key == "bit_width") {
+            bit_width_ = std::stoi(value);
+        } else if (key == "out_channels") {
+            if (std::stoi(value) <= MAX_MODULE_CHANNELS)
+                out_channels_ = std::stoi(value);
+        } else if (key == "detection_property_list") {
+            ReadDetectionPropertyList(value.c_str());
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
+       }
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", (char *)tag);
+        std::shared_ptr<SoundTriggerPlatformInfo> st_info = SoundTriggerPlatformInfo::GetInstance();
+        int32_t mode = GetOperatingMode(tag);
+        if (mode != -1) {
+            std::shared_ptr<SoundTriggerPlatformInfo> st_info =
+                                                 SoundTriggerPlatformInfo::GetInstance();
+            st_info->ReadCapProfileNames((StOperatingModes)mode, attribs, vui_op_modes_);
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid operating mode %s", tag.c_str());
+        }
     }
 }
 
-void VUIStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
+void VUIStreamConfig::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_DBG(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "first_stage_module_params")) {
+    if (tag == "first_stage_module_params") {
         std::shared_ptr<VUIFirstStageConfig> st_module_info(
             std::static_pointer_cast<VUIFirstStageConfig>(curr_child_));
         const auto res = vui_1st_stage_cfg_list_.insert(
@@ -385,7 +430,7 @@ void VUIStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
         if (!res.second)
             PAL_ERR(LOG_TAG, "Failed to insert to map");
         curr_child_ = nullptr;
-    } else if (!strcmp(tag, "arm_ss_module_params")) {
+    } else if (tag == "arm_ss_module_params") {
         std::shared_ptr<VUISecondStageConfig> ss_cfg(
             std::static_pointer_cast<VUISecondStageConfig>(curr_child_));
         const auto res = vui_2nd_stage_cfg_list_.insert(
@@ -449,7 +494,7 @@ std::shared_ptr<VoiceUIPlatformInfo> VoiceUIPlatformInfo::GetInstance()
     return me_;
 }
 
-void VoiceUIPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
+void VoiceUIPlatformInfo::HandleStartTag(const std::string& tag, const char** attribs)
 {
     /* Delegate to child element if currently active */
     if (curr_child_) {
@@ -457,62 +502,53 @@ void VoiceUIPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
         return;
     }
 
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
             std::make_shared<VUIStreamConfig>());
         return;
     }
 
-    if (!strcmp(tag, "config")) {
-        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag);
+    if (tag == "config") {
+        PAL_VERBOSE(LOG_TAG, "tag:%s appeared, nothing to do", tag.c_str());
         return;
     }
 
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!attribs[i]) {
-                PAL_ERR(LOG_TAG,"missing attrib value for tag %s", tag);
-            } else if (!strcmp(attribs[i], "version")) {
-                vui_version_ = std::strtoul(attribs[++i], nullptr, 16);
-            } else if (!strcmp(attribs[i], "enable_failure_detection")) {
-                enable_failure_detection_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "transit_to_non_lpi_on_charging")) {
-                transit_to_non_lpi_on_charging_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "notify_second_stage_failure")) {
-                notify_second_stage_failure_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "enable_inter_va_engine_concurrent_detection")) {
-                enable_inter_concurrent_detection_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "mmap_enable")) {
-                mmap_enable_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else if (!strcmp(attribs[i], "mmap_buffer_duration")) {
-                mmap_buffer_duration_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "mmap_frame_length")) {
-                mmap_frame_length_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "sound_model_lib")) {
-                sound_model_lib_ = std::string(attribs[++i]);
-            } else {
-                PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
-            }
-            ++i; /* move to next attribute */
+    if (tag == "param") {
+        std::string key = attribs[0];
+        std::string value = attribs[1];
+        if (key == "version") {
+            vui_version_ = std::strtoul(value.c_str(), nullptr, 16);
+        } else if (key == "enable_failure_detection") {
+            enable_failure_detection_ = (value == "true");
+        } else if (key == "transit_to_non_lpi_on_charging") {
+            transit_to_non_lpi_on_charging_ = (value == "true");
+        } else if (key == "notify_second_stage_failure") {
+            notify_second_stage_failure_ = (value == "true");
+        } else if (key == "enable_inter_va_engine_concurrent_detection") {
+            enable_inter_concurrent_detection_ = (value == "true");
+        } else if (key == "mmap_enable") {
+            mmap_enable_ = (value == "true");
+        } else if (key == "mmap_buffer_duration") {
+            mmap_buffer_duration_ = std::stoi(value);
+        } else if (key == "mmap_frame_length") {
+            mmap_frame_length_ = std::stoi(value);
+        } else if (key == "sound_model_lib") {
+            sound_model_lib_ = value;
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", tag);
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
 }
 
-void VoiceUIPlatformInfo::HandleEndTag(struct xml_userdata *data, const char* tag)
+void VoiceUIPlatformInfo::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_DBG(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         std::shared_ptr<VUIStreamConfig> sm_cfg(
             std::static_pointer_cast<VUIStreamConfig>(curr_child_));
         const auto res = stream_cfg_list_.insert(

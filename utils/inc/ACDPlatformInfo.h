@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022,2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -57,8 +57,8 @@ class ACDSoundModelInfo : public SoundTriggerXml
 public:
     ACDSoundModelInfo(ACDStreamConfig *sm_cfg);
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs) override;
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag) override;
 
     std::string GetModelType() const { return model_type_; }
     std::string GetModelBinName() const { return model_bin_name_; }
@@ -86,8 +86,8 @@ public:
     ACDStreamConfig(ACDStreamConfig &rhs) = delete;
     ACDStreamConfig & operator=(ACDStreamConfig &rhs) = delete;
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs) override;
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag) override;
 
     UUID GetUUID() const { return vendor_uuid_; }
     std::string GetStreamConfigName() const { return name_; }
@@ -97,6 +97,7 @@ public:
     uint32_t GetSampleRate() const { return sample_rate_; }
     uint32_t GetBitWidth() const { return bit_width_; }
     uint32_t GetOutChannels() const { return out_channels_; }
+    int32_t GetOperatingMode(const std::string& tag);
     std::vector<std::shared_ptr<ACDSoundModelInfo>> GetSoundModelList() const {
         return acd_soundmodel_info_list_;
     }
@@ -129,8 +130,8 @@ public:
     ACDPlatformInfo(ACDStreamConfig &rhs) = delete;
     ACDPlatformInfo & operator=(ACDPlatformInfo &rhs) = delete;
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs) override;
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag) override;
 
     static std::shared_ptr<ACDPlatformInfo> GetInstance();
     bool IsACDEnabled() const { return acd_enable_; }

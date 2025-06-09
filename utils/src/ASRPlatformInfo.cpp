@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -37,33 +37,32 @@
 #define LOG_TAG "PAL: ASRPlatformInfo"
 
 
-void ASRCommonConfig::HandleStartTag(const char* tag, const char** attribs __unused)
+void ASRCommonConfig::HandleStartTag(const std::string& tag, const char** attribs)
 {
-    PAL_INFO(LOG_TAG, "Start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Start tag %s", tag.c_str());
+    std::string key = attribs[0];
+    std::string value = attribs[1];
 
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!strcmp(attribs[i], "asr_input_buffer_size")) {
-                input_buffer_size_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "asr_input_buffer_size_partial_mode")) {
-                partial_mode_input_buffer_size_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "buffering_mode_out_buf_size")) {
-                buffering_mode_out_buffer_size_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "partial_mode_in_lpi")) {
-                partial_mode_in_lpi_ = !strcmp(attribs[++i], "true");
-            } else if (!strcmp(attribs[i], "sdz_output_buffer_size")) {
-                sdz_output_buffer_size_ = std::stoi(attribs[++i]);
-            } else {
-                PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[++i]);
-            }
+    if (tag == "param") {
+        if (key == "asr_input_buffer_size") {
+            input_buffer_size_ = std::stoi(value);
+        } else if (key == "asr_input_buffer_size_partial_mode") {
+            partial_mode_input_buffer_size_ = std::stoi(value);
+        } else if (key == "buffering_mode_out_buf_size") {
+            buffering_mode_out_buffer_size_ = std::stoi(value);
+        } else if (key == "partial_mode_in_lpi") {
+            partial_mode_in_lpi_ = (value == "true");
+        } else if (key == "sdz_output_buffer_size") {
+            sdz_output_buffer_size_ = std::stoi(value);
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
     }
 }
 
-void ASRCommonConfig::HandleEndTag(struct xml_userdata *data, const char* tag_name)
+void ASRCommonConfig::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_INFO(LOG_TAG, "Got end tag %s, nothing to handle here.", tag_name);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s, nothing to handle here.", tag.c_str());
 
     return;
 }
@@ -94,74 +93,83 @@ uint32_t ASRCommonConfig::GetInputBufferSize(int mode) {
 
 }
 
-void ASRStreamConfig::HandleStartTag(const char* tag, const char** attribs)
-{
-    PAL_INFO(LOG_TAG, "Got start tag %s", tag);
+int32_t ASRStreamConfig::GetIndex(std::string& param_name) {
 
-    if (!strcmp(tag, "operating_modes") || !strcmp(tag, "module_Info")
-                                        || !strcmp(tag, "name")) {
-        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag);
+    int32_t index = -1;
+
+    if (param_name == "asr_input_config_id") {
+        index = ASR_INPUT_CONFIG;
+    } else if (param_name == "asr_output_config_id") {
+        index = ASR_OUTPUT_CONFIG;
+    } else if (param_name == "asr_input_buffer_duration_id") {
+       index = ASR_INPUT_BUF_DURATON;
+    } else if (param_name == "asr_output_id") {
+       index = ASR_OUTPUT;
+    } else if (param_name == "asr_force_output_id") {
+       index = ASR_FORCE_OUTPUT;
+    } else if (param_name == "sdz_enable_id") {
+       index = SDZ_ENABLE;
+    } else if (param_name == "sdz_output_config_id") {
+       index = SDZ_OUTPUT_CONFIG;
+    } else if (param_name == "sdz_input_buffer_duration_id") {
+       index = SDZ_INPUT_BUF_DURATION;
+    } else if (param_name == "sdz_output_id") {
+       index = SDZ_OUTPUT;
+    } else if (param_name == "sdz_force_output_id") {
+       index = SDZ_FORCE_OUTPUT;
+    } else {
+       PAL_ERR(LOG_TAG, "Invalid attribute %s", param_name.c_str());
+    }
+
+    return index;
+}
+
+void ASRStreamConfig::HandleStartTag(const std::string& tag, const char** attribs)
+{
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
+
+    if (tag == "operating_modes" || tag == "module_Info" || tag == "name") {
+        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag.c_str());
         return;
     }
 
-    std::shared_ptr<SoundTriggerPlatformInfo> st_info = SoundTriggerPlatformInfo::GetInstance();
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            uint32_t index = 0;
-            if (!strcmp(attribs[i], "vendor_uuid")) {
-                UUID::StringToUUID(attribs[++i], vendor_uuid_);
-            } else if (!strcmp(attribs[i], "lpi_enable")) {
-                lpi_enable_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else {
-                if (!strcmp(attribs[i], "asr_input_config_id")) {
-                    index = ASR_INPUT_CONFIG;
-                } else if (!strcmp(attribs[i], "asr_output_config_id")) {
-                    index = ASR_OUTPUT_CONFIG;
-                } else if (!strcmp(attribs[i], "asr_input_buffer_duration_id")) {
-                    index = ASR_INPUT_BUF_DURATON;
-                } else if (!strcmp(attribs[i], "asr_output_id")) {
-                    index = ASR_OUTPUT;
-                } else if (!strcmp(attribs[i], "asr_force_output_id")) {
-                    index = ASR_FORCE_OUTPUT;
-                } else if (!strcmp(attribs[i], "sdz_enable_id")) {
-                    index = SDZ_ENABLE;
-                } else if (!strcmp(attribs[i], "sdz_output_config_id")) {
-                    index = SDZ_OUTPUT_CONFIG;
-                } else if (!strcmp(attribs[i], "sdz_input_buffer_duration_id")) {
-                    index = SDZ_INPUT_BUF_DURATION;
-                } else if (!strcmp(attribs[i], "sdz_output_id")) {
-                    index = SDZ_OUTPUT;
-                } else if (!strcmp(attribs[i], "sdz_force_output_id")) {
-                    index = SDZ_FORCE_OUTPUT;
-                } else {
-                    PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
-                }
-                sscanf(attribs[++i], "%x, %x", &module_tag_ids_[index], &param_ids_[index]);
-                PAL_DBG(LOG_TAG, "index : %u, module_id : %x, param : %x",
-                            index, module_tag_ids_[index], param_ids_[index]);
-                ++i; /* move to next attribute */
+    std::string key = attribs[0];
+    std::string value = attribs[1];
+    if (tag == "param") {
+
+        if (key == "vendor_uuid") {
+            UUID::StringToUUID(value.c_str(), vendor_uuid_);
+        } else if (key == "lpi_enable") {
+            lpi_enable_ = (value == "true");
+        } else {
+            int index = GetIndex(key);
+            if (index == -1) {
+                PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
+                return;
             }
+            sscanf(value.c_str(), "%x, %x", &module_tag_ids_[index], &param_ids_[index]);
+            PAL_DBG(LOG_TAG, "index : %u, module_id : %x, param : %x",
+                        index, module_tag_ids_[index], param_ids_[index]);
         }
     } else {
-        if (!strcmp(tag, "low_power")) {
+        std::shared_ptr<SoundTriggerPlatformInfo> st_info = SoundTriggerPlatformInfo::GetInstance();
+        if (tag == "low_power") {
             st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER, attribs, asr_op_modes_);
-        } else if (!strcmp(tag, "high_performance")) {
+        } else if (tag == "high_performance") {
             st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF, attribs, asr_op_modes_);
         }
     }
 }
 
-void ASRStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
+void ASRStreamConfig::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_INFO(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "module_Info") || !strcmp(tag, "operating_modes")) {
-        PAL_INFO(LOG_TAG, "Exit, Nothing to do for this %s tag.", tag);
+    if (tag == "module_Info" || tag == "operating_modes") {
+        PAL_VERBOSE(LOG_TAG, "Exit, Nothing to do for this %s tag.", tag.c_str());
     }
 
-    if (!strcmp(tag, "name")) {
+    if (tag == "name") {
         if (data->offs <= 0)
             return;
         data->data_buf[data->offs] = '\0';
@@ -170,7 +178,7 @@ void ASRStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
         name_ = name;
     }
 
-    PAL_INFO(LOG_TAG, "Exit, for %s tag.", tag);
+    PAL_VERBOSE(LOG_TAG, "Exit, for %s tag.", tag.c_str());
 
     return;
 }
@@ -211,9 +219,9 @@ std::shared_ptr<ASRStreamConfig> ASRPlatformInfo::GetStreamConfig(const UUID& uu
         return nullptr;
 }
 
-void ASRPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
+void ASRPlatformInfo::HandleStartTag(const std::string& tag, const char** attribs)
 {
-    PAL_INFO(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
 
     /* Delegate to child element if currently active */
     if (curr_child_) {
@@ -221,26 +229,26 @@ void ASRPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
         return;
     }
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
             std::make_shared<ASRStreamConfig>());
         return;
-    } else if (!strcmp(tag, "common_config")) {
+    } else if (tag == "common_config") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
                            std::make_shared<ASRCommonConfig>());
         return;
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", tag);
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
 
-    PAL_INFO(LOG_TAG, "Exit for tag %s.", tag);
+    PAL_VERBOSE(LOG_TAG, "Exit for tag %s.", tag.c_str());
 }
 
-void ASRPlatformInfo::HandleEndTag(struct xml_userdata *data, const char* tag)
+void ASRPlatformInfo::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_INFO(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         std::shared_ptr<ASRStreamConfig> sm_cfg(
             std::static_pointer_cast<ASRStreamConfig>(curr_child_));
         const auto res = stream_cfg_list_.insert(
@@ -248,7 +256,7 @@ void ASRPlatformInfo::HandleEndTag(struct xml_userdata *data, const char* tag)
         if (!res.second)
             PAL_ERR(LOG_TAG, "Failed to insert to map");
         curr_child_ = nullptr;
-    } else if (!strcmp(tag, "common_config")) {
+    } else if (tag == "common_config") {
         std::shared_ptr<ASRCommonConfig> cm_cfg(
              std::static_pointer_cast<ASRCommonConfig>(curr_child_));
         cm_cfg_ = cm_cfg;
@@ -258,7 +266,7 @@ void ASRPlatformInfo::HandleEndTag(struct xml_userdata *data, const char* tag)
     if (curr_child_)
         curr_child_->HandleEndTag(data, tag);
 
-    PAL_DBG(LOG_TAG, "Exit for tag %s.", tag);
+    PAL_VERBOSE(LOG_TAG, "Exit for tag %s.", tag.c_str());
 
     return;
 }

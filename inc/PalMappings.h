@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -109,6 +109,8 @@ static const std::map<std::string, pal_device_id_t> deviceIdLUT {
     {std::string{ "PAL_DEVICE_OUT_DUMMY" },                PAL_DEVICE_OUT_DUMMY},
     {std::string{ "PAL_DEVICE_OUT_SOUND_DOSE" },           PAL_DEVICE_OUT_SOUND_DOSE},
     {std::string{ "PAL_DEVICE_OUT_BLUETOOTH_HFP" },        PAL_DEVICE_OUT_BLUETOOTH_HFP},
+    {std::string{ "PAL_DEVICE_OUT_SPEAKER2" },             PAL_DEVICE_OUT_SPEAKER2},
+    {std::string{ "PAL_DEVICE_OUT_SPEAKER3" },             PAL_DEVICE_OUT_SPEAKER3},
     {std::string{ "PAL_DEVICE_OUT_MAX" },                  PAL_DEVICE_OUT_MAX},
     {std::string{ "PAL_DEVICE_IN_HANDSET_MIC" },           PAL_DEVICE_IN_HANDSET_MIC},
     {std::string{ "PAL_DEVICE_IN_SPEAKER_MIC" },           PAL_DEVICE_IN_SPEAKER_MIC},
@@ -137,6 +139,8 @@ static const std::map<std::string, pal_device_id_t> deviceIdLUT {
     {std::string{ "PAL_DEVICE_IN_CPS_FEEDBACK" },          PAL_DEVICE_IN_CPS_FEEDBACK},
     {std::string{ "PAL_DEVICE_IN_DUMMY" },                 PAL_DEVICE_IN_DUMMY},
     {std::string{ "PAL_DEVICE_IN_BLUETOOTH_HFP" },         PAL_DEVICE_IN_BLUETOOTH_HFP},
+    {std::string{ "PAL_DEVICE_IN_SPEAKER_MIC2" },          PAL_DEVICE_IN_SPEAKER_MIC2},
+    {std::string{ "PAL_DEVICE_IN_SPEAKER_MIC3" },          PAL_DEVICE_IN_SPEAKER_MIC3},
 };
 
 //reverse mapping
@@ -169,6 +173,8 @@ static const std::map<uint32_t, std::string> deviceNameLUT {
     {PAL_DEVICE_OUT_DUMMY,                std::string{"PAL_DEVICE_OUT_DUMMY"}},
     {PAL_DEVICE_OUT_SOUND_DOSE,           std::string{"PAL_DEVICE_OUT_SOUND_DOSE"}},
     {PAL_DEVICE_OUT_BLUETOOTH_HFP,        std::string{"PAL_DEVICE_OUT_BLUETOOTH_HFP"}},
+    {PAL_DEVICE_OUT_SPEAKER2,             std::string{"PAL_DEVICE_OUT_SPEAKER2"}},
+    {PAL_DEVICE_OUT_SPEAKER3,             std::string{"PAL_DEVICE_OUT_SPEAKER3"}},
     {PAL_DEVICE_OUT_MAX,                  std::string{"PAL_DEVICE_OUT_MAX"}},
     {PAL_DEVICE_IN_HANDSET_MIC,           std::string{"PAL_DEVICE_IN_HANDSET_MIC"}},
     {PAL_DEVICE_IN_SPEAKER_MIC,           std::string{"PAL_DEVICE_IN_SPEAKER_MIC"}},
@@ -197,6 +203,8 @@ static const std::map<uint32_t, std::string> deviceNameLUT {
     {PAL_DEVICE_IN_CPS_FEEDBACK,          std::string{"PAL_DEVICE_IN_CPS_FEEDBACK"}},
     {PAL_DEVICE_IN_DUMMY,                 std::string{"PAL_DEVICE_IN_DUMMY"}},
     {PAL_DEVICE_IN_BLUETOOTH_HFP,         std::string{"PAL_DEVICE_IN_BLUETOOTH_HFP"}},
+    {PAL_DEVICE_IN_SPEAKER_MIC2,          std::string{"PAL_DEVICE_IN_SPEAKER_MIC2"}},
+    {PAL_DEVICE_IN_SPEAKER_MIC3,          std::string{"PAL_DEVICE_IN_SPEAKER_MIC3"}},
 };
 
 const std::map<std::string, uint32_t> usecaseIdLUT {
@@ -290,6 +298,7 @@ const std::map<uint32_t, std::string> loopbackLUT {
     {PAL_STREAM_LOOPBACK_KARAOKE,       std::string{ "PAL_STREAM_LOOPBACK_KARAOKE" }},
     {PAL_STREAM_LOOPBACK_PLAYBACK_ONLY, std::string{ "PAL_STREAM_LOOPBACK_PLAYBACK_ONLY" } },
     {PAL_STREAM_LOOPBACK_CAPTURE_ONLY,  std::string{ "PAL_STREAM_LOOPBACK_CAPTURE_ONLY" } },
+    {PAL_STREAM_LOOPBACK_ICC,           std::string{ "PAL_STREAM_LOOPBACK_ICC" } },
 };
 
 const std::map<uint32_t, std::string> hapticsLUT {

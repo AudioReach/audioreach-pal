@@ -81,5 +81,10 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <device name="PAL_DEVICE_IN_DUMMY" lib="libdev_dummy.so" entryFunction="CreateDummyDevice"/>
         <device name="PAL_DEVICE_IN_EXT_EC_REF" lib="libdev_ext_ec.so" entryFunction="CreateExtEcDevice"/>
         <device name="PAL_DEVICE_IN_ECHO_REF" lib="libdev_ec_ref.so" entryFunction="CreateECRefDevice"/>
+        <!--A2B-->
+        <device name="PAL_DEVICE_OUT_SPEAKER2" lib="libdev_a2bspeaker.so" entryFunction="Createa2bspeakerDevice"/>
+        <device name="PAL_DEVICE_IN_SPEAKER_MIC2" lib="libdev_a2bmic.so" entryFunction="Createa2bmicDevice"/>
+        <device name="PAL_DEVICE_OUT_SPEAKER3" lib="libdev_a2b2speaker.so" entryFunction="Createa2b2speakerDevice"/>
+        <device name="PAL_DEVICE_IN_SPEAKER_MIC3" lib="libdev_a2b2mic.so" entryFunction="Createa2b2micDevice"/>		
     </devices>
 </plugin_manager_info>

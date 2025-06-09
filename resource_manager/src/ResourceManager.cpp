@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -179,6 +178,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::deviceLinkName {
     {PAL_DEVICE_OUT_DUMMY,                {std::string{ "" }}},
     {PAL_DEVICE_OUT_SOUND_DOSE,           {std::string{ "" }}},
     {PAL_DEVICE_OUT_BLUETOOTH_HFP,        {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER2,             {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER3,             {std::string{ "" }}},
     {PAL_DEVICE_OUT_MAX,                  {std::string{ "none" }}},
 
     {PAL_DEVICE_IN_HANDSET_MIC,           {std::string{ "tdm-pri" }}},
@@ -209,6 +210,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::deviceLinkName {
     {PAL_DEVICE_IN_CPS2_FEEDBACK,         {std::string{ "" }}},
     {PAL_DEVICE_IN_RECORD_PROXY,          {std::string{ "" }}},
     {PAL_DEVICE_IN_BLUETOOTH_HFP,         {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC2,          {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC3,          {std::string{ "" }}},
     {PAL_DEVICE_IN_MAX,                   {std::string{ "" }}},
 };
 
@@ -241,6 +244,8 @@ std::vector<std::pair<int32_t, int32_t>> ResourceManager::devicePcmId {
     {PAL_DEVICE_OUT_DUMMY,                0},
     {PAL_DEVICE_OUT_SOUND_DOSE,           0},
     {PAL_DEVICE_OUT_BLUETOOTH_HFP,        0},
+    {PAL_DEVICE_OUT_SPEAKER2,             0},
+    {PAL_DEVICE_OUT_SPEAKER3,             0},
     {PAL_DEVICE_OUT_MAX,                  0},
 
     {PAL_DEVICE_IN_HANDSET_MIC,           0},
@@ -271,6 +276,8 @@ std::vector<std::pair<int32_t, int32_t>> ResourceManager::devicePcmId {
     {PAL_DEVICE_IN_CPS2_FEEDBACK,         0},
     {PAL_DEVICE_IN_RECORD_PROXY,          0},
     {PAL_DEVICE_IN_BLUETOOTH_HFP,         0},
+    {PAL_DEVICE_IN_SPEAKER_MIC2,          0},
+    {PAL_DEVICE_IN_SPEAKER_MIC3,          0},
     {PAL_DEVICE_IN_MAX,                   0},
 };
 
@@ -304,6 +311,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::sndDeviceNameLUT {
     {PAL_DEVICE_OUT_DUMMY,                {std::string{ "" }}},
     {PAL_DEVICE_OUT_SOUND_DOSE,           {std::string{ "" }}},
     {PAL_DEVICE_OUT_BLUETOOTH_HFP,        {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER2,             {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER3,             {std::string{ "" }}},
     {PAL_DEVICE_OUT_MAX,                  {std::string{ "" }}},
 
     {PAL_DEVICE_IN_HANDSET_MIC,           {std::string{ "" }}},
@@ -334,6 +343,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::sndDeviceNameLUT {
     {PAL_DEVICE_IN_CPS2_FEEDBACK,         {std::string{ "" }}},
     {PAL_DEVICE_IN_RECORD_PROXY,          {std::string{ "" }}},
     {PAL_DEVICE_IN_BLUETOOTH_HFP,         {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC2,          {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC3,          {std::string{ "" }}},
     {PAL_DEVICE_IN_MAX,                   {std::string{ "" }}},
 };
 
@@ -562,6 +573,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::listAllBackEndIds 
     {PAL_DEVICE_OUT_DUMMY,                {std::string{ "" }}},
     {PAL_DEVICE_OUT_SOUND_DOSE,           {std::string{ "" }}},
     {PAL_DEVICE_OUT_BLUETOOTH_HFP,        {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER2,             {std::string{ "" }}},
+    {PAL_DEVICE_OUT_SPEAKER3,             {std::string{ "" }}},
     {PAL_DEVICE_OUT_MAX,                  {std::string{ "" }}},
 
     {PAL_DEVICE_IN_HANDSET_MIC,           {std::string{ "none" }}},
@@ -592,6 +605,8 @@ std::vector<std::pair<int32_t, std::string>> ResourceManager::listAllBackEndIds 
     {PAL_DEVICE_IN_CPS2_FEEDBACK,         {std::string{ "" }}},
     {PAL_DEVICE_IN_RECORD_PROXY,          {std::string{ "" }}},
     {PAL_DEVICE_IN_BLUETOOTH_HFP,         {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC2,          {std::string{ "" }}},
+    {PAL_DEVICE_IN_SPEAKER_MIC3,          {std::string{ "" }}},
     {PAL_DEVICE_IN_MAX,                   {std::string{ "" }}},
 };
 

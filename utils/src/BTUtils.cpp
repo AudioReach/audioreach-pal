@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -459,7 +461,9 @@ int32_t BTUtilsDeviceNotReady(Stream *s, bool& a2dpSuspend)
             }
 
             mDevices.push_back(dev);
+            rm->lockGraph();
             status = session->setupSessionDevice(s, sAttr.type, dev);
+            rm->unlockGraph();
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "setupSessionDevice failed:%d", status);
                 dev->close();

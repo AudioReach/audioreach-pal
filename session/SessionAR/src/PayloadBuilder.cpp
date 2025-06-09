@@ -3269,6 +3269,16 @@ int PayloadBuilder::populateStreamCkv(Stream *s,
             if (type)
                 keyVector.push_back(std::make_pair(MMA_MODEL_TYPE, type));
             break;
+        case PAL_STREAM_LOOPBACK:
+            PAL_INFO(LOG_TAG, "populate for hfp NB/WB CKV, sample rate=%d", sAttr.in_media_config.sample_rate);
+            if (sAttr.in_media_config.sample_rate == SAMPLINGRATE_16K) {
+                keyVector.push_back(std::make_pair(SAMPLINGRATE, SAMPLINGRATE_16K));
+            } else if (sAttr.in_media_config.sample_rate == SAMPLINGRATE_8K) {
+                keyVector.push_back(std::make_pair(SAMPLINGRATE, SAMPLINGRATE_8K));
+            }
+            keyVector.push_back(std::make_pair(VOLUME, LEVEL_15));
+            PAL_DBG(LOG_TAG, "Entered loopback %x %x", VOLUME, LEVEL_15);
+            break;
         default:
             /*
              * Sending volume minimum as we want to ramp up instead of ramping
@@ -3404,6 +3414,13 @@ int PayloadBuilder::populateDevicePPCkv(Stream *s, std::vector <std::pair<int,in
                 /* TBD: Push Channels for these types once Channels are added */
                 //keyVector.push_back(std::make_pair(CHANNELS,
                 //                                   dAttr.config.ch_info.channels));
+                break;
+            case PAL_STREAM_LOOPBACK:
+                if (sattr->in_media_config.sample_rate == SAMPLINGRATE_16K) {
+                    keyVector.push_back(std::make_pair(SAMPLINGRATE, SAMPLINGRATE_16K));
+                } else if (sattr->in_media_config.sample_rate == SAMPLINGRATE_8K) {
+                    keyVector.push_back(std::make_pair(SAMPLINGRATE, SAMPLINGRATE_8K));
+                }
                 break;
             default:
                 PAL_VERBOSE(LOG_TAG,"stream type %d doesn't support DevicePP CKV ", sattr->type);

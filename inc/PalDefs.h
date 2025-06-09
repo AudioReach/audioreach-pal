@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -364,6 +363,8 @@ typedef enum {
     PAL_STREAM_HPCM = 31,                 /**< hpcm usecase */
     PAL_STREAM_DUMMY = 32,                /**< Dummy stream used to directly push configurations without a stream instance */
     PAL_STREAM_CALL_TRANSLATION = 33,     /**< Translation usecase for Voice & Voip Calls */
+    PAL_STREAM_PLAYBACK_BUS = 34,         /**< Playback bus type pal streams */
+    PAL_STREAM_CAPTURE_BUS = 35,          /**< Capture bus type pal streams */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -371,11 +372,11 @@ typedef enum {
 typedef enum {
     //OUTPUT DEVICES
     PAL_DEVICE_OUT_MIN = 0,
-    PAL_DEVICE_NONE = 1, /**< for transcode usecases*/
+    PAL_DEVICE_NONE = 1,                           /**< for transcode usecases*/
     PAL_DEVICE_OUT_HANDSET = 2,
-    PAL_DEVICE_OUT_SPEAKER = 3,
+    PAL_DEVICE_OUT_SPEAKER = 3,                    /**< Default out speaker device*/
     PAL_DEVICE_OUT_WIRED_HEADSET = 4,
-    PAL_DEVICE_OUT_WIRED_HEADPHONE = 5, /**< Wired headphones without mic*/
+    PAL_DEVICE_OUT_WIRED_HEADPHONE = 5,            /**< Wired headphones without mic*/
     PAL_DEVICE_OUT_LINE = 6,
     PAL_DEVICE_OUT_BLUETOOTH_SCO = 7,
     PAL_DEVICE_OUT_BLUETOOTH_A2DP = 8,
@@ -398,8 +399,10 @@ typedef enum {
     PAL_DEVICE_OUT_RECORD_PROXY = 25,
     PAL_DEVICE_OUT_SOUND_DOSE = 26,
     PAL_DEVICE_OUT_BLUETOOTH_HFP = 27,
+    PAL_DEVICE_OUT_SPEAKER2 = 28,                  /**< Secondary zone speaker device*/
+    PAL_DEVICE_OUT_SPEAKER3 = 29,                  /**< Tertiary zone speaker device*/
     // Add new OUT devices here, increment MAX and MIN below when you do so
-    PAL_DEVICE_OUT_MAX = 28,
+    PAL_DEVICE_OUT_MAX = 30,
     //INPUT DEVICES
     PAL_DEVICE_IN_MIN = PAL_DEVICE_OUT_MAX,
     PAL_DEVICE_IN_HANDSET_MIC = PAL_DEVICE_IN_MIN +1,
@@ -430,8 +433,10 @@ typedef enum {
     PAL_DEVICE_IN_CPS2_FEEDBACK = PAL_DEVICE_IN_MIN + 26,
     PAL_DEVICE_IN_RECORD_PROXY = PAL_DEVICE_IN_MIN + 27,
     PAL_DEVICE_IN_BLUETOOTH_HFP = PAL_DEVICE_IN_MIN + 28,
+    PAL_DEVICE_IN_SPEAKER_MIC2 = PAL_DEVICE_IN_MIN + 29,             /**< Secondary zone speaker mic device*/
+    PAL_DEVICE_IN_SPEAKER_MIC3 = PAL_DEVICE_IN_MIN + 30,             /**< Tertiary zone speaker mic device*/
     // Add new IN devices here, increment MAX and MIN below when you do so
-    PAL_DEVICE_IN_MAX = PAL_DEVICE_IN_MIN + 29,
+    PAL_DEVICE_IN_MAX = PAL_DEVICE_IN_MIN + 31,
 } pal_device_id_t;
 
 enum A2DP_STATE {
@@ -457,6 +462,7 @@ typedef enum {
     PAL_STREAM_LOOPBACK_KARAOKE,
     PAL_STREAM_LOOPBACK_PLAYBACK_ONLY,
     PAL_STREAM_LOOPBACK_CAPTURE_ONLY,
+    PAL_STREAM_LOOPBACK_ICC,           /**< In Car Communication loopback */
 } pal_stream_loopback_type_t;
 
 typedef enum {
@@ -626,6 +632,7 @@ struct pal_stream_attributes {
     pal_stream_direction_t direction;            /**<  direction of the streams */
     struct pal_media_config in_media_config;     /**<  media config of the input audio samples */
     struct pal_media_config out_media_config;    /**<  media config of the output audio samples */
+    char* address;                               /**<  address */
 };
 
 typedef struct pal_callback_config {
@@ -1696,7 +1703,8 @@ typedef struct custom_payload_uc_info_s {
     pal_device_id_t pal_device_id;     /**< type of device to apply the payload param */
     uint32_t sample_rate;              /**< sample rate of the stream to apply the payload param */
     uint32_t instance_id;              /**< instance id of the stream */
-    bool streamless;                  /** set to true to create a dummy stream to send command directly to framework */
+    bool streamless;                   /**< set to true to create a dummy stream to send command directly to framework */
+    char* address ;                    /**< Bus address */
 
 }custom_payload_uc_info_t;
 

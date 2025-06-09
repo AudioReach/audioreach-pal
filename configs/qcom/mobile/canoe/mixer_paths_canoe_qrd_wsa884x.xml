@@ -27,7 +27,7 @@
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-* Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 * -->
 
@@ -521,7 +521,7 @@
     </path>
 
     <path name="qmp1-normal-lpi">
-        <ctl name="QMP_MIC01 FU1 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC01 FU1 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC01 VA Normal PortMap" value="SWRM_TX2_CH1" />
         <ctl name="QMP_MIC01 FU1 PDE11 VA Enable" value="1" />
     </path>
@@ -533,7 +533,7 @@
     </path>
 
     <path name="qmp1-lp">
-        <ctl name="QMP_MIC01 FU2 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC01 FU2 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC01 LP PortMap" value="SWRM_TX3_CH1" />
         <ctl name="QMP_MIC01 FU2 PDE11 Enable" value="1" />
     </path>
@@ -551,7 +551,7 @@
     </path>
 
     <path name="qmp2-normal-lpi">
-        <ctl name="QMP_MIC02 FU1 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC02 FU1 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC02 VA Normal PortMap" value="SWRM_TX2_CH2" />
         <ctl name="QMP_MIC02 FU1 PDE11 VA Enable" value="1" />
     </path>
@@ -563,7 +563,7 @@
     </path>
 
     <path name="qmp2-lp">
-        <ctl name="QMP_MIC02 FU2 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC02 FU2 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC02 LP PortMap" value="SWRM_TX3_CH2" />
         <ctl name="QMP_MIC02 FU2 PDE11 Enable" value="1" />
     </path>
@@ -581,7 +581,7 @@
     </path>
 
     <path name="qmp3-normal-lpi">
-        <ctl name="QMP_MIC03 FU1 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC03 FU1 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC03 VA Normal PortMap" value="SWRM_TX1_CH1" />
         <ctl name="QMP_MIC03 FU1 PDE11 VA Enable" value="1" />
     </path>
@@ -593,7 +593,7 @@
     </path>
 
     <path name="qmp3-lp">
-        <ctl name="QMP_MIC03 FU2 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC03 FU2 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC03 LP PortMap" value="SWRM_TX1_CH3" />
         <ctl name="QMP_MIC03 FU2 PDE11 Enable" value="1" />
     </path>
@@ -611,7 +611,7 @@
     </path>
 
     <path name="qmp4-normal-lpi">
-        <ctl name="QMP_MIC04 FU1 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC04 FU1 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC04 VA Normal PortMap" value="SWRM_TX1_CH2" />
         <ctl name="QMP_MIC04 FU1 PDE11 VA Enable" value="1" />
     </path>
@@ -623,7 +623,7 @@
     </path>
 
     <path name="qmp4-lp">
-        <ctl name="QMP_MIC04 FU2 IT11 Usage Mode" value="LP_DIV_16" />
+        <ctl name="QMP_MIC04 FU2 IT11 Usage Mode" value="NORMAL_DIV_4" />
         <ctl name="QMP_MIC04 LP PortMap" value="SWRM_TX2_CH3" />
         <ctl name="QMP_MIC04 FU2 PDE11 Enable" value="1" />
     </path>

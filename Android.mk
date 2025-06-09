@@ -147,6 +147,10 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libdev_bt \
         libdev_fm \
         libdev_usb \
+        libdev_a2bmic \
+        libdev_a2bspeaker \
+        libdev_a2b2mic \
+        libdev_a2b2speaker \
         libdev_ultrasound \
         libdev_proxy \
         libdev_display \

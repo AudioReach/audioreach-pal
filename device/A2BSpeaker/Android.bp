@@ -1,0 +1,7 @@
+cc_library_headers {
+
+    name: "libdev_a2bspeaker_headers",
+    export_include_dirs: ["inc"],
+    vendor: true,
+
+}

@@ -27,8 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -49,38 +48,35 @@ ACDSoundModelInfo::ACDSoundModelInfo(ACDStreamConfig *sm_cfg) :
 {
 }
 
-void ACDSoundModelInfo::HandleStartTag(const char* tag, const char** attribs __unused)
+void ACDSoundModelInfo::HandleStartTag(const std::string& tag, const char** attribs)
 {
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
 
     if (is_parsing_contexts) {
-        if (!strcmp(tag, "context")) {
-            uint32_t i = 0;
+        if (tag == "context") {
+            std::string key = attribs[0];
+            std::string value = attribs[1];
             uint32_t id;
 
-            while (attribs[i]) {
-                if (!strcmp(attribs[i], "id")) {
-                    std::string tagid(attribs[++i]);
-                    id = ResourceManager::convertCharToHex(tagid);
-                    std::shared_ptr<ACDContextInfo> context_info =
-                        std::make_shared<ACDContextInfo>(id, model_id_);
-                    acd_context_info_list_.push_back(context_info);
-                    sm_cfg_->UpdateContextModelMap(id);
-                }
-                ++i; /* move to next attribute */
+            if (key == "id") {
+                id = ResourceManager::convertCharToHex(value);
+                std::shared_ptr<ACDContextInfo> context_info =
+                    std::make_shared<ACDContextInfo>(id, model_id_);
+                acd_context_info_list_.push_back(context_info);
+                sm_cfg_->UpdateContextModelMap(id);
             }
         }
     }
 
-    if (!strcmp(tag, "contexts"))
+    if (tag == "contexts")
         is_parsing_contexts = true;
 }
 
-void ACDSoundModelInfo::HandleEndTag(struct xml_userdata *data, const char* tag_name)
+void ACDSoundModelInfo::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_DBG(LOG_TAG, "Got end tag %s", tag_name);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag_name, "contexts"))
+    if (tag == "contexts")
         is_parsing_contexts = false;
 
     if (data->offs <= 0)
@@ -88,20 +84,21 @@ void ACDSoundModelInfo::HandleEndTag(struct xml_userdata *data, const char* tag_
 
     data->data_buf[data->offs] = '\0';
 
-    if (!strcmp(tag_name, "name")) {
+    if (tag == "name") {
         std::string type(data->data_buf);
 
-        if (!strstr(type.c_str(), "ACD_SOUND_MODEL")) {
+        if (type.find("ACD_SOUND_MODEL") == std::string::npos) {
             PAL_ERR(LOG_TAG, "Error: invalid sound model: %s", type.c_str());
         } else {
             model_type_ = type;
             model_id_ = sm_cfg_->GetAndUpdateSndMdlCnt();
-            PAL_INFO(LOG_TAG, "Sound model type: %s\t\tid: %d\n", model_type_.c_str(), model_id_);
+            PAL_VERBOSE(LOG_TAG, "Sound model type: %s\t\tid: %d\n",
+                        model_type_.c_str(), model_id_);
         }
-    } else if (!strcmp(tag_name, "bin")) {
+    } else if (tag == "bin") {
         std::string bin_name(data->data_buf);
         model_bin_name_ = bin_name;
-    } else if (!strcmp(tag_name, "uuid")) {
+    } else if (tag == "uuid") {
         std::string uuid(data->data_buf);
         model_uuid_ = ResourceManager::convertCharToHex(uuid);
     }
@@ -143,9 +140,32 @@ std::shared_ptr<ACDSoundModelInfo> ACDStreamConfig::GetSoundModelInfoByModelId(u
         return nullptr;
 }
 
-void ACDStreamConfig::HandleStartTag(const char* tag, const char** attribs)
+int32_t ACDStreamConfig::GetOperatingMode(const std::string& tag) {
+
+    int32_t mode = -1;
+
+    if (tag == "low_power") {
+        mode = ST_OPERATING_MODE_LOW_POWER;
+    } else if (tag == "low_power_ns") {
+        mode = ST_OPERATING_MODE_LOW_POWER_NS;
+    } else if (tag == "low_power_tx_macro") {
+        mode = ST_OPERATING_MODE_LOW_POWER_TX_MACRO;
+    } else if (tag == "high_performance") {
+        mode = ST_OPERATING_MODE_HIGH_PERF;
+    } else if (tag == "high_performance_ns") {
+        mode = ST_OPERATING_MODE_HIGH_PERF_NS;
+    } else if (tag == "high_performance_tx_macro") {
+        mode = ST_OPERATING_MODE_HIGH_PERF_TX_MACRO;
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid operating mode %s", tag.c_str());
+    }
+
+    return mode;
+}
+
+void ACDStreamConfig::HandleStartTag(const std::string& tag, const char** attribs)
 {
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
 
     /* Delegate to child element if currently active */
     if (curr_child_) {
@@ -153,61 +173,54 @@ void ACDStreamConfig::HandleStartTag(const char* tag, const char** attribs)
         return;
     }
 
-    if (!strcmp(tag, "sound_model")) {
+    if (tag == "sound_model") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
             std::make_shared<ACDSoundModelInfo>(this));
         return;
     }
 
-    if (!strcmp(tag, "operating_modes") || !strcmp(tag, "sound_model_info")
-                                        || !strcmp(tag, "name")) {
-        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag);
+    if (tag == "operating_modes" ||
+        tag == "sound_model_info" ||
+        tag == "name") {
+        PAL_VERBOSE(LOG_TAG, "tag:%s appeared, nothing to do", tag.c_str());
         return;
     }
 
-    std::shared_ptr<SoundTriggerPlatformInfo> st_info = SoundTriggerPlatformInfo::GetInstance();
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!strcmp(attribs[i], "vendor_uuid")) {
-                UUID::StringToUUID(attribs[++i], vendor_uuid_);
-            } else if (!strcmp(attribs[i], "sample_rate")) {
-                sample_rate_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "bit_width")) {
-                bit_width_ = std::stoi(attribs[++i]);
-            } else if (!strcmp(attribs[i], "out_channels")) {
-                if (std::stoi(attribs[++i]) <= MAX_MODULE_CHANNELS)
-                    out_channels_ = std::stoi(attribs[i]);
-            } else if (!strcmp(attribs[i], "lpi_enable")) {
-                lpi_enable_ =
-                    !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else {
-                PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
-            }
-            ++i; /* move to next attribute */
+    std::string key = attribs[0];
+    if (tag == "param") {
+        std::string value = attribs[1];
+
+        if (key == "vendor_uuid") {
+            UUID::StringToUUID(value, vendor_uuid_);
+        } else if (key == "sample_rate") {
+            sample_rate_ = std::stoi(value);
+        } else if (key == "bit_width") {
+            bit_width_ = std::stoi(value);
+        } else if (key == "out_channels") {
+            if (std::stoi(value) <= MAX_MODULE_CHANNELS)
+                out_channels_ = std::stoi(value);
+        } else if (key == "lpi_enable") {
+            lpi_enable_ = (value == "true");
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
-    } else if (!strcmp(tag, "low_power")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER, attribs, acd_op_modes_);
-    } else if (!strcmp(tag, "low_power_ns")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER_NS, attribs, acd_op_modes_);
-    } else if (!strcmp(tag, "low_power_tx_macro")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER_TX_MACRO, attribs, acd_op_modes_);
-    } else if (!strcmp(tag, "high_performance")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF, attribs, acd_op_modes_);
-    } else if (!strcmp(tag, "high_performance_ns")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF_NS, attribs, acd_op_modes_);
-    } else if (!strcmp(tag, "high_performance_tx_macro")) {
-        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF_TX_MACRO, attribs, acd_op_modes_);
     } else {
-          PAL_ERR(LOG_TAG, "Invalid tag %s", (char *)tag);
+        int32_t mode = GetOperatingMode(tag);
+        if (mode != -1) {
+            std::shared_ptr<SoundTriggerPlatformInfo> st_info =
+                                                 SoundTriggerPlatformInfo::GetInstance();
+            st_info->ReadCapProfileNames((StOperatingModes)mode, attribs, acd_op_modes_);
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
+        }
     }
 }
 
-void ACDStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
+void ACDStreamConfig::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_DBG(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "sound_model")) {
+    if (tag == "sound_model") {
        std::shared_ptr<ACDSoundModelInfo> acd_sm_info(
             std::static_pointer_cast<ACDSoundModelInfo>(curr_child_));
         acd_soundmodel_info_list_.push_back(acd_sm_info);
@@ -220,7 +233,7 @@ void ACDStreamConfig::HandleEndTag(struct xml_userdata *data, const char* tag)
         return;
     }
 
-    if (!strcmp(tag, "name")) {
+    if (tag == "name") {
         if (data->offs <= 0)
             return;
         data->data_buf[data->offs] = '\0';
@@ -258,7 +271,7 @@ std::shared_ptr<ACDPlatformInfo> ACDPlatformInfo::GetInstance()
     return me_;
 }
 
-void ACDPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
+void ACDPlatformInfo::HandleStartTag(const std::string& tag, const char** attribs)
 {
     /* Delegate to child element if currently active */
     if (curr_child_) {
@@ -266,41 +279,37 @@ void ACDPlatformInfo::HandleStartTag(const char* tag, const char** attribs)
         return;
     }
 
-    PAL_DBG(LOG_TAG, "Got start tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got start tag %s", tag.c_str());
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
             std::make_shared<ACDStreamConfig>());
         return;
     }
 
-    if (!strcmp(tag, "config")) {
-        PAL_DBG(LOG_TAG, "tag:%s appeared, nothing to do", tag);
+    if (tag == "config") {
+        PAL_VERBOSE(LOG_TAG, "tag:%s appeared, nothing to do", tag.c_str());
         return;
     }
 
-    if (!strcmp(tag, "param")) {
-        uint32_t i = 0;
-        while (attribs[i]) {
-            if (!attribs[i]) {
-                PAL_ERR(LOG_TAG, "Error:%d missing attrib value for tag %s", -EINVAL, tag);
-            } else if (!strcmp(attribs[i], "acd_enable")) {
-                acd_enable_ = !strncasecmp(attribs[++i], "true", 4) ? true : false;
-            } else {
-                PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
-            }
-            ++i; /* move to next attribute */
+    if (tag == "param") {
+        std::string key = attribs[0];
+        std::string value = attribs[1];
+        if (key == "acd_enable") {
+            acd_enable_ = (value == "true");
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
     } else {
-        PAL_ERR(LOG_TAG, "Invalid tag %s", tag);
+        PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
 }
 
-void ACDPlatformInfo::HandleEndTag(struct xml_userdata *data, const char* tag)
+void ACDPlatformInfo::HandleEndTag(struct xml_userdata *data, const std::string& tag)
 {
-    PAL_DBG(LOG_TAG, "Got end tag %s", tag);
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s", tag.c_str());
 
-    if (!strcmp(tag, "stream_config")) {
+    if (tag == "stream_config") {
         std::shared_ptr<ACDStreamConfig> acd_cfg(
             std::static_pointer_cast<ACDStreamConfig>(curr_child_));
         const auto res = acd_cfg_list_.insert(

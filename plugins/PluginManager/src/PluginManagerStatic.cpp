@@ -53,6 +53,10 @@
 #include "SpeakerMic.h"
 #include "UltrasoundDevice.h"
 #include "USBAudio.h"
+#include "A2B2Mic.h"
+#include "A2B2Speaker.h"
+#include "A2BMic.h"
+#include "A2BSpeaker.h"
 
 
 std::shared_ptr<PluginManager> PluginManager::pm = nullptr;
@@ -289,7 +293,19 @@ int32_t getDeviceFunc(void** func, std::string name) {
             PAL_VERBOSE(LOG_TAG, "Dummy device");
             *reinterpret_cast<DeviceCreate*>(func) = &CreateDummyDevice;
             break;
-         default:
+        case PAL_DEVICE_OUT_SPEAKER2:
+            *reinterpret_cast<DeviceCreate*>(func) = &Createa2bspeakerDevice;
+            break;
+        case PAL_DEVICE_OUT_SPEAKER3:
+            *reinterpret_cast<DeviceCreate*>(func) = &Createa2b2speakerDevice;
+            break;
+        case PAL_DEVICE_IN_SPEAKER_MIC2:
+            *reinterpret_cast<DeviceCreate*>(func) = &Createa2bmicDevice;
+            break;
+        case PAL_DEVICE_IN_SPEAKER_MIC3:
+            *reinterpret_cast<DeviceCreate*>(func) = &Createa2b2micDevice;
+            break;
+        default:
             PAL_ERR(LOG_TAG, "unsupported device type %s", name.c_str());
             status = -EINVAL;
             break;

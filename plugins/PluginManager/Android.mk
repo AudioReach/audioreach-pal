@@ -88,6 +88,8 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
         libdev_speakermic_headers \
         libdev_ultrasound_headers \
         libdev_usb_headers \
+        libdev_hfpdownlink_headers \
+        libdev_hfpuplink_headers \
 
     ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
     LOCAL_SHARED_LIBRARIES += libqti-tinyalsa libqti-tinycompress

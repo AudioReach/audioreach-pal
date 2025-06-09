@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -58,8 +58,8 @@ class ASRCommonConfig : public SoundTriggerXml
 public:
     ASRCommonConfig();
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs);
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag);
 
     bool PartialModeInLpiSupported() const { return partial_mode_in_lpi_; }
     size_t GetInputBufferSize() const { return input_buffer_size_; }
@@ -84,8 +84,8 @@ public:
     ASRStreamConfig(ACDStreamConfig &rhs) = delete;
     ASRStreamConfig & operator=(ACDStreamConfig &rhs) = delete;
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs);
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag);
 
     std::string GetStreamConfigName() const { return name_; }
     uint32_t GetModuleTagId(asr_param_id_type_t param_id) const {
@@ -100,6 +100,7 @@ public:
     }
     UUID GetUUID() const { return vendor_uuid_; }
     bool GetStreamLPIFlag() const { return lpi_enable_; }
+    int32_t GetIndex(std::string& param_name);
 
 private:
     std::string name_;
@@ -118,8 +119,8 @@ public:
     ASRPlatformInfo(ASRStreamConfig &rhs) = delete;
     ASRPlatformInfo & operator=(ASRPlatformInfo &rhs) = delete;
 
-    void HandleStartTag(const char *tag, const char **attribs) override;
-    void HandleEndTag(struct xml_userdata *data, const char *tag) override;
+    void HandleStartTag(const std::string& tag, const char **attribs) override;
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag) override;
 
     static std::shared_ptr<ASRPlatformInfo> GetInstance();
     std::shared_ptr<ASRStreamConfig> GetStreamConfig(const UUID& uuid) const;

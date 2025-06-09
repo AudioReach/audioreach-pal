@@ -266,6 +266,13 @@ int Device::getSndDeviceId()
     return deviceAttr.id;
 }
 
+int Device::getDeviceCount() {
+    mDeviceMutex.lock();
+    int devCount = deviceCount;
+    mDeviceMutex.unlock();
+    return devCount;
+}
+
 void Device::getCurrentSndDevName(char *name){
     strlcpy(name, mSndDeviceName, DEVICE_NAME_MAX_SIZE);
 }

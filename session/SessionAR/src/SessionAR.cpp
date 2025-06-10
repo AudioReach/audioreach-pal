@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -160,7 +160,18 @@ int SessionAR::setEffectParametersTKV(Stream *s __unused, effect_pal_payload_t *
 
     PAL_DBG(LOG_TAG, "Enter.");
 
+    if (!effectPayload) {
+        status = -EINVAL;
+        goto exit;
+    }
+
     palKVPair = (pal_key_vector_t *)effectPayload->payload;
+
+    if (!palKVPair) {
+        status = -EINVAL;
+        goto exit;
+    }
+
     nTkvs =  palKVPair->num_tkvs;
     tkv.clear();
     for (int i = 0; i < nTkvs; i++) {

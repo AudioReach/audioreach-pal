@@ -27,8 +27,8 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -353,12 +353,12 @@ int32_t USB::checkAndUpdateSampleRate(unsigned int *sampleRate __unused)
 
 int32_t USB::getParameter(uint32_t param_id, void **inputParam)
 {
-    int *ckv;
+    int ckv;
     int32_t status = 0;
     switch(param_id) {
         case PAL_PARAM_ID_VENDOR_UUID:
-            *ckv = getVendorIdCkv();
-            memcpy(*inputParam, ckv, sizeof(int));
+            ckv = getVendorIdCkv();
+            memcpy(*inputParam, &ckv, sizeof(int));
         break;
         default :
             PAL_ERR(LOG_TAG, "Unsupported operation");

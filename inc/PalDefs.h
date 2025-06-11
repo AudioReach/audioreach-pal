@@ -1314,7 +1314,7 @@ struct pal_st_properties {
 };
 
 /** sound model structure passed in by ST Client during pal_st_load_sound_model() */
-struct pal_st_sound_model {
+struct __attribute__ ((aligned (8))) pal_st_sound_model {
     pal_st_sound_model_type_t type;           /* model type. e.g. PAL_SOUND_MODEL_TYPE_KEYPHRASE */
     struct st_uuid            uuid;           /* unique sound model ID. */
     struct st_uuid            vendor_uuid;    /* unique vendor ID. Identifies the engine the
@@ -1340,7 +1340,7 @@ struct pal_st_phrase {
  * Proprietary representation of key phrases in binary data must match information indicated
  * by phrases field use this when not sending
  */
-struct pal_st_phrase_sound_model {
+struct __attribute__ ((aligned (8))) pal_st_phrase_sound_model {
     struct pal_st_sound_model   common;         /** common sound model */
     uint32_t                    num_phrases;    /** number of key phrases in model */
     struct pal_st_phrase        phrases[PAL_SOUND_TRIGGER_MAX_PHRASES];

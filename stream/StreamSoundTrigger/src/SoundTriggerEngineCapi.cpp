@@ -749,6 +749,13 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
     struct buffer_config buf_config = {};
 
     PAL_DBG(LOG_TAG, "Enter");
+
+    status = UpdateUVScratchParam();
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to update UV scratch param");
+        goto exit;
+    }
+
     if (!reader_) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
@@ -946,6 +953,10 @@ exit:
     }
     if (result_cfg_ptr)
         free(result_cfg_ptr);
+    if (scratch_param_.scratch_ptr) {
+        free(scratch_param_.scratch_ptr);
+        scratch_param_.scratch_ptr = nullptr;
+    }
 
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 

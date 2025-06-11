@@ -2385,33 +2385,47 @@ exit:
 uint32_t BtA2dp::getLatency(uint32_t slatency)
 {
     uint32_t latency = codecLatency;
+    /**
+     * based on the observed AVsync latency, latency is adjusted as per test.
+     * Although such latency adjustment is not ideal, we tend to as per platform
+     * test
+     **/
+    uint32_t tunedLatency = 0;
 
     switch (codecType) {
     case ENC:
         switch (codecFormat) {
         case CODEC_TYPE_SBC:
             latency += (slatency == 0) ? DEFAULT_SINK_LATENCY_SBC : slatency;
+            tunedLatency = 110;
             break;
         case CODEC_TYPE_AAC:
             latency += (slatency == 0) ? DEFAULT_SINK_LATENCY_AAC : slatency;
+            tunedLatency = 50;
             break;
         case CODEC_TYPE_LDAC:
             latency += (slatency == 0) ? DEFAULT_SINK_LATENCY_LDAC : slatency;
+            tunedLatency = 0;
             break;
         case CODEC_TYPE_APTX:
             latency += (slatency == 0) ? DEFAULT_SINK_LATENCY_APTX : slatency;
+            tunedLatency = 50;
             break;
         case CODEC_TYPE_APTX_HD:
             latency += (slatency == 0) ? DEFAULT_SINK_LATENCY_APTX_HD : slatency;
+            tunedLatency = 0;
             break;
         case CODEC_TYPE_APTX_AD:
         case CODEC_TYPE_LC3:
+             tunedLatency = 50;
         case CODEC_TYPE_APTX_AD_QLEA:
         case CODEC_TYPE_APTX_AD_R4:
             latency += slatency;
+            tunedLatency = 0;
             break;
         default:
             latency = DEFAULT_SINK_LATENCY;
+            tunedLatency = 0;
             break;
         }
         break;
@@ -2419,21 +2433,28 @@ uint32_t BtA2dp::getLatency(uint32_t slatency)
         switch (codecFormat) {
         case CODEC_TYPE_SBC:
             latency = DEFAULT_SINK_LATENCY_SBC;
+            tunedLatency = 0;
             break;
         case CODEC_TYPE_AAC:
             latency = DEFAULT_SINK_LATENCY_AAC;
+            tunedLatency = 0;
             break;
         case CODEC_TYPE_LC3:
             latency = slatency;
+            tunedLatency = 0;
             break;
         default:
             latency = DEFAULT_SINK_LATENCY;
+            tunedLatency = 0;
             break;
         }
         break;
     default:
         break;
     }
+    latency += tunedLatency;
+    PAL_INFO(LOG_TAG, "codecLatency %d, sink latency:%d, total latency:%d, codec format: 0x%x",
+             codecLatency, slatency, latency, codecFormat);
     return latency;
 }
 

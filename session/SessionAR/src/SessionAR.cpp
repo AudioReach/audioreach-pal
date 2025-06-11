@@ -752,6 +752,10 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             break;
         case PAL_PARAM_ID_TTY_MODE:
         {
+            if (!payload) {
+                PAL_ERR(LOG_TAG, "payload is null");
+                return -EINVAL;
+            }
             param_payload = (pal_param_payload *)payload;
             if (param_payload->payload_size > sizeof(uint32_t)) {
                 PAL_ERR(LOG_TAG, "Invalid payload size %d", param_payload->payload_size);

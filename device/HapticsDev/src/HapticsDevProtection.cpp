@@ -1,5 +1,6 @@
 /*
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -2160,6 +2161,11 @@ int32_t HapticsDevProtection::getAndsetPersistentParameter(bool flag)
     PayloadBuilder* builder = new PayloadBuilder();
     param_id_haptics_ex_vi_persistent *VIpeValue;
 
+    if (pcmDevIdTx.empty()) {
+        PAL_ERR(LOG_TAG, "No usecase active as pcmDevIdTx is empty \n");
+        ret = -EINVAL;
+        goto exit;
+    }
     pcmDeviceName = rm->getDeviceNameFromID(pcmDevIdTx.at(0));
     if (pcmDeviceName) {
         cntrlName << pcmDeviceName << " " << getParamControl;

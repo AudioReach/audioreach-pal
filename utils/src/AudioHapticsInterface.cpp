@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -138,10 +138,10 @@ void AudioHapticsInterface::handleData(void *userdata, const char *s, int len)
 
 int AudioHapticsInterface::XmlParser(std::string xmlFile) {
     XML_Parser parser;
-    FILE *file = NULL;
+    FILE *file = nullptr;
     int ret = 0;
     int bytes_read;
-    void *buf = NULL;
+    void *buf = nullptr;
     struct haptics_xml_data data;
     memset(&data, 0, sizeof(data));
 
@@ -153,7 +153,7 @@ int AudioHapticsInterface::XmlParser(std::string xmlFile) {
         goto done;
     }
 
-    parser = XML_ParserCreate(NULL);
+    parser = XML_ParserCreate(nullptr);
     if (!parser) {
         PAL_ERR(LOG_TAG, "Failed to create XML");
         goto closeFile;
@@ -164,7 +164,7 @@ int AudioHapticsInterface::XmlParser(std::string xmlFile) {
 
 while (1) {
         buf = XML_GetBuffer(parser, 1024);
-        if (buf == NULL) {
+        if (buf == nullptr) {
             PAL_ERR(LOG_TAG, "XML_Getbuffer failed");
             ret = -EINVAL;
             goto freeParser;
@@ -460,27 +460,31 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
 
 void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (effect_id >= 0) {
-        if (*HConfig == NULL) {
+    if (effect_id >= 0 && predefined_haptics_info.size() < effect_id) {
+        if (*HConfig == nullptr) {
             *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(predefined_haptics_info[effect_id]));
             if (*HConfig)
                 memcpy(*HConfig, &predefined_haptics_info[effect_id],
                                             sizeof(predefined_haptics_info[effect_id]));
         }
-    } else {
-        if (*HConfig == NULL) {
+    } else if (effect_id == -1) {
+        if (*HConfig == nullptr) {
             *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(oneshot_haptics_info[0]));
             if (*HConfig)
                 memcpy(*HConfig, &oneshot_haptics_info[0],
                                              sizeof(oneshot_haptics_info[0]));
         }
+    } else {
+        *HConfig = nullptr;
+        PAL_ERR(LOG_TAG, "Invalid effect ID %d\n", effect_id);
     }
+
     PAL_DBG(LOG_TAG, "getTouchHapticsEffectConfiguration exit\n");
 }
 
 void AudioHapticsInterface::getRingtoneHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (*HConfig == NULL) {
+    if (*HConfig == nullptr) {
         *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(ringtone_haptics_info[0]));
         if (*HConfig)
             memcpy(*HConfig, &ringtone_haptics_info[0],
@@ -491,7 +495,7 @@ void AudioHapticsInterface::getRingtoneHapticsEffectConfiguration(haptics_wave_d
 
 void AudioHapticsInterface::getPcmHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (*HConfig == NULL) {
+    if (*HConfig == nullptr) {
         *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(pcm_haptics_info[0]));
         if (*HConfig)
             memcpy(*HConfig, &pcm_haptics_info[0],

@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -95,14 +94,17 @@ extern "C" int compressPluginConfig(Stream* stream, plugin_config_name_t config,
 int32_t compressPluginPreReconfig(Stream* s, void* pluginPayload) {
     int status = 0;
     struct ReconfigPluginPayload* reconfigPld = nullptr;
-    PluginPayload* ppld = nullptr;
-    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
 
     PAL_DBG(LOG_TAG,"Enter");
+
+    if (!pluginPayload) {
+        PAL_ERR(LOG_TAG, "plugin Payload is null");
+        return -EINVAL;
+    }
+    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+
     if (!reconfigPld->config_ctrl.compare("silence_detection")) {
-        ppld->builder = reconfigPld->builder;
-        ppld->session = reconfigPld->session;
-        status = compressSilenceDetectionConfig(SD_DISCONNECT, &reconfigPld->dAttr, ppld);
+        status = compressSilenceDetectionConfig(SD_DISCONNECT, &reconfigPld->dAttr, pluginPayload);
     }
     PAL_DBG(LOG_TAG,"Exit status: %d", status);
     return status;

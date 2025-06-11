@@ -28,8 +28,8 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #define LOG_TAG "PAL: libsession_pcm_config"
@@ -116,15 +116,17 @@ extern "C" int pcmPluginConfig(Stream* stream, plugin_config_name_t config,
 int32_t pcmPluginPreReconfig(Stream* s, void* pluginPayload) {
     int status = 0;
     struct ReconfigPluginPayload* reconfigPld = nullptr;
-    PluginPayload* ppld = nullptr;
-    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
 
     PAL_DBG(LOG_TAG,"Enter");
 
+    if (!pluginPayload) {
+        PAL_ERR(LOG_TAG, "plugin Payload is null");
+        return -EINVAL;
+    }
+    reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
+
     if (!reconfigPld->config_ctrl.compare("silent_detection")) {
-        ppld->builder = reconfigPld->builder;
-        ppld->session = reconfigPld->session;
-        status = pcmSilenceDetectionConfig(SD_DISCONNECT, &reconfigPld->dAttr, ppld);
+        status = pcmSilenceDetectionConfig(SD_DISCONNECT, &reconfigPld->dAttr, pluginPayload);
     }
     return status;
 }

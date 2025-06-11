@@ -30,9 +30,12 @@ class PluginManager
         static std::vector<pm_item_t> registeredDevices;
         static std::vector<pm_item_t> registeredControls;
         static std::vector<pm_item_t> registeredConfigs;
+        void deinitPluginItems(std::vector<pm_item_t>& items);
         void deinitStreamPlugins();
         void deinitSessionPlugins();
         void deinitDevicePlugins();
+        void deinitControlPlugins();
+        void deinitConfigPlugins();
         PluginManager();
         static int32_t registeredPlugin(pm_item_t item, pal_plugin_manager_t type);
         static void startElement(void* userData, const char* name, const char** attrs);

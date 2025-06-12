@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -7,12 +8,16 @@
 #include <aidl/vendor/qti/hardware/paleventnotifier/BnPALEventNotifier.h>
 #include <aidl/vendor/qti/hardware/paleventnotifier/IPALEventNotifierCallback.h>
 #include <aidl/vendor/qti/hardware/paleventnotifier/IPALEventNotifier.h>
+#include <aidl/vendor/qti/hardware/paleventnotifier/PalTranslationTextEvent.h>
 #include <log/log.h>
 #include <cutils/list.h>
 #include "PalApi.h"
 #include "PalDefs.h"
 
 using PalCallbackConfig = ::aidl::vendor::qti::hardware::paleventnotifier::PalCallbackConfig;
+using PalCallbackEvent = ::aidl::vendor::qti::hardware::paleventnotifier::PalCallbackEvent;
+using PalCallbackEventType = ::aidl::vendor::qti::hardware::paleventnotifier::PalCallbackEventType;
+using PalTranslationTextEvent = ::aidl::vendor::qti::hardware::paleventnotifier::PalTranslationTextEvent;
 
 namespace aidl::vendor::qti::hardware::paleventnotifier {
 

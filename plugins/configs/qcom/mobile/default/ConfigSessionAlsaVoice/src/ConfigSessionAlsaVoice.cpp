@@ -157,7 +157,8 @@ int32_t voicePostCommonReconfig(Stream* s, void* pluginPayload)
     }
     reconfigPld = reinterpret_cast<ReconfigPluginPayload*>(pluginPayload);
     aifBackEndsToConnect = reconfigPld->aifBackEnds;
-    vsid = session->getVSID();
+    if (session)
+        vsid = session->getVSID();
 
     if (!(SessionAlsaUtils::isMmapUsecase(sAttr))) {
         if (session) {

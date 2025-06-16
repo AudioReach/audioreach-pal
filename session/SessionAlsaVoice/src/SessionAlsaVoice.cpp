@@ -1372,8 +1372,8 @@ int SessionAlsaVoice::payloadCalKeys(Stream * s, uint8_t **payload, size_t *size
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
     uint8_t *vol_pl;
-    vcpm_param_cal_keys_payload_t cal_keys;
-    vcpm_ckv_pair_t cal_key_pair[NUM_OF_CAL_KEYS];
+    vcpm_param_cal_keys_payload_t cal_keys = {};
+    vcpm_ckv_pair_t cal_key_pair[NUM_OF_CAL_KEYS] = {};
     float volume = 0.0;
     int vol;
     struct pal_volume_data *voldata = NULL;
@@ -1398,7 +1398,7 @@ int SessionAlsaVoice::payloadCalKeys(Stream * s, uint8_t **payload, size_t *size
                   sizeof(vcpm_ckv_pair_t)*NUM_OF_CAL_KEYS;
     padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
 
-    payloadInfo = new uint8_t[payloadSize + padBytes]();
+    payloadInfo = (uint8_t *) calloc(1, payloadSize + padBytes);
     if (!payloadInfo) {
         PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
         return -EINVAL;

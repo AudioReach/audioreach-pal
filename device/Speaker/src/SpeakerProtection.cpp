@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -505,6 +505,7 @@ SpeakerProtection::SpeakerProtection(struct pal_device *device,
     FILE *fp = NULL;
 
     spkerTempList = NULL;
+    spkrProtEnable = true;
 
     if (rm->getSpQuickCalTime() > 0 &&
         rm->getSpQuickCalTime() < MIN_SPKR_IDLE_SEC)
@@ -537,6 +538,9 @@ SpeakerProtection::SpeakerProtection(struct pal_device *device,
 
     rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_PROXY, "", &cps_device);
     PAL_DBG(LOG_TAG, "Number of Channels for CPS path is %d", cps_device.channels);
+
+    viCustomPayloadSize = 0;
+    viCustomPayload = NULL;
 
     spkerTempList = new int [numberOfChannels];
     // Get current time

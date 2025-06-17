@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -53,7 +52,7 @@ extern "C" void CreateDisplayDevice(struct pal_device *device,
 }
 
 enum {
-    EXT_DISPLAY_TYPE_NONE,
+    EXT_DISPLAY_TYPE_NONE = 0,
     EXT_DISPLAY_TYPE_HDMI,
     EXT_DISPLAY_TYPE_DP
 };
@@ -584,7 +583,7 @@ int32_t DisplayPort::getExtDispType(struct audio_mixer *mixer, int controller, i
         }
 
         dispType = mixer_ctl_get_value(ctl, 0);
-        if (dispType == EXT_DISPLAY_TYPE_NONE) {
+        if (dispType <= EXT_DISPLAY_TYPE_NONE) {
             PAL_ERR(LOG_TAG,"Invalid external display type: %d", dispType);
             return -EINVAL;
         }
@@ -592,7 +591,8 @@ int32_t DisplayPort::getExtDispType(struct audio_mixer *mixer, int controller, i
         dispType = EXT_DISPLAY_TYPE_HDMI;
     }
 
-    disp->type = dispType;
+    if (dispType > EXT_DISPLAY_TYPE_NONE && dispType <= EXT_DISPLAY_TYPE_DP)
+        disp->type = dispType;
 
     PAL_DBG(LOG_TAG," ext disp type: %s", (dispType == EXT_DISPLAY_TYPE_DP) ? "DisplayPort" : "HDMI");
 

@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -492,7 +492,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     event_id_asr_output_event_t *event = nullptr;
     asr_output_status_t *ev = nullptr;
     param_id_asr_output_t *eventHeader = nullptr;
-    eventPayload eventToStream;
+    eventPayload eventToStream {};
     StreamASR *sAsr = nullptr;
 
     event = (struct event_id_asr_output_event_t *)eventData;

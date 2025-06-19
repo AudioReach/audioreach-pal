@@ -40,7 +40,7 @@
     <!-- WSA controls -->
     <ctl name="WSA PCM CH1 MUX" value="ZERO" />
     <ctl name="WSA PCM CH2 MUX" value="ZERO" />
-    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
+    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     <ctl name="SA1 Rx Channel Select" value="CH_Stereo" />
     <ctl name="SA1 Die Temperature" value="ZERO" />
     <ctl name="SA1 Trigger Die Temperature" value="ZERO" />

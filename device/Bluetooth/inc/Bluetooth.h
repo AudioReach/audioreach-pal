@@ -146,25 +146,25 @@ class Bluetooth : public Device
 protected:
     Bluetooth(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
 
-    codec_type                 codecType;
-    struct pal_media_config    codecConfig;
-    codec_format_t             codecFormat;
-    void                       *codecInfo;
-    void                       *pluginHandler;
-    bt_codec_t                 *pluginCodec;
-    bool                       isAbrEnabled;
-    bool                       isConfigured;
-    bool                       isLC3MonoModeOn;
-    bool                       isTwsMonoModeOn;
-    bool                       isScramblingEnabled;
-    bool                       isDummySink;
-    struct pcm                 *fbPcm;
-    std::vector<int>           fbpcmDevIds;
-    std::shared_ptr<Bluetooth> fbDev;
-    int                        abrRefCnt;
+    codec_type                 mCodecType;
+    struct pal_media_config    mCodecConfig;
+    codec_format_t             mCodecFormat;
+    void                       *mCodecInfo;
+    void                       *mPluginHandler;
+    bt_codec_t                 *mPluginCodec;
+    bool                       mIsAbrEnabled;
+    bool                       mIsConfigured;
+    bool                       mIsLC3MonoModeOn;
+    bool                       mIsTwsMonoModeOn;
+    bool                       mIsScramblingEnabled;
+    bool                       mIsDummySink;
+    struct pcm                 *mFBPcm;
+    std::vector<int>           mFBPcmDevIds;
+    std::shared_ptr<Bluetooth> mFBDev;
+    int                        mAbrRefCnt;
     std::mutex                 mAbrMutex;
-    int                        totalActiveSessionRequests;
-    codec_version_t            codecVersion;
+    int                        mTotalActiveSessionRequests;
+    codec_version_t            mCodecVersion;
 
     int32_t getPCMId();
     int checkAndUpdateCustomPayload(uint8_t **paramData, size_t *paramSize);
@@ -196,8 +196,8 @@ protected:
     static std::shared_ptr<Device> objBleTx;
     static std::shared_ptr<Device> objBleBroadcastRx;
     BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
-    pal_param_bta2dp_t param_bt_a2dp;
-    pal_sound_dose_info_t sound_dose_info;
+    pal_param_bta2dp_t mParamBtA2dp;
+    pal_sound_dose_info_t mSoundDoseInfo;
 
 private:
     /* BT IPC related members */
@@ -245,12 +245,12 @@ private:
     static audio_sink_close_t                   audio_sink_close;
 
     /* member variables */
-    uint8_t         a2dpRole;  // source or sink
-    enum A2DP_STATE a2dpState;
-    bool            isA2dpOffloadSupported;
-    bool            support_bt_audio_pre_init;
-    uint32_t        a2dpLatencyMode;
-    uint32_t        codecLatency;
+    uint8_t         mA2dpRole;  // source or sink
+    enum A2DP_STATE mA2dpState;
+    bool            mIsA2dpOffloadSupported;
+    bool            mSupport_bt_audio_pre_init;
+    uint32_t        mA2dpLatencyMode;
+    uint32_t        mCodecLatency;
     std::unique_ptr<SoundDoseUtility> mSoundDose;
 
     uint32_t getLatency(uint32_t slatency);
@@ -296,8 +296,8 @@ protected:
     static std::shared_ptr<Device> objHfpRx;
     static std::shared_ptr<Device> objHfpTx;
     BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
-    bool isScoOn = false;
-    bool isHfpOn = false;
+    bool mIsScoOn = false;
+    bool mIsHfpOn = false;
     static bool isWbSpeechEnabled;
     static int  swbSpeechMode;
     static bool isSwbLc3Enabled;

@@ -1254,11 +1254,11 @@ int32_t Bluetooth::configureSlimbusClockSrc(void)
 
 /* Scope of BtA2dp class */
 // definition of static BtA2dp member variables
-std::shared_ptr<Device> BtA2dp::objRx = nullptr;
-std::shared_ptr<Device> BtA2dp::objTx = nullptr;
-std::shared_ptr<Device> BtA2dp::objBleRx = nullptr;
-std::shared_ptr<Device> BtA2dp::objBleTx = nullptr;
-std::shared_ptr<Device> BtA2dp::objBleBroadcastRx = nullptr;
+std::shared_ptr<Device> BtA2dp::sObjRx = nullptr;
+std::shared_ptr<Device> BtA2dp::sObjTx = nullptr;
+std::shared_ptr<Device> BtA2dp::sObjBleRx = nullptr;
+std::shared_ptr<Device> BtA2dp::sObjBleTx = nullptr;
+std::shared_ptr<Device> BtA2dp::sObjBleBroadcastRx = nullptr;
 void *BtA2dp::bt_lib_source_handle = nullptr;
 void *BtA2dp::bt_lib_sink_handle = nullptr;
 bt_audio_pre_init_t BtA2dp::bt_audio_pre_init = nullptr;
@@ -2509,55 +2509,55 @@ std::shared_ptr<Device>
 BtA2dp::getInstance(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
 {
     if (device->id == PAL_DEVICE_OUT_BLUETOOTH_A2DP) {
-        if (!objRx) {
+        if (!sObjRx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objRx) {
+            if (!sObjRx) {
                 PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-                objRx = sp;
+                sObjRx = sp;
             }
         }
-        return objRx;
+        return sObjRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_A2DP) {
-        if (!objTx) {
+        if (!sObjTx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objTx) {
+            if (!sObjTx) {
                 PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-                objTx = sp;
+                sObjTx = sp;
             }
         }
-        return objTx;
+        return sObjTx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_BLE) {
-        if (!objBleRx) {
+        if (!sObjBleRx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objBleRx) {
+            if (!sObjBleRx) {
                 PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-                objBleRx = sp;
+                sObjBleRx = sp;
             }
         }
-        return objBleRx;
+        return sObjBleRx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST) {
-        if (!objBleBroadcastRx) {
+        if (!sObjBleBroadcastRx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objBleBroadcastRx) {
+            if (!sObjBleBroadcastRx) {
                 PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-                objBleBroadcastRx = sp;
+                sObjBleBroadcastRx = sp;
             }
         }
-        return objBleBroadcastRx;
+        return sObjBleBroadcastRx;
     } else {
-        if (!objBleTx) {
+        if (!sObjBleTx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objBleTx) {
+            if (!sObjBleTx) {
                 PAL_INFO(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtA2dp(device, Rm));
-                objBleTx = sp;
+                sObjBleTx = sp;
             }
         }
-        return objBleTx;
+        return sObjBleTx;
     }
 }
 int32_t BtA2dp::checkDeviceStatus() {
@@ -2586,15 +2586,15 @@ int32_t BtA2dp::getDeviceConfig(struct pal_device *deviceattr,
 
 /* Scope of BtScoRX/Tx class */
 // definition of static BtSco member variables
-std::shared_ptr<Device> BtSco::objRx = nullptr;
-std::shared_ptr<Device> BtSco::objTx = nullptr;
-bool BtSco::isWbSpeechEnabled = false;
-int  BtSco::swbSpeechMode = SPEECH_MODE_INVALID;
-bool BtSco::isSwbLc3Enabled = false;
-audio_lc3_codec_cfg_t BtSco::lc3CodecInfo = {};
-bool BtSco::isNrecEnabled = false;
-std::shared_ptr<Device> BtSco::objHfpRx = nullptr;
-std::shared_ptr<Device> BtSco::objHfpTx = nullptr;
+std::shared_ptr<Device> BtSco::sObjRx = nullptr;
+std::shared_ptr<Device> BtSco::sObjTx = nullptr;
+bool BtSco::sIsWbSpeechEnabled = false;
+int  BtSco::sSwbSpeechMode = SPEECH_MODE_INVALID;
+bool BtSco::sIsSwbLc3Enabled = false;
+audio_lc3_codec_cfg_t BtSco::sLc3CodecInfo = {};
+bool BtSco::sIsNrecEnabled = false;
+std::shared_ptr<Device> BtSco::sObjHfpRx = nullptr;
+std::shared_ptr<Device> BtSco::sObjHfpTx = nullptr;
 
 BtSco::BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
     : Bluetooth(device, Rm)
@@ -2606,10 +2606,10 @@ BtSco::BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
 
 BtSco::~BtSco()
 {
-    if (lc3CodecInfo.enc_cfg.streamMapOut != NULL)
-        delete [] lc3CodecInfo.enc_cfg.streamMapOut;
-    if (lc3CodecInfo.dec_cfg.streamMapIn != NULL)
-        delete [] lc3CodecInfo.dec_cfg.streamMapIn;
+    if (sLc3CodecInfo.enc_cfg.streamMapOut != NULL)
+        delete [] sLc3CodecInfo.enc_cfg.streamMapOut;
+    if (sLc3CodecInfo.dec_cfg.streamMapIn != NULL)
+        delete [] sLc3CodecInfo.dec_cfg.streamMapIn;
 }
 
 bool BtSco::isDeviceReady(pal_device_id_t id)
@@ -2629,11 +2629,11 @@ bool BtSco::isHFPRunning()
 
 int32_t BtSco::checkAndUpdateSampleRate(uint32_t *sampleRate)
 {
-    if (isWbSpeechEnabled)
+    if (sIsWbSpeechEnabled)
         *sampleRate = SAMPLINGRATE_16K;
-    else if (swbSpeechMode != SPEECH_MODE_INVALID)
+    else if (sSwbSpeechMode != SPEECH_MODE_INVALID)
         *sampleRate = SAMPLINGRATE_96K;
-    else if (isSwbLc3Enabled)
+    else if (sIsSwbLc3Enabled)
         *sampleRate = SAMPLINGRATE_96K;
     else
         *sampleRate = SAMPLINGRATE_8K;
@@ -2651,24 +2651,24 @@ int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
         mIsHfpOn = param_bt_sco->is_bt_hfp;
         break;
     case PAL_PARAM_ID_BT_SCO_WB:
-        isWbSpeechEnabled = param_bt_sco->bt_wb_speech_enabled;
-        PAL_DBG(LOG_TAG, "isWbSpeechEnabled = %d", isWbSpeechEnabled);
+        sIsWbSpeechEnabled = param_bt_sco->bt_wb_speech_enabled;
+        PAL_DBG(LOG_TAG, "sIsWbSpeechEnabled = %d", sIsWbSpeechEnabled);
         break;
     case PAL_PARAM_ID_BT_SCO_SWB:
-        swbSpeechMode = param_bt_sco->bt_swb_speech_mode;
-        PAL_DBG(LOG_TAG, "swbSpeechMode = %d", swbSpeechMode);
+        sSwbSpeechMode = param_bt_sco->bt_swb_speech_mode;
+        PAL_DBG(LOG_TAG, "sSwbSpeechMode = %d", sSwbSpeechMode);
         break;
     case PAL_PARAM_ID_BT_SCO_LC3:
-        isSwbLc3Enabled = param_bt_sco->bt_lc3_speech_enabled;
-        if (isSwbLc3Enabled) {
+        sIsSwbLc3Enabled = param_bt_sco->bt_lc3_speech_enabled;
+        if (sIsSwbLc3Enabled) {
             // parse sco lc3 parameters and pack into codec info
-            convertCodecInfo(lc3CodecInfo, param_bt_sco->lc3_cfg);
+            convertCodecInfo(sLc3CodecInfo, param_bt_sco->lc3_cfg);
         }
-        PAL_DBG(LOG_TAG, "isSwbLc3Enabled = %d", isSwbLc3Enabled);
+        PAL_DBG(LOG_TAG, "sIsSwbLc3Enabled = %d", sIsSwbLc3Enabled);
         break;
     case PAL_PARAM_ID_BT_SCO_NREC:
-        isNrecEnabled = param_bt_sco->bt_sco_nrec;
-        PAL_DBG(LOG_TAG, "isNrecEnabled = %d", isNrecEnabled);
+        sIsNrecEnabled = param_bt_sco->bt_sco_nrec;
+        PAL_DBG(LOG_TAG, "sIsNrecEnabled = %d", sIsNrecEnabled);
         break;
     default:
         return -EINVAL;
@@ -2832,12 +2832,12 @@ int BtSco::start()
     customPayload = NULL;
     customPayloadSize = 0;
 
-    if (swbSpeechMode != SPEECH_MODE_INVALID) {
+    if (sSwbSpeechMode != SPEECH_MODE_INVALID) {
         mCodecFormat = CODEC_TYPE_APTX_AD_SPEECH;
-        mCodecInfo = (void *)&swbSpeechMode;
-    } else if (isSwbLc3Enabled) {
+        mCodecInfo = (void *)&sSwbSpeechMode;
+    } else if (sIsSwbLc3Enabled) {
         mCodecFormat = CODEC_TYPE_LC3;
-        mCodecInfo = (void *)&lc3CodecInfo;
+        mCodecInfo = (void *)&sLc3CodecInfo;
     } else {
         mCodecFormat = CODEC_TYPE_INVALID;
         mIsAbrEnabled = false;
@@ -2865,7 +2865,7 @@ int BtSco::start()
     if ((mIsConfigured == true) &&
         (deviceAttr.id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET)) {
         if (deviceStartStopCount == 0) {
-            configureNrecParameters(isNrecEnabled);
+            configureNrecParameters(sIsNrecEnabled);
         }
     }
 
@@ -2920,44 +2920,44 @@ std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
                                            std::shared_ptr<ResourceManager> Rm)
 {
     if (device->id == PAL_DEVICE_OUT_BLUETOOTH_SCO) {
-        if (!objRx) {
+        if (!sObjRx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objRx) {
+            if (!sObjRx) {
                 std::shared_ptr<Device> sp(new BtSco(device, Rm));
-                objRx = sp;
+                sObjRx = sp;
             }
         }
-        return objRx;
+        return sObjRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET) {
-        if (!objTx) {
+        if (!sObjTx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objTx) {
+            if (!sObjTx) {
                 PAL_DBG(LOG_TAG,  "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtSco(device, Rm));
-                objTx = sp;
+                sObjTx = sp;
             }
         }
-        return objTx;
+        return sObjTx;
     } else if (device->id == PAL_DEVICE_OUT_BLUETOOTH_HFP) {
-        if (!objHfpRx) {
+        if (!sObjHfpRx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objHfpRx) {
+            if (!sObjHfpRx) {
                 PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtSco(device, Rm));
-                objHfpRx = sp;
+                sObjHfpRx = sp;
             }
         }
-        return objHfpRx;
+        return sObjHfpRx;
     } else if (device->id == PAL_DEVICE_IN_BLUETOOTH_HFP) {
-        if (!objHfpTx) {
+        if (!sObjHfpTx) {
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
-            if (!objHfpTx) {
+            if (!sObjHfpTx) {
                 PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
                 std::shared_ptr<Device> sp(new BtSco(device, Rm));
-                objHfpTx = sp;
+                sObjHfpTx = sp;
             }
         }
-        return objHfpTx;
+        return sObjHfpTx;
     }
     return nullptr;
 }

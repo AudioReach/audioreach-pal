@@ -190,11 +190,11 @@ public:
 class BtA2dp : public Bluetooth
 {
 protected:
-    static std::shared_ptr<Device> objRx;
-    static std::shared_ptr<Device> objTx;
-    static std::shared_ptr<Device> objBleRx;
-    static std::shared_ptr<Device> objBleTx;
-    static std::shared_ptr<Device> objBleBroadcastRx;
+    static std::shared_ptr<Device> sObjRx;
+    static std::shared_ptr<Device> sObjTx;
+    static std::shared_ptr<Device> sObjBleRx;
+    static std::shared_ptr<Device> sObjBleTx;
+    static std::shared_ptr<Device> sObjBleBroadcastRx;
     BtA2dp(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
     pal_param_bta2dp_t mParamBtA2dp;
     pal_sound_dose_info_t mSoundDoseInfo;
@@ -291,18 +291,18 @@ public:
 class BtSco : public Bluetooth
 {
 protected:
-    static std::shared_ptr<Device> objRx;
-    static std::shared_ptr<Device> objTx;
-    static std::shared_ptr<Device> objHfpRx;
-    static std::shared_ptr<Device> objHfpTx;
+    static std::shared_ptr<Device> sObjRx;
+    static std::shared_ptr<Device> sObjTx;
+    static std::shared_ptr<Device> sObjHfpRx;
+    static std::shared_ptr<Device> sObjHfpTx;
     BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
     bool mIsScoOn = false;
     bool mIsHfpOn = false;
-    static bool isWbSpeechEnabled;
-    static int  swbSpeechMode;
-    static bool isSwbLc3Enabled;
-    static audio_lc3_codec_cfg_t lc3CodecInfo;
-    static bool isNrecEnabled;
+    static bool sIsWbSpeechEnabled;
+    static int  sSwbSpeechMode;
+    static bool sIsSwbLc3Enabled;
+    static audio_lc3_codec_cfg_t sLc3CodecInfo;
+    static bool sIsNrecEnabled;
     int startSwb();
 
 public:

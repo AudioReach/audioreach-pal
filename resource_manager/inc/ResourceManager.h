@@ -92,6 +92,7 @@ typedef enum {
 #define AUDIO_PARAMETER_KEY_DEVICE_MUX "device_mux_config"
 #define AUDIO_PARAMETER_KEY_UPD_DUTY_CYCLE "upd_duty_cycle_enable"
 #define AUDIO_PARAMETER_KEY_UPD_VIRTUAL_PORT "upd_virtual_port"
+#define AUDIO_PARAMETER_KEY_I2S_DUAL_MONO "i2s_dual_mono"
 #define AUDIO_PARAMETER_KEY_HAPTICS_PRIORITY "haptics_priority"
 #define AUDIO_PARAMETER_KEY_WSA_HAPTICS "haptics_through_wsa"
 #define AUDIO_PARAMETER_KEY_DUMMY_DEV_ENABLE "dummy_dev_enable"
@@ -225,9 +226,11 @@ typedef enum
     GRP_UPD_RX,
     GRP_HANDSET,
     GRP_SPEAKER,
+    GRP_HAPTICS,
     GRP_SPEAKER_VOICE,
     GRP_UPD_RX_HANDSET,
     GRP_UPD_RX_SPEAKER,
+    GRP_HAPTICS_RX_SPEAKER,
     GRP_DEV_CONFIG_IDX_MAX,
 } group_dev_config_idx_t;
 
@@ -580,6 +583,8 @@ private:
     static bool isUpdDutyCycleEnabled;
     /* Flag to indicate if virtual port is enabled for UPD */
     static bool isUPDVirtualPortEnabled;
+    /* Flag to indicate if i2s dual mono is enabled for Pandeiro */
+    static bool isI2sDualMonoEnabled;
     /* Flag to indicate whether to send custom gain commands to UPD modules or not? */
     static bool isUpdSetCustomGainEnabled;
     /* Flag to indicate if Haptics isdriven thorugh WSA */
@@ -861,6 +866,7 @@ public:
     bool IsDedicatedBEForUPDEnabled();
     bool IsDutyCycleForUPDEnabled();
     bool IsVirtualPortForUPDEnabled();
+    bool IsI2sDualMonoEnabled();
     bool IsCustomGainEnabledForUPD();
     uint32_t getHapticsPriority();
     static bool IsHapticsThroughWSA();
@@ -922,6 +928,7 @@ public:
     static int setUpdDedicatedBeEnableParam(struct str_parms *parms,char *value, int len);
     static int setUpdDutyCycleEnableParam(struct str_parms *parms,char *value, int len);
     static int setUpdVirtualPortParam(struct str_parms *parms, char *value, int len);
+    static int setI2sDualMonoParam(struct str_parms *parms, char *value, int len);
     static int setUpdCustomGainParam(struct str_parms *parms,char *value, int len);
     static int setDualMonoEnableParam(struct str_parms *parms,char *value, int len);
     static int setSignalHandlerEnableParam(struct str_parms *parms,char *value, int len);

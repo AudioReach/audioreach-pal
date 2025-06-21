@@ -435,6 +435,16 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
             ch_info.channels = CHANNELS_2;
         break;
     }
+
+    if (rm->IsI2sDualMonoEnabled()) {
+        if (vi_device.channels * 4 == 4) {
+            ch_info.channels = CHANNELS_4;
+            ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+            ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
+            ch_info.ch_map[2] = PAL_CHMAP_CHANNEL_LB;
+            ch_info.ch_map[3] = PAL_CHMAP_CHANNEL_RB;
+        }
+    }
     rm->getChannelMap(&(ch_info.ch_map[0]), ch_info.channels);
 
     device.config.ch_info = ch_info;
@@ -1261,6 +1271,15 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
         }
 
+        if (rm->IsI2sDualMonoEnabled()) {
+            if (vi_device.channels * 4 == 4) {
+                ch_info.channels = CHANNELS_4;
+                ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+                ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
+                ch_info.ch_map[2] = PAL_CHMAP_CHANNEL_LB;
+                ch_info.ch_map[3] = PAL_CHMAP_CHANNEL_RB;
+            }
+        }
 
         device.config.ch_info = ch_info;
         device.config.sample_rate = vi_device.samplerate;

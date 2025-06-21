@@ -144,7 +144,11 @@ int SpeakerProtectionwsa885xI2s::spkrStartCalibration()
     rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_PROXY, "", &vi_device);
 
     // Configure device attribute
-    this->i2sChannels = 2*vi_device.channels;
+    if (rm->IsI2sDualMonoEnabled())
+        this->i2sChannels = 4 * vi_device.channels;
+    else
+        this->i2sChannels = 2 * vi_device.channels;
+
     rm->getChannelMap(&(ch_info.ch_map[0]), this->i2sChannels);
     switch (this->i2sChannels) {
         case 1 :
@@ -790,7 +794,10 @@ int SpeakerProtectionwsa885xI2s::viTxSetupThreadLoop()
     }
     PAL_DBG(LOG_TAG, "get the audio route %s", mSndDeviceName_vi);
     //Configure device attribute
-    this->i2sChannels = 2 * vi_device.channels;
+    if (rm->IsI2sDualMonoEnabled())
+        this->i2sChannels = 4 * vi_device.channels;
+    else
+        this->i2sChannels = 2 * vi_device.channels;
     rm->getChannelMap(&(ch_info.ch_map[0]), this->i2sChannels);
     ch_info.channels = this->i2sChannels;
 
@@ -810,8 +817,8 @@ int SpeakerProtectionwsa885xI2s::viTxSetupThreadLoop()
         ch_info.channels = CHANNELS_4;
         ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
         ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
-        ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_LB;
-        ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_RB;
+        ch_info.ch_map[2] = PAL_CHMAP_CHANNEL_LB;
+        ch_info.ch_map[3] = PAL_CHMAP_CHANNEL_RB;
         config.channels = CHANNELS_4;
     break;
     default:
@@ -1428,7 +1435,7 @@ int32_t SpeakerProtectionwsa885xI2s::spkrProtProcessingMode(bool flag)
 
         payloadSize = 0;
         builder->payloadSPConfig(&payload, &payloadSize, miid,
-                PARAM_ID_SP_OP_MODE,(void *)&spModeConfg);
+                PARAM_ID_SP_OP_MODE_V5, (void *)&spModeConfg);
         if (payloadSize) {
             if (customPayload) {
                 free (customPayload);

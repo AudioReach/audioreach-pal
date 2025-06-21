@@ -1119,37 +1119,28 @@
 <!-- WSA File Contents  -->
     <path name="speaker">
         <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="speaker-prot">
         <path name="speaker" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="haptics-dev">
-        <ctl name="SWR DAC_Port Switch" value="1" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="haptics-dev-wsa">
-        <ctl name="WSA2 RX5 MUX" value="AIF1_PB" />
-        <ctl name="WSA2_RX1 INP0" value="RX5" />
-        <ctl name="WSA2_COMP2 Switch" value="1" />
-        <ctl name="Idle Detect" value="1" />
-        <ctl name="Spkr2Right COMP Switch" value="1" />
-        <ctl name="Spkr2Right VISENSE Switch" value="1" />
-        <ctl name="Spkr2Right SWR DAC_Port Switch" value="1" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="haptics-vi-feedback-mono">
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
-        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
-        <ctl name="WSA2_HAP_VI_DEC ENABLE" value="1" />
     </path>
 
     <path name="haptics-vi-feedback">
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_1" value="1" />
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
-        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
-        <ctl name="WSA2_HAP_VI_DEC ENABLE" value="1" />
     </path>
 
     <path name="speaker-mono">
@@ -1220,12 +1211,12 @@
 
     <path name="handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
-        <ctl name="OT23 Usage Mode" value="8" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="ultrasound-handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
-        <ctl name="OT23 Usage Mode" value="4" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="ultrasound-handset-wsa-vbat">

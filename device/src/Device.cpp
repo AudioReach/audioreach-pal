@@ -993,10 +993,40 @@ int Device::setMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
     groupDevConfig = rmHandle->getActiveGroupDevConfig();
     if (groupDevConfig && (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
         dAttr->id == PAL_DEVICE_OUT_HANDSET ||
-        dAttr->id == PAL_DEVICE_OUT_ULTRASOUND)) {
+        dAttr->id == PAL_DEVICE_OUT_ULTRASOUND) && rmHandle->IsVirtualPortForUPDEnabled()) {
         std::string truncatedBeName = backEndName;
         // remove "-VIRT-x" which length is 7
         truncatedBeName.erase(truncatedBeName.end() - 7, truncatedBeName.end());
+        ctl = getBeMixerControl(mixerHandle, truncatedBeName , BE_GROUP_ATTR);
+        if (!ctl) {
+        PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", truncatedBeName.c_str(),
+                beCtrlNames[BE_GROUP_ATTR]);
+        return -EINVAL;
+        }
+        if (groupDevConfig->grp_dev_hwep_cfg.sample_rate)
+            aif_group_atrr_config[0] = groupDevConfig->grp_dev_hwep_cfg.sample_rate;
+        else
+            aif_group_atrr_config[0] = dAttr->config.sample_rate;
+        if (groupDevConfig->grp_dev_hwep_cfg.channels)
+            aif_group_atrr_config[1] = groupDevConfig->grp_dev_hwep_cfg.channels;
+        else
+            aif_group_atrr_config[1] = dAttr->config.ch_info.channels;
+        aif_group_atrr_config[2] = palToSndDriverFormat(
+                                    groupDevConfig->grp_dev_hwep_cfg.aud_fmt_id);
+        aif_group_atrr_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
+        aif_group_atrr_config[4] = groupDevConfig->grp_dev_hwep_cfg.slot_mask;
+
+        mixer_ctl_set_array(ctl, &aif_group_atrr_config,
+                               sizeof(aif_group_atrr_config)/sizeof(aif_group_atrr_config[0]));
+        PAL_INFO(LOG_TAG, "%s rate ch fmt data_fmt slot_mask %ld %ld %ld %ld %ld\n", truncatedBeName.c_str(),
+                aif_group_atrr_config[0], aif_group_atrr_config[1], aif_group_atrr_config[2],
+                aif_group_atrr_config[3], aif_group_atrr_config[4]);
+        rmHandle->setCurrentGroupDevConfig(groupDevConfig, aif_group_atrr_config[0], aif_group_atrr_config[1]);
+    } else if ((groupDevConfig && (dAttr->id == PAL_DEVICE_OUT_SPEAKER ||
+        dAttr->id == PAL_DEVICE_OUT_HAPTICS_DEVICE) && rmHandle->IsI2sDualMonoEnabled())) {
+        std::string truncatedBeName = backEndName;
+        // remove "VIRT-0-CX" which length is 10
+        truncatedBeName.erase(truncatedBeName.end() - 10, truncatedBeName.end());
         ctl = getBeMixerControl(mixerHandle, truncatedBeName , BE_GROUP_ATTR);
         if (!ctl) {
         PAL_ERR(LOG_TAG, "invalid mixer control: %s %s", truncatedBeName.c_str(),

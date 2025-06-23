@@ -168,6 +168,12 @@ enum {
     LINK2 = 2,
 };
 
+/* enum that indicates speakerprotection version */
+enum {
+   SPV5 = 5,
+   SPV7 = 7,
+};
+
 struct agmMetaData {
     uint8_t *buf;
     uint32_t size;

@@ -87,7 +87,7 @@
 #define PARAM_ID_CONN_PROXY_STREAM_INFO   0x080013C3
 #define PARAM_ID_DISPLAY_PORT_INTF_CFG   0x8001154
 
-#define PARAM_ID_USB_AUDIO_INTF_CFG                               0x080010D6
+#define PARAM_ID_USB_AUDIO_INTF_CFG      0x080010D6
 
 #define PARAM_ID_MODULE_ENABLE            0x08001026
 
@@ -4213,6 +4213,7 @@ void PayloadBuilder::payloadSPConfig(uint8_t** payload, size_t* size, uint32_t m
             }
         break;
         case PARAM_ID_SP_OP_MODE :
+        case PARAM_ID_SP_OP_MODE_V5 :
             {
                 param_id_sp_op_mode_t *spConf;
                 param_id_sp_op_mode_t *data;
@@ -4382,6 +4383,7 @@ void PayloadBuilder::payloadSPConfig(uint8_t** payload, size_t* size, uint32_t m
             }
         break;
         case PARAM_ID_CPS_CHANNEL_MAP :
+        case PARAM_ID_CPS_CHANNEL_MAP_V5:
             {
                 param_id_cps_ch_map_t *spConf;
                 param_id_cps_ch_map_t *data;

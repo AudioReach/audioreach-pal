@@ -406,6 +406,12 @@ void SpeakerProtection::spkrCalibrationThread()
     bool proceed = false;
     int i;
     int retryCount = 0;
+    std::shared_ptr<ResourceManager> rm;
+
+    rm = ResourceManager::getInstance();
+    if (!rm) {
+        PAL_ERR(LOG_TAG, "Error: %d Failed to get resource manager instance", -EINVAL);
+    }
 
     while (!threadExit) {
         PAL_DBG(LOG_TAG, "Inside calibration while loop");
@@ -430,31 +436,33 @@ void SpeakerProtection::spkrCalibrationThread()
             proceed = true;
         }
 retry:
-        if (proceed) {
-            PAL_DBG(LOG_TAG, "Getting temperature of speakers");
-            getSpeakerTemperatureList();
+        if (rm->getWsaUsed() != WSA884X) {
+            if (proceed) {
+                PAL_DBG(LOG_TAG, "Getting temperature of speakers");
+                getSpeakerTemperatureList();
 
-            for (i = 0; i < numberOfChannels; i++) {
-                if ((spkerTempList[i] != -EINVAL) &&
-                    (spkerTempList[i] < TZ_TEMP_MIN_THRESHOLD ||
-                     spkerTempList[i] > TZ_TEMP_MAX_THRESHOLD)) {
-                    PAL_ERR(LOG_TAG, "Temperature out of range. Retry");
-                    spkrCalibrateWait();
-                    if (retryCount < MAX_RETRY) {
-                        retryCount++;
-                        goto retry;
+                for (i = 0; i < numberOfChannels; i++) {
+                    if ((spkerTempList[i] != -EINVAL) &&
+                        (spkerTempList[i] < TZ_TEMP_MIN_THRESHOLD ||
+                         spkerTempList[i] > TZ_TEMP_MAX_THRESHOLD)) {
+                         PAL_ERR(LOG_TAG, "Temperature out of range. Retry");
+                         spkrCalibrateWait();
+                         if (retryCount < MAX_RETRY) {
+                             retryCount++;
+                             goto retry;
+                         }
+                         else
+                             continue;
                     }
-                    else
-                        continue;
                 }
-            }
-            for (i = 0; i < numberOfChannels; i++) {
-                // Converting to Q6 format
-                spkerTempList[i] = (spkerTempList[i]*(1<<6));
-            }
-        }
-        else {
-            continue;
+                for (i = 0; i < numberOfChannels; i++) {
+                    // Converting to Q6 format
+                    spkerTempList[i] = (spkerTempList[i]*(1<<6));
+                }
+             }
+             else {
+                 continue;
+             }
         }
 
         // Check whether speaker was in use in the meantime when temperature

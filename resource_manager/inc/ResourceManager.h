@@ -538,6 +538,7 @@ private:
     static bool isHandsetProtectionEnabled;
     static bool isHapticsProtectionEnabled;
     static bool isChargeConcurrencyEnabled;
+    static uint8_t speakerProtectionVersion;
     static int wsaUsed;
     static int cpsMode;
     static bool isVbatEnabled;
@@ -1031,6 +1032,7 @@ public:
     static bool IsSpeakerProtectionEnabled();
     static bool IsHandsetProtectionEnabled();
     static bool IsHapticsProtectionEnabled();
+    uint8_t GetSpeakerProtectionVersion();
     bool IsChargeConcurrencyEnabled();
     bool IsRasEnabled();
     bool IsGaplessEnabled();

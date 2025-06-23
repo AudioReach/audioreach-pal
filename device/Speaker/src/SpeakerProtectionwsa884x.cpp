@@ -45,7 +45,8 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
     struct agmMetaData deviceMetaData(nullptr, 0);
     struct mixer_ctl *beMetaDataMixerCtrl = nullptr;
     int ret = 0, status = 0, dir = 0, i = 0, flags = 0, payload_size = 0;
-    uint32_t miid = 0;
+    uint32_t miid = 0, retryCount = 0;
+    uint32_t param_sp_op_mode = 0;
     char mSndDeviceName_rx[128] = {0};
     char mSndDeviceName_vi[128] = {0};
     uint8_t* payload = NULL;
@@ -53,6 +54,7 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
     uint32_t devicePropId[] = {0x08000010, 1, 0x2};
     bool isTxStarted = false, isRxStarted = false;
     bool isTxFeandBeConnected = false, isRxFeandBeConnected = false;
+    bool dspEventReceived = false;
     std::string backEndNameTx, backEndNameRx;
     std::vector <std::pair<int, int>> keyVector, calVector;
     std::vector<int> pcmDevIdsRx, pcmDevIdsTx;
@@ -512,8 +514,13 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
     }
 
     payloadSize = 0;
+    if (rm->GetSpeakerProtectionVersion() == SPV5)
+        param_sp_op_mode = PARAM_ID_SP_OP_MODE_V5;
+    else
+        param_sp_op_mode = PARAM_ID_SP_OP_MODE;
+
     builder->payloadSPConfig(&payload, &payloadSize, miid,
-            PARAM_ID_SP_OP_MODE,(void *)&spModeConfg);
+            param_sp_op_mode,(void *)&spModeConfg);
     if (payloadSize) {
         if (customPayloadSize) {
             free(customPayload);
@@ -575,29 +582,13 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
 
     // Store the R0T0 values
     if (mDspCallbackRcvd) {
-        if (calibrationCallbackStatus == CALIBRATION_STATUS_SUCCESS) {
-            PAL_DBG(LOG_TAG, "Calibration is done");
-            fp = fopen(PAL_SP_TEMP_PATH, "wb");
-            if (!fp) {
-                PAL_ERR(LOG_TAG, "Unable to open file for write");
-            } else {
-                PAL_DBG(LOG_TAG, "Write the R0T0 value to file");
-                for (i = 0; i < numberOfChannels; i++) {
-                    fwrite(&callback_data->cali_param[i].r0_cali_q24,
-                                sizeof(callback_data->cali_param[i].r0_cali_q24), 1, fp);
-                    fwrite(&spkerTempList[i], sizeof(int16_t), 1, fp);
-                }
-                spkrCalState = SPKR_CALIBRATED;
-                free(callback_data);
-                fclose(fp);
-            }
-        }
-        else if (calibrationCallbackStatus == CALIBRATION_STATUS_FAILURE) {
+        if (calibrationCallbackStatus == CALIBRATION_STATUS_FAILURE) {
             PAL_DBG(LOG_TAG, "Calibration is not done");
             spkrCalState = SPKR_NOT_CALIBRATED;
             // reset the timer for retry
             clock_gettime(CLOCK_BOOTTIME, &spkrLastTimeUsed);
         }
+        dspEventReceived = true;
     }
 
 err_pcm_open :
@@ -630,7 +621,46 @@ err_pcm_open :
         disableDevice(audioRoute, mSndDeviceName_rx);
         rxPcm = NULL;
     }
+    // Store r0, t0
+    if (calibrationCallbackStatus == CALIBRATION_STATUS_SUCCESS && dspEventReceived) {
+retry:
+        PAL_DBG(LOG_TAG, "Getting temperature of speakers");
+        getSpeakerTemperatureList();
 
+        for (i = 0; i < numberOfChannels; i++) {
+            if ((spkerTempList[i] != -EINVAL) &&
+                (spkerTempList[i] < TZ_TEMP_MIN_THRESHOLD ||
+                 spkerTempList[i] > TZ_TEMP_MAX_THRESHOLD)) {
+                PAL_ERR(LOG_TAG, "Temperature out of range. Retry");
+                spkrCalibrateWait();
+                if (retryCount < MAX_RETRY) {
+                    retryCount++;
+                    goto retry;
+                }
+                else
+                    continue;
+            }
+        }
+        for (i = 0; i < numberOfChannels; i++) {
+            // Converting to Q6 format
+            spkerTempList[i] = (spkerTempList[i]*(1<<6));
+        }
+        PAL_DBG(LOG_TAG, "Calibration is done");
+        fp = fopen(PAL_SP_TEMP_PATH, "wb");
+        if (!fp) {
+            PAL_ERR(LOG_TAG, "Unable to open file for write");
+        } else {
+            PAL_DBG(LOG_TAG, "Write the R0T0 value to file");
+            for (i = 0; i < numberOfChannels; i++) {
+                fwrite(&callback_data->cali_param[i].r0_cali_q24,
+                            sizeof(callback_data->cali_param[i].r0_cali_q24), 1, fp);
+                fwrite(&spkerTempList[i], sizeof(int16_t), 1, fp);
+            }
+            spkrCalState = SPKR_CALIBRATED;
+            free(callback_data);
+            fclose(fp);
+        }
+    }
 free_fe:
     if (pcmDevIdsRx.size() != 0) {
         if (isRxFeandBeConnected) {
@@ -1194,6 +1224,8 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
     uint8_t* payload = NULL;
     uint32_t devicePropId[] = {0x08000010, 1, 0x2};
     uint32_t miid = 0;
+    uint32_t param_sp_op_mode = 0;
+    uint32_t param_cps_ch_map = 0;
     bool isTxFeandBeConnected = true;
     bool isCPSFeandBeConnected = true;
     size_t payloadSize = 0;
@@ -1333,8 +1365,13 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
         }
 
         payloadSize = 0;
+        if (rm->GetSpeakerProtectionVersion() == SPV5)
+            param_sp_op_mode = PARAM_ID_SP_OP_MODE_V5;
+        else
+            param_sp_op_mode = PARAM_ID_SP_OP_MODE;
+
         builder->payloadSPConfig(&payload, &payloadSize, miid,
-                PARAM_ID_SP_OP_MODE,(void *)&spModeConfg);
+                param_sp_op_mode,(void *)&spModeConfg);
         if (payloadSize) {
             if (customPayload) {
                 free (customPayload);
@@ -1536,9 +1573,13 @@ cps_dev_setup:
         // TODO: Move this to ACDB file
         cpsChannelMapConfg.num_ch = cps_device.channels;
         payloadSize = 0;
+        if (rm->GetSpeakerProtectionVersion() == SPV5)
+            param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP_V5;
+        else
+            param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP;
 
         builder->payloadSPConfig(&payload, &payloadSize, miid,
-                PARAM_ID_CPS_CHANNEL_MAP,(void *)&cpsChannelMapConfg);
+                param_cps_ch_map,(void *)&cpsChannelMapConfg);
         if (payloadSize) {
             ret = updateCustomPayload(payload, payloadSize);
             free(payload);

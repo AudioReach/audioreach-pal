@@ -2820,9 +2820,11 @@ int ResourceManager::deregisterStream(Stream *s)
     it = activeStreamMap.find(type);
     if (it != activeStreamMap.end()) {
         iter = std::find(it->second.begin(), it->second.end(), s);
-        if (iter != it->second.end())
+        if (iter != it->second.end()) {
             it->second.erase(iter);
-        else {
+            if (it->second.empty())
+                activeStreamMap.erase(it);
+        } else {
             PAL_ERR(LOG_TAG, "Could not find stream to deregister", type);
             ret = -ENOENT;
         }

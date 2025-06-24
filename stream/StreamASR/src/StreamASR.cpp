@@ -63,6 +63,7 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
 {
     PAL_INFO(LOG_TAG, "Enter");
 
+    session = nullptr;
     palRecConfig = nullptr;
     recConfig = nullptr;
     outputConfig = nullptr;

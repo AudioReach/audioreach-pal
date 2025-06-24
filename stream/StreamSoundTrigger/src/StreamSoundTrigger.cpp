@@ -111,6 +111,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     sm_cfg_ = nullptr;
     ec_rx_dev_ = nullptr;
     conc_notified_ = false;
+    session = nullptr;
     mDevices.clear();
     std::list<Stream*> activeSTStreams;
 
@@ -192,7 +193,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
 
     rm->registerStream(this);
     rm->getActiveStreamByType(activeSTStreams, PAL_STREAM_VOICE_UI);
-    if(activeSTStreams.size() <= 1)
+    if(activeSTStreams.size() == 1)
         onVUIStreamRegistered();
 
     // Print the concurrency feature flags supported

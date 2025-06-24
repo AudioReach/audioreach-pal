@@ -67,6 +67,7 @@ StreamACD::StreamACD(const struct pal_stream_attributes *sattr,
 {
     int32_t disable_concurrency_count = 0;
 
+    session = nullptr;
     rec_config_ = nullptr;
     context_config_ = nullptr;
     paused_ = false;

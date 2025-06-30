@@ -391,7 +391,7 @@ void PayloadBuilder::populateCRSChannelMixerCoeff(T pcmChannel, uint8_t OutnumCh
 {
     int numCoeff = OutnumChannel * InnumChannel;
     for (int i = 0; i < numCoeff; i++) {
-         pcmChannel[i] = 0x2000;
+         pcmChannel[i] = 0x4000;
     }
 }
 

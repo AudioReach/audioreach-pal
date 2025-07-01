@@ -775,12 +775,12 @@ void ASREngine::EventProcessingThread(ASREngine *engine)
         //Adding this condition, as destructor can also notify this thread without any event
         if (!engine->eventQ.empty()) {
             event = engine->eventQ.front();
+            engine->eventQ.pop();
             if (event.first == EVENT_ID_SDZ_OUTPUT) {
                 engine->ParseSdzEventAndNotifyStream(event.second);
             } else {
                 engine->ParseEventAndNotifyStream(event.second);
             }
-            engine->eventQ.pop();
         }
     }
 

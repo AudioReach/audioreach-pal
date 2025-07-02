@@ -1248,6 +1248,7 @@
         <capture_profile_list>
             <!-- Common Profiles -->
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1255,6 +1256,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI_AAD">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1262,6 +1264,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFNS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1269,6 +1272,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1276,6 +1280,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1283,6 +1288,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_RAW_LPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1290,6 +1296,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1297,6 +1304,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_FFNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1304,6 +1312,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1311,6 +1320,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1319,6 +1329,7 @@
             </capture_profile>
             <!-- ACD Specific Profiles -->
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1326,6 +1337,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_LPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1334,6 +1346,7 @@
             </capture_profile>
             <!-- Sensor PCM Data Specific Profiles -->
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFEC">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1341,6 +1354,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_FFEC">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1348,6 +1362,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_RAW_LPI_TX_MACRO">
+                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1356,6 +1371,7 @@
                 <param backend="tx_macro" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_48KHZ_16BIT_RAW_LPI_TX_MACRO">
+                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
                 <param sample_rate="48000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1364,6 +1380,7 @@
                 <param backend="tx_macro" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_RAW_LPI_NO_BUFFER_TX_MACRO">
+                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1372,6 +1389,7 @@
                 <param backend="tx_macro" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_48KHZ_16BIT_RAW_LPI_NO_BUFFER_TX_MACRO">
+                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
                 <param sample_rate="48000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1381,6 +1399,7 @@
             </capture_profile>
             <!-- SVA/Hotword Specific Profiles -->
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1388,6 +1407,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_HEADSET_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1395,6 +1415,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1402,6 +1423,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1409,6 +1431,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_RAW_LPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1416,6 +1439,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_RAW_LPI_AAD">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1423,6 +1447,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1430,6 +1455,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_48KHZ_16BIT_RAW_NLPI">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1437,6 +1463,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_FFNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1444,6 +1471,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="TRI_MIC_16KHZ_16BIT_FFNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1451,6 +1479,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_16KHZ_16BIT_FFNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1458,6 +1487,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1465,6 +1495,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_48KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1472,6 +1503,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="TRI_MIC_16KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1479,6 +1511,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="TRI_MIC_48KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1486,6 +1519,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_16KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1493,6 +1527,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_48KHZ_16BIT_FFECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1500,6 +1535,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_CUSTOM_NS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1507,6 +1543,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_CUSTOM_NS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1514,6 +1551,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="TRI_MIC_16KHZ_16BIT_CUSTOM_NS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1521,6 +1559,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_16KHZ_16BIT_CUSTOM_NS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1528,6 +1567,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1535,6 +1575,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1542,6 +1583,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1549,6 +1591,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_48KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="2" />
                 <param bit_width="16" />
@@ -1556,6 +1599,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="TRI_MIC_16KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1563,6 +1607,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="TRI_MIC_48KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="3" />
                 <param bit_width="16" />
@@ -1570,6 +1615,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_16KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1577,6 +1623,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="QUAD_MIC_48KHZ_16BIT_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="4" />
                 <param bit_width="16" />
@@ -1584,6 +1631,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_CUSTOM_NS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1591,6 +1639,7 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
@@ -1598,6 +1647,7 @@
                 <param ec_ref="true" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_48KHZ_16BIT_HEADSET_CUSTOM_ECNS">
+                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
                 <param sample_rate="48000" />
                 <param channels="1" />
                 <param bit_width="16" />

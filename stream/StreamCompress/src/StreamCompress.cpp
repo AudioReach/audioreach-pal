@@ -1127,10 +1127,10 @@ int32_t StreamCompress::ssrDownHandler()
         mStreamMutex.unlock();
         rm->unlockActiveStream();
         status = stop();
-        rm->lockActiveStream();
         if (status)
             PAL_ERR(LOG_TAG, "stream stop failed. status %d",  status);
         status = close();
+        rm->lockActiveStream();
         if (status) {
             PAL_ERR(LOG_TAG, "session close failed. status %d", status);
             goto exit;

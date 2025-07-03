@@ -31,8 +31,9 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -382,10 +383,10 @@ int32_t StreamHaptics::ssrDownHandler()
         mStreamMutex.unlock();
         rm->unlockActiveStream();
         status = stop();
-        rm->lockActiveStream();
         if (0 != status)
             PAL_ERR(LOG_TAG, "stream stop failed. status %d",  status);
         status = close();
+        rm->lockActiveStream();
         if (0 != status) {
             PAL_ERR(LOG_TAG, "stream close failed. status %d", status);
             goto exit;

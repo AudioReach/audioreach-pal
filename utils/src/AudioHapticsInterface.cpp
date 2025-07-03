@@ -460,7 +460,7 @@ void AudioHapticsInterface::process_haptics_info(struct haptics_xml_data *data,
 
 void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (effect_id >= 0 && predefined_haptics_info.size() < effect_id) {
+    if (effect_id >= 0 && effect_id < predefined_haptics_info.size()) {
         if (*HConfig == nullptr) {
             *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(predefined_haptics_info[effect_id]));
             if (*HConfig)

@@ -866,6 +866,7 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
                 outFile.open(PAL_HAP_DEVP_CAL_PATH, std::ios::binary);
             if (!outFile.is_open()) {
                 PAL_ERR(LOG_TAG, "Unable to open file for write");
+                hapticsDevCalState = HAPTICS_DEV_NOT_CALIBRATED;
             } else {
                 PAL_DBG(LOG_TAG, "Write calibrated values to file");
                 size_t calChunkSize = 0;

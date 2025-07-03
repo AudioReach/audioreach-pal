@@ -28,6 +28,7 @@
  *
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1455,10 +1456,10 @@ int32_t StreamPCM::ssrDownHandler()
         mStreamMutex.unlock();
         rm->unlockActiveStream();
         status = stop();
-        rm->lockActiveStream();
         if (0 != status)
             PAL_ERR(LOG_TAG, "stream stop failed. status %d",  status);
         status = close();
+        rm->lockActiveStream();
         if (0 != status) {
             PAL_ERR(LOG_TAG, "stream close failed. status %d", status);
             goto exit;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -135,10 +135,10 @@ static inline int statusTFromBinderStatus(const ::ndk::ScopedAStatus& status,
     if (status.isOk()) {
         return ::android::OK;
     } else if (status.getServiceSpecificError()) {
-        ALOGV("%s failed with %s", caller.c_str(), status.getDescription().c_str());
+        ALOGE("%s failed with %s", caller.c_str(), status.getDescription().c_str());
         return statusTFromExceptionCode(static_cast<Status>(status.getServiceSpecificError()));
     } else {
-        ALOGV("%s failed with %s", caller.c_str(), status.getDescription().c_str());
+        ALOGE("%s failed with %s", caller.c_str(), status.getDescription().c_str());
         return status.getStatus();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -27,19 +27,19 @@ using ::aidl::vendor::qti::hardware::pal::ModifierKV;
 using ::aidl::vendor::qti::hardware::pal::PalBuffer;
 using ::aidl::vendor::qti::hardware::pal::PalBufferConfig;
 using ::aidl::vendor::qti::hardware::pal::PalCallback;
+using ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo;
 using ::aidl::vendor::qti::hardware::pal::PalDevice;
 using ::aidl::vendor::qti::hardware::pal::PalDeviceId;
 using ::aidl::vendor::qti::hardware::pal::PalMmapBuffer;
 using ::aidl::vendor::qti::hardware::pal::PalMmapPosition;
 using ::aidl::vendor::qti::hardware::pal::PalParamPayload;
+using ::aidl::vendor::qti::hardware::pal::PalParamPayloadShmem;
 using ::aidl::vendor::qti::hardware::pal::PalReadReturnData;
 using ::aidl::vendor::qti::hardware::pal::PalSessionTime;
 using ::aidl::vendor::qti::hardware::pal::PalStreamAttributes;
 using ::aidl::vendor::qti::hardware::pal::PalStreamType;
 using ::aidl::vendor::qti::hardware::pal::SharedMemoryWrapper;
-using ::aidl::vendor::qti::hardware::pal::PalParamPayloadShmem;
 using ::ndk::ScopedFileDescriptor;
-using ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo;
 
 static std::shared_ptr<IPAL> gPalClient = nullptr;
 static bool gPalServiceDied = false;
@@ -135,8 +135,10 @@ int32_t pal_stream_open(struct pal_stream_attributes *attr, uint32_t no_of_devic
     int64_t aidlCookie = int64_t(cookie);
     int64_t aidlReturn;
 
-    ret = statusTFromBinderStatus(client->ipc_pal_stream_open(
-            aidlPalStreamAttr, aidlDevVec, aidlKvVec, ClbkBinder, aidlCookie, &aidlReturn));
+    ret = statusTFromBinderStatus(
+            client->ipc_pal_stream_open(aidlPalStreamAttr, aidlDevVec, aidlKvVec, ClbkBinder,
+                                        aidlCookie, &aidlReturn),
+            __func__);
     *stream_handle = (uint64_t *)aidlReturn;
     return ret;
 }
@@ -145,42 +147,43 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_close(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_close(convertLegacyHandleToAidlHandle(stream_handle)), __func__);
 }
 
 int32_t pal_stream_start(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_start(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_start(convertLegacyHandleToAidlHandle(stream_handle)), __func__);
 }
 
 int32_t pal_stream_stop(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_stop(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_stop(convertLegacyHandleToAidlHandle(stream_handle)), __func__);
 }
 
 int32_t pal_stream_pause(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_pause(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_pause(convertLegacyHandleToAidlHandle(stream_handle)), __func__);
 }
 
 int32_t pal_stream_resume(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_resume(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_resume(convertLegacyHandleToAidlHandle(stream_handle)),
+            __func__);
 }
 
 int32_t pal_stream_flush(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_flush(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_flush(convertLegacyHandleToAidlHandle(stream_handle)), __func__);
 }
 
 int32_t pal_stream_drain(pal_stream_handle_t *stream_handle, pal_drain_type_t type) {
@@ -188,15 +191,18 @@ int32_t pal_stream_drain(pal_stream_handle_t *stream_handle, pal_drain_type_t ty
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
 
     auto aidlDrainType = LegacyToAidl::convertPalDrainTypeToAidl(type);
-    return statusTFromBinderStatus(client->ipc_pal_stream_drain(
-            convertLegacyHandleToAidlHandle(stream_handle), aidlDrainType));
+    return statusTFromBinderStatus(
+            client->ipc_pal_stream_drain(convertLegacyHandleToAidlHandle(stream_handle),
+                                         aidlDrainType),
+            __func__);
 }
 
 int32_t pal_stream_suspend(pal_stream_handle_t *stream_handle) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_suspend(convertLegacyHandleToAidlHandle(stream_handle)));
+            client->ipc_pal_stream_suspend(convertLegacyHandleToAidlHandle(stream_handle)),
+            __func__);
 }
 
 int32_t pal_stream_get_buffer_size(pal_stream_handle_t *stream_handle, size_t *in_buffer,
@@ -222,7 +228,7 @@ int32_t pal_stream_get_tags_with_module_info(pal_stream_handle_t *stream_handle,
         memcpy(payload, aidlPayload.data(), aidlPayload.size());
     }
     *size = aidlPayload.size();
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int32_t pal_stream_set_buffer_size(pal_stream_handle_t *stream_handle,
@@ -258,7 +264,7 @@ int32_t pal_stream_set_buffer_size(pal_stream_handle_t *stream_handle,
         out_buff_cfg->max_metadata_size = _aidl_return_buff_cfg[1].maxMetadataSize;
     }
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 ssize_t pal_stream_read(pal_stream_handle_t *stream_handle, struct pal_buffer *buf) {
@@ -327,7 +333,7 @@ ssize_t pal_stream_write(pal_stream_handle_t *stream_handle, struct pal_buffer *
     if (aidlReturn >= 0 && status.isOk()) {
         return aidlReturn;
     } else {
-        return statusTFromBinderStatus(status);
+        return statusTFromBinderStatus(status, __func__);
     }
 }
 
@@ -355,7 +361,7 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle, uint32_t no_of
     auto aidlPalDevVec = LegacyToAidl::convertPalDeviceToAidl(devices, no_of_devices);
 
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_set_device(aidlStreamHandle, aidlPalDevVec));
+            client->ipc_pal_stream_set_device(aidlStreamHandle, aidlPalDevVec), __func__);
 }
 
 int32_t pal_stream_get_param(pal_stream_handle_t *stream_handle, uint32_t param_id,
@@ -384,7 +390,7 @@ int32_t pal_stream_get_param(pal_stream_handle_t *stream_handle, uint32_t param_
                    (*param_payload)->payload_size);
         }
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_id,
@@ -409,7 +415,7 @@ int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_
         payload.payloadSize = param_payload->payload_size;
         auto aidlStreamHandle = convertLegacyHandleToAidlHandle(stream_handle);
         status = statusTFromBinderStatus(
-                client->ipc_pal_stream_set_param(aidlStreamHandle, param_id, payload));
+                client->ipc_pal_stream_set_param(aidlStreamHandle, param_id, payload), __func__);
     } else {
         ALOGE("%s:%d Failed to get shared memory", __func__, __LINE__);
         return -EINVAL;
@@ -440,8 +446,8 @@ int32_t pal_stream_set_volume(pal_stream_handle_t *stream_handle, struct pal_vol
     auto aidlStreamHandle = convertLegacyHandleToAidlHandle(stream_handle);
     auto aidlVolData = LegacyToAidl::convertPalVolDataToAidl(volume);
 
-    return statusTFromBinderStatus(
-            client->ipc_pal_stream_set_volume(aidlStreamHandle, aidlVolData));
+    return statusTFromBinderStatus(client->ipc_pal_stream_set_volume(aidlStreamHandle, aidlVolData),
+                                   __func__);
 }
 
 int32_t pal_stream_get_mute(pal_stream_handle_t *stream_handle, bool *state) {
@@ -456,19 +462,19 @@ int32_t pal_stream_set_mute(pal_stream_handle_t *stream, bool state) {
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
     int64_t aidlHandle = convertLegacyHandleToAidlHandle(stream);
 
-    return statusTFromBinderStatus(client->ipc_pal_stream_set_mute(aidlHandle, state));
+    return statusTFromBinderStatus(client->ipc_pal_stream_set_mute(aidlHandle, state), __func__);
 }
 
 int32_t pal_get_mic_mute(bool *state) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
-    return statusTFromBinderStatus(client->ipc_pal_get_mic_mute(state));
+    return statusTFromBinderStatus(client->ipc_pal_get_mic_mute(state), __func__);
 }
 
 int32_t pal_set_mic_mute(bool state) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
-    return statusTFromBinderStatus(client->ipc_pal_set_mic_mute(state));
+    return statusTFromBinderStatus(client->ipc_pal_set_mic_mute(state), __func__);
 }
 
 int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle, struct pal_session_time *stime) {
@@ -478,8 +484,8 @@ int32_t pal_get_timestamp(pal_stream_handle_t *stream_handle, struct pal_session
 
     PalSessionTime aidlSessionTime;
 
-    auto status =
-            statusTFromBinderStatus(client->ipc_pal_get_timestamp(aidlHandle, &aidlSessionTime));
+    auto status = statusTFromBinderStatus(
+            client->ipc_pal_get_timestamp(aidlHandle, &aidlSessionTime), __func__);
 
     if (stime != NULL) {
         AidlToLegacy::convertPalSessionTime(aidlSessionTime, stime);
@@ -496,13 +502,12 @@ int32_t pal_add_remove_effect(pal_stream_handle_t *stream_handle, pal_audio_effe
 
     auto aidlAudioEffect = LegacyToAidl::convertPalAudioEffectToAidl(effect);
     return statusTFromBinderStatus(
-            client->ipc_pal_add_remove_effect(aidlHandle, aidlAudioEffect, enable));
+            client->ipc_pal_add_remove_effect(aidlHandle, aidlAudioEffect, enable), __func__);
 }
 
 int32_t pal_set_param(uint32_t param_id, void *param_payload, size_t payload_size) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
-
     int32_t aidlParamId = static_cast<uint32_t>(param_id);
 
     std::vector<uint8_t> aidlPayload(payload_size, 0);
@@ -510,7 +515,7 @@ int32_t pal_set_param(uint32_t param_id, void *param_payload, size_t payload_siz
 
     int32_t aidlPayloadSize = static_cast<int32_t>(payload_size);
 
-    return statusTFromBinderStatus(client->ipc_pal_set_param(aidlParamId, aidlPayload));
+    return statusTFromBinderStatus(client->ipc_pal_set_param(aidlParamId, aidlPayload), __func__);
 }
 
 int32_t pal_get_param(uint32_t param_id, void **param_payload, size_t *payload_size, void *query) {
@@ -520,7 +525,6 @@ int32_t pal_get_param(uint32_t param_id, void **param_payload, size_t *payload_s
     int32_t aidlParamId = static_cast<uint32_t>(param_id);
     uint32_t size;
     std::vector<uint8_t> aidlPayload;
-
     auto status = client->ipc_pal_get_param(aidlParamId, &aidlPayload);
 
     size = aidlPayload.size();
@@ -535,7 +539,7 @@ int32_t pal_get_param(uint32_t param_id, void **param_payload, size_t *payload_s
             *payload_size = size;
         }
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle, int32_t min_size_frames,
@@ -547,7 +551,8 @@ int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle, int32_
     PalMmapBuffer aidlBuffer = LegacyToAidl::convertPalMmapBufferToAidl(info);
 
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_create_mmap_buffer(aidlHandle, min_size_frames, &aidlBuffer));
+            client->ipc_pal_stream_create_mmap_buffer(aidlHandle, min_size_frames, &aidlBuffer),
+            __func__);
 }
 
 int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
@@ -559,7 +564,7 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
     PalMmapPosition aidlPosition = LegacyToAidl::convertPalMmapPositionToAidl(position);
 
     return statusTFromBinderStatus(
-            client->ipc_pal_stream_get_mmap_position(aidlHandle, &aidlPosition));
+            client->ipc_pal_stream_get_mmap_position(aidlHandle, &aidlPosition), __func__);
 }
 
 int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie) {
@@ -570,7 +575,7 @@ int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie) {
     auto aidlCookie = static_cast<int64_t>(cookie);
 
     return statusTFromBinderStatus(
-            client->ipc_pal_register_global_callback(aidlPalCallback, aidlCookie));
+            client->ipc_pal_register_global_callback(aidlPalCallback, aidlCookie), __func__);
 }
 
 int32_t pal_gef_rw_param(uint32_t param_id, void *param_payload, size_t payload_size,
@@ -586,8 +591,10 @@ int32_t pal_gef_rw_param(uint32_t param_id, void *param_payload, size_t payload_
     auto aidlDir = static_cast<int8_t>(dir);
     std::vector<uint8_t> aidlReturn;
 
-    return statusTFromBinderStatus(client->ipc_pal_gef_rw_param(
-            aidlParamId, aidlPayload, aidlPalDeviceId, aidlPalStreamType, aidlDir, &aidlReturn));
+    return statusTFromBinderStatus(
+            client->ipc_pal_gef_rw_param(aidlParamId, aidlPayload, aidlPalDeviceId,
+                                         aidlPalStreamType, aidlDir, &aidlReturn),
+            __func__);
 }
 
 int32_t pal_gef_rw_param_acdb(uint32_t param_id, void *param_payload, size_t payload_size,
@@ -606,9 +613,9 @@ int32_t pal_gef_rw_param_acdb(uint32_t param_id, void *param_payload, size_t pay
     return 0;
 }
 
-int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
-    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size) {
-
+int32_t pal_stream_set_custom_param(pal_stream_handle_t *handle,
+                                    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                    void *param_payload, size_t payload_size) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
 
@@ -622,14 +629,15 @@ int32_t pal_stream_set_custom_param(pal_stream_handle_t* handle,
     std::vector<char16_t> paramID(PAL_CUSTOM_PARAM_MAX_STRING_LENGTH);
     memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
     int32_t aidlPayloadSize = static_cast<int32_t>(payload_size);
-    auto status = client->ipc_pal_stream_set_custom_param(aidlHandle, paramID, aidlPayload, aidlPayloadSize);
+    auto status = client->ipc_pal_stream_set_custom_param(aidlHandle, paramID, aidlPayload,
+                                                          aidlPayloadSize);
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
-int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
-    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t *payload_size) {
-
+int32_t pal_stream_get_custom_param(pal_stream_handle_t *handle,
+                                    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                                    void *param_payload, size_t *payload_size) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
 
@@ -643,7 +651,8 @@ int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
     memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
 
     int32_t aidlPayloadSize = static_cast<int32_t>(*payload_size);
-    auto status = client->ipc_pal_stream_get_custom_param(aidlHandle, paramID, aidlPayloadSize, &aidlPayload);
+    auto status = client->ipc_pal_stream_get_custom_param(aidlHandle, paramID, aidlPayloadSize,
+                                                          &aidlPayload);
 
     if (status.isOk()) {
         if (!(aidlPayload.data())) {
@@ -654,12 +663,12 @@ int32_t pal_stream_get_custom_param(pal_stream_handle_t* handle,
             *payload_size = aidlPayload.size();
         }
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
-int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
-    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t payload_size){
-
+int32_t pal_set_custom_param(custom_payload_uc_info_t *uc_info,
+                             char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                             void *param_payload, size_t payload_size) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
 
@@ -674,13 +683,15 @@ int32_t pal_set_custom_param(custom_payload_uc_info_t* uc_info,
     memcpy(paramID.data(), param_str, PAL_CUSTOM_PARAM_MAX_STRING_LENGTH * sizeof(char));
 
     int32_t aidlPayloadSize = static_cast<int32_t>(payload_size);
-    auto status = client->ipc_pal_set_custom_param(aidlPalUCInfo, paramID, aidlPayload, aidlPayloadSize);
+    auto status =
+            client->ipc_pal_set_custom_param(aidlPalUCInfo, paramID, aidlPayload, aidlPayloadSize);
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
-int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
-    char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH], void* param_payload, size_t *payload_size){
+int32_t pal_get_custom_param(custom_payload_uc_info_t *uc_info,
+                             char param_str[PAL_CUSTOM_PARAM_MAX_STRING_LENGTH],
+                             void *param_payload, size_t *payload_size) {
     auto client = getPal();
     RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
 
@@ -697,7 +708,8 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
     std::vector<uint8_t> aidlReturn;
     int32_t aidlPayloadSize = static_cast<int32_t>(*payload_size);
 
-    auto status = client->ipc_pal_get_custom_param(aidlPalUCInfo, paramID, aidlPayload, &aidlReturn);
+    auto status =
+            client->ipc_pal_get_custom_param(aidlPalUCInfo, paramID, aidlPayload, &aidlReturn);
     if (status.isOk()) {
         if (!(aidlReturn.data())) {
             ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
@@ -707,5 +719,5 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t* uc_info,
             *payload_size = aidlReturn.size();
         }
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }

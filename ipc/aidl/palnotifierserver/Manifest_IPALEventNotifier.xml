@@ -1,0 +1,11 @@
+<!--
+    Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ -->
+<manifest version="1.0" type="device">
+    <!-- Audio PALEventNotifier service -->
+    <hal format="aidl">
+        <name>vendor.qti.hardware.paleventnotifier</name>
+        <version>2</version>
+        <fqname>IPALEventNotifier/default</fqname>
+    </hal>
+</manifest>

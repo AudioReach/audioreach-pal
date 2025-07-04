@@ -146,6 +146,7 @@ extern "C" {
 #define PCM_RECORD_HOSTLESS "PcmRecordHostless"
 #define PCM_PLAYBACK_NONTUNNEL "PcmPlaybackNonTunnel"
 #define PCM_RECORD_NONTUNNEL "PcmRecordNonTunnel"
+#define PCM_PLAYBACK_NOCONFIG "PcmPlaybackNoConfig"
 #define PCM_RECORD_NOCONFIG "PcmRecordNoConfig"
 #define VOICE1_PLAYBACK_HOSTLESS "Voice1PlaybackHostless"
 #define VOICE2_PLAYBACK_HOSTLESS "Voice2PlaybackHostless"

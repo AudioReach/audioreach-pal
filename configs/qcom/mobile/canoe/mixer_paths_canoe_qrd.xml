@@ -637,7 +637,7 @@
 
     <path name="speaker-mic">
         <path name="amic3" />
-        <ctl name="TX_DEC2 Volume" value="96" />
+        <ctl name="TX_DEC3 Volume" value="96" />
     </path>
 
     <path name="voice-speaker-mic">

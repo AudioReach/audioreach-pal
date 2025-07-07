@@ -548,13 +548,16 @@ int32_t StreamCompress::start()
                 rm->unlockGraph();
                 goto session_fail;
             }
+            rm->unlockGraph();
+            mStreamMutex.unlock();
+            rm->lockActiveStream();
+            mStreamMutex.lock();
             for (int i = 0; i < mDevices.size(); i++) {
                 rm->registerDevice(mDevices[i], this);
             }
+            rm->unlockActiveStream();
             currentState = STREAM_STARTED;
             PAL_VERBOSE(LOG_TAG, "session start successful");
-
-            rm->unlockGraph();
 
             break;
         default:

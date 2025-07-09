@@ -735,6 +735,18 @@ int SpeakerProtectionwsa883x::viTxSetupThreadLoop()
     keyVector.clear();
     calVector.clear();
 
+    if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
+        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
+    else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
+        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_PROXY, "", &vi_device);
+
+    strlcpy(mSndDeviceName_vi, vi_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
+
+     if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET) {
+       strlcat(mSndDeviceName_vi, FEEDBACK_MONO_1, DEVICE_NAME_MAX_SIZE);
+    }
+    PAL_DBG(LOG_TAG, "get the audio route %s", mSndDeviceName_vi);
+
     //Configure device attribute
     rm->getChannelMap(&(ch_info.ch_map[0]), vi_device.channels);
     ch_info.channels = vi_device.channels;
@@ -786,18 +798,6 @@ int SpeakerProtectionwsa883x::viTxSetupThreadLoop()
 
     dev = Device::getInstance(&mDeviceAttr, rm);
     dev->getCurrentSndDevName(mSndDeviceName_SP);
-
-    if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
-        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
-    else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
-        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_PROXY, "", &vi_device);
-
-    strlcpy(mSndDeviceName_vi, vi_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
-
-     if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET) {
-       strlcat(mSndDeviceName_vi, FEEDBACK_MONO_1, DEVICE_NAME_MAX_SIZE);
-    }
-    PAL_DBG(LOG_TAG, "get the audio route %s", mSndDeviceName_vi);
 
     rm->getBackendName(device.id, backEndName);
     if (!strlen(backEndName.c_str())) {

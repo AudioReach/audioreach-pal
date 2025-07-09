@@ -546,6 +546,10 @@ int reconfigureModule(SessionAlsaPcm* session, PayloadBuilder* builder, uint32_t
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     PAL_DBG(LOG_TAG, "Enter");
+    if (!session) {
+        PAL_ERR(LOG_TAG, "No existing session found");
+        goto exit;
+    }
     status = session->getMIID(BE, tagID, &miid);
     if(status){
         PAL_INFO(LOG_TAG,"could not find tagID 0x%x for backend %s", tagID, BE);

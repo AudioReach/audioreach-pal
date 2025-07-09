@@ -140,10 +140,12 @@
                 <!-- INSTANCE - INSTANCE_2 -->
                 <graph_kv key="0xAB000000" value="0x2"/>
             </keys_and_values>
-            <keys_and_values CustomConfig="icmd_plus">
+            <keys_and_values Instance="1" CustomConfig="icmd_plus">
                 <!-- STREAMRX - INCALL_MUSIC PLUS-->
                 <graph_kv key="0xA1000000" value="0xA100001A"/>
                 <graph_kv key="0xAC000000" value="0xAC000002"/>
+                <!-- INSTANCE - INSTANCE_1 -->
+                <graph_kv key="0xAB000000" value="0x1"/>
             </keys_and_values>
         </stream>
         <!-- Call Translation stream -->

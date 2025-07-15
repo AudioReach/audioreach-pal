@@ -67,9 +67,9 @@ int32_t StreamCommonProxy::getParameters(uint32_t param_id, void **payload)
     switch (param_id) {
         case PAL_PARAM_ID_SVA_WAKEUP_MODULE_VERSION:
         {
-            mGetParamMutex.lock();
+            lockGetParamMutex();
             status = session->getParameters(nullptr, param_id, payload);
-            mGetParamMutex.unlock();
+            unlockGetParamMutex();
             if (status)
                 PAL_ERR(LOG_TAG, "Error:getParam failed with %d",
                     status);

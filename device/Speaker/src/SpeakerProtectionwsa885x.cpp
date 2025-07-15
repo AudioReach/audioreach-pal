@@ -1244,6 +1244,7 @@ int32_t SpeakerProtectionwsa885x::spkrProtProcessingMode(bool flag)
     uint32_t miid = 0;
     bool isTxFeandBeConnected = true;
     bool isCPSFeandBeConnected = true;
+    bool foundSpkrStream = false;
     size_t payloadSize = 0;
     struct pal_device device, deviceCPS;
     struct pal_channel_info ch_info;
@@ -1273,8 +1274,10 @@ int32_t SpeakerProtectionwsa885x::spkrProtProcessingMode(bool flag)
     param_id_cps_ch_map_t cpsChannelMapConfg;
     std::shared_ptr<Device> dev = nullptr;
     Stream *stream = NULL;
+    Stream *activeSpkrStream = NULL;
     Session *session = NULL;
     std::vector<Stream*> activeStreams;
+    std::vector <std::shared_ptr<Device>> devices;
     PayloadBuilder* builder = new PayloadBuilder();
     std::unique_lock<std::mutex> lock(calibrationMutex);
     struct agm_event_reg_cfg event_cfg;
@@ -1357,8 +1360,41 @@ int32_t SpeakerProtectionwsa885x::spkrProtProcessingMode(bool flag)
             goto err_pcm_open;
         }
 
-        stream = static_cast<Stream *>(activeStreams[0]);
-        stream->getAssociatedSession(&session);
+        for (auto streamPtr : activeStreams) {
+            if (!streamPtr)
+                continue;
+
+            devices.clear();
+            streamPtr->getAssociatedDevices(devices);
+
+            for (const auto &dev : devices) {
+                if (dev && dev->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER) {
+                    activeSpkrStream = streamPtr;
+                    foundSpkrStream = true;
+                    break;
+                }
+            }
+
+            if (foundSpkrStream)
+                break;
+        }
+
+        if (!activeStreams.empty() && activeSpkrStream) {
+            stream = static_cast<Stream *>(activeSpkrStream);
+            if (stream) {
+                stream->getAssociatedSession(&session);
+            } else {
+                PAL_ERR(LOG_TAG, "Stream cast failed: nullptr after static_cast");
+                ret = -EINVAL;
+                goto err_pcm_open;
+            }
+        }
+        else {
+            PAL_ERR(LOG_TAG, "No active streams or null stream pointer");
+            ret = -EINVAL;
+            goto err_pcm_open;
+        }
+
 
         ret = dynamic_cast<SessionAR*>(session)->getMIID(backEndNameRx.c_str(), MODULE_SP, &miid);
         if (ret) {

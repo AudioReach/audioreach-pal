@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -4570,7 +4570,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
 
@@ -4593,7 +4593,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
 
@@ -4616,7 +4616,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
 
@@ -4648,7 +4648,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
 
@@ -4678,7 +4678,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
 
@@ -4704,7 +4704,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 hpConf = (param_id_haptics_ex_vi_ftm_set_cfg *) (payloadInfo +
@@ -4730,7 +4730,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
             }
@@ -4746,7 +4746,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
             }
@@ -4763,7 +4763,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 hpConf = (param_id_haptics_ex_vi_persistent *) (payloadInfo +
@@ -4782,7 +4782,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 rxViScale = (param_id_haptics_rx_visense_t *) (payloadInfo +
@@ -4803,7 +4803,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 hpConf = (param_id_haptics_ex_vi_dynamic_param_t *) (payloadInfo +
@@ -4831,7 +4831,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     hap_info->getTouchHapticsEffectConfiguration(data->effect_id, &HConfig);
                     if (HConfig == nullptr) {
                         PAL_ERR(LOG_TAG, "HapticsConfig is not found.");
-                        return;
+                        break;
                     }
                     payloadSize = sizeof(struct apm_module_param_data_t) +
                                      sizeof(param_id_haptics_wave_designer_config_v2_t) +
@@ -4844,7 +4844,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                     if (!payloadInfo) {
                         PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                        return;
+                        break;
                     }
                     header = (struct apm_module_param_data_t *) payloadInfo;
                     hpconf = (param_id_haptics_wave_designer_config_v2_t *) (payloadInfo +
@@ -4968,6 +4968,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                         }
                     }
                     free(HConfig);
+                    HConfig = nullptr;
                 } else if(data->mode == PAL_STREAM_HAPTICS_RINGTONE) {
                     hap_info->getRingtoneHapticsEffectConfiguration(&HConfig);
                     payloadSize = sizeof(struct apm_module_param_data_t) +
@@ -4977,7 +4978,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                     if (!payloadInfo) {
                         PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                        return;
+                        break;
                     }
                     header = (struct apm_module_param_data_t *) payloadInfo;
                     hpconf = (param_id_haptics_wave_designer_config_v2_t *) (payloadInfo +
@@ -5016,11 +5017,12 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                                                       hpwaveConf[0].override_flag);
                         hpwaveConf[0].num_pwl = 0;
                         free(HConfig);
+                        HConfig = nullptr;
                 } else if(data->mode == PAL_STREAM_HAPTICS_PCM) {
                     hap_info->getPcmHapticsEffectConfiguration(&HConfig);
                     if (HConfig == nullptr) {
                         PAL_ERR(LOG_TAG, "HapticsConfig is not found.");
-                        return;
+                        break;
                     }
 
                     payloadSize = sizeof(struct apm_module_param_data_t) +
@@ -5030,7 +5032,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                     payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                     if (!payloadInfo) {
                         PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                        return;
+                        break;
                     }
                     header = (struct apm_module_param_data_t *) payloadInfo;
                     hpconf = (param_id_haptics_wave_designer_config_v2_t *) (payloadInfo +
@@ -5077,6 +5079,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                          hpwaveConf[0].pulse_intensity = (data->amplitude * 100);
                     }
                     free(HConfig);
+                    HConfig = nullptr;
                 }
             }
             break;
@@ -5091,7 +5094,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                  payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                  if (!payloadInfo) {
                     PAL_ERR(LOG_TAG,"payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                  }
                  header = (struct apm_module_param_data_t*) payloadInfo;
                  hpConf = (param_id_haptics_wave_designer_wave_designer_stop_param_t *) (payloadInfo +
@@ -5112,7 +5115,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
 
                  if (HConfig == nullptr) {
                      PAL_ERR(LOG_TAG, "HapticsConfig is not found.");
-                     return;
+                     break;
                  }
 
                  payloadSize = sizeof(struct apm_module_param_data_t) +
@@ -5123,7 +5126,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                  payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                  if (!payloadInfo) {
                     PAL_ERR(LOG_TAG,"payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                  }
 
                  header = (struct apm_module_param_data_t*) payloadInfo;
@@ -5141,6 +5144,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                               hpConf->channel_mask);
 
                  free(HConfig);
+                 HConfig = nullptr;
             }
             break;
             case PARAM_ID_HAPTICS_RX_PCMV_PLAYBACK:
@@ -5158,7 +5162,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 hpconf = (param_id_haptics_rx_pcmv_playback *) (payloadInfo +
@@ -5185,7 +5189,7 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                 payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
                 if (!payloadInfo) {
                     PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-                    return;
+                    break;
                 }
                 header = (struct apm_module_param_data_t*) payloadInfo;
                 cfgPayload = (param_id_haptics_lpass_swr_hw_reg_cfg_t * ) (payloadInfo +
@@ -5209,9 +5213,13 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
         header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
     }
 
-    *size = payloadSize + padBytes;
-
-    *payload = payloadInfo;
+    if (payloadInfo) {
+        *size = payloadSize + padBytes;
+        *payload = payloadInfo;
+    } else {
+        *size = 0;
+        *payload = nullptr;
+    }
 }
 
 #define NUM_OF_IN_PORTS  1

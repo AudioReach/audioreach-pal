@@ -467,7 +467,7 @@ void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, ha
                 memcpy(*HConfig, &predefined_haptics_info[effect_id],
                                             sizeof(predefined_haptics_info[effect_id]));
         }
-    } else if (effect_id == -1) {
+    } else if (effect_id == -1 && oneshot_haptics_info.size() > 0) {
         if (*HConfig == nullptr) {
             *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(oneshot_haptics_info[0]));
             if (*HConfig)
@@ -484,22 +484,28 @@ void AudioHapticsInterface::getTouchHapticsEffectConfiguration(int effect_id, ha
 
 void AudioHapticsInterface::getRingtoneHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (*HConfig == nullptr) {
+    if (*HConfig == nullptr && ringtone_haptics_info.size() > 0) {
         *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(ringtone_haptics_info[0]));
         if (*HConfig)
             memcpy(*HConfig, &ringtone_haptics_info[0],
                                         sizeof(ringtone_haptics_info[0]));
+    } else {
+        *HConfig = nullptr;
+        PAL_ERR(LOG_TAG, "ringtone_haptics_info is NULL\n");
     }
     PAL_DBG(LOG_TAG, "getRingtoneHapticsEffectConfiguration exit\n");
 }
 
 void AudioHapticsInterface::getPcmHapticsEffectConfiguration(haptics_wave_designer_config_v2_t **HConfig)
 {
-    if (*HConfig == nullptr) {
+    if (*HConfig == nullptr && pcm_haptics_info.size() > 0) {
         *HConfig = (haptics_wave_designer_config_v2_t *) calloc(1, sizeof(pcm_haptics_info[0]));
         if (*HConfig)
             memcpy(*HConfig, &pcm_haptics_info[0],
                                         sizeof(pcm_haptics_info[0]));
+    } else {
+        *HConfig = nullptr;
+        PAL_ERR(LOG_TAG, "pcm_haptics_info is NULL\n");
     }
     PAL_DBG(LOG_TAG, "getPcmHapticsEffectConfiguration exit\n");
 }

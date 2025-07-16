@@ -52,7 +52,7 @@
         <param key="device_mux_config" value ="false" />
         <param key="upd_virtual_port" value ="false" />
         <param key="haptics_priority" value ="touch_haptics" />
-        <param key="haptics_through_wsa" value ="true" />
+        <param key="haptics_through_wsa" value ="false" />
         <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_volume>
@@ -1119,11 +1119,11 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-RX-1</back_end_name>
+            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-6</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>1</haptics_protection_enabled>
+            <haptics_protection_enabled>0</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">

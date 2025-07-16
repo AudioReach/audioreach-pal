@@ -644,6 +644,7 @@ void SpeakerProtection::updateSPcustomPayload()
 
     if (customPayloadSize) {
         free(customPayload);
+        customPayload = NULL;
         customPayloadSize = 0;
     }
 
@@ -1037,6 +1038,7 @@ void SpeakerFeedback::updateVIcustomPayload()
 
     if (customPayloadSize) {
         free(customPayload);
+        customPayload = NULL;
         customPayloadSize = 0;
     }
 

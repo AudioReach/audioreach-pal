@@ -348,6 +348,7 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
     if (!rm) {
         PAL_ERR(LOG_TAG, "Invalid resource manager");
         status = -EINVAL;
+        kpiEnqueue(__func__, false);
         return status;
     }
 
@@ -355,6 +356,7 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
     if (!rm->isActiveStream(stream_handle)) {
         status = -EINVAL;
         rm->unlockActiveStream();
+        kpiEnqueue(__func__, false);
         return status;
     }
 
@@ -366,6 +368,7 @@ int32_t pal_stream_close(pal_stream_handle_t *stream_handle)
 
     if (rm->deactivateStreamUserCounter(s)) {
         PAL_ERR(LOG_TAG, "stream is being closed by another client");
+        kpiEnqueue(__func__, false);
         return 0;
     }
 
@@ -770,6 +773,7 @@ int32_t pal_stream_set_volume(pal_stream_handle_t *stream_handle,
     if (!rm->isActiveStream(stream_handle)) {
         rm->unlockActiveStream();
         status = -EINVAL;
+        kpiEnqueue(__func__, false);
         return status;
     }
 
@@ -778,6 +782,7 @@ int32_t pal_stream_set_volume(pal_stream_handle_t *stream_handle,
     if (0 != status) {
         rm->unlockActiveStream();
         PAL_ERR(LOG_TAG, "failed to increase stream user count");
+        kpiEnqueue(__func__, false);
         return status;
     }
     rm->unlockActiveStream();
@@ -1275,6 +1280,7 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
     if (!rm->isActiveStream(stream_handle)) {
         rm->unlockActiveStream();
         status = -EINVAL;
+        kpiEnqueue(__func__, false);
         return status;
     }
 
@@ -1285,6 +1291,7 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
     if (0 != status) {
         rm->unlockActiveStream();
         PAL_ERR(LOG_TAG, "failed to increase stream user count");
+        kpiEnqueue(__func__, false);
         return status;
     }
     rm->unlockActiveStream();
@@ -1554,6 +1561,7 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
     status = s->GetMmapPosition(position);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_stream_get_mmap_position failed with status %d", status);
+        kpiEnqueue(__func__, false);
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
@@ -1592,6 +1600,7 @@ int32_t pal_stream_create_mmap_buffer(pal_stream_handle_t *stream_handle,
     status = s->createMmapBuffer(min_size_frames, info);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_stream_create_mmap_buffer failed with status %d", status);
+        kpiEnqueue(__func__, false);
         return status;
     }
     PAL_DBG(LOG_TAG, "Exit. status %d", status);

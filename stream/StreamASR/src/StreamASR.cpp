@@ -1501,7 +1501,9 @@ int32_t StreamASR::ASRSSR::ProcessEvent(std::shared_ptr<ASREventConfig> evCfg)
                 PAL_ERR(LOG_TAG, "Invalid operation, client state = %d now",
                         asrStream.stateToRestore);
             } else {
-                asrStream.sendAbort();
+                status = asrStream.engine->setParameters(&asrStream, ASR_ABORT_EVENT);
+                if (status)
+                    PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for ASR abort event", status);
             }
             break;
         }

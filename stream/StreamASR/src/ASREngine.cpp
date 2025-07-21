@@ -77,6 +77,7 @@ ASREngine::ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg)
     smCfg = smCfg;
     engState = ASR_ENG_IDLE;
     streamHandle = s;
+    builder = new PayloadBuilder();
 
     asrInfo = ASRPlatformInfo::GetInstance();
     if (!asrInfo) {
@@ -127,6 +128,11 @@ ASREngine::~ASREngine()
     asrInfo = nullptr;
     session = nullptr;
     streamHandle = nullptr;
+
+    if (builder) {
+        delete builder;
+        builder = nullptr;
+    }
 
     {
         std::unique_lock<std::mutex> lck(mutexEngine);
@@ -203,6 +209,25 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             data = (uint8_t *)config;
             dataSize = sizeof(param_id_asr_config_t);
             sesParamId = PAL_PARAM_ID_ASR_CONFIG;
+            break;
+        }
+        case ASR_ABORT_EVENT : {
+            /* Abort event is triggered from stream, we need to push dummy event in event queue
+             * and leverage the event handling flow.
+             */
+            event_id_asr_output_event_t *event = (event_id_asr_output_event_t *)
+                                 calloc(1, sizeof(event_id_asr_output_event_t));
+            if (event == nullptr) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for ASR output event");
+                goto exit;
+            }
+
+            event->event_payload_type = ASR_ABORT_TYPE;
+            event->output_token = 0;
+            event->num_outputs = 0;
+            event->payload_size = 0;
+            eventQ.push({EVENT_ID_ASR_OUTPUT, event});
+            cv.notify_one();
             break;
         }
         case ASR_FORCE_OUTPUT : {
@@ -486,6 +511,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
 
     int32_t status = 0;
     int32_t eventStatus = 0;
+    bool abortEvent = false;
     size_t eventSize = 0;
     void *payload = nullptr;
     uint8_t *temp = nullptr;
@@ -500,6 +526,8 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         PAL_ERR(LOG_TAG, "Invalid event!!!");
         goto exit;
     }
+
+    abortEvent = event->event_payload_type == ASR_ABORT_TYPE;
 
     PAL_INFO(LOG_TAG, "Logger mode : %d, Output mode : %d, output token : %d, num output : %d, payload size : %d",
             loggerModeEnabled, event->event_payload_type, event->output_token, event->num_outputs, event->payload_size);
@@ -517,13 +545,22 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     outputToken = event->output_token;
     payloadSize = event->payload_size;
 
-    status = dynamic_cast<SessionAR*>(session)->getParamWithTag(streamHandle,
+    if (!abortEvent) {
+        status = dynamic_cast<SessionAR*>(session)->getParamWithTag(streamHandle,
                            moduleTagIds[ASR_OUTPUT], PAL_PARAM_ID_ASR_OUTPUT,
                            &payload);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG, "Failed to get output payload");
-        goto cleanup;
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "Failed to get output payload");
+            goto cleanup;
+        }
+    } else {
+        payload = calloc(1, sizeof(struct param_id_asr_output_t));
+        if (!payload) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for payload");
+            goto cleanup;
+        }
     }
+
     numOutput = 0;
     outputToken = 0;
     payloadSize = 0;
@@ -546,6 +583,8 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         }
         eventPayload = (pal_asr_ts_event *)eventToStream.payload;
         eventPayload->num_events = eventHeader->num_outputs;
+        eventPayload->status = abortEvent ? PAL_ASR_EVENT_STATUS_ABORTED :
+                                            PAL_ASR_EVENT_STATUS_SUCCESS;
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
             if (ev[i].status == ASR_FAIL) {
@@ -593,6 +632,8 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         }
         eventPayload = (pal_asr_event *)eventToStream.payload;
         eventPayload->num_events = eventHeader->num_outputs;
+        eventPayload->status = abortEvent ? PAL_ASR_EVENT_STATUS_ABORTED :
+                                            PAL_ASR_EVENT_STATUS_SUCCESS;
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
             if (ev[i].status == ASR_FAIL) {

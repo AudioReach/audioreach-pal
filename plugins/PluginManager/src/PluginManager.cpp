@@ -70,11 +70,11 @@ PluginManager::~PluginManager() {
 
 void PluginManager::deinitPluginItems(std::vector<pm_item_t>& items) {
     for (auto& item : items) {
-        if (item.handle != nullptr)
+        if (item.handle != nullptr) {
             dlclose(item.handle);
-        item.handle = nullptr;
-        if (item.plugin != nullptr)
-            item.plugin = nullptr;
+            item.handle = nullptr;
+        }
+        item.plugin = nullptr;
         item.refCount = 0;
     }
 }
@@ -233,14 +233,15 @@ int32_t  PluginManager::closePlugin(pal_plugin_manager_t type, std::string keyNa
                 PAL_DBG(LOG_TAG, "item:%p refCount:%d", &item, item.refCount);
                 if (item.refCount > 0) {
                     item.refCount--;
+                    if (!item.refCount){
+                        if (item.handle != nullptr) {
+                            dlclose(item.handle);
+                            item.handle = nullptr;
+                        }
+                        item.plugin = nullptr;
+                    }
                 } else {
                     PAL_ERR(LOG_TAG, "refCount is %d no need dlclose", item.refCount);
-                    break;
-                }
-                if (!item.refCount){
-                    dlclose(item.handle);
-                    item.handle = nullptr;
-                    item.plugin = nullptr;
                 }
                 break;
             }

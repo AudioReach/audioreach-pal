@@ -44,6 +44,7 @@
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
 
+#define ASR_ABORT_TYPE 0xFFFFFFFE
 
 typedef enum {
     ASR_STATE_NONE,

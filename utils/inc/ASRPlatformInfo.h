@@ -50,6 +50,7 @@ typedef enum asr_param_id_type {
     SDZ_INPUT_BUF_DURATION,
     SDZ_OUTPUT,
     SDZ_FORCE_OUTPUT,
+    ASR_ABORT_EVENT,
     ASR_MAX_PARAM_IDS
 }asr_param_id_type_t;
 

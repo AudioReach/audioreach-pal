@@ -314,11 +314,26 @@ int SpeakerProtection::getSpeakerTemperature(int spkr_pos)
 
     ctl = mixer_get_ctl_by_name(hwMixer, mixer_ctl_name.c_str());
     if (!ctl) {
+        if (numberOfChannels == 1 && spkr_pos == SPKR_RIGHT) {
+            /**
+             * It is possible for only the Left Spkr to exist
+             * TODO: Get the spkr_pos from RM.xml
+             */
+            mixer_ctl_name = getDefaultSpkrTempCtrl(SPKR_LEFT);
+            ctl = mixer_get_ctl_by_name(hwMixer, mixer_ctl_name.c_str());
+            if (!ctl) {
+                PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", mixer_ctl_name.c_str());
+            } else {
+                goto get_temp;
+            }
+        }
         PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", mixer_ctl_name.c_str());
         status = -EINVAL;
         return status;
     }
 
+get_temp:
+    PAL_DBG(LOG_TAG, "Used %s for Temperature value", mixer_ctl_name.c_str());
     status = mixer_ctl_get_value(ctl, 0);
 
     PAL_DBG(LOG_TAG, "Exiting Speaker Get Temperature %d", status);

@@ -5,6 +5,6 @@ includedir=@includedir@
 
 Name: pal
 Description: pal library
-Version: @VERSION@
+Version: @LT_VERSION@
 Libs: -L${libdir}
 Cflags: -I${includedir}/pal

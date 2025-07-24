@@ -7,7 +7,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.61)
 # Initialize the sound_trigger package version 1.0.0
-AC_INIT([pal-headers],1.0.0)
+AC_INIT([pal-headers],2.0.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign])
 # defines some macros variable to be included by source

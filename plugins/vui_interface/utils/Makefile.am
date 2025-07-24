@@ -22,6 +22,6 @@ c_sources := $(top_srcdir)/utils/src/VoiceUIInterfaceUtils.cpp
 lib_LTLIBRARIES = libvuiinterface_utils.la
 libvuiinterface_utils_la_SOURCES = $(c_sources)
 libvuiinterface_utils_la_CPPFLAGS = $(AM_CPPFLAGS)
-libvuiinterface_utils_la_LDFLAGS  = -shared -avoid-version
+libvuiinterface_utils_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@
 libvuiinterface_utils_la_CPPFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 

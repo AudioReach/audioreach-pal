@@ -25,6 +25,6 @@ c_sources := $(top_srcdir)/sva_intf/src/SVAInterface.cpp
 lib_LTLIBRARIES =  libsva_intf.la
 libsva_intf_la_SOURCES = $(c_sources)
 libsva_intf_la_CPPFLAGS = $(AM_CPPFLAGS)
-libsva_intf_la_LDFLAGS  = -shared -avoid-version
+libsva_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@
 libsva_intf_la_CPPFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 libsva_intf_la_LIBADD = -lar-osal @GLIB_LIBS@ $(top_builddir)/utils/libvuiinterface_utils.la

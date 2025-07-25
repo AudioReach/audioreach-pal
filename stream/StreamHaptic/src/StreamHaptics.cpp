@@ -328,6 +328,7 @@ void StreamHaptics::HandleEvent(uint32_t event_id, void *data, uint32_t event_si
 
     event_type[0] = (uint16_t)event_info->state[0];
     event_type[1] = (uint16_t)event_info->state[1];
+    event_size = sizeof(event_type);
 
     PAL_INFO(LOG_TAG, "event received with value for vib 1 - %d vib 2- %d",
                     event_type[0], event_type[1]);

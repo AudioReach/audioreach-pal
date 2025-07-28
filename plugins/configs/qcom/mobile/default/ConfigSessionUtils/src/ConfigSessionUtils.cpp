@@ -737,7 +737,7 @@ int handleDeviceRotation(const std::shared_ptr<ResourceManager>& rm, Stream *s,
                     return status;
                 }
                 PAL_DBG(LOG_TAG, "miid : %x id = %d, data %s, dev id = %d\n", miid,
-                    device, rxAifBackEnds[i].second.data(), dAttr.id);
+                    device, aifBackendName.c_str(), dAttr.id);
 
                 groupDevConfig = rm->getActiveGroupDevConfig();
                 if (groupDevConfig) {

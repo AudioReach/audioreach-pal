@@ -69,8 +69,9 @@ std::shared_ptr<Device> Speaker::getInstance(struct pal_device *device,
                         sp = std::make_shared<SpeakerProtectionwsa885xI2s>(device, Rm);
                         break;
                     default:
-                        PAL_ERR(LOG_TAG, "Wrong CPS mode set in RM XML");
-                        return nullptr;
+                        // during default as well enable spkrprotectionwsa884x
+                        sp = std::make_shared<SpeakerProtectionwsa884x>(device, Rm);
+                        break;
                 }
                 obj = sp;
             } else {

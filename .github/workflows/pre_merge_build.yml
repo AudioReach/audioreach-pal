@@ -7,7 +7,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - qclinux1.0
+      - CI_test
     paths-ignore:
       - '.github/**'
 

@@ -1,9 +1,9 @@
 name: qli-checkers
 on:
   pull_request_target:
-    branches: [ qclinux1.0 ]
+    branches: [ CI_test ]
   push:
-    branches: [ qclinux1.0 ]
+    branches: [ CI_test ]
   workflow_dispatch:
 
 jobs:

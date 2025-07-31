@@ -34,6 +34,9 @@ class SpeakerProtectionwsa884x : public SpeakerProtection
 {
 protected :
     static bool viTxSetupThrdCreated;
+    static struct pcm *cps2Pcm;
+    struct param_id_sp_th_vi_calib_res_cfg_t *callback_res_data;
+    std::vector<int> pcmDevIdCPS2;
 
 private :
 

@@ -88,12 +88,18 @@
 
 #define SPKR_RIGHT_WSA_TEMP "SpkrRight WSA Temp"
 #define SPKR_LEFT_WSA_TEMP "SpkrLeft WSA Temp"
+#define SPKR2_RIGHT_WSA_TEMP "Spkr2Right WSA Temp"
+#define SPKR2_LEFT_WSA_TEMP "Spkr2Left WSA Temp"
 
 #define SPKR_RIGHT_WSA_DEV_NUM "SpkrRight WSA Get DevNum"
 #define SPKR_LEFT_WSA_DEV_NUM "SpkrLeft WSA Get DevNum"
+#define SPKR2_RIGHT_WSA_DEV_NUM "Spkr2Right WSA Get DevNum"
+#define SPKR2_LEFT_WSA_DEV_NUM "Spkr2Left WSA Get DevNum"
 
 #define SPKR_RIGHT_WSA_DC_DET "SpkrRight WSA PA Disable"
 #define SPKR_LEFT_WSA_DC_DET "SpkrLeft WSA PA Disable"
+#define SPKR2_RIGHT_WSA_DC_DET "Spkr2Right WSA PA Disable"
+#define SPKR2_LEFT_WSA_DC_DET "Spkr2Left WSA PA Disable"
 
 #define TZ_TEMP_MIN_THRESHOLD    (-30)
 #define TZ_TEMP_MAX_THRESHOLD    (80)

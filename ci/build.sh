@@ -14,6 +14,6 @@ autoreconf -Wcross --verbose --install --force --exclude=autopoint
 autoconf --force
 
 # Run the configure script with the specified arguments
-./configure \${BUILD_ARGS} --with-glib --with-syslog
+./configure ${BUILD_ARGS} --with-glib --with-syslog
 # make
 make DESTDIR=${GITHUB_WORKSPACE}/build install

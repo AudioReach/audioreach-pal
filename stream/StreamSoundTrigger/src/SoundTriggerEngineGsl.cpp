@@ -775,6 +775,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
     status = vui_intf_->SetParameter(PARAM_FSTAGE_SOUND_MODEL_ADD, &param);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to update engine model, status = %d", status);
+        session_->close(s);
         goto exit;
     }
 
@@ -783,6 +784,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to set MMA mode bit config, status = %d",
                 status);
+            session_->close(s);
             goto exit;
         }
         /*

@@ -1245,21 +1245,6 @@ int32_t StreamPCM::resume_l()
                 status);
         goto exit;
     }
-
-    if (mStreamAttr->direction == PAL_AUDIO_OUTPUT &&
-        (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
-         mStreamAttr->type == PAL_STREAM_PCM_OFFLOAD ||
-         mStreamAttr->type == PAL_STREAM_DEEP_BUFFER)) {
-            pal_param_device_rotation_t rotation;
-            rotation.rotation_type = rm->getOrientation() == ORIENTATION_270 ?
-                                    PAL_SPEAKER_ROTATION_RL : PAL_SPEAKER_ROTATION_LR;
-            status = session->setParameters(this, PAL_PARAM_ID_DEVICE_ROTATION, &rotation);
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "session setParameters for rotation failed with status %d",
-                        status);
-            }
-        }
-
     isPaused = false;
 
     //since we set the volume to 0 in pause, in resume we need to set vol back to default

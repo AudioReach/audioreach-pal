@@ -1075,7 +1075,7 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
     int i;
     int retry = 2;
 
-    while (!threadExit && retry) {
+    while (!threadExit && (retry > 0)) {
         PAL_DBG(LOG_TAG, "Inside calibration while loop");
         proceed = false;
         if (isHapticsDevInUse(&sec)) {
@@ -1086,6 +1086,8 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
         } else {
             PAL_DBG(LOG_TAG, "HapticsDev not in use");
             if (isDynamicCalTriggered) {
+                // for dynamic cal there should not be any retry
+                retry = 0;
                 PAL_DBG(LOG_TAG, "Dynamic Calibration triggered");
             } else if (0) /*(sec < minIdleTime)*/ {
                 PAL_DBG(LOG_TAG, "HapticsDev not idle for minimum time. %lu", sec);

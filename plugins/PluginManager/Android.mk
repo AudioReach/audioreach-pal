@@ -6,7 +6,7 @@ LOCAL_MODULE := libplugin_manager
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
-LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS += -fexceptions -frtti
 LOCAL_CPPFLAGS      += -DPAL_CUTILS_SUPPORTED
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

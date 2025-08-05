@@ -5,7 +5,7 @@ LOCAL_MODULE := sva_plugin
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
-LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS += -fexceptions -frtti
 
 LOCAL_SRC_FILES := \
    src/SVAInterface.cpp

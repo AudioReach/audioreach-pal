@@ -25,8 +25,8 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-* Changes from Qualcomm Innovation Center are provided under the following license:
-* Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* Changes from Qualcomm Technologies, Inc. are provided under the following license:
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
 * -->
 
@@ -449,6 +449,58 @@
             <capture>1</capture>
             <!--  AGM_SESSION_NO_CONFIG  -->
             <session_mode>3</session_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>132</id>
+        <name>PCM132</name>
+        <pcm_plugin>
+            <so-name>libagm_pcm_plugin.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <session_mode>0</session_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>133</id>
+        <name>PCM133</name>
+        <pcm_plugin>
+            <so-name>libagm_pcm_plugin.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <session_mode>0</session_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>134</id>
+        <name>PCM134</name>
+        <pcm_plugin>
+            <so-name>libagm_pcm_plugin.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <session_mode>0</session_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>135</id>
+        <name>PCM135</name>
+        <pcm_plugin>
+            <so-name>libagm_pcm_plugin.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <session_mode>0</session_mode>
         </props>
     </pcm-device>
 

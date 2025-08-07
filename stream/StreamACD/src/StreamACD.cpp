@@ -47,7 +47,13 @@ extern "C" Stream* CreateACDStream(const struct pal_stream_attributes *sattr,
                                     const struct modifier_kv *modifiers,
                                     const uint32_t no_of_modifiers,
                                     const std::shared_ptr<ResourceManager> rm) {
-    return new StreamACD(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    try {
+        return new StreamACD(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    } catch (const std::exception& e) {
+         PAL_ERR(LOG_TAG, "Stream create failed for stream type %s: %s",
+                 streamNameLUT.at(sattr->type).c_str(), e.what());
+        return nullptr;
+    }
 }
 
 /* Use below UUID for ACM usecase */

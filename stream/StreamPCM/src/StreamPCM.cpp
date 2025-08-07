@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
- *
+
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -47,7 +47,13 @@
 extern "C" Stream* CreatePCMStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                const uint32_t no_of_devices, const struct modifier_kv *modifiers,
                                const uint32_t no_of_modifiers, const std::shared_ptr<ResourceManager> rm) {
-    return new StreamPCM(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    try {
+        return new StreamPCM(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    } catch (const std::exception& e) {
+         PAL_ERR(LOG_TAG, "Stream create failed for stream type %s: %s",
+                streamNameLUT.at(sattr->type).c_str(), e.what());
+        return nullptr;
+    }
 }
 
 StreamPCM::StreamPCM(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
@@ -397,7 +403,7 @@ int32_t StreamPCM::start()
 
             for (int32_t i=0; i < mDevices.size(); i++) {
                 if ((rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())
-                   || (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) 
+                   || (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER))
                     && isMMap) {
                     PAL_DBG(LOG_TAG, "skip BT device start as it's done already");
                     status = 0;

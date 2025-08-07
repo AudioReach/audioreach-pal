@@ -283,26 +283,15 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     }
 #endif
 
-    try {
-        s = Stream::create(attributes, devices, no_of_devices, modifiers,
-                           no_of_modifiers);
-        if (s == nullptr && attributes->type == PAL_STREAM_COMPRESSED) {
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "StreamCompress create failed");
-            Stream::handleStreamException(attributes, cb, cookie);
-            goto exit;
-        }
-    } catch (const std::exception& e) {
+    s = Stream::create(attributes, devices, no_of_devices, modifiers,
+                       no_of_modifiers);
+    if (s == nullptr) {
         status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Stream create failed: %s", e.what());
-        Stream::handleStreamException(attributes, cb, cookie);
+        PAL_ERR(LOG_TAG, "Stream create failed");
+        Stream::handleStreamCreateFailure(attributes, cb, cookie);
         goto exit;
     }
-    if (!s) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "stream creation failed status %d", status);
-        goto exit;
-    }
+
     status = s->open();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "pal_stream_open failed with status %d", status);
@@ -327,7 +316,9 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
     stream = reinterpret_cast<uint64_t *>(s);
     *stream_handle = stream;
 exit:
-    PAL_INFO(LOG_TAG, "Exit. Value of stream_handle %pK, status %d", stream, status);
+    if (stream) {
+        PAL_INFO(LOG_TAG, "Exit. Value of stream_handle %pK, status %d", stream, status);
+    }
 #ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
 #endif

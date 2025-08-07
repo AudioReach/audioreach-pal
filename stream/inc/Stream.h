@@ -268,7 +268,7 @@ public:
     virtual int32_t DisconnectDevice(pal_device_id_t device_id) { return 0; }
     virtual int32_t ConnectDevice(pal_device_id_t device_id) { return 0; }
     virtual uint32_t getCallbackEventId() { return 0; }
-    static void handleStreamException(struct pal_stream_attributes *attributes,
+    static void handleStreamCreateFailure(struct pal_stream_attributes *attributes,
                                       pal_stream_callback cb, uint64_t cookie);
     void lockStreamMutex() {
         mStreamMutex.lock();

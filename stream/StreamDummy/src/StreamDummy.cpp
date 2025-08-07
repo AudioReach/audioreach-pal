@@ -46,7 +46,13 @@
 
 extern "C" Stream* CreateDummyStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                uint32_t instance_id, const std::shared_ptr<ResourceManager> rm) {
-    return new StreamDummy(sattr, dattr, instance_id, rm);
+    try {
+        return new StreamDummy(sattr, dattr, instance_id, rm);
+    } catch (const std::exception& e) {
+         PAL_ERR(LOG_TAG, "Stream create failed for stream type %s: %s",
+                streamNameLUT.at(sattr->type).c_str(), e.what());
+        return nullptr;
+    }
 }
 
 StreamDummy::StreamDummy(const struct pal_stream_attributes *sattr, struct pal_device *dattr,

@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -55,7 +55,13 @@
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                    const uint32_t no_of_devices, const struct modifier_kv *modifiers,
                                    const uint32_t no_of_modifiers, const std::shared_ptr<ResourceManager> rm) {
-    return new StreamASR(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    try {
+        return new StreamASR(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
+    } catch (const std::exception& e) {
+         PAL_ERR(LOG_TAG, "Stream create failed for stream type %s: %s",
+                 streamNameLUT.at(sattr->type).c_str(), e.what());
+        return nullptr;
+    }
 }
 
 

@@ -28,7 +28,7 @@
  *
  * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
- *
+
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -68,7 +68,7 @@ extern "C" Stream* CreateCompressStream(const struct pal_stream_attributes *satt
     try {
         return new StreamCompress(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
     } catch (const std::exception& e) {
-         PAL_ERR(LOG_TAG, "StreamCompress create failed for stream type %s: %s",
+         PAL_ERR(LOG_TAG, "Stream create failed for stream type %s: %s",
                 streamNameLUT.at(sattr->type).c_str(), e.what());
         return nullptr;
     }

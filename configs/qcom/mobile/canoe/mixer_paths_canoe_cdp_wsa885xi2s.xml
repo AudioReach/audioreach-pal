@@ -1148,15 +1148,18 @@
     </path>
 
     <path name="speaker-mono">
-        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="speaker-mono-prot">
-        <path name="speaker-mono" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="speaker-mono-2">
-        <ctl name="Rx Slot Mask" value="2" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="speaker-mono-2-prot">

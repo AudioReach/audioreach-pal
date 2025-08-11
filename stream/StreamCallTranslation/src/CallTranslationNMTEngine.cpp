@@ -98,6 +98,9 @@ CallTranslationNMTEngine::CallTranslationNMTEngine(Stream *s)
                     status);
             throw std::runtime_error("Failed to create event processing thread");
         }
+    } else {
+        PAL_ERR(LOG_TAG, "Invalid direction for call translation");
+        throw std::runtime_error("Invalid direction for call translation");
     }
 }
 
@@ -172,7 +175,7 @@ void CallTranslationNMTEngine::ParseEventAndNotifyStream() {
 
     if (event->num_outputs == 0) {
         PAL_ERR(LOG_TAG, "event raised without any transcript");
-        goto exit;
+        goto cleanup;
     }
     /**
      * Don't move following variable updates after the getParam, as these variables
@@ -190,6 +193,9 @@ void CallTranslationNMTEngine::ParseEventAndNotifyStream() {
         status = dynamic_cast<SessionAR*>(nmtRxSession)->getParamWithTag(streamHandle, TRANSLATION_NMT,
                                                                   PAL_PARAM_ID_NMT_OUTPUT,
                                                                   &payload);
+    } else {
+        PAL_ERR(LOG_TAG, "direction %d not supported for call translation", sAttr.direction);
+        goto cleanup;
     }
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to get output payload");

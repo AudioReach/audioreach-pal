@@ -747,7 +747,11 @@ int Device::insertStreamDeviceAttr(struct pal_device *inDevAttr,
             break;
         } else if (inDevInfo.priority == (*it).first) {
             /* if stream priority is the same, check attributes priority */
-            if (compareStreamDevAttr(inDevAttr, &inDevInfo, curDevAttr, &curDevInfo)) {
+            /* If codec doesn't support setting multi SR for SPK and WHS at the same time, */
+            /* check if it's combo device with speaker + WHS, and increase the priority. */
+            if (compareStreamDevAttr(inDevAttr, &inDevInfo, curDevAttr, &curDevInfo) ||
+                (streamHandle->isComboHeadsetActive &&
+                 !rm->is_multiple_sample_rate_combo_supported)) {
                 PAL_DBG(LOG_TAG, "incoming stream: %d has higher priority than cur stream %d",
                                 strAttr.type, curStrAttr.type);
                 mStreamDevAttr.insert(it, std::make_pair(inDevInfo.priority, std::make_pair(streamHandle, newDevAttr)));

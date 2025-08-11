@@ -1251,6 +1251,15 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
          */
         matchFound = false;
         for (int j = 0; j < numDev; j++) {
+            if(numDev > 1 && (newDevices[j].id == PAL_DEVICE_OUT_SPEAKER ||
+                                    newDevices[j].id == PAL_DEVICE_OUT_WIRED_HEADSET ||
+                                    newDevices[j].id == PAL_DEVICE_OUT_WIRED_HEADPHONE)) {
+               PAL_DBG(LOG_TAG, "isComboHeadsetActive true, %pk", streamHandle);
+               streamHandle->isComboHeadsetActive = true;
+            } else {
+               PAL_DBG(LOG_TAG, "isComboHeadsetActive false, %pk", streamHandle);
+               streamHandle->isComboHeadsetActive = false;
+            }
             if (curDevId == newDevices[j].id) {
                 matchFound = true;
                 /* special handle if same device switch is triggered by different custom key */

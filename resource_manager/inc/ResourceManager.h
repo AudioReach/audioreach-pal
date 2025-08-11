@@ -1001,6 +1001,7 @@ public:
                              const struct pal_stream_attributes *sAttr,
                              std::vector<Stream*> &streamsToSwitch,
                              struct pal_device *streamDevAttr);
+    void checkAndUpdateHeadsetDevConfig(struct pal_device *newDevAttr, bool isSwitchCase);
     static void sendCrashSignal(int signal, pid_t pid, uid_t uid);
     static bool isSsrDownFeasible(std::shared_ptr<ResourceManager> rm, int type);
     bool isStreamSupportedInsndCardStandy(uint32_t type);

@@ -4402,6 +4402,73 @@ void ResourceManager::checkHapticsConcurrency(struct pal_device *deviceattr,
     }
 }
 
+void ResourceManager::checkAndUpdateHeadsetDevConfig(struct pal_device *newDevAttr, bool isSwitchCase)
+{
+    std::shared_ptr<Device> hsDev = nullptr;
+    struct pal_device hsDattr = {};
+    std::shared_ptr<Device> spkDev = nullptr;
+    struct pal_device spkDattr = {};
+    std::vector <std::tuple<Stream *, uint32_t>> sharedBEStreamDev;
+
+    if (newDevAttr->id == PAL_DEVICE_OUT_SPEAKER) {
+        //speaker coming, check the WHS if it's active
+        lockActiveStream();
+        getSharedBEActiveStreamDevs(sharedBEStreamDev, PAL_DEVICE_OUT_WIRED_HEADSET);
+        if (sharedBEStreamDev.size() == 0) {
+            getSharedBEActiveStreamDevs(sharedBEStreamDev, PAL_DEVICE_OUT_WIRED_HEADPHONE);
+            if (sharedBEStreamDev.size())
+                hsDattr.id = PAL_DEVICE_OUT_WIRED_HEADPHONE;
+        } else {
+            hsDattr.id = PAL_DEVICE_OUT_WIRED_HEADSET;
+        }
+        if (sharedBEStreamDev.size() == 0 || (isSwitchCase && sharedBEStreamDev.size() == 1)) {
+            //there is no need to check and update for single switch case.
+            unlockActiveStream();
+            return;
+        }
+        unlockActiveStream();
+
+        //there are active streams on WHS, need to check and update the device config
+        hsDev = Device::getInstance(&hsDattr, rm);
+        hsDev->getDeviceAttributes(&hsDattr);
+        if (newDevAttr->config.sample_rate != hsDattr.config.sample_rate) {
+            //update WHS sample rate same with speaker.
+            PAL_DBG(LOG_TAG, "The current sample rate on WHS is different with speaker, update to same with speaker.");
+            hsDattr.config.sample_rate = newDevAttr->config.sample_rate;
+            hsDattr.config.bit_width = newDevAttr->config.bit_width;
+            hsDattr.config.aud_fmt_id = bitWidthToFormat.at(hsDattr.config.bit_width);
+            hsDattr.config.ch_info.channels = DEFAULT_OUTPUT_CHANNEL;
+            hsDev->setDeviceAttributes(hsDattr);
+            forceDeviceSwitch(hsDev, &hsDattr);
+        }
+    } else if (newDevAttr->id == PAL_DEVICE_OUT_WIRED_HEADSET ||
+                newDevAttr->id == PAL_DEVICE_OUT_WIRED_HEADPHONE) {
+        //WHS coming, check the speaker if it's active
+        lockActiveStream();
+        getSharedBEActiveStreamDevs(sharedBEStreamDev, PAL_DEVICE_OUT_SPEAKER);
+        if (sharedBEStreamDev.size() == 0 || (isSwitchCase && sharedBEStreamDev.size() == 1)) {
+            //there is no need to check and update for single switch case.
+            unlockActiveStream();
+            return;
+        }
+        unlockActiveStream();
+
+        spkDattr.id = PAL_DEVICE_OUT_SPEAKER;
+        spkDev = Device::getInstance(&spkDattr, rm);
+        hsDev = Device::getInstance(newDevAttr, rm);
+        spkDev->getDeviceAttributes(&spkDattr);
+        if (newDevAttr->config.sample_rate != spkDattr.config.sample_rate) {
+            //if the sample rate is different, then update the same sample rate to WHS
+            PAL_DBG(LOG_TAG, "The sample rate of WHS waiting to create is different with speaker, update to same with speaker.");
+            newDevAttr->config.sample_rate = spkDattr.config.sample_rate;
+            newDevAttr->config.bit_width = spkDattr.config.bit_width;
+            newDevAttr->config.aud_fmt_id = bitWidthToFormat.at(newDevAttr->config.bit_width);
+            newDevAttr->config.ch_info.channels = DEFAULT_OUTPUT_CHANNEL;
+            hsDev->setDeviceAttributes(*newDevAttr);
+        }
+    }
+}
+
 /* check if group dev configuration exists for a given group device */
 bool ResourceManager::isGroupConfigAvailable(group_dev_config_idx_t idx)
 {

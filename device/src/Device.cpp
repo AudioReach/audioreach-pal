@@ -50,7 +50,6 @@
 
 #define MAX_CHANNEL_SUPPORTED 2
 #define DEFAULT_OUTPUT_SAMPLING_RATE 48000
-#define DEFAULT_OUTPUT_CHANNEL 2
 
 typedef void (*write_qmp_mode)(const char *hdr_custom_key);
 std::shared_ptr<PluginManager> Device::pm = nullptr;

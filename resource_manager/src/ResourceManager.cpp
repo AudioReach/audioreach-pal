@@ -473,6 +473,7 @@ int ResourceManager::wsaUsed = 0;
 bool ResourceManager::isVbatEnabled = false;
 static int max_nt_sessions;
 bool ResourceManager::isRasEnabled = false;
+bool ResourceManager::is_multiple_sample_rate_combo_supported = true;
 bool ResourceManager::isMainSpeakerRight;
 int ResourceManager::spQuickCalTime;
 bool ResourceManager::isGaplessEnabled = false;
@@ -6887,6 +6888,19 @@ int ResourceManager::setNativeAudioParams(struct str_parms *parms,
             // Update the concurrencies
         } else {
               PAL_VERBOSE(LOG_TAG,"napb: native audio cannot be enabled from UI");
+        }
+    }
+
+    ret = str_parms_get_str(parms, AUDIO_PARAMETER_MULTI_SR_COMBO_SUPPORTED,
+                             value, len);
+    PAL_VERBOSE(LOG_TAG," value %s", value);
+    if (ret >= 0) {
+        if (!strncmp("true", value, sizeof("true"))) {
+            is_multiple_sample_rate_combo_supported = true;
+            PAL_VERBOSE(LOG_TAG,"multiple sample rate on combo devices supported enabled from XML");
+        } else {
+            PAL_VERBOSE(LOG_TAG,"multiple sample rate on combo devices supported disabled from XML");
+            is_multiple_sample_rate_combo_supported = false;
         }
     }
     return ret;

@@ -150,6 +150,7 @@ public:
     bool a2dpPaused = false;
     bool force_nlpi_vote = false;
     bool isMMap = false;
+    bool isComboHeadsetActive = false;
     std::vector<pal_device_id_t> suspendedOutDevIds;
     std::vector<pal_device_id_t> suspendedInDevIds;
     virtual int32_t open() = 0;

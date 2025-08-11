@@ -134,6 +134,18 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
     }
 
     PAL_VERBOSE(LOG_TAG,"Create new Devices with no_of_devices - %d", no_of_devices);
+    /* check if it's combo device with speaker + HS */
+    for (int i = 0; no_of_devices > 1 && i < no_of_devices; i++) {
+        if(dattr[i].id == PAL_DEVICE_OUT_SPEAKER ||
+            dattr[i].id == PAL_DEVICE_OUT_WIRED_HEADSET ||
+            dattr[i].id == PAL_DEVICE_OUT_WIRED_HEADPHONE) {
+           PAL_DBG(LOG_TAG, "set isComboHeadsetActive true, %pk", this);
+           this->isComboHeadsetActive = true;
+        } else {
+           PAL_DBG(LOG_TAG, "set isComboHeadsetActive false, %pk", this);
+           this->isComboHeadsetActive = false;
+        }
+    }
     bool str_registered = false;
     for (uint32_t i = 0; i < no_of_devices; i++) {
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);

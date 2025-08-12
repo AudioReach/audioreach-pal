@@ -778,6 +778,9 @@ int SpeakerProtectionwsa885x::viTxSetupThreadLoop()
     keyVector.clear();
     calVector.clear();
 
+    dev = Device::getInstance(&mDeviceAttr, rm);
+    dev->getCurrentSndDevName(mSndDeviceName_SP);
+
     if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
         rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
     else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
@@ -1447,6 +1450,9 @@ int32_t SpeakerProtectionwsa885x::spkrProtProcessingMode(bool flag)
 cps_dev_setup:
         keyVector.clear();
         calVector.clear();
+
+        dev = Device::getInstance(&mDeviceAttr, rm);
+        dev->getCurrentSndDevName(mSndDeviceName_SP);
 
         if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
             rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &cps_device);

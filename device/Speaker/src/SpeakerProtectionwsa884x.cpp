@@ -759,6 +759,9 @@ int SpeakerProtectionwsa884x::viTxSetupThreadLoop()
     keyVector.clear();
     calVector.clear();
 
+    dev = Device::getInstance(&mDeviceAttr, rm);
+    dev->getCurrentSndDevName(mSndDeviceName_SP);
+
     if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
         rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
     else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
@@ -1426,7 +1429,7 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
             case 1:
                 goto cps_dev_setup;
             case 2:
-                // place holer for cps_mode 2
+                // place holder for cps_mode 2
             default:
                 // Free up the local variables
                 goto exit;
@@ -1435,6 +1438,9 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
 cps_dev_setup:
         keyVector.clear();
         calVector.clear();
+
+        dev = Device::getInstance(&mDeviceAttr, rm);
+        dev->getCurrentSndDevName(mSndDeviceName_SP);
 
         if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
             rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &cps_device);

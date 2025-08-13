@@ -89,14 +89,14 @@ int32_t  StreamHaptics::setParameters(uint32_t param_id, void *payload)
          goto error;
     } else {
        /* If Setparam for touch haptics is called when Ringtone Haptics is active
-          skip the Setparam for touch haptics*/
+          It is assumed that the ringtone is stopped from framework and its in default waiting
+          state of two seconds framework has before tearing down AudioTrack*/
         PAL_DBG(LOG_TAG, "activestreams size %d",activeStreams.size());
         for (int i = 0; i<activeStreams.size(); i++) {
             stream = static_cast<Stream *>(activeStreams[i]);
             stream->getStreamAttributes(&ActivesAttr);
             if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE) {
-                status = -EINVAL;
-                goto error;
+                PAL_INFO(LOG_TAG, "Assuming ringtone is in waiting state, allowing touch haptics");
             } else
                 continue;
         }
@@ -290,21 +290,9 @@ int32_t StreamHaptics::HandleHapticsConcurrency(struct pal_stream_attributes *sa
             stream = static_cast<Stream *>(activeStreams[i]);
             stream->getStreamAttributes(&ActivesAttr);
             if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
-                /* Set the stop haptics param for touch haptics. */
-                param_payload = (pal_param_payload *) calloc (1,
-                               sizeof(pal_param_payload) +
-                               sizeof(param_id_haptics_wave_designer_wave_designer_stop_param_t));
-                if (!param_payload)
-                    goto exit;
-                HapticsStopParam.channel_mask = 1;
-                param_payload->payload_size =
-                             sizeof(param_id_haptics_wave_designer_wave_designer_stop_param_t);
-                memcpy(param_payload->payload, &HapticsStopParam, param_payload->payload_size);
-                stream->getAssociatedSession(&ActHapticsSession);
-                status = ActHapticsSession->setParameters(stream, PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM,
-                                                          (void*)param_payload);
-                if (status)
-                    PAL_ERR(LOG_TAG, "Error:%d, Stop SetParam is Failed", status);
+                /* Assumption is touch haptics will only be triggered when ringtone is in waiting state. */
+                PAL_DBG(LOG_TAG, "Ignoring stop as touch haptics is running");
+                goto exit;
             }
         }
     }
@@ -578,10 +566,8 @@ bool StreamHaptics::isStreamSupported(){
          stream = static_cast<Stream *>(activeStreams[i]);
          stream->getStreamAttributes(&ActivesAttr);
          if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE) {
-             PAL_INFO(LOG_TAG, "Ringtone Haptics is Active skipping Touch Haptics");
-             result = false;
-             goto exit;
-         }
+             PAL_INFO(LOG_TAG, "Ringtone Haptics is Active but allowing Touch Haptics");
+        }
     }
     if (mStreamAttr->info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
         result = true;

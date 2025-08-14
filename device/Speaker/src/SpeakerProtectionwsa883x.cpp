@@ -207,7 +207,7 @@ int SpeakerProtectionwsa883x::spkrStartCalibration()
         ret = -ENOSYS;
         goto exit;
     }
-    pcmDevIdTx.push_back(id);
+    pcmDevIdsTx.push_back(id);
 
     connectCtrlName << "PCM" << pcmDevIdsTx.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(virtMixer, connectCtrlName.str().data());

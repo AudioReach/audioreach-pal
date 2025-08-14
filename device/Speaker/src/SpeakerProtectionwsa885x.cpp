@@ -250,7 +250,7 @@ int SpeakerProtectionwsa885x::spkrStartCalibration()
         ret = -ENOSYS;
         goto exit;
     }
-    pcmDevIdTx.push_back(id);
+    pcmDevIdsTx.push_back(id);
 
     connectCtrlName << "PCM" << pcmDevIdsTx.at(0) << " connect";
     connectCtrl = mixer_get_ctl_by_name(virtMixer, connectCtrlName.str().data());
@@ -1560,7 +1560,7 @@ cps_dev_setup:
             ret = -ENOSYS;
             goto err_pcm_open;
         }
-        pcmDevIdTx.push_back(id);
+        pcmDevIdCPS.push_back(id);
 
         connectCtrlNameCPS << "PCM" << pcmDevIdCPS.at(0) << " connect";
         connectCtrl2 = mixer_get_ctl_by_name(virtMixer, connectCtrlNameCPS.str().data());

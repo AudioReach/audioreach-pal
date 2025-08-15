@@ -788,6 +788,13 @@
             <fractional_sr>0</fractional_sr>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
+            <!--specify the WSA supported on the platform
+                Values: Kareyenda    : 1
+                        Kundu        : 2
+                        Pandeiro     : 3
+                        Pandeiro I2S : 4
+            -->
+            <wsa_used>3</wsa_used>
             <!-- Flag to specify cps mode which is applicable
                  Values: disable CPS: 0
                          CPS streaming: 1

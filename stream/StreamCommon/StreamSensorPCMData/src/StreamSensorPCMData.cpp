@@ -502,24 +502,22 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
         input_mode = ST_INPUT_MODE_HEADSET;
 
     /* Check lpi here again to determine the actual operating_mode */
-    if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
-        DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
-        && getLPIUsage())
-        operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
+    if (DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
+        DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect) {
+        if (ConfigSupportLPI() && getLPIUsage()) {
+            operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
                           ST_OPERATING_MODE_LOW_POWER_TX_MACRO : ST_OPERATING_MODE_LOW_POWER);
-    else if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
-             DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
-             && !getLPIUsage())
-        operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
+        } else {
+            operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
                           ST_OPERATING_MODE_HIGH_PERF_TX_MACRO : ST_OPERATING_MODE_HIGH_PERF);
-    else if ((DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
-             DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect)
-             && getLPIUsage())
-        operating_mode = ST_OPERATING_MODE_LOW_POWER_NS;
-    else if ((DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
-             DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect)
-             && !getLPIUsage())
-        operating_mode = ST_OPERATING_MODE_HIGH_PERF_NS;
+        }
+    } else if (DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
+               DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect) {
+        if (ConfigSupportLPI() && getLPIUsage())
+            operating_mode = ST_OPERATING_MODE_LOW_POWER_NS;
+        else
+            operating_mode = ST_OPERATING_MODE_HIGH_PERF_NS;
+    }
 
     if (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC) {
         std::shared_ptr<SoundTriggerPlatformInfo> st_info = nullptr;
@@ -592,14 +590,16 @@ int32_t StreamSensorPCMData::addRemoveEffect(pal_audio_effect_t effect, bool ena
     mStreamMutex.lock();
     /* Check lpi here to determine if EC is needed */
     if (enable) {
-        if (PAL_AUDIO_EFFECT_NONE == effect && getLPIUsage()) {
-           pcm_data_stream_effect = DEVICEPP_TX_RAW_LPI;
-        } else if (PAL_AUDIO_EFFECT_NS == effect && getLPIUsage()) {
-           pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFNS;
-        } else if (PAL_AUDIO_EFFECT_NONE == effect && !getLPIUsage()) {
-           pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFEC;
-        } else if (PAL_AUDIO_EFFECT_NS == effect && !getLPIUsage()) {
-           pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFECNS;
+        if (PAL_AUDIO_EFFECT_NONE == effect) {
+            if (ConfigSupportLPI() && getLPIUsage())
+                pcm_data_stream_effect = DEVICEPP_TX_RAW_LPI;
+            else
+                pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFEC;
+        } else if (PAL_AUDIO_EFFECT_NS == effect) {
+            if (ConfigSupportLPI() && getLPIUsage())
+                pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFNS;
+            else
+                pcm_data_stream_effect = DEVICEPP_TX_FLUENCE_FFECNS;
         } else {
             PAL_ERR(LOG_TAG, "Invalid effect ID %d", effect);
             status = -EINVAL;
@@ -866,7 +866,7 @@ int32_t StreamSensorPCMData::setECRef(std::shared_ptr<Device> dev, bool is_enabl
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (!getLPIUsage())
+    if (!ConfigSupportLPI() || !getLPIUsage())
         status = setECRef_l(dev, is_enable);
     else
         PAL_DBG(LOG_TAG, "set EC Ref will be handled in LPI/NLPI switch");

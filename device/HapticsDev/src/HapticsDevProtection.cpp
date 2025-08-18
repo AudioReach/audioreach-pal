@@ -395,6 +395,12 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
 
     std::unique_lock<std::mutex> calLock(calibrationMutex);
 
+    if (isHapDevInUse) {
+        PAL_INFO(LOG_TAG, "HapticsDev is in use, returning from calibration");
+        hapticsDevCalState = HAPTICS_DEV_NOT_CALIBRATED;
+        return -EINVAL;
+    }
+
     memset(&device, 0, sizeof(device));
     memset(&deviceRx, 0, sizeof(deviceRx));
     memset(&sAttr, 0, sizeof(sAttr));
@@ -988,7 +994,6 @@ exit:
         PAL_DBG(LOG_TAG, "Unlocked due to processing mode");
         hapticsDevCalState = HAPTICS_DEV_NOT_CALIBRATED;
         clock_gettime(CLOCK_BOOTTIME, &devLastTimeUsed);
-        cv.notify_all();
     }
 
     if (ret != 0) {
@@ -1000,6 +1005,8 @@ exit:
        delete builder;
        builder = NULL;
     }
+    // Notify if any event is waiting
+    cv.notify_all();
     PAL_DBG(LOG_TAG, "Exiting");
     return ret;
 }

@@ -466,7 +466,7 @@ int32_t StreamACD::setECRef(std::shared_ptr<Device> dev, bool is_enable)
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (getLPIUsage()) {
+    if (ConfigSupportLPI() && getLPIUsage()) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -661,7 +661,7 @@ std::shared_ptr<CaptureProfile> StreamACD::GetCurrentCaptureProfile()
     if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;
 
-    if (getLPIUsage())
+    if (ConfigSupportLPI() && getLPIUsage())
         operating_mode = ST_OPERATING_MODE_LOW_POWER;
 
     cap_prof = sm_cfg_->GetCaptureProfile(

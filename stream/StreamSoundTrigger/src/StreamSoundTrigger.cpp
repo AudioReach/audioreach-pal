@@ -743,7 +743,7 @@ int32_t StreamSoundTrigger::setECRef(std::shared_ptr<Device> dev, bool is_enable
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (getLPIUsage() && !sm_cfg_->GetEnableBufferingEC()) {
+    if (getLPIUsage() && ConfigSupportLPI() && !sm_cfg_->GetEnableBufferingEC()) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -2058,7 +2058,7 @@ std::shared_ptr<CaptureProfile> StreamSoundTrigger::GetCurrentCaptureProfile() {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING,
                     ST_INPUT_MODE_HEADSET));
-        } else if (getLPIUsage()) {
+        } else if (ConfigSupportLPI() && getLPIUsage()) {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_LOW_POWER,
                     ST_INPUT_MODE_HEADSET));
@@ -2072,7 +2072,7 @@ std::shared_ptr<CaptureProfile> StreamSoundTrigger::GetCurrentCaptureProfile() {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING,
                     ST_INPUT_MODE_HANDSET));
-        } else if (getLPIUsage()) {
+        } else if (ConfigSupportLPI() && getLPIUsage()) {
             cap_prof = sm_cfg_->GetCaptureProfile(
                 std::make_pair(ST_OPERATING_MODE_LOW_POWER,
                     ST_INPUT_MODE_HANDSET));

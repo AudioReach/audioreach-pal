@@ -1542,14 +1542,7 @@ void deregisterNLPIStream(Stream *s)
 
 bool getLPIUsage()
 {
-    int status  = 0;
-    bool nlpi_active = false;
-
-    std::lock_guard<std::mutex> lck(st_utils_mutex_);
-    if (mNLPIStreams.size() > 0)
-        nlpi_active = true;
-
-    return !nlpi_active && use_lpi_;
+    return use_lpi_;
 }
 
 defer_switch_state_t getSTDeferedSwitchState()

@@ -1212,6 +1212,10 @@ int populate_rx_mfc_coeff_payload(std::shared_ptr<Device> CrsDevice, SessionAlsa
         PAL_ERR(LOG_TAG, "mixer error");
         goto exit;
     }
+    if (CrsDevice->getSndDeviceId() == PAL_DEVICE_OUT_DUMMY) {
+        PAL_DBG(LOG_TAG,"MFC not present for dummy device");
+        return status;
+    }
     rm->getBackendName(CrsDevice->getSndDeviceId(), backendname);
     status = session->getMIID(backendname.c_str(), TAG_DEVICE_PP_MFC, &miid);
     if (status != 0) {

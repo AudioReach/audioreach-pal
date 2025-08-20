@@ -897,11 +897,19 @@ int32_t StreamSoundTrigger::Resume(bool is_internal) {
     /* For internal resume, mutex is locked during pause and it will get released after
      * resume, to avoid race conditions.
      */
+    if (!is_internal)
+        mStreamMutex.lock();
+
+    std::shared_ptr<StEventConfig> ev_fstage_load_cfg(new StFstageLoadConfig());
+    status = cur_state_->ProcessEvent(ev_fstage_load_cfg);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to load first stage, status %d", status);
+    }
+
     if (is_internal) {
         std::shared_ptr<StEventConfig> ev_cfg(new StInternalResumeEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
     } else {
-        mStreamMutex.lock();
         std::shared_ptr<StEventConfig> ev_cfg(new StResumeEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
     }
@@ -927,9 +935,14 @@ int32_t StreamSoundTrigger::Pause(bool is_internal) {
         std::shared_ptr<StEventConfig> ev_cfg(new StPauseEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
     }
-
     if (status) {
         PAL_ERR(LOG_TAG, "Pause failed");
+    }
+
+    std::shared_ptr<StEventConfig> ev_fstag_unload_cfg(new StFstageUnloadConfig());
+    status = cur_state_->ProcessEvent(ev_fstag_unload_cfg);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to unload first stage, status %d", status);
     }
 
     if (!is_internal)
@@ -2298,18 +2311,10 @@ int32_t StreamSoundTrigger::StIdle::ProcessEvent(
                     new_cap_prof->GetSampleRate(),
                     new_cap_prof->isECRequired());
                 if (active) {
-                    status = st_stream_.UpdateDeviceConfig();
+                    status = st_stream_.FstageLoad();
                     if (0 != status) {
-                        PAL_ERR(LOG_TAG, "Failed to update device config");
-                        goto err_concurrent;
-                    }
-                    st_stream_.updateStreamAttributes();
-                    status = st_stream_.gsl_engine_->LoadSoundModel(&st_stream_,
-                              st_stream_.gsl_engine_model_,
-                              st_stream_.gsl_engine_model_size_);
-                    if (0 != status) {
-                        PAL_ERR(LOG_TAG, "Failed to load sound model, status %d",
-                            status);
+                        PAL_ERR(LOG_TAG,
+                            "Failed to load first stage, status %d", status);
                         goto err_concurrent;
                     }
 
@@ -2336,12 +2341,22 @@ int32_t StreamSoundTrigger::StIdle::ProcessEvent(
         err_concurrent:
             break;
         }
-        case ST_EV_SSR_OFFLINE:
+        case ST_EV_SSR_OFFLINE: {
             if (st_stream_.state_for_restore_ == ST_STATE_NONE) {
                 st_stream_.state_for_restore_ = ST_STATE_IDLE;
             }
             TransitTo(ST_STATE_SSR);
             break;
+        }
+        case ST_EV_FSTAGE_LOAD: {
+            status = st_stream_.FstageLoad();
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to load first stage");
+            } else {
+                TransitTo(ST_STATE_LOADED);
+            }
+            break;
+        }
         default: {
             PAL_DBG(LOG_TAG, "Unhandled event %d", ev_cfg->id_);
             break;
@@ -2708,31 +2723,13 @@ int32_t StreamSoundTrigger::StLoaded::ProcessEvent(
                     new_cap_prof->GetSampleRate(),
                     new_cap_prof->isECRequired());
                 if (!active) {
-                    if (st_stream_.device_opened_ && st_stream_.mDevices.size() > 0) {
-                        auto& dev = st_stream_.mDevices[0];
-                        status = dev->close();
-                        if (0 != status) {
-                            PAL_ERR(LOG_TAG, "device %d close failed with status %d",
-                                dev->getSndDeviceId(), status);
-                        }
-                        st_stream_.device_opened_ = false;
+                    status = st_stream_.FstageUnload();
+                    if (status) {
+                        PAL_ERR(LOG_TAG,
+                            "Failed to unload first stage, status %d", status);
+                    } else {
+                        TransitTo(ST_STATE_IDLE);
                     }
-                    st_stream_.mDevices.clear();
-
-                    if (st_stream_.is_backend_shared_ && st_stream_.mPalDevices.size()) {
-                        for (int i = 0; i < st_stream_.mPalDevices.size(); i++) {
-                            st_stream_.mPalDevices[i]->removeStreamDeviceAttr(&st_stream_);
-                        }
-                        st_stream_.mPalDevices.clear();
-                    }
-
-                    status = st_stream_.gsl_engine_->ReconfigureDetectionGraph(&st_stream_);
-                    if (0 != status) {
-                        PAL_ERR(LOG_TAG, "Failed to reconfigure gsl engine, status %d",
-                            status);
-                        goto err_concurrent;
-                    }
-                    TransitTo(ST_STATE_IDLE);
                 } else {
                     PAL_ERR(LOG_TAG, "Invalid operation");
                     status = -EINVAL;
@@ -2779,6 +2776,14 @@ int32_t StreamSoundTrigger::StLoaded::ProcessEvent(
                             eng->GetEngineId(), status);
                 }
             }
+            break;
+        }
+        case ST_EV_FSTAGE_UNLOAD: {
+            status = st_stream_.FstageUnload();
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to unload first stage");
+            }
+            TransitTo(ST_STATE_IDLE);
             break;
         }
         default: {
@@ -4240,3 +4245,53 @@ uint32_t StreamSoundTrigger::GetMMAModelType() {
     return 0;
 }
 
+int32_t StreamSoundTrigger::FstageLoad() {
+    int32_t status = 0;
+
+    status = UpdateDeviceConfig();
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to update device config");
+        goto exit;
+    }
+    updateStreamAttributes();
+
+    status = gsl_engine_->LoadSoundModel(this,
+        gsl_engine_model_, gsl_engine_model_size_);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to load sound model, status %d",
+            status);
+    }
+
+exit:
+    return status;
+}
+
+int32_t StreamSoundTrigger::FstageUnload() {
+    int32_t status = 0;
+
+    if (device_opened_ && mDevices.size() > 0) {
+        auto& dev = mDevices[0];
+        status = dev->close();
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "device %d close failed with status %d",
+                dev->getSndDeviceId(), status);
+        }
+        device_opened_ = false;
+    }
+    mDevices.clear();
+
+    if (is_backend_shared_ && mPalDevices.size()) {
+        for (int i = 0; i < mPalDevices.size(); i++) {
+            mPalDevices[i]->removeStreamDeviceAttr(this);
+        }
+        mPalDevices.clear();
+    }
+
+    status = gsl_engine_->ReconfigureDetectionGraph(this);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to reconfigure gsl engine, status %d",
+            status);
+    }
+
+    return status;
+}

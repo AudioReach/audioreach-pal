@@ -114,6 +114,8 @@ enum {
     ST_EV_INTERNAL_PAUSE,
     ST_EV_INTERNAL_RESUME,
     ST_EV_FORCE_RECOGNITION,
+    ST_EV_FSTAGE_LOAD,
+    ST_EV_FSTAGE_UNLOAD,
 };
 
 class ResourceManager;
@@ -483,6 +485,18 @@ private:
         ~StForceRecognitionConfig() {}
     };
 
+    class StFstageLoadConfig : public StEventConfig {
+     public:
+        StFstageLoadConfig() : StEventConfig(ST_EV_FSTAGE_LOAD) { }
+        ~StFstageLoadConfig() {}
+    };
+
+    class StFstageUnloadConfig : public StEventConfig {
+     public:
+        StFstageUnloadConfig() : StEventConfig(ST_EV_FSTAGE_UNLOAD) { }
+        ~StFstageUnloadConfig() {}
+    };
+
     class StState {
      public:
         StState(StreamSoundTrigger& st_stream, int32_t state_id)
@@ -563,6 +577,8 @@ private:
     int32_t LoadSoundModel(struct pal_st_sound_model *sm_data);
     int32_t UnloadSoundModel();
     int32_t UpdateSoundModel(struct pal_st_sound_model *sm_data);
+    int32_t FstageLoad();
+    int32_t FstageUnload();
     int32_t SendRecognitionConfig(struct pal_st_recognition_config *config);
     int32_t UpdateRecognitionConfig(struct pal_st_recognition_config *config);
     bool compareRecognitionConfig(

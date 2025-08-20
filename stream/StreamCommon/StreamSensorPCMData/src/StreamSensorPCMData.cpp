@@ -390,6 +390,13 @@ int32_t StreamSensorPCMData::Resume(bool is_internal)
     PAL_DBG(LOG_TAG, "Enter");
 
     paused_ = false;
+    status = ConnectDevice_l(GetAvailCaptureDevice());
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to connect available device, status %d",
+            status);
+        return status;
+    }
+
     status = start();
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Resume Stream failed", status);
@@ -407,11 +414,16 @@ int32_t StreamSensorPCMData::Pause(bool is_internal)
     paused_ = true;
     status = stop();
     if (!status)
-    {
         currentState = STREAM_PAUSED;
-    }
     else
         PAL_ERR(LOG_TAG, "Error:%d Pause Stream failed", status);
+
+    status = DisconnectDevice_l(GetAvailCaptureDevice());
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to disconnect available device, status %d",
+            status);
+    }
+
 #ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
 #endif

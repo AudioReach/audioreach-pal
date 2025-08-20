@@ -285,6 +285,7 @@ public:
     void clearmDevices();
     void removemDevice(int palDevId);
     void addmDevice(struct pal_device *dattr);
+    void removeLastmDevice();
     virtual std::shared_ptr<CaptureProfile> GetCurrentCaptureProfile(){return nullptr;};
 };
 

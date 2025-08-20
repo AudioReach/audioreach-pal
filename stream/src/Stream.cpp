@@ -1865,6 +1865,10 @@ void Stream::addmDevice(struct pal_device *dattr)
     mDevices.push_back(dev);
 }
 
+void Stream::removeLastmDevice()
+{
+    mDevices.pop_back();
+}
 bool Stream::isStreamSSRDownFeasibile()
 {
     bool is_ssr_down_feasible = true;

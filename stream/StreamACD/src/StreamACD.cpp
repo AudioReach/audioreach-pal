@@ -311,6 +311,15 @@ int32_t StreamACD::Resume(bool is_internal) {
 
     PAL_DBG(LOG_TAG, "Enter");
     std::lock_guard<std::mutex> lck(mStreamMutex);
+    std::shared_ptr<ACDEventConfig> ev_concurrent_cfg(
+        new ACDDeviceConnectedEventConfig(GetAvailCaptureDevice()));
+    status = cur_state_->ProcessEvent(ev_concurrent_cfg);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to connect to available device, status %d",
+            status);
+        return status;
+    }
+
     std::shared_ptr<ACDEventConfig> ev_cfg(new ACDResumeEventConfig());
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
@@ -332,6 +341,14 @@ int32_t StreamACD::Pause(bool is_internal) {
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Pause failed", status);
+
+    std::shared_ptr<ACDEventConfig> ev_concurrent_cfg(
+        new ACDDeviceDisconnectedEventConfig(GetAvailCaptureDevice()));
+    status = cur_state_->ProcessEvent(ev_concurrent_cfg);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to disconnect available device, status %d",
+            status);
+    }
 #ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
 #endif

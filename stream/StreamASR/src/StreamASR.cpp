@@ -1392,7 +1392,7 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             Stream *s = static_cast<Stream *>(&asrStream);
             PAL_INFO(LOG_TAG, "EC enable : %d", data->isEnable);
             status = asrStream.engine->setECRef(s, data->dev, data->isEnable,
-                                                asrStream.ecDev == data->dev);
+                                                asrStream.ecDev == nullptr);
             if (status) {
                 PAL_ERR(LOG_TAG, "Error:%d Failed to set EC Ref in engine", status);
             }

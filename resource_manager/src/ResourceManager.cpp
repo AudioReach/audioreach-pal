@@ -450,12 +450,6 @@ cl_init_t ResourceManager::cl_init = NULL;
 cl_deinit_t ResourceManager::cl_deinit = NULL;
 cl_set_boost_state_t ResourceManager::cl_set_boost_state = NULL;
 
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-void* ResourceManager::feature_stats_handle = NULL;
-afs_init_t ResourceManager::feature_stats_init = NULL;
-afs_deinit_t ResourceManager::feature_stats_deinit = NULL;
-#endif
-
 std::mutex ResourceManager::cvMutex;
 std::queue<card_status_t> ResourceManager::msgQ;
 std::condition_variable ResourceManager::cv;
@@ -968,7 +962,6 @@ ResourceManager::ResourceManager()
     mNTStreamInstancesList[NT_PATH_ENCODE] = encodeMap;
     mNTStreamInstancesList[NT_PATH_DECODE] = decodeMap;
 
-    ResourceManager::loadAdmLib();
     ResourceManager::initWakeLocks();
 
     PAL_DBG(LOG_TAG, "Creating ContextManager");
@@ -1130,44 +1123,6 @@ void ResourceManager::loadSocPeripheralLib()
     }
 }
 #endif
-
-void ResourceManager::loadAdmLib()
-{
-    if (access(ADM_LIBRARY_PATH, R_OK) == 0) {
-        admLibHdl = dlopen(ADM_LIBRARY_PATH, RTLD_NOW);
-        if (admLibHdl == NULL) {
-            PAL_ERR(LOG_TAG, "DLOPEN failed for %s %s", ADM_LIBRARY_PATH, dlerror());
-        } else {
-            PAL_VERBOSE(LOG_TAG, "DLOPEN successful for %s", ADM_LIBRARY_PATH);
-            admInitFn = (adm_init_t)
-                dlsym(admLibHdl, "adm_init");
-            admDeInitFn = (adm_deinit_t)
-                dlsym(admLibHdl, "adm_deinit");
-            admRegisterInputStreamFn = (adm_register_input_stream_t)
-                dlsym(admLibHdl, "adm_register_input_stream");
-            admRegisterOutputStreamFn = (adm_register_output_stream_t)
-                dlsym(admLibHdl, "adm_register_output_stream");
-            admDeregisterStreamFn = (adm_deregister_stream_t)
-                dlsym(admLibHdl, "adm_deregister_stream");
-            admRequestFocusFn = (adm_request_focus_t)
-                dlsym(admLibHdl, "adm_request_focus");
-            admAbandonFocusFn = (adm_abandon_focus_t)
-                dlsym(admLibHdl, "adm_abandon_focus");
-            admSetConfigFn = (adm_set_config_t)
-                dlsym(admLibHdl, "adm_set_config");
-            admRequestFocusV2Fn = (adm_request_focus_v2_t)
-                dlsym(admLibHdl, "adm_request_focus_v2");
-            admOnRoutingChangeFn = (adm_on_routing_change_t)
-                dlsym(admLibHdl, "adm_on_routing_change");
-            admRequestFocus_v2_1Fn = (adm_request_focus_v2_1_t)
-                dlsym(admLibHdl, "adm_request_focus_v2_1");
-
-            dlerror(); // clear error during dlsym, if any.
-            if (admInitFn)
-                admData = admInitFn();
-        }
-    }
-}
 
 int ResourceManager::initWakeLocks(void) {
 
@@ -1655,114 +1610,6 @@ close_stream:
     return NULL;
 }
 
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-int ResourceManager::AudioFeatureStatsGetInfo(void **afs_payload,
-                                               size_t *afs_payload_size)
-{
-    afs_param_payload_t *afs_param_payload = nullptr;
-    struct amdb_module_version_info_payload_t *module_version_payload = nullptr;
-    std::shared_ptr<ResourceManager> rm = nullptr;
-
-    afs_param_payload = (afs_param_payload_t *)calloc(1, sizeof(afs_param_payload_t));
-    if (!afs_param_payload){
-       PAL_ERR(LOG_TAG,"failed to allocate memory for the Feature Stats");
-       *afs_payload = NULL;
-       *afs_payload_size = 0;
-       return -EINVAL;
-    }
-
-    rm = ResourceManager::getInstance();
-    if (!rm) {
-        PAL_ERR(LOG_TAG, "Null Resource Manager");
-        *afs_payload = NULL;
-        *afs_payload_size = 0;
-        free(afs_param_payload);
-        return -EINVAL;
-    }
-    rm->checkQVAAppPresence(afs_param_payload);
-    pal_param_payload *payload = rm->AFSWakeUpAlgoDetection();
-    if (payload) {
-        module_version_payload = (amdb_module_version_info_payload_t*)((uint8_t *)payload +
-                                  sizeof(amdb_param_id_module_version_info_t));
-        if (module_version_payload->is_present != 1) {
-            PAL_ERR(LOG_TAG,"Is Present is set to : %d", module_version_payload->is_present);
-            *afs_payload = NULL;
-            *afs_payload_size = 0;
-            free(payload);
-            free(afs_param_payload);
-            return -EINVAL;
-        }
-        afs_param_payload->is_present = module_version_payload->is_present;
-        afs_param_payload->module_version_major = module_version_payload->module_version_major;
-        afs_param_payload->module_version_minor = module_version_payload->module_version_minor;
-        afs_param_payload->build_ts = module_version_payload->build_ts;
-    } else {
-        PAL_ERR(LOG_TAG," Empty payload");
-        *afs_payload = NULL;
-        *afs_payload_size = 0;
-        free(afs_param_payload);
-        return -EINVAL;
-    }
-
-    *afs_payload = afs_param_payload;
-    *afs_payload_size = sizeof(afs_param_payload_t);
-
-    if (payload)
-        free(payload);
-    return 0;
-}
-
-void ResourceManager::AudioFeatureStatsInit()
-{
-    int status = 0;
-
-    feature_stats_handle = dlopen(AFS_LIB_PATH, RTLD_NOW);
-    if (!feature_stats_handle) {
-        PAL_ERR(LOG_TAG, "dlopen failed for Feature Stats");
-        return;
-    }
-
-    feature_stats_init = (afs_init_t)dlsym(feature_stats_handle, "AudioFeatureStatsInit");
-    if (!feature_stats_init) {
-        PAL_ERR(LOG_TAG, "dlsym for Feature Stats Init failed %s", dlerror());
-        goto exit;
-    }
-    feature_stats_deinit = (afs_deinit_t)dlsym(feature_stats_handle, "AudioFeatureStatsDeInit");
-    if (!feature_stats_deinit) {
-        PAL_ERR(LOG_TAG, "dlsym for Feature Stats De-Init failed %s", dlerror());
-        goto exit;
-    }
-    status = feature_stats_init(&AudioFeatureStatsGetInfo);
-    if (status) {
-        PAL_DBG(LOG_TAG, "Audio Feature Stats failed to initialize, status %d", status);
-        goto exit;
-    }
-    PAL_INFO(LOG_TAG, "Audio Feature Stats initialized");
-    return;
-
-exit:
-    if (feature_stats_handle) {
-        dlclose(feature_stats_handle);
-        feature_stats_handle = NULL;
-    }
-    feature_stats_init = NULL;
-    feature_stats_deinit = NULL;
-}
-
-void ResourceManager::AudioFeatureStatsDeInit()
-{
-    if (feature_stats_deinit)
-        feature_stats_deinit();
-
-    if (feature_stats_handle) {
-        dlclose(feature_stats_handle);
-        feature_stats_handle = NULL;
-    }
-    feature_stats_init = NULL;
-    feature_stats_deinit = NULL;
-}
-
-#endif
 int ResourceManager::initContextManager()
 {
     int ret = 0;
@@ -1838,10 +1685,6 @@ int ResourceManager::init()
         PAL_DBG(LOG_TAG, "Speaker instance not created");
 
     PAL_INFO(LOG_TAG, "Initialize Audio Feature Stats");
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-    AudioFeatureStatsInit();
-#endif
-
     return 0;
 }
 
@@ -5048,11 +4891,6 @@ void ResourceManager::deinit()
 
    if (isChargeConcurrencyEnabled)
        chargerListenerDeinit();
-
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-    STUtilsDeinit();
-    AudioFeatureStatsDeInit();
-#endif
 
     cvMutex.lock();
     msgQ.push(state);

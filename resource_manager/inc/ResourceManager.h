@@ -53,9 +53,6 @@
 #include <queue>
 #include <deque>
 #include <unordered_map>
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-#include <audio_feature_stats_intf.h>
-#endif
 #include <amdb_api.h>
 #include "PalCommon.h"
 #include "PalDefs.h"
@@ -102,24 +99,16 @@ typedef enum {
 #if LINUX_ENABLED
 #define QVA_VERSION "/data/vendor/audio/adc_qva_version.txt"
 #if defined(__LP64__)
-#define ADM_LIBRARY_PATH "/usr/lib64/libadm.so"
 #define VUI_DMGR_LIB_PATH "/usr/lib64/libvui_dmgr_client.so"
-#define AFS_LIB_PATH "/usr/lib64/libaudiofeaturestats.so"
 #else
-#define ADM_LIBRARY_PATH "/usr/lib/libadm.so"
 #define VUI_DMGR_MANAGER_LIB_PATH "/usr/lib/libvui_dmgr_client.so"
-#define AFS_LIB_PATH "/usr/lib/libaudiofeaturestats.so"
 #endif
 #else
 #define QVA_VERSION "/data/vendor/audio/adc_qva_version.txt"
 #ifdef __LP64__
-#define ADM_LIBRARY_PATH "/vendor/lib64/libadm.so"
 #define VUI_DMGR_LIB_PATH "/vendor/lib64/libvui_dmgr_client.so"
-#define AFS_LIB_PATH "/vendor/lib64/libaudiofeaturestats.so"
 #else
-#define ADM_LIBRARY_PATH "/vendor/lib/libadm.so"
 #define VUI_DMGR_LIB_PATH "/vendor/lib/libvui_dmgr_client.so"
-#define AFS_LIB_PATH "/vendor/lib/libaudiofeaturestats.so"
 #endif
 #endif
 
@@ -630,10 +619,6 @@ private:
 
     pal_stream_handle_t *afs_stream_handle = NULL;
     static void *feature_stats_handle;
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-    static afs_init_t feature_stats_init;
-    static afs_deinit_t feature_stats_deinit;
-#endif
 
     uint64_t cookie;
     pal_global_callback globalCb;
@@ -733,11 +718,6 @@ public:
     int initContextManager();
     int initHapticsInterface();
     void deInitContextManager();
-#ifndef AUDIO_FEATURE_STATS_UNSUPPORTED
-    static void AudioFeatureStatsInit();
-    static void AudioFeatureStatsDeInit();
-    static int AudioFeatureStatsGetInfo(void **afs_payload, size_t *afs_payload_size);
-#endif
     void checkQVAAppPresence(afs_param_payload_t *payload);
     pal_param_payload *AFSWakeUpAlgoDetection();
 

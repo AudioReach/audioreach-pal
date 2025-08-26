@@ -1720,6 +1720,13 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
     }
 
     monitor_payload.version = ADSPSLEEPMON_IOCTL_AUDIO_VER_1;
+
+    //For calibration mode as we dont have stream associated so skipping it
+    if (str == nullptr) {
+        lpi_stream = 0;
+        goto update_sleep_mon;
+    }
+
     ret = str->getStreamType(&type);
     if (ret != 0) {
         PAL_ERR(LOG_TAG, "getStreamType failed with status : %d", ret);
@@ -1737,6 +1744,7 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
                       !IsTransitToNonLPIOnChargingSupported());
     }
 
+update_sleep_mon:
     mSleepMonitorMutex.lock();
     if (vote) {
         if (lpi_stream) {

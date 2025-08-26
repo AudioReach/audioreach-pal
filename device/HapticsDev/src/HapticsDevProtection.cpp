@@ -428,6 +428,7 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
         PAL_ERR(LOG_TAG, "Error: %d Failed to get resource manager instance", -EINVAL);
         goto exit;
     }
+    rm->voteSleepMonitor(nullptr, true);
 
     // Configure device attribute
     switch (vi_device.channels) {
@@ -869,7 +870,7 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
     PAL_DBG(LOG_TAG, "Waiting for the event from DSP or PAL");
 
     // TODO: Make this to wait in While loop
-    if (cv.wait_for(calLock, std::chrono::seconds(5)) == std::cv_status::timeout) {
+    if (cv.wait_for(calLock, std::chrono::seconds(3)) == std::cv_status::timeout) {
         PAL_ERR(LOG_TAG, "Timeout occured! for VI calibration");
         goto done;
     }
@@ -1114,6 +1115,7 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
     }
     isDynamicCalTriggered = false;
     calThrdCreated = false;
+    rm->voteSleepMonitor(nullptr, false);
     PAL_DBG(LOG_TAG, "Calibration done, exiting the thread");
 }
 
@@ -1261,6 +1263,7 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             PAL_ERR(LOG_TAG, "Failed to get resource manager instance");
             goto exit;
         }
+        rm->voteSleepMonitor(nullptr, true);
 
         memset(&device, 0, sizeof(device));
         memset(&sAttr, 0, sizeof(sAttr));
@@ -1599,6 +1602,7 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
             txPcm = NULL;
             sAttr.type = PAL_STREAM_HAPTICS;
             sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
+            rm->voteSleepMonitor(nullptr, false);
             goto free_fe;
         }
     }

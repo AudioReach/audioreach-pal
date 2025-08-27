@@ -139,6 +139,13 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
         dev = Device::getInstance((struct pal_device *)&dattr[i] , rm);
         if (dev == nullptr) {
             PAL_ERR(LOG_TAG, "Device creation is failed");
+            if (str_registered) {
+                mStreamMutex.unlock();
+                rm->deregisterStream(this);
+                for (int32_t i = 0; i < mPalDevices.size(); i++)
+                    mPalDevices[i]->removeStreamDeviceAttr(this);
+                mStreamMutex.lock();
+            }
             free(mStreamAttr);
             mStreamAttr = NULL;
             free(mVolumeData);
@@ -146,11 +153,6 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
             delete session;
             session = nullptr;
             mStreamMutex.unlock();
-            if (str_registered) {
-                rm->deregisterStream(this);
-                for (int32_t i = 0; i < mPalDevices.size(); i++)
-                    mPalDevices[i]->removeStreamDeviceAttr(this);
-            }
             throw std::runtime_error("failed to create device object");
         }
         dev->insertStreamDeviceAttr(&dattr[i], this);

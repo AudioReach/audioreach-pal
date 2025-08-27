@@ -345,11 +345,27 @@ void StreamHaptics::HandleCallBack(uint64_t hdl, uint32_t event_id,
     StreamHaptics *StreamHAPTICS = nullptr;
     PAL_DBG(LOG_TAG, "Enter, event detected on SPF, event id = 0x%x, event size =%d",
                       event_id, event_size);
+    rm->lockActiveStream();
+    if (!rm->isActiveStream((pal_stream_handle_t *)hdl)) {
+        PAL_ERR(LOG_TAG, "callback called on invalid stream object");
+        rm->unlockActiveStream();
+        return;
+    }
+    StreamHAPTICS = (StreamHaptics *)hdl;
+    int ret = rm->increaseStreamUserCounter(StreamHAPTICS);
+    if (ret) {
+        rm->unlockActiveStream();
+        PAL_ERR(LOG_TAG, "callback called on invalid stream object");
+        return;
+    }
+    rm->unlockActiveStream();
     // Handle event form DSP
     if (event_id == EVENT_ID_WAVEFORM_STATE) {
-        StreamHAPTICS = (StreamHaptics *)hdl;
         StreamHAPTICS->HandleEvent(event_id, data, event_size);
     }
+    rm->lockActiveStream();
+    rm->decreaseStreamUserCounter(StreamHAPTICS);
+    rm->unlockActiveStream();
     PAL_DBG(LOG_TAG, "Exit");
 }
 

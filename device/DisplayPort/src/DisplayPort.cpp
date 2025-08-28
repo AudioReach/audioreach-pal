@@ -784,6 +784,8 @@ int32_t DisplayPort::getDeviceConfig(struct pal_device *deviceattr,
         PAL_ERR(LOG_TAG, "Invalid parameter.");
         return -EINVAL;
     }
+    rm->getDeviceInfo(deviceattr->id, sAttr->type,
+                  deviceattr->custom_config.custom_key, &devinfo);
     /**
      * Comparision of stream channel and device supported max channel.
      * If stream channel is less than or equal to device supported

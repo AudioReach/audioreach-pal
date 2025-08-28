@@ -304,9 +304,9 @@
     </path>
 
     <path name="amic6">
-        <ctl name="TX DEC3 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC9" />
-        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="TX DEC4 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC9" />
+        <ctl name="TX_AIF2_CAP Mixer DEC4" value="1" />
         <ctl name="ADC4 ChMap" value="SWRM_TX3_CH2" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="TX3 MODE" value="ADC_LP" />
@@ -315,9 +315,9 @@
     </path>
 
     <path name="amic7">
-        <ctl name="TX DEC2 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
-        <ctl name="TX_AIF2_CAP Mixer DEC2" value="1" />
+        <ctl name="TX DEC5 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX5" value="SWR_MIC4" />
+        <ctl name="TX_AIF2_CAP Mixer DEC5" value="1" />
         <ctl name="ADC1 ChMap" value="SWRM_TX2_CH1" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="TX0 MODE" value="ADC_LP" />
@@ -877,7 +877,7 @@
         <ctl name="TX3 MODE" value="ADC_LP" />
         <ctl name="VA SMIC MUX2" value="SWR_MIC9" />
         <ctl name="ADC4 ChMap" value="SWRM_TX3_CH2" />
-        <ctl name="ADC4 MUX" value="CH2_AMIC3" />
+        <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="ADC4_MIXER Switch" value="1" />
         <ctl name="VA_AMIC5_MIXER Switch" value="1" />
     </path>

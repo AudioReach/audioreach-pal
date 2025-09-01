@@ -2509,6 +2509,12 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
             memcpy(hpCnfg, HapticsCnfg, sizeof(pal_param_haptics_cnfg_t ));
             if(HapticsCnfg->buffer_size) {
                 hpCnfg->buffer_ptr = (uint8_t*) calloc(1, HapticsCnfg->buffer_size);
+                if (hpCnfg->buffer_ptr == NULL) {
+                    free(hpCnfg);
+                    hpCnfg = NULL;
+                    PAL_ERR(LOG_TAG, "Haptics config buffer allocation failed.");
+                    return -ENOMEM;
+                }
                 memcpy(hpCnfg->buffer_ptr, (uint8_t*)HapticsCnfg + sizeof(pal_param_haptics_cnfg_t),
                          HapticsCnfg->buffer_size);
             }
@@ -2517,34 +2523,38 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                                       rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, &miid);
                 if (status != 0) {
                     PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
+                    free(hpCnfg->buffer_ptr);
+                    hpCnfg->buffer_ptr = NULL;
                     free(hpCnfg);
+                    hpCnfg = NULL;
                     return status;
                 }
-                if (hpCnfg != NULL) {
-                    if (hpCnfg->mode == PAL_STREAM_HAPTICS_PCM) {
-                        builder->payloadHapticsDevPConfig(&paramData, &paramSize,
-                            miid, PARAM_ID_HAPTICS_RX_PCMV_PLAYBACK,(void *)hpCnfg);
-
-                        if (paramSize) {
-                            status = SessionAlsaUtils::setMixerParameter(mixer, device,
-                                                         paramData, paramSize);
-                            if (status)
-                                PAL_ERR(LOG_TAG, "setMixerParam for haptics PCM Failed\n");
-                            builder->freeCustomPayload(&paramData, &paramSize);
-                        }
-                    }
+                if (hpCnfg->mode == PAL_STREAM_HAPTICS_PCM) {
                     builder->payloadHapticsDevPConfig(&paramData, &paramSize,
-                               miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);
+                        miid, PARAM_ID_HAPTICS_RX_PCMV_PLAYBACK,(void *)hpCnfg);
+
                     if (paramSize) {
                         status = SessionAlsaUtils::setMixerParameter(mixer, device,
-                                                         paramData, paramSize);
+                                                     paramData, paramSize);
                         if (status)
-                           PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
+                            PAL_ERR(LOG_TAG, "setMixerParam for haptics PCM Failed\n");
                         builder->freeCustomPayload(&paramData, &paramSize);
                     }
-                    free(hpCnfg);
+                }
+                builder->payloadHapticsDevPConfig(&paramData, &paramSize,
+                           miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);
+                if (paramSize) {
+                    status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                     paramData, paramSize);
+                    if (status)
+                       PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
+                    builder->freeCustomPayload(&paramData, &paramSize);
                 }
             }
+            free(hpCnfg->buffer_ptr);
+            hpCnfg->buffer_ptr = NULL;
+            free(hpCnfg);
+            hpCnfg = NULL;
             return status;
         }
         case PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM :

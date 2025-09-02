@@ -5,6 +5,7 @@
 
 #define LOG_TAG "PAL: STUtils"
 #include <vector>
+#include <algorithm>
 #include <dlfcn.h>
 
 #include "PalDefs.h"
@@ -42,10 +43,9 @@ std::shared_ptr<CaptureProfile> TXMacroCaptureProfile;
 std::unordered_map<int, pal_stream_handle_t *> mStCaptureInfo;
 std::set<Stream*> mNLPIStreams;
 std::list <Stream*> mStartDeferredStreams;
+std::vector<std::pair<SoundTriggerOnResourceAvailableCallback, uint64_t>> onResourceAvailCbList;
 bool use_lpi_ = true;
 bool charging_state_;
-SoundTriggerOnResourceAvailableCallback onResourceAvailCb = NULL;
-uint64_t onResourceAvailCookie;
 
 // default properties which will be updated based on platform configuration
 static struct pal_st_properties qst_properties = {
@@ -1321,8 +1321,8 @@ void HandleConcurrencyForSoundTriggerStreams(Stream* s, bool active)
      * The usecases using ST framework register the onResourcesAvailable callback.
      * Notify the framework upon concurrency is inactive.
      */
-    if (onResourceAvailCb && notify_resources_available) {
-        onResourceAvailCb(onResourceAvailCookie);
+    for (int i = 0; i < onResourceAvailCbList.size() && notify_resources_available; i++) {
+        onResourceAvailCbList[i].first(onResourceAvailCbList[i].second);
     }
 
     PAL_DBG(LOG_TAG, "Exit");
@@ -1370,11 +1370,18 @@ int setSTParameter(uint32_t param_id, void *param_payload,
                 pal_param_resources_available_t *resources_avail =
                     (pal_param_resources_available_t *)param_payload;
                 if (resources_avail) {
-                    onResourceAvailCb =
-                        (SoundTriggerOnResourceAvailableCallback)resources_avail->callback;
-                    onResourceAvailCookie = resources_avail->cookie;
-                    PAL_VERBOSE(LOG_TAG, "setParameter onResourceAvailCb %pk"
-                        " onResourceAvailCookie %pk", onResourceAvailCb, onResourceAvailCookie);
+                    std::pair<SoundTriggerOnResourceAvailableCallback, uint64_t> cb =
+                    std::make_pair((SoundTriggerOnResourceAvailableCallback)resources_avail->callback,
+                              resources_avail->cookie);
+                    if (std::find(onResourceAvailCbList.begin(), onResourceAvailCbList.end(), cb) ==
+                        onResourceAvailCbList.end()) {
+                        onResourceAvailCbList.push_back(cb);
+                        PAL_VERBOSE(LOG_TAG, "setParameter onResourceAvailCb %pk"
+                                    " onResourceAvailCookie %pk", resources_avail->callback,
+                                    resources_avail->cookie);
+                    } else {
+                        PAL_DBG(LOG_TAG, "Resource available callback is already registered");
+                    }
                 } else {
                     PAL_ERR(LOG_TAG, "Invalid ST resource payload");
                     status = -EINVAL;

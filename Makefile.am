@@ -135,8 +135,8 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3_ia.xml \
                       ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_rb3_ia.xml \
-                      ./configs/qcom/IoT/qcs8300/mixer_paths_qcs8300_ridesx.xml \
-                      ./configs/qcom/IoT/qcs8300/resourcemanager_qcs8300_ridesx.xml \
+                      ./configs/qcom/IoT/qcs8300/mixer_paths_MONACO_EVK.xml \
+                      ./configs/qcom/IoT/qcs8300/resourcemanager_MONACO_EVK.xml \
                       ./configs/qcom/IoT/qcs9075/mixer_paths_qcs9075_rb8.xml \
                       ./configs/qcom/IoT/qcs9075/resourcemanager_qcs9075_rb8.xml \
                       ./configs/qcom/IoT/qcs9100/mixer_paths_qcs9100_ridesx.xml \
@@ -150,8 +150,8 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
 root_etcdir      = "/etc"
 root_etc_SCRIPTS = $(libpal_la_list)
 install-data-hook:
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs8300_ridesx.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs8300_ridesx.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_MONACO_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MONACO_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs9100_ridesx.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs9100_ridesx.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs9075_rb8.xml

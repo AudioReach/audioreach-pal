@@ -597,7 +597,7 @@
         <ctl name="EAR_RDAC Switch" value="1" />
         <ctl name="RDAC3_MUX" value="RX3" />
         <ctl name="RX_EAR Mode" value="ON" />
-        <ctl name="RX_RX2 Digital Volume" value="64" />
+        <ctl name="RX_RX2 Digital Volume" value="84" />
     </path>
 
     <path name="handset-mic">
@@ -960,8 +960,8 @@
         <ctl name="ADC2_BCS Disable" value="1" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
-        <ctl name="ADC2 MUX" value="CH2_AMIC4" />
-        <ctl name="ADC3 MUX" value="CH3_AMIC3" />
+        <ctl name="ADC2 MUX" value="CH2_AMIC3" />
+        <ctl name="ADC3 MUX" value="CH3_AMIC4" />
         <ctl name="ADC4 ChMap" value="SWRM_TX3_CH2" />
         <ctl name="ADC1 ChMap" value="SWRM_TX2_CH1" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />

@@ -48,9 +48,6 @@ protected:
 public:
     static std::shared_ptr<Device> getInstance(struct pal_device *device,
                                                std::shared_ptr<ResourceManager> Rm);
-    int32_t isSampleRateSupported(uint32_t sampleRate);
-    int32_t isChannelSupported(uint32_t numChannels);
-    int32_t isBitWidthSupported(uint32_t bitWidth) override;
     int close();
     Speaker();
     virtual ~Speaker();

@@ -99,58 +99,6 @@ Speaker::~Speaker()
 
 }
 
-int32_t Speaker::isSampleRateSupported(uint32_t sampleRate)
-{
-    int32_t rc = 0;
-    PAL_DBG(LOG_TAG, "sampleRate %u", sampleRate);
-    switch (sampleRate) {
-        case SAMPLINGRATE_48K:
-        case SAMPLINGRATE_96K:
-            break;
-        default:
-            rc = -EINVAL;
-            PAL_ERR(LOG_TAG, "sample rate not supported rc %d", rc);
-            break;
-    }
-    return rc;
-}
-
-int32_t Speaker::isChannelSupported(uint32_t numChannels)
-{
-    int32_t rc = 0;
-    PAL_DBG(LOG_TAG, "numChannels %u", numChannels);
-    switch (numChannels) {
-        case CHANNELS_1:
-        case CHANNELS_2:
-        case CHANNELS_3:
-        case CHANNELS_4:
-        case CHANNELS_8:
-            break;
-        default:
-            rc = -EINVAL;
-            PAL_ERR(LOG_TAG, "channels not supported rc %d", rc);
-            break;
-    }
-    return rc;
-}
-
-int32_t Speaker::isBitWidthSupported(uint32_t bitWidth)
-{
-    int32_t rc = 0;
-    PAL_DBG(LOG_TAG, "bitWidth %u", bitWidth);
-    switch (bitWidth) {
-        case BITWIDTH_16:
-        case BITWIDTH_24:
-        case BITWIDTH_32:
-            break;
-        default:
-            rc = -EINVAL;
-            PAL_ERR(LOG_TAG, "bit width not supported rc %d", rc);
-            break;
-    }
-    return rc;
-}
-
 int Speaker::close()
 {
     int status = 0;

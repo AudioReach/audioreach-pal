@@ -894,11 +894,14 @@ int32_t StreamSoundTrigger::Resume(bool is_internal) {
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
-    std::lock_guard<std::mutex> lck(mStreamMutex);
+    /* For internal resume, mutex is locked during pause and it will get released after
+     * resume, to avoid race conditions.
+     */
     if (is_internal) {
         std::shared_ptr<StEventConfig> ev_cfg(new StInternalResumeEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
     } else {
+        mStreamMutex.lock();
         std::shared_ptr<StEventConfig> ev_cfg(new StResumeEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
     }
@@ -906,6 +909,7 @@ int32_t StreamSoundTrigger::Resume(bool is_internal) {
     if (status) {
         PAL_ERR(LOG_TAG, "Resume failed");
     }
+    mStreamMutex.unlock();
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -915,7 +919,7 @@ int32_t StreamSoundTrigger::Pause(bool is_internal) {
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
-    std::lock_guard<std::mutex> lck(mStreamMutex);
+    mStreamMutex.lock();
     if (is_internal) {
         std::shared_ptr<StEventConfig> ev_cfg(new StInternalPauseEventConfig());
         status = cur_state_->ProcessEvent(ev_cfg);
@@ -927,6 +931,10 @@ int32_t StreamSoundTrigger::Pause(bool is_internal) {
     if (status) {
         PAL_ERR(LOG_TAG, "Pause failed");
     }
+
+    if (!is_internal)
+        mStreamMutex.unlock();
+
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;

@@ -1186,12 +1186,16 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
              asrStream.enableEc = data->isEnable;
              PAL_INFO(LOG_TAG, "EC will be handled after engine start!!!");
         }
+        case ASR_EV_INTERNAL_PAUSE:
         case ASR_EV_PAUSE: {
             asrStream.paused = true;
             break;
         }
+        case ASR_EV_INTERNAL_RESUME:
         case ASR_EV_RESUME: {
             asrStream.paused = false;
+            if (evCfg->id == ASR_EV_INTERNAL_RESUME && asrStream.currentState == STREAM_STARTED)
+                asrStream.start_l();
             break;
         }
         case ASR_EV_CONCURRENT_STREAM: {
@@ -1218,6 +1222,7 @@ int32_t StreamASR::ASRActive::ProcessEvent(
         evCfg->id, asrStream.mInstanceID);
 
     switch (evCfg->id) {
+        case ASR_EV_INTERNAL_PAUSE:
         case ASR_EV_PAUSE: {
             asrStream.paused = true;
             [[fallthrough]];
@@ -1508,6 +1513,7 @@ int32_t StreamASR::ASRSSR::ProcessEvent(std::shared_ptr<ASREventConfig> evCfg)
             }
             break;
         }
+        case ASR_EV_INTERNAL_RESUME:
         case ASR_EV_RESUME: {
             if (asrStream.paused) {
                 if (asrStream.currentState == STREAM_STARTED)
@@ -1516,6 +1522,7 @@ int32_t StreamASR::ASRSSR::ProcessEvent(std::shared_ptr<ASREventConfig> evCfg)
             }
             break;
         }
+        case ASR_EV_INTERNAL_PAUSE:
         case ASR_EV_PAUSE: {
             asrStream.paused = true;
             if (asrStream.currentState == STREAM_STARTED)
@@ -1556,14 +1563,27 @@ int32_t StreamASR::Resume(bool isInternal) {
     int32_t status = 0;
 
     PAL_INFO(LOG_TAG, "Enter");
-    std::lock_guard<std::mutex> lck(mStreamMutex);
-    std::shared_ptr<ASREventConfig> evCfg(new ASRResumeEventConfig());
+    std::shared_ptr<ASREventConfig> evCfg;
+
+    /* For internal resume, mutex is locked during pause and it will get released after
+     * resume, to avoid race conditions.
+     */
+
+    if (isInternal) {
+        evCfg = (std::shared_ptr<ASREventConfig>)(new ASRInternalResumeEventConfig());
+    } else {
+        mStreamMutex.lock();
+        evCfg = (std::shared_ptr<ASREventConfig>)(new ASRResumeEventConfig());
+    }
+
     status = curState->ProcessEvent(evCfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Resume failed", status);
 #ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
 #endif
+
+    mStreamMutex.unlock();
     PAL_INFO(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -1573,16 +1593,26 @@ int32_t StreamASR::Pause(bool isInternal) {
     int32_t status = 0;
 
     PAL_INFO(LOG_TAG, "Enter");
-    std::lock_guard<std::mutex> lck(mStreamMutex);
-    std::shared_ptr<ASREventConfig> evCfg(new ASRPauseEventConfig());
+    mStreamMutex.lock();
+    std::shared_ptr<ASREventConfig> evCfg;
+
+    if (isInternal) {
+        evCfg = (std::shared_ptr<ASREventConfig>)(new ASRInternalPauseEventConfig());
+    } else {
+        evCfg = (std::shared_ptr<ASREventConfig>)(new ASRPauseEventConfig());
+    }
+
     status = curState->ProcessEvent(evCfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Pause failed", status);
 #ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
 #endif
-    PAL_INFO(LOG_TAG, "Exit, status %d", status);
 
+    if (!isInternal)
+        mStreamMutex.unlock();
+
+    PAL_INFO(LOG_TAG, "Exit, status %d", status);
     return status;
 }
 

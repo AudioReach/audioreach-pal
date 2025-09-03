@@ -78,6 +78,8 @@ enum {
     ASR_EV_SSR_ONLINE,
     ASR_EV_CONCURRENT_STREAM,
     ASR_EV_EC_REF,
+    ASR_EV_INTERNAL_PAUSE,
+    ASR_EV_INTERNAL_RESUME,
 };
 
 struct eventPayload {
@@ -276,10 +278,22 @@ class StreamASR : public Stream {
         ~ASRPauseEventConfig() {}
     };
 
+    class ASRInternalPauseEventConfig : public ASREventConfig {
+     public:
+        ASRInternalPauseEventConfig() : ASREventConfig(ASR_EV_INTERNAL_PAUSE) { }
+        ~ASRInternalPauseEventConfig() {}
+    };
+
     class ASRResumeEventConfig : public ASREventConfig {
      public:
         ASRResumeEventConfig() : ASREventConfig(ASR_EV_RESUME) { }
         ~ASRResumeEventConfig() {}
+    };
+
+    class ASRInternalResumeEventConfig : public ASREventConfig {
+     public:
+        ASRInternalResumeEventConfig() : ASREventConfig(ASR_EV_INTERNAL_RESUME) { }
+        ~ASRInternalResumeEventConfig() {}
     };
 
     class ASRDeviceConnectedEventData : public ASREventData {

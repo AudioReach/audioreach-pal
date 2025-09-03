@@ -667,7 +667,7 @@ int HandleDetectionStreamAction(pal_stream_type_t type, int32_t action, void *da
 int StopOtherDetectionStreams(void *st) {
     HandleDetectionStreamAction(PAL_STREAM_VOICE_UI, ST_INTERNAL_PAUSE, st);
     HandleDetectionStreamAction(PAL_STREAM_ACD, ST_PAUSE, st);
-    HandleDetectionStreamAction(PAL_STREAM_ASR, ST_PAUSE, st);
+    HandleDetectionStreamAction(PAL_STREAM_ASR, ST_INTERNAL_PAUSE, st);
     HandleDetectionStreamAction(PAL_STREAM_SENSOR_PCM_DATA, ST_PAUSE, st);
     return 0;
 }
@@ -675,7 +675,7 @@ int StopOtherDetectionStreams(void *st) {
 int StartOtherDetectionStreams(void *st) {
     HandleDetectionStreamAction(PAL_STREAM_VOICE_UI, ST_INTERNAL_RESUME, st);
     HandleDetectionStreamAction(PAL_STREAM_ACD, ST_RESUME, st);
-    HandleDetectionStreamAction(PAL_STREAM_ASR, ST_RESUME, st);
+    HandleDetectionStreamAction(PAL_STREAM_ASR, ST_INTERNAL_RESUME, st);
     HandleDetectionStreamAction(PAL_STREAM_SENSOR_PCM_DATA, ST_RESUME, st);
     return 0;
 }

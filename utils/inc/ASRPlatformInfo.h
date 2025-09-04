@@ -57,6 +57,8 @@ typedef enum asr_param_id_type {
     SDZ_OUTPUT_CONFIG_V2,
     SDZ_INPUT_BUF_DURATION_V2,
     SDZ_FORCE_OUTPUT_V2,
+    SDZ_SET_USER_CUE,
+    SDZ_USER_CUE_ENABLE,
     ASR_MAX_PARAM_IDS
 } asr_param_id_type_t;
 

@@ -1923,6 +1923,7 @@
                     <param sdz_output_config_v2_id = "0xC0000064, 0x08001BDA" />
                     <param sdz_input_buffer_duration_v2_id = "0xC0000064, 0x08001BC7" />
                     <param sdz_force_output_v2_id = "0xC0000064, 0x08001BDB" />
+                    <param sdz_set_user_cue_id = "0xC0000064, 0x08001BA5"/>
                 </module_Info>
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />

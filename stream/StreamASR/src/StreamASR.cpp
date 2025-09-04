@@ -59,6 +59,7 @@
 
 #define ASR_MODEL_FILE_NAME    "/data/vendor/audio/asr_model.bin"
 #define ASR_MODEL_FILE_RENAME  "/data/vendor/audio/asr_on_device_model.bin"
+#define USER_CUE_FILE          "/data/vendor/audio/asr_user_cue.bin"
 
 extern "C" Stream* CreateASRStream(const struct pal_stream_attributes *sattr, struct pal_device *dattr,
                                    const uint32_t no_of_devices, const struct modifier_kv *modifiers,
@@ -99,8 +100,11 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
     prevState = nullptr;
     engine = nullptr;
     conc_notified_ = false;
+    userCue = nullptr;
     stateToRestore = ASR_STATE_NONE;
     is_client_model_used_ = false;
+    userCueEnabled = false;
+    struct stat stats;
 
     mVolumeData = (struct pal_volume_data *)malloc(sizeof(struct pal_volume_data)
                       +sizeof(struct pal_channel_vol_kv));
@@ -184,6 +188,39 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
         curState = asrIdle;
     }
 
+    if (stat(USER_CUE_FILE, &stats) == 0) {
+        userCue = (param_id_sdz_voice_profile_t *)calloc(1,
+            sizeof(param_id_sdz_voice_profile_t) + stats.st_size);
+        if (!userCue) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for user cue payload");
+            goto exit;
+        }
+
+        int inFd = ::open(USER_CUE_FILE, O_RDONLY);
+        void *mapAddr = nullptr;
+        if (inFd == -1) {
+            PAL_ERR(LOG_TAG, "Failed to read %s file", USER_CUE_FILE);
+            free(userCue);
+            userCue = nullptr;
+            goto exit;
+        }
+
+        mapAddr = mmap(NULL, (size_t)stats.st_size, PROT_READ, MAP_PRIVATE, inFd, 0);
+        if (mapAddr == MAP_FAILED) {
+            PAL_ERR(LOG_TAG, "mmap failed: %s", strerror(errno));
+            ::close(inFd);
+            free(userCue);
+            userCue = nullptr;
+            goto exit;
+        }
+
+        userCue->client_id = SDZ_CLIENT_HLOS;
+        userCue->voiceprint_size = stats.st_size;
+        memcpy(userCue->voiceprint_data, mapAddr, stats.st_size);
+        munmap(mapAddr, stats.st_size);
+        ::close(inFd);
+    }
+
 exit:
     PAL_INFO(LOG_TAG, "Exit");
 }
@@ -198,6 +235,9 @@ StreamASR::~StreamASR()
         delete asrActive;
     if (asrSsr)
         delete asrSsr;
+
+    if (userCue)
+        free(userCue);
 
     asrStates.clear();
     engine = nullptr;
@@ -238,7 +278,7 @@ int32_t StreamASR::close()
     }
 
     if (is_client_model_used_) {
-        status = deleteModelFile();
+        status = deleteModelFile(ASR_MODEL_FILE_NAME);
         if (status) {
             PAL_ERR(LOG_TAG, "Error while deleting the ASR Model");
         } else {
@@ -345,8 +385,8 @@ int32_t StreamASR::HandleConcurrentStream(bool active) {
     return status;
 }
 
-int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
-
+int32_t StreamASR::storeModelToFile(int32_t fd, std::string path, uint32_t size)
+{
     void* mapAddr = nullptr;
     int32_t outFd = -1;
     int status = 0;
@@ -354,7 +394,7 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
 
     PAL_INFO(LOG_TAG, "Enter, fd %d size %d", fd, size);
     if (fd < 0 || size == 0) {
-        if (fd == -1 && stat(ASR_MODEL_FILE_NAME, &stats) == 0) {
+        if (fd == -1 && stat(path.c_str(), &stats) == 0) {
             PAL_INFO(LOG_TAG, "Model is not passed, use existing model, size %d", stats.st_size);
             return 0;
         } else {
@@ -372,10 +412,11 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
 #endif
     }
 
-    if (stat(ASR_MODEL_FILE_NAME, &stats) == 0) {
-        if (::rename(ASR_MODEL_FILE_NAME, ASR_MODEL_FILE_RENAME)) {
-           PAL_ERR(LOG_TAG, "Failed to rename stored device model");
-           return -EINVAL;
+    if (stat(path.c_str(), &stats) == 0 &&
+        path.find("asr_model") != std::string::npos) {
+        if (::rename(path.c_str(), ASR_MODEL_FILE_RENAME)) {
+            PAL_ERR(LOG_TAG, "Failed to rename stored device model");
+            return -EINVAL;
         }
         is_client_model_used_ = true;
     }
@@ -386,26 +427,17 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
         goto error_exit;
     }
 
-    outFd = ::open(ASR_MODEL_FILE_NAME, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (outFd == -1) {
-        PAL_ERR(LOG_TAG, "Failed to open output file %s", strerror(errno));
-        goto error_exit;
-    }
-
-    if (::write(outFd, mapAddr, size) != size) {
+    status = writeToFile(path, mapAddr, size);
+    if (status) {
         PAL_ERR(LOG_TAG, "Failed to write to output file");
         goto error_exit;
     }
 
     munmap(mapAddr, size);
-    ::close(outFd);
     PAL_INFO(LOG_TAG, "Exit");
     return 0;
 
 error_exit:
-    if (outFd != -1) {
-        ::close(outFd);
-    }
     if (mapAddr && mapAddr != MAP_FAILED) {
         munmap(mapAddr, size);
     }
@@ -418,22 +450,49 @@ error_exit:
     return -EINVAL;
 }
 
-int32_t StreamASR::deleteModelFile() {
+int32_t StreamASR::writeToFile(std::string path, void* addrFrom, size_t size) {
+
+    int32_t outFd = -1;
+    int status = 0;
+
+    outFd = ::open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (outFd == -1) {
+        PAL_ERR(LOG_TAG, "Failed to open output file %s", strerror(errno));
+        status = -EINVAL;
+        goto exit;
+    }
+
+    if (::write(outFd, addrFrom, size) != size) {
+        PAL_ERR(LOG_TAG, "Failed to write to output file");
+        status = -EINVAL;
+        ::close(outFd);
+        goto exit;
+    }
+
+    ::close(outFd);
+exit:
+    return status;
+}
+
+int32_t StreamASR::deleteModelFile(std::string path) {
 
     struct stat stats;
 
     PAL_DBG(LOG_TAG, "Enter");
-    if (stat(ASR_MODEL_FILE_NAME, &stats) == 0) {
-        if (::remove(ASR_MODEL_FILE_NAME) != 0) {
+    if (stat(path.c_str(), &stats) == 0) {
+        if (::remove(path.c_str()) != 0) {
             PAL_ERR(LOG_TAG, "Failed to delete the file %s", strerror(errno));
             return -EINVAL;
         }
-        if (::rename(ASR_MODEL_FILE_RENAME, ASR_MODEL_FILE_NAME)) {
-           PAL_ERR(LOG_TAG, "Error renaming device model %s", strerror(errno));
-           return -EINVAL;
+        if (path.find("asr_model") != std::string::npos &&
+            stat(ASR_MODEL_FILE_RENAME, &stats) == 0) {
+            if (::rename(ASR_MODEL_FILE_RENAME, ASR_MODEL_FILE_NAME)) {
+               PAL_ERR(LOG_TAG, "Error renaming device model %s", strerror(errno));
+               return -EINVAL;
+            }
         }
     } else {
-        PAL_ERR(LOG_TAG, "Failed to delete the file %s", strerror(errno));
+        PAL_ERR(LOG_TAG, "Failed to delete the file %s with error code %s", path.c_str(), strerror(errno));
         return -EINVAL;
     }
     PAL_DBG(LOG_TAG, "Exit");
@@ -472,7 +531,7 @@ int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
     int32_t status = 0;
     pal_param_payload *paramPayload = (pal_param_payload *)payload;
 
-    if (!paramPayload) {
+    if (!paramPayload && paramId != PAL_PARAM_ID_SDZ_USER_CUE_ENABLE) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Error:%d Invalid payload for param ID: %d",
                          status, paramId);
@@ -489,7 +548,7 @@ int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
             }
             struct pal_asr_model *model = (struct pal_asr_model *)paramPayload->payload;
             PAL_INFO(LOG_TAG, "model size %d", model->size);
-            status = storeModelToFile(model->fd, model->size);
+            status = storeModelToFile(model->fd, ASR_MODEL_FILE_NAME, model->size);
             break;
         }
         case PAL_PARAM_ID_ASR_CONFIG: {
@@ -500,6 +559,36 @@ int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
         }
         case PAL_PARAM_ID_ASR_FORCE_OUTPUT: {
             std::shared_ptr<ASREventConfig> evCfg(new ASRForceOutputConfig());
+            status = curState->ProcessEvent(evCfg);
+            break;
+        }
+        case PAL_PARAM_ID_SDZ_SET_USER_CUE: {
+            status = writeToFile(USER_CUE_FILE, paramPayload->payload,
+                paramPayload->payload_size);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to write user cue to file");
+                break;
+            }
+            if (userCue) {
+                free(userCue);
+                userCue = nullptr;
+            }
+            userCue = (param_id_sdz_voice_profile_t *)calloc(1,
+                sizeof(param_id_sdz_voice_profile_t) +
+                paramPayload->payload_size);
+            if (!userCue) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for user cue");
+                status = -ENOMEM;
+                break;
+            }
+            userCue->client_id = SDZ_CLIENT_HLOS;
+            userCue->voiceprint_size = paramPayload->payload_size;
+            memcpy(userCue->voiceprint_data,
+                paramPayload->payload, paramPayload->payload_size);
+            break;
+        }
+        case PAL_PARAM_ID_SDZ_USER_CUE_ENABLE: {
+            std::shared_ptr<ASREventConfig> evCfg(new ASRUserCueEnableConfig());
             status = curState->ProcessEvent(evCfg);
             break;
         }
@@ -1018,14 +1107,16 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     enableSpeakerDiarization = asrRecCfg->enable_speaker_diarization;
 
     if (enableSpeakerDiarization) {
-        sdzInputConfig = (param_id_sdz_input_threshold_t *)calloc(1, sizeof(param_id_sdz_input_threshold_t));
+        sdzInputConfig = (param_id_sdz_input_threshold_t *)calloc(1,
+            sizeof(param_id_sdz_input_threshold_t));
         if (!sdzInputConfig) {
             status = -ENOMEM;
             PAL_ERR(LOG_TAG, "Error:%d Failed to allocate sdzInputConfig", status);
             goto cleanup;
         }
 
-        sdzOutputConfig = (param_id_sdz_output_config_t *)calloc(1, sizeof(param_id_sdz_output_config_t));
+        sdzOutputConfig = (param_id_sdz_output_config_t *)calloc(1,
+            sizeof(param_id_sdz_output_config_t));
         if (!sdzOutputConfig) {
             status = -ENOMEM;
             PAL_ERR(LOG_TAG, "Error:%d Failed to allocate sdzInputConfig", status);
@@ -1070,6 +1161,12 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     status = SetupDetectionEngine();
     if (status) {
         PAL_ERR(LOG_TAG, "Error: %d Failed to get engine instance", status);
+    }
+
+    if (engine && userCue && userCueEnabled) {
+        status = engine->setParameters(this, SDZ_SET_USER_CUE, userCue);
+        if (status)
+            PAL_ERR(LOG_TAG, "Error: %d Failed to enable user cue", status);
     }
 
     goto exit;
@@ -1277,10 +1374,20 @@ int32_t StreamASR::ASRIdle::ProcessEvent(
             PAL_INFO(LOG_TAG, "no action needed for concurrent stream in idle state");
             break;
         }
-        case ASR_EV_SSR_OFFLINE:
+        case SDZ_EV_USER_CUE_ENABLE: {
+            asrStream.userCueEnabled = true;
+            if (!asrStream.userCue) {
+                PAL_ERR(LOG_TAG, "user cue is not present");
+                status = -ENOMEM;
+                break;
+            }
+            break;
+        }
+        case ASR_EV_SSR_OFFLINE: {
             asrStream.stateToRestore = ASR_STATE_IDLE;
             TransitTo(ASR_STATE_SSR);
             break;
+        }
         default:
             PAL_INFO(LOG_TAG, "Unhandled event %d", evCfg->id);
             break;
@@ -1528,6 +1635,10 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             }
             break;
         }
+        case SDZ_EV_USER_CUE_ENABLE: {
+            PAL_ERR(LOG_TAG, "Cannot enable User Cue in active session.");
+            break;
+        }
         case ASR_EV_SSR_OFFLINE: {
             asrStream.stateToRestore = ASR_STATE_ACTIVE;
             std::shared_ptr<ASREventConfig> evCfg1(
@@ -1535,6 +1646,9 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             status = asrStream.ProcessInternalEvent(evCfg1);
             TransitTo(ASR_STATE_SSR);
             break;
+        }
+        default: {
+            PAL_ERR(LOG_TAG, "Unhandled event: %d", evCfg->id);
         }
     }
 
@@ -1625,6 +1739,19 @@ int32_t StreamASR::ASRSSR::ProcessEvent(std::shared_ptr<ASREventConfig> evCfg)
                 status = asrStream.engine->setParameters(&asrStream, ASR_ABORT_EVENT);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for ASR abort event", status);
+            }
+            break;
+        }
+        case SDZ_EV_USER_CUE_ENABLE: {
+            if (asrStream.stateToRestore != ASR_STATE_ACTIVE) {
+                asrStream.userCueEnabled = true;
+                if (!asrStream.userCue) {
+                    PAL_ERR(LOG_TAG, "user cue is not present");
+                    status = -ENOMEM;
+                    break;
+                }
+            } else {
+                PAL_ERR(LOG_TAG, "Cannot enable User Cue in active session.");
             }
             break;
         }

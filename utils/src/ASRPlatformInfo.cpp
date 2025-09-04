@@ -199,6 +199,8 @@ int32_t ASRStreamConfig::GetIndex(std::string& param_name) {
        index = SDZ_INPUT_BUF_DURATION_V2;
     } else if (param_name == "sdz_force_output_v2_id") {
        index = SDZ_FORCE_OUTPUT_V2;
+    } else if (param_name == "sdz_set_user_cue_id") {
+       index = SDZ_SET_USER_CUE;
     } else {
        PAL_ERR(LOG_TAG, "Invalid attribute %s", param_name.c_str());
     }

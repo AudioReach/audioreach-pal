@@ -909,6 +909,9 @@ typedef enum {
     PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP = 110,
     PAL_PARAM_ID_UV_VOICE_CUE_ENABLE = 111,
     PAL_PARAM_ID_UV_VOICE_CUE_DATA_BYTE = 112,
+    PAL_PARAM_ID_SDZ_SET_USER_CUE = 113,
+    PAL_PARAM_ID_SDZ_USER_CUE_ENABLE = 114,
+    PAL_PARAM_ID_SDZ_USER_CUE_DISABLE = 115,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1577,6 +1580,8 @@ typedef struct uv_fluence_config {
 #define MAX_JSON_CHAR_SIZE 4096
 #define MAX_NUM_WORDS 200
 #define MAX_WORD_LENGTH 28
+#define SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE 64
+#define SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE 40
 
 typedef enum {
     PLAIN_TEXT = 0,
@@ -1642,6 +1647,11 @@ struct sdz_speaker_info {
     uint32_t speaker_id;
     uint64_t start_ts;
     uint64_t end_ts;
+    float diarization_score;
+    float identification_score;
+    char speaker_name[SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE];
+    char speaker_uuid[SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE];
+    uint32_t speaker_is_owner;
 };
 
 /** Output payload for speaker diarization */

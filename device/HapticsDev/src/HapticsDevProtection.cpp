@@ -247,6 +247,7 @@ void HapticsDevProtection::handleHPCallback(uint64_t hdl __unused, uint32_t even
 
     PAL_DBG(LOG_TAG, "Got event from DSP 0x%x", event_id);
 
+    calibrationMutex.lock();
     if (event_id == EVENT_ID_HAPTICS_VI_CALIBRATION) {
         // Received callback for Calibration state
         param_data = static_cast<haptics_vi_calib_param_t*>(event_data);
@@ -278,29 +279,28 @@ void HapticsDevProtection::handleHPCallback(uint64_t hdl __unused, uint32_t even
 
             mDspCallbackRcvd = true;
             calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_SUCCESS;
-            cv.notify_all();
         } else if ((param_data->state == HAPTICS_VI_CALIB_STATE_FAILED) ||
             (param_data->state == HAPTICS_VI_CALIB_STATE_VI_WAIT_TIMED_OUT) ||
             (param_data->state == HAPTICS_VI_CALIB_STATE_LOW_VI)) {
             PAL_DBG(LOG_TAG, "Calibration unsuccessful, state:%d", param_data->state);
             mDspCallbackRcvd = true;
             calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_FAILED;
-            cv.notify_all();
         } else if (param_data->state == HAPTICS_VI_CALIB_STATE_WAIT_FOR_VI) {
             PAL_DBG(LOG_TAG, "Low VI threshold continue cal, state:%d", param_data->state);
         } else {
             PAL_DBG(LOG_TAG, "unexpected cal state :%d, failing cal step", param_data->state);
             mDspCallbackRcvd = true;
             calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_FAILED;
-            cv.notify_all();
         }
     } else {
             PAL_ERR(LOG_TAG, "received unexpected event id:0x%x", event_id);
             // Restart the calibration and abort current run.
             mDspCallbackRcvd = true;
             calibrationCallbackStatus = HAPTICS_VI_CALIB_STATE_FAILED;
-            cv.notify_all();
     }
+    calibrationMutex.unlock();
+    if (mDspCallbackRcvd)
+        cv.notify_all();
 }
 
 void HapticsDevProtection::disconnectFeandBe(std::vector<int> pcmDevIds,
@@ -870,9 +870,11 @@ int HapticsDevProtection::HapticsDevStartCalibration(int32_t operation_mode)
     PAL_DBG(LOG_TAG, "Waiting for the event from DSP or PAL");
 
     // TODO: Make this to wait in While loop
-    if (cv.wait_for(calLock, std::chrono::seconds(3)) == std::cv_status::timeout) {
-        PAL_ERR(LOG_TAG, "Timeout occured! for VI calibration");
-        goto done;
+    if (!mDspCallbackRcvd) {
+        if (cv.wait_for(calLock, std::chrono::seconds(3)) == std::cv_status::timeout) {
+            PAL_ERR(LOG_TAG, "Timeout occured! for VI calibration");
+            goto done;
+        }
     }
 
     // Store haptics calibrated values Re, f0, Blq
@@ -1232,6 +1234,8 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
     deviceMutex.lock();
 
     if (flag) {
+        //Set isHapDevInUse to make sure no calibration thread allowed
+        HapticsDevProtSetDevStatus(flag);
         if (hapticsDevCalState == HAPTICS_DEV_CALIB_IN_PROGRESS) {
             // Close the Graphs
             cv.notify_all();
@@ -1256,7 +1260,6 @@ int32_t HapticsDevProtection::HapticsDevProtProcessingMode(bool flag)
         customPayloadSize = 0;
         customPayload = nullptr;
 
-        HapticsDevProtSetDevStatus(flag);
         //  HapticsDevice in use. Start the Processing Mode
         rm = ResourceManager::getInstance();
         if (!rm) {

@@ -3005,7 +3005,7 @@ int ResourceManager::getECEnableSetting(std::shared_ptr<Device> tx_dev,
 
     streamHandle->getStreamAttributes(&curStrAttr);
     *ec_enable = true;
-    status = tx_dev->getDeviceAttributes(&DevDattr, streamHandle);
+    status = tx_dev->getDeviceAttributes(&DevDattr);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "getDeviceAttributes Failed");
         goto exit;

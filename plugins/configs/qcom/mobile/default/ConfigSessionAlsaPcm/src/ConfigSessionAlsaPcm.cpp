@@ -792,6 +792,31 @@ silence_det_setup_done:
                 status = -EINVAL;
                 goto exit;
             }
+            bool isCallActive = false;
+            for (auto& stream_itr: rm->getActiveStreamList()) {
+                PAL_DBG(LOG_TAG, ": Looking for active Voice/Voip call for configuring the ICMD Mux-Demux module.");
+                stream_itr->getStreamAttributes(&sAttr);
+                if (sAttr.type == PAL_STREAM_VOICE_CALL) {
+                    PAL_DBG(LOG_TAG, ": Found Voice Call. Configure Mux/Demux for Voice");
+                    tag = MUX_DEMUX_VOICE;
+                    isCallActive = true;
+                    break;
+                } else if (sAttr.type == PAL_STREAM_VOIP_RX) {
+                    PAL_DBG(LOG_TAG, ": Found VoIP Call. Configure Mux/Demux for VoIP");
+                    tag = MUX_DEMUX_VOIP;
+                    isCallActive = true;
+                    break;
+                }
+            }
+            if (isCallActive) {
+                status = session->setConfig(s, MODULE, tag);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Failed to set mux-demux tag data, status = %d", status);
+                    goto exit;
+                }
+            } else {
+                PAL_DBG(LOG_TAG, ": No active Voice or VoIP call found. Skipping setConfig.");
+            }
             /*if in call music plus playback configure MFC*/
             if(sAttr.info.incall_music_info.local_playback){
                 status = configureInCallRxMFC(session, rm, builder);

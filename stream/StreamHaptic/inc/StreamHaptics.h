@@ -31,8 +31,9 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ *
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -69,10 +70,12 @@ public:
     bool isStreamSupported() override;
 
 private:
+    static pal_stream_haptics_type_t activeHapticsType;
+    static std::mutex activeHapticsTypeMutex;
     static void HandleCallBack(uint64_t hdl, uint32_t event_id,
                                void *data, uint32_t event_size);
     void HandleEvent(uint32_t event_id, void *data, uint32_t event_size);
-    int32_t HandleHapticsConcurrency(struct pal_stream_attributes *sattr);
+    void UpdateCurrentHapticsStream(struct pal_stream_attributes *sattr);
 };
 
 #endif//STREAMHAPTICS_H_

@@ -56,6 +56,9 @@ extern "C" Stream* CreateHapticsStream(const struct pal_stream_attributes *sattr
     return new StreamHaptics(sattr, dattr, no_of_devices, modifiers, no_of_modifiers, rm);
 }
 
+pal_stream_haptics_type_t StreamHaptics::activeHapticsType = PAL_STREAM_HAPTICS_RINGTONE;
+std::mutex StreamHaptics::activeHapticsTypeMutex;
+
 StreamHaptics::StreamHaptics(const struct pal_stream_attributes *sattr, struct pal_device *dattr __unused,
                     const uint32_t no_of_devices __unused, const struct modifier_kv *modifiers __unused,
                     const uint32_t no_of_modifiers __unused, const std::shared_ptr<ResourceManager> rm):
@@ -87,26 +90,27 @@ int32_t  StreamHaptics::setParameters(uint32_t param_id, void *payload)
     if ((0 != status) || (activeStreams.size() == 0 )) {
          PAL_DBG(LOG_TAG, "No Haptics stream is active");
          goto error;
-    } else {
-       /* If Setparam for touch haptics is called when Ringtone Haptics is active
-          It is assumed that the ringtone is stopped from framework and its in default waiting
-          state of two seconds framework has before tearing down AudioTrack*/
-        PAL_DBG(LOG_TAG, "activestreams size %d",activeStreams.size());
-        for (int i = 0; i<activeStreams.size(); i++) {
-            stream = static_cast<Stream *>(activeStreams[i]);
-            stream->getStreamAttributes(&ActivesAttr);
-            if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE) {
-                PAL_INFO(LOG_TAG, "Assuming ringtone is in waiting state, allowing touch haptics");
-            } else
-                continue;
-        }
     }
+    PAL_DBG(LOG_TAG, "activestreams size %d",activeStreams.size());
 
     mStreamMutex.lock();
     // Stream may not know about tags, so use setParameters instead of setConfig
     switch (param_id) {
-        case PAL_PARAM_ID_HAPTICS_CNFG:
         case PARAM_ID_HAPTICS_WAVE_DESIGNER_STOP_PARAM:
+        {
+            for (int i = 0; i<activeStreams.size(); i++) {
+                stream = static_cast<Stream *>(activeStreams[i]);
+                stream->getStreamAttributes(&ActivesAttr);
+                if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_RINGTONE &&
+                    StreamHaptics::activeHapticsType == PAL_STREAM_HAPTICS_RINGTONE) {
+                    PAL_INFO(LOG_TAG, "Ringtone is in running state, skipping stop");
+                    mStreamMutex.unlock();
+                    return 0;
+                }
+            }
+        }
+        //fall through this case if above condition is not true.
+        case PAL_PARAM_ID_HAPTICS_CNFG:
         case PARAM_ID_HAPTICS_WAVE_DESIGNER_UPDATE_PARAM:
         {
             status = session->setParameters(NULL, param_id, payload);
@@ -143,7 +147,7 @@ int32_t StreamHaptics::start()
 
     /* check for haptic concurrency*/
     if (ResourceManager::IsHapticsThroughWSA())
-        HandleHapticsConcurrency(mStreamAttr);
+        UpdateCurrentHapticsStream(mStreamAttr);
 
     mStreamMutex.lock();
     if (rm->getSoundCardState() == CARD_STATUS_OFFLINE) {
@@ -265,39 +269,12 @@ exit:
     return status;
 }
 
-int32_t StreamHaptics::HandleHapticsConcurrency(struct pal_stream_attributes *sattr)
+void StreamHaptics::UpdateCurrentHapticsStream(struct pal_stream_attributes *sattr)
 {
-    std::vector <Stream *> activeStreams;
-    struct pal_stream_attributes ActivesAttr;
-    Stream *stream = nullptr;
-    param_id_haptics_wave_designer_wave_designer_stop_param_t HapticsStopParam;
-    pal_param_payload *param_payload = nullptr;
-    Session *ActHapticsSession = nullptr;
-    struct param_id_haptics_wave_designer_state event_info;
-    int status = 0;
-
-    /* if input stream and the priority stream is same,
-       go ahead and enable the stream */
-    status = rm->getActiveStream_l(activeStreams, mDevices[0]);
-    if ((0 != status) || (activeStreams.size() <= 1)) {
-         PAL_DBG(LOG_TAG, "No Active Haptics stream is present.");
-         goto exit;
-    } else {
-       /* If incoming stream is Ringtone Haptics and active stream is Touch
-          stop the Touch haptics and start Ringtone*/
-        PAL_DBG(LOG_TAG, "activestreams size %d",activeStreams.size());
-        for (int i = 0; i<activeStreams.size(); i++) {
-            stream = static_cast<Stream *>(activeStreams[i]);
-            stream->getStreamAttributes(&ActivesAttr);
-            if (ActivesAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) {
-                /* Assumption is touch haptics will only be triggered when ringtone is in waiting state. */
-                PAL_DBG(LOG_TAG, "Ignoring stop as touch haptics is running");
-                goto exit;
-            }
-        }
-    }
-exit:
-    return status;
+    std::lock_guard<std::mutex> lock(activeHapticsTypeMutex);
+    StreamHaptics::activeHapticsType =
+                        (pal_stream_haptics_type_t)sattr->info.opt_stream_info.haptics_type;
+    PAL_DBG(LOG_TAG, "Updating active haptics type to %d", StreamHaptics::activeHapticsType);
 }
 
 int32_t  StreamHaptics::registerCallBack(pal_stream_callback cb, uint64_t cookie)

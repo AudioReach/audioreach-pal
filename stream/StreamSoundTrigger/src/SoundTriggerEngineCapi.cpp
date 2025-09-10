@@ -769,6 +769,7 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
         user_verification_cnt++;
     }
 
+    param.stream = (void *)stream_handle_;
     param.data = (void *)&buf_config;
     param.size = sizeof(struct buffer_config);
     vui_intf_->GetParameter(PARAM_FSTAGE_BUFFERING_CONFIG, &param);

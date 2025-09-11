@@ -99,5 +99,11 @@ AC_ARG_WITH([adsprpcd],
     [with_adsprpcd=no])
 AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
 
+AC_ARG_WITH([disable_compress_stream],
+    AS_HELP_STRING([Disable PAL compressed stream (default is no)]),
+    [with_disable_compress_stream=$withval],
+    [with_disable_compress_stream=no])
+AM_CONDITIONAL([DISABLE_COMPRESS_STREAM], [test "x${with_disable_compress_stream}" = "xyes"])
+
 AC_CONFIG_FILES([ Makefile pal.pc ])
 AC_OUTPUT

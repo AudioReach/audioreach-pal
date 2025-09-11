@@ -68,7 +68,9 @@
 #include "ResourceManager.h"
 #include "SessionGsl.h"
 #include "SessionAlsaPcm.h"
+#ifndef COMPRESS_STREAM_DISABLED
 #include "SessionAlsaCompress.h"
+#endif
 #include "SessionAgm.h"
 #include "SessionAlsaUtils.h"
 #include "SessionAlsaVoice.h"
@@ -122,9 +124,11 @@ Session* Session::makeSession(const std::shared_ptr<ResourceManager>& rm, const 
 
     switch (sAttr->type) {
         //create compressed if the stream type is compressed
+#ifndef COMPRESS_STREAM_DISABLED
         case PAL_STREAM_COMPRESSED:
             s =  new SessionAlsaCompress(rm);
             break;
+#endif
         case PAL_STREAM_VOICE_CALL:
             s = new SessionAlsaVoice(rm);
             break;

@@ -83,7 +83,6 @@ AM_CPPFLAGS += -DWSA_V883X_ADDR
 
 pal_sources = ${top_srcdir}/Pal.cpp \
               ${top_srcdir}/stream/src/Stream.cpp \
-              ${top_srcdir}/stream/src/StreamCompress.cpp \
               ${top_srcdir}/stream/src/StreamPCM.cpp \
               ${top_srcdir}/stream/src/StreamACDB.cpp \
               ${top_srcdir}/stream/src/StreamInCall.cpp \
@@ -122,7 +121,6 @@ pal_sources = ${top_srcdir}/Pal.cpp \
               ${top_srcdir}/session/src/SessionAlsaPcm.cpp \
               ${top_srcdir}/session/src/SessionAgm.cpp \
               ${top_srcdir}/session/src/SessionAlsaUtils.cpp \
-              ${top_srcdir}/session/src/SessionAlsaCompress.cpp \
               ${top_srcdir}/session/src/SessionAlsaVoice.cpp \
               ${top_srcdir}/session/src/SoundTriggerEngine.cpp \
               ${top_srcdir}/session/src/SoundTriggerEngineCapi.cpp \
@@ -139,12 +137,17 @@ pal_sources = ${top_srcdir}/Pal.cpp \
               ${top_srcdir}/utils/src/AudioHapticsInterface.cpp \
               ${top_srcdir}/utils/src/MetadataParser.cpp
 
+if !DISABLE_COMPRESS_STREAM
+pal_sources += ${top_srcdir}/session/src/SessionAlsaCompress.cpp \
+               ${top_srcdir}/stream/src/StreamCompress.cpp
+endif
+
 btbundle_plugin_sources = ${top_srcdir}/plugins/codecs/bt_base.c \
                           ${top_srcdir}/plugins/codecs/bt_bundle.c
 
 lib_LTLIBRARIES     = libpal.la
 libpal_la_SOURCES   = $(pal_sources)
-libpal_la_LIBADD    = @GLIB_LIBS@ -ltinyalsa -lar-osal -laudioroute -lar-spfhdrs -lexpat -ltinycompress
+libpal_la_LIBADD    = @GLIB_LIBS@ -ltinyalsa -lar-osal -laudioroute -lar-spfhdrs -lexpat
 libpal_la_CPPFLAGS := $(AM_CPPFLAGS)
 libpal_la_CPPFLAGS += -std=c++14
 libpal_la_LDFLAGS   = -shared -avoid-version
@@ -190,6 +193,14 @@ libpal_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
 libpal_la_LIBADD += -lcutils -llog
 lib_bt_bundle_la_CFLAGS += -DPAL_CUTILS_SUPPORTED
 lib_bt_bundle_la_LIBADD += -lcutils -llog
+endif
+
+if !DISABLE_COMPRESS_STREAM
+libpal_la_LIBADD   += -ltinycompress
+endif
+
+if DISABLE_COMPRESS_STREAM
+libpal_la_CPPFLAGS += -DCOMPRESS_STREAM_DISABLED
 endif
 
 # install essential xml files under /etc

@@ -4952,12 +4952,14 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                                     break;
                             }
                         } else {
-                            hpwaveConf[ch].pulse_intensity = (data->amplitude * 100);
+                            hpwaveConf[ch].pulse_intensity = data->amplitude * 100;
                         }
-                        if (hpwaveConf[ch].pulse_intensity > 100 ||
-                                            hpwaveConf[ch].pulse_intensity <= 0)
-                            hpwaveConf[ch].pulse_intensity = 30;
-                            PAL_DBG(LOG_TAG, "Haptics Effect .pulse_intensity %d for strength %d",
+                        if (hpwaveConf[ch].pulse_intensity > 100) {
+                            hpwaveConf[ch].pulse_intensity = 100;
+                        } else if (hpwaveConf[ch].pulse_intensity <= 0) {
+                            hpwaveConf[ch].pulse_intensity = 0;
+                        }
+                        PAL_DBG(LOG_TAG, "Haptics Effect .pulse_intensity %d for strength %d",
                                                   hpwaveConf[ch].pulse_intensity, data->strength);
                         if (data->effect_id >= 0)
                             hpwaveConf[ch].pulse_width_ms =  HConfig->pulse_width_ms;
@@ -5081,10 +5083,10 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                                                       hpwaveConf[0].override_flag);
                         hpwaveConf[0].repetition_count = 1;
                         hpwaveConf[0].num_pwl = 0;
-                    if ((data->amplitude * 100 > 1000)) {
+                    if (data->amplitude * 100 > 1000) {
                          hpwaveConf[0].pulse_intensity = 1000;
                     } else if (data->amplitude * 100 <= 0) {
-                         hpwaveConf[0].pulse_intensity = 100;
+                         hpwaveConf[0].pulse_intensity = 0;
                     } else {
                          hpwaveConf[0].pulse_intensity = (data->amplitude * 100);
                     }
@@ -5147,7 +5149,13 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
                                   sizeof(param_id_haptics_wave_designer_update_param_t));
                  hpConf->num_channels = HConfig->num_channels;
                  hpConf->channel_mask = HConfig->channel_mask;
-                 hpwaveConf[0].pulse_intensity = data->amplitude * 100;
+                 if (data->amplitude * 100 > 100) {
+                     hpwaveConf[0].pulse_intensity = 100;
+                 } else if (data->amplitude * 100 <= 0) {
+                     hpwaveConf[0].pulse_intensity = 0;
+                 } else {
+                     hpwaveConf[0].pulse_intensity = data->amplitude * 100;
+                 }
                  hpwaveConf[0].pulse_sharpness = HConfig->pulse_sharpness;
                  PAL_INFO(LOG_TAG,"updated intensity and sharpness %d and %d for ch_msk %d",
                               hpwaveConf[0].pulse_intensity, hpwaveConf[0].pulse_sharpness,

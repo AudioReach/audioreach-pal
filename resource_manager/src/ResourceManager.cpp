@@ -6007,7 +6007,7 @@ bool ResourceManager::updateDeviceConfig(std::shared_ptr<Device> *inDev,
 
     // if device switch is needed, perform it
     // for i2s dual mono, there is no need to switch as the conf is fixed for all use-cases
-    if (streamDevDisconnect.size() & !IsI2sDualMonoEnabled()) {
+    if (streamDevDisconnect.size() && !IsI2sDualMonoEnabled()) {
         status = streamDevSwitch(streamDevDisconnect, streamDevConnect);
         if (status) {
             PAL_ERR(LOG_TAG, "deviceswitch failed with %d", status);
@@ -9644,7 +9644,7 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     }
 
     mActiveStreamMutex.unlock();
-    if (!streamDevDisconnect.empty() & !IsI2sDualMonoEnabled())
+    if (!streamDevDisconnect.empty() && !IsI2sDualMonoEnabled())
         streamDevSwitch(streamDevDisconnect, streamDevConnect);
 exit:
     PAL_DBG(LOG_TAG, "Exit");

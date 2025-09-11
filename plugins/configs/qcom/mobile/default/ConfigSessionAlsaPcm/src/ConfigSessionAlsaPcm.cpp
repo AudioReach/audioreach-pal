@@ -26,10 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "PAL: libsession_pcm_config"
@@ -351,7 +350,8 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                 (sAttr.type != PAL_STREAM_CONTEXT_PROXY) &&
                 (sAttr.type != PAL_STREAM_SENSOR_PCM_DATA) &&
                 (sAttr.type != PAL_STREAM_ULTRA_LOW_LATENCY) &&
-                (sAttr.type != PAL_STREAM_COMMON_PROXY)) {
+                (sAttr.type != PAL_STREAM_COMMON_PROXY) &&
+                (sAttr.type != PAL_STREAM_CALL_TRANSLATION)) {
                 /* Get MFC MIID and configure to match to stream config */
                 /* This has to be done after sending all mixer controls and before connect */
                 if (sAttr.type != PAL_STREAM_VOICE_CALL_RECORD)
@@ -609,8 +609,8 @@ set_mixer:
                     PAL_ERR(LOG_TAG, "Failed to set incall record params status = %d", status);
             }
         } else if (sAttr.type == PAL_STREAM_VOICE_UI ||
-                        sAttr.type == PAL_STREAM_ASR ||
-                        sAttr.type == PAL_STREAM_ACD) {
+                       sAttr.type == PAL_STREAM_ASR ||
+                       sAttr.type == PAL_STREAM_ACD) {
             builder->getCustomPayload(&payload, &payloadSize);
             SessionAlsaUtils::setMixerParameter(mxr,
                 pcmDevIds.at(0), payload, payloadSize);
@@ -1396,8 +1396,8 @@ silence_det_setup_done:
                     PAL_ERR(LOG_TAG, "pcmDevIds not found.");
                     status = -EINVAL;
                     goto exit;
-                goto exit;
             }
+
             SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
                     txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                     payload_size);
@@ -1446,7 +1446,7 @@ silence_det_setup_done:
                  }
              }
         }
-    }
+     }
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;

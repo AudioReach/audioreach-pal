@@ -143,6 +143,8 @@ class ClientInfo : public IStreamOps {
     void getStreamMediaConfig(int64_t handle, pal_media_config *config);
     static int32_t onCallback(pal_stream_handle_t *handle, uint32_t eventId, uint32_t *eventData,
                               uint32_t eventDataSize, uint64_t cookie);
+    static std::mutex sCallbackRegistryMutex;
+    static std::unordered_map<uint64_t, std::weak_ptr<CallbackInfo>> sCallbackRegistry;
 };
 
 class PalServerWrapper : public BnPAL, public IStreamOps {

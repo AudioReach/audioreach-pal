@@ -21,6 +21,10 @@
 using ndk::ScopedAStatus;
 
 namespace aidl::vendor::qti::hardware::pal {
+
+std::unordered_map<uint64_t, std::weak_ptr<CallbackInfo>> ClientInfo::sCallbackRegistry;
+std::mutex ClientInfo::sCallbackRegistryMutex;
+
 // map<FD, map<offset, input_frame_id>>
 std::map<int, std::map<int32_t, int64_t>> gInputsPendingAck;
 std::mutex gInputsPendingAckLock;
@@ -198,10 +202,16 @@ void ClientInfo::unregisterCallback(int64_t handle) {
                                 return (callback->getStreamHandle() == handle);
                             });
 
+    uint64_t callbackId = 0;
     if (itr != mCallbackInfo.end()) {
+        callbackId = reinterpret_cast<uint64_t>(itr->get());
         mCallbackInfo.erase(itr);
     }
-
+    if (callbackId != 0)
+    {
+        std::lock_guard<std::mutex> lock(sCallbackRegistryMutex);
+        sCallbackRegistry.erase(callbackId);
+    }
     ALOGV("%s, after removing callback size %d ", __func__, mCallbackInfo.size());
 }
 
@@ -289,7 +299,20 @@ bool ClientInfo::isValidStreamHandle(int64_t handle) {
 
 int32_t ClientInfo::onCallback(pal_stream_handle_t *handle, uint32_t eventId, uint32_t *eventData,
                                uint32_t eventDataSize, uint64_t cookie) {
-    CallbackInfo *callbackInfo = (CallbackInfo *)cookie;
+
+    std::shared_ptr<CallbackInfo> callbackInfo;
+    {
+        std::lock_guard<std::mutex> lock(sCallbackRegistryMutex);
+        auto it = sCallbackRegistry.find(cookie);
+        if (it != sCallbackRegistry.end()) {
+            callbackInfo = it->second.lock();
+        }
+    }
+    if (!callbackInfo) {
+        ALOGW("CallbackInfo has already been destroyed");
+        return -EINVAL;
+    }
+
     IPALCallback *callbackBinder = callbackInfo->mCallback.get();
 
     if (!AIBinder_isAlive(callbackBinder->asBinder().get())) {
@@ -581,6 +604,11 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
         addStreamHandle((int64_t)handle);
         callBackInfo->setHandle((int64_t)handle);
         client->registerCallback((int64_t)handle, cb, callBackInfo);
+        uint64_t callbackId = reinterpret_cast<uint64_t>(callBackInfo.get());
+        {
+            std::lock_guard<std::mutex> lock(ClientInfo::sCallbackRegistryMutex);
+            ClientInfo::sCallbackRegistry[callbackId] = callBackInfo;
+        }
     }
     return status_tToBinderResult(ret);
 }

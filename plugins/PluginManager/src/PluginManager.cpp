@@ -291,20 +291,19 @@ void PluginManager::startElement(void* userData, const char* name, const char** 
 void PluginManager::getVendorConfigPath (char* config_file_path, int path_size)
 {
 #ifdef PAL_CUTILS_SUPPORTED
-   char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
-   if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
-#if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-       /* Audio configs are stored in /etc */
-       snprintf(config_file_path, path_size, "%s", "/etc");
-#else
-       /* Audio configs are stored in /vendor/etc */
-       snprintf(config_file_path, path_size, "%s", "/vendor/etc");
-#endif
+    char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
+    if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
+        /* Audio configs are stored in /vendor/etc */
+        snprintf(config_file_path, path_size, "%s", "/vendor/etc");
     } else {
-       /* Audio configs are stored in /vendor/etc/audio/sku_${vendor_sku} */
-       snprintf(config_file_path, path_size,
-                       "%s%s", "/vendor/etc/audio/sku_", vendor_sku);
+        /* Audio configs are stored in /vendor/etc/audio/sku_${vendor_sku} */
+        snprintf(config_file_path, path_size,
+                    "%s%s", "/vendor/etc/audio/sku_", vendor_sku);
     }
+#endif
+#if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
+        /* Audio configs are stored in /etc */
+        snprintf(config_file_path, path_size, "%s", "/etc");
 #endif
 }
 

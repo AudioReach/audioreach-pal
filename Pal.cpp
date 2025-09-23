@@ -1278,8 +1278,11 @@ int32_t pal_stream_set_device(pal_stream_handle_t *stream_handle,
 
     rm->lockActiveStream();
     if (!rm->isActiveStream(stream_handle)) {
+        PAL_ERR(LOG_TAG, "Stream handle :%pK is inactive,", stream_handle);
         rm->unlockActiveStream();
-        status = -EINVAL;
+        // when device is set to NONE due to removal of pluggable devices
+        // send success status if stream is already inactive
+        status = devices[0].id == PAL_DEVICE_NONE ? 0 : -EINVAL;
         kpiEnqueue(__func__, false);
         return status;
     }

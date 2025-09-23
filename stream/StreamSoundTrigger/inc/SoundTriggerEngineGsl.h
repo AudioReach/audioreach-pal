@@ -64,8 +64,8 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
                           listen_model_indicator_enum type,
                           st_module_type_t module_type,
                           std::shared_ptr<VUIStreamConfig> sm_cfg);
-    int32_t LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                           uint32_t data_size) override;
+    int32_t LoadSoundModel(StreamSoundTrigger *s,
+                           sound_model_data_t *sm_data) override;
     int32_t UnloadSoundModel(StreamSoundTrigger *s) override;
     int32_t StartRecognition(StreamSoundTrigger *s) override;
     int32_t RestartRecognition(StreamSoundTrigger *s) override;

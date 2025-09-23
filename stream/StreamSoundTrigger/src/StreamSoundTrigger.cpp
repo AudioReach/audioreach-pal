@@ -1157,15 +1157,15 @@ void StreamSoundTrigger::CancelDelayedStop() {
 }
 
 std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
-    uint8_t *sm_data,
-    int32_t sm_size,
-    listen_model_indicator_enum type,
+    sound_model_data_t *sm_data,
     st_module_type_t module_type) {
 
     int status = 0;
+    listen_model_indicator_enum type;
     std::shared_ptr<SoundTriggerEngine> engine = nullptr;
     vui_intf_param_t param {};
 
+    type = sm_data->type;
     engine = SoundTriggerEngine::Create(this, type, module_type, sm_cfg_);
     if (!engine) {
         status = -ENOMEM;
@@ -1176,7 +1176,6 @@ std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
     // cache 1st stage model for concurrency handling
     if (type == ST_SM_ID_SVA_F_STAGE_GMM) {
         gsl_engine_model_ = sm_data;
-        gsl_engine_model_size_ = sm_size;
         // Create Voice UI Interface object and update to engines
         if (engine->GetVoiceUIInterface() &&
             engine->GetVoiceUIInterface() != vui_intf_) {
@@ -1198,7 +1197,7 @@ std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
     if (!engine->GetVoiceUIInterface())
         engine->SetVoiceUIInterface(this, vui_intf_);
 
-    status = engine->LoadSoundModel(this, sm_data, sm_size);
+    status = engine->LoadSoundModel(this, sm_data);
     if (status) {
         PAL_ERR(LOG_TAG, "big_sm: gsl engine loading model"
                "failed, status %d", status);
@@ -1431,7 +1430,7 @@ int32_t StreamSoundTrigger::LoadSoundModel(
     for (int i = 0; i < model_list.sm_list.size(); i++) {
         sm_data = model_list.sm_list[i];
         engine_id = sm_data->type;
-        engine = HandleEngineLoad(sm_data->data, sm_data->size, sm_data->type, model_type_);
+        engine = HandleEngineLoad(sm_data, model_type_);
         if (!engine) {
             PAL_ERR(LOG_TAG, "Failed to create engine");
             status = -EINVAL;
@@ -1468,11 +1467,22 @@ error_exit:
         vui_intf_->DetachStream(this);
         vui_intf_ = nullptr;
     }
+exit:
     if (sm_config_) {
         free(sm_config_);
         sm_config_ = nullptr;
     }
-exit:
+
+    /* Free memory for non-persistent models */
+    for (int i = 0; i < model_list.sm_list.size(); i++) {
+        sm_data = model_list.sm_list[i];
+        if (sm_data) {
+            if (sm_data->is_persistent == false && sm_data->data) {
+                free(sm_data->data);
+                sm_data->data = nullptr;
+            }
+        }
+    }
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -2298,8 +2308,10 @@ int32_t StreamSoundTrigger::StIdle::ProcessEvent(
         }
         case ST_EV_CONCURRENT_STREAM: {
             // Avoid handling concurrency before sound model loaded
-            if (!st_stream_.sm_config_)
+            if (!st_stream_.gsl_engine_model_) {
+                PAL_ERR(LOG_TAG, "Avoid handling concurrency as no sound model is Loaded");
                 break;
+            }
             std::shared_ptr<CaptureProfile> new_cap_prof = nullptr;
             bool active = false;
 
@@ -3724,12 +3736,12 @@ int32_t StreamSoundTrigger::StSSR::ProcessEvent(
         case ST_EV_SSR_ONLINE: {
             TransitTo(ST_STATE_IDLE);
             /*
-             * sm_config_ can be NULL if load sound model is failed in
+             * gsl_engine_model_ can be NULL if load sound model is failed in
              * previous SSR online event. This scenario can occur if
              * back to back SSR happens in less than 1 sec.
              */
-            if (!st_stream_.sm_config_) {
-                PAL_ERR(LOG_TAG, "sound model config is NULL");
+            if (!st_stream_.gsl_engine_model_) {
+                PAL_ERR(LOG_TAG, "No sound model loaded");
                 break;
             }
             PAL_INFO(LOG_TAG, "stream state for restore %d", st_stream_.state_for_restore_);
@@ -4267,7 +4279,7 @@ int32_t StreamSoundTrigger::FstageLoad() {
     updateStreamAttributes();
 
     status = gsl_engine_->LoadSoundModel(this,
-        gsl_engine_model_, gsl_engine_model_size_);
+        gsl_engine_model_);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to load sound model, status %d",
             status);

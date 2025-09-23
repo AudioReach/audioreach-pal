@@ -1311,17 +1311,21 @@ int32_t SoundTriggerEngineCapi::UpdateUVScratchParam()
 }
 
 int32_t SoundTriggerEngineCapi::LoadSoundModel(StreamSoundTrigger *s __unused,
-    uint8_t *data, uint32_t data_size)
+    sound_model_data_t *sm_data)
 {
     int32_t status = 0;
     capi_v2_err_t rc = CAPI_V2_EOK;
     capi_v2_proplist_t init_set_proplist;
     capi_v2_prop_t sm_prop_ptr;
     capi_v2_buf_t capi_uv_ptr;
+    bool is_client_handling_ssr = false;
+    stage2_uv_wrapper_ssr_recovery_config_t *cfg = nullptr;
+    stage2_uv_wrapper_model_backend_type_t *sm_backend_type = nullptr;
+    capi_v2_buf_t capi_buf;
 
     PAL_DBG(LOG_TAG, "Enter");
     std::lock_guard<std::mutex> lck(mutex_);
-    if (!data) {
+    if (!sm_data || !sm_data->data) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid sound model data, status %d", status);
         goto exit;
@@ -1334,8 +1338,8 @@ int32_t SoundTriggerEngineCapi::LoadSoundModel(StreamSoundTrigger *s __unused,
     }
 
     stream_handle_ = s;
-    sm_data_ = data;
-    sm_data_size_ = data_size;
+    sm_data_ = sm_data->data;
+    sm_data_size_ = sm_data->size;
 
     sm_prop_ptr.id = CAPI_V2_CUSTOM_INIT_DATA;
     sm_prop_ptr.payload.data_ptr = (int8_t *)sm_data_;
@@ -1411,8 +1415,70 @@ int32_t SoundTriggerEngineCapi::LoadSoundModel(StreamSoundTrigger *s __unused,
                 goto exit;
             }
         }
+
+        sm_backend_type = (stage2_uv_wrapper_model_backend_type_t *)
+                     calloc(1,sizeof(stage2_uv_wrapper_model_backend_type_t));
+        if (!sm_backend_type) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for backend type");
+            status = -ENOMEM;
+            goto exit;
+        }
+
+        capi_buf.data_ptr = (int8_t*) sm_backend_type;
+        capi_buf.actual_data_len = sizeof(stage2_uv_wrapper_model_backend_type_t);
+        capi_buf.max_data_len = sizeof(stage2_uv_wrapper_ssr_recovery_config_t);
+
+        PAL_VERBOSE(LOG_TAG, "Issuing capi_get STAGE2_UV_WRAPPER_ID_MODEL_BACKEND_TYPE");
+        rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
+                           STAGE2_UV_WRAPPER_ID_MODEL_BACKEND_TYPE,
+                           NULL,
+                           &capi_buf);
+
+        if (CAPI_V2_EFAILED == rc) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "capi get param STAGE2_UV_WRAPPER_ID_MODEL_BACKEND_TYPE failed, %d",
+                    rc);
+            goto exit;
+        }
+        if (sm_backend_type->backend_type == STAGE2_UV_WRAPPER_MODEL_BACKEND_TYPE_QNN) {
+            is_client_handling_ssr = sm_cfg_->IsClientHandleSSR();
+            cfg = (stage2_uv_wrapper_ssr_recovery_config_t *)
+                calloc(1, sizeof(stage2_uv_wrapper_ssr_recovery_config_t));
+            if (!cfg) {
+                PAL_ERR(LOG_TAG, "Failed to allocate SSR cfg");
+                status = -ENOMEM;
+                goto exit;
+            }
+
+            capi_buf.data_ptr = (int8_t*) cfg;
+            capi_buf.actual_data_len = sizeof(stage2_uv_wrapper_ssr_recovery_config_t);
+            capi_buf.max_data_len = sizeof(stage2_uv_wrapper_ssr_recovery_config_t);
+            if (is_client_handling_ssr) {
+                cfg->client_handling_ssr = 1;
+                sm_data->is_persistent = false;
+            } else {
+                cfg->client_handling_ssr = 0;
+            }
+
+            PAL_DBG(LOG_TAG, "Is Client Handling SSR = %d",
+               cfg->client_handling_ssr);
+
+            rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+               STAGE2_UV_WRAPPER_ID_SSR_RECOVERY_CONFIG, nullptr, &capi_buf);
+            if (CAPI_V2_EOK != rc) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param %d failed with %d",
+                        STAGE2_UV_WRAPPER_ID_SSR_RECOVERY_CONFIG, rc);
+                goto exit;
+            }
+        }
     }
 exit:
+    if (sm_backend_type)
+        free(sm_backend_type);
+    if (cfg)
+        free(cfg);
+
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;

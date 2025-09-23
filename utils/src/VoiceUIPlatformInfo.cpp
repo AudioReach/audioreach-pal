@@ -217,7 +217,8 @@ VUIStreamConfig::VUIStreamConfig() :
     enable_buffering_ec_(false),
     curr_child_(nullptr),
     lpi_enable_(true),
-    batch_size_in_ms_(0)
+    batch_size_in_ms_(0),
+    client_handling_ssr_(false)
 {
     ext_det_prop_list_.clear();
 }
@@ -413,6 +414,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             batch_size_in_ms_ = std::stoi(value);
         } else if (key == "enable_buffering_ec") {
             enable_buffering_ec_ = (value == "true");
+        } else if (key == "client_handling_ssr") {
+            client_handling_ssr_ = (value == "true");
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

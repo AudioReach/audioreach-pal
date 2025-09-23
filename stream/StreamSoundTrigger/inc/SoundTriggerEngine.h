@@ -66,8 +66,8 @@ public:
 
     virtual ~SoundTriggerEngine() {}
 
-    virtual int32_t LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                                   uint32_t data_size) = 0;
+    virtual int32_t LoadSoundModel(StreamSoundTrigger *s,
+                                   sound_model_data_t *sm_data) = 0;
     virtual int32_t UnloadSoundModel(StreamSoundTrigger *s) = 0;
     virtual int32_t StartRecognition(StreamSoundTrigger *s) = 0;
     virtual int32_t RestartRecognition(StreamSoundTrigger *s) = 0;

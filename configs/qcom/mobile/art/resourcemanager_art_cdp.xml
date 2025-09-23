@@ -1886,6 +1886,15 @@
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
                 <!--param lpi_enable="false" /-->
+                <!-- Flag whether client handling required for 2nd stage DNNUV QNN Subsystem Restart -->
+                <!-- If flag is true, when CDSP SSR occurs second stage UV detection will -->
+                <!-- fail and client app can double confirm by parsing opaque data of failure -->
+                <!-- detection payload and then reload VA to recover. To get failure detection -->
+                <!-- event with necessary payload, below xml changes are needed: -->
+                <!-- 1. notify_second_stage_failure set to true -->
+                <!-- 2. detection_property_list has 0x10003 included -->
+                <!-- If false when CDSP crash occurs it is handled internally without informing the client(default) -->
+                <param client_handling_ssr="false" />
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />

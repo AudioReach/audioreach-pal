@@ -253,6 +253,38 @@ SVAInterface::~SVAInterface() {
     ALOGD("%s: %d: Exit", __func__, __LINE__);
 }
 
+inline int32_t AllocateSMData(
+    int32_t sm_size, uint8_t *ptr,
+    sound_model_data_t **model_data) {
+
+    uint8_t *sm_data = nullptr;
+    int32_t status = 0;
+
+    *model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
+    if (!(*model_data)) {
+        status = -ENOMEM;
+        ALOGE("%s: %d: model_data allocation failed, status %d",
+            __func__, __LINE__, status);
+        return status;
+    }
+
+    sm_data = (uint8_t *)calloc(1, sm_size);
+    if (!sm_data) {
+        status = -ENOMEM;
+        ALOGE("%s: %d: sm_data allocation failed, status %d",
+            __func__, __LINE__, status);
+        free(*model_data);
+        *model_data = nullptr;
+        return status;
+    }
+
+    ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+    (*model_data)->data = sm_data;
+    (*model_data)->size = sm_size;
+    (*model_data)->is_persistent = true;
+    return status;
+}
+
 int32_t SVAInterface::SetParameter(intf_param_id_t param_id,
         vui_intf_param_t *param) {
 
@@ -507,13 +539,13 @@ int32_t SVAInterface::ParseSoundModel(
     struct pal_st_phrase_sound_model *phrase_sm = nullptr;
     struct pal_st_sound_model *common_sm = nullptr;
     uint8_t *sm_payload = nullptr;
-    uint8_t *sm_data = nullptr;
     int32_t sm_size = 0;
     SML_GlobalHeaderType *global_hdr = nullptr;
     SML_HeaderTypeV3 *hdr_v3 = nullptr;
     SML_BigSoundModelTypeV3 *big_sm = nullptr;
     uint32_t offset = 0, sm_payload_size = 0;
     sound_model_data_t *model_data = nullptr;
+    uint8_t *ptr = nullptr;
 
     ALOGD("%s: %d: Enter", __func__, __LINE__);
 
@@ -546,23 +578,16 @@ int32_t SVAInterface::ParseSoundModel(
                 *first_stage_type =
                     (st_module_type_t)(big_sm->versionMajor & 0xFF);
                 sm_size = big_sm->size;
-                sm_data = (uint8_t *)sm_payload +
+                ptr = (uint8_t *)sm_payload +
                     sizeof(SML_GlobalHeaderType) +
                     sizeof(SML_HeaderTypeV3) +
                     (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                     big_sm->offset;
-
-                model_data = (sound_model_data_t *)calloc(1,
-                    sizeof(sound_model_data_t));
-                if (!model_data) {
-                    status = -ENOMEM;
-                    ALOGE("%s: %d: model_data allocation failed, status %d",
-                        __func__, __LINE__, status);
+                status = AllocateSMData(sm_size, ptr, &model_data);
+                if (status)
                     goto error_exit;
-                }
+
                 model_data->type = big_sm->type;
-                model_data->data = sm_data;
-                model_data->size = sm_size;
                 model_list.push_back(model_data);
             } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM &&
                        big_sm->type != SML_ID_SVA_F_STAGE_INTERNAL) {
@@ -574,23 +599,17 @@ int32_t SVAInterface::ParseSoundModel(
                     continue;
                 }
                 sm_size = big_sm->size;
-                sm_data = (uint8_t *)sm_payload +
+
+                ptr = (uint8_t *)sm_payload +
                     sizeof(SML_GlobalHeaderType) +
                     sizeof(SML_HeaderTypeV3) +
                     (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                     big_sm->offset;
-
-                model_data = (sound_model_data_t *)calloc(1,
-                    sizeof(sound_model_data_t));
-                if (!model_data) {
-                    status = -ENOMEM;
-                    ALOGE("%s: %d: model_data allocation failed, status %d",
-                        __func__, __LINE__, status);
+                status = AllocateSMData(sm_size, ptr, &model_data);
+                if (status)
                     goto error_exit;
-                }
+
                 model_data->type = big_sm->type;
-                model_data->data = sm_data;
-                model_data->size = sm_size;
                 model_list.push_back(model_data);
             }
         }
@@ -600,37 +619,23 @@ int32_t SVAInterface::ParseSoundModel(
          * of combined sound model in the opaque data
          */
         if (*first_stage_type == ST_MODULE_TYPE_MMA) {
-            sm_data = sm_payload + sm_payload_size - sizeof(uint32_t);
             sm_size = sizeof(uint32_t);
-
-            model_data = (sound_model_data_t *)calloc(1,
-                sizeof(sound_model_data_t));
-            if (!model_data) {
-                status = -ENOMEM;
-                ALOGE("%s: %d: model_data allocation failed, status %d",
-                    __func__, __LINE__, status);
+            ptr = (uint8_t *)sm_payload + sm_payload_size - sizeof(uint32_t);
+            status = AllocateSMData(sm_size, ptr, &model_data);
+            if (status)
                 goto error_exit;
-            }
+
             model_data->type = ST_SM_ID_SVA_F_STAGE_GMM;
-            model_data->data = sm_data;
-            model_data->size = sm_size;
             model_list.push_back(model_data);
         }
     } else {
         sm_size = sm_payload_size;
-        sm_data = sm_payload;
-
-        model_data = (sound_model_data_t *)calloc(1,
-            sizeof(sound_model_data_t));
-        if (!model_data) {
-            status = -ENOMEM;
-            ALOGE("%s: %d: model_data allocation failed, status %d",
-                __func__, __LINE__, status);
+        ptr = (uint8_t *)sm_payload;
+        status = AllocateSMData(sm_size, ptr, &model_data);
+        if (status)
             goto error_exit;
-        }
+
         model_data->type = ST_SM_ID_SVA_F_STAGE_GMM;
-        model_data->data = sm_data;
-        model_data->size = sm_size;
         model_list.push_back(model_data);
     }
 
@@ -642,6 +647,9 @@ error_exit:
     for (int i = 0; i < model_list.size(); i++) {
         model_data = model_list[i];
         if (model_data) {
+            if (model_data->is_persistent && model_data->data) {
+                free(model_data->data);
+            }
             free(model_data);
         }
     }
@@ -4014,7 +4022,7 @@ exit:
 }
 
 void SVAInterface::DeregisterModel(void *s) {
-    sound_model_data_t *sm_data = nullptr;
+    sound_model_data_t *model_data = nullptr;
 
     auto iter = sm_info_map_.find(s);
     if (iter != sm_info_map_.end() && sm_info_map_[s]) {
@@ -4028,9 +4036,12 @@ void SVAInterface::DeregisterModel(void *s) {
         sm_info_map_[s]->sec_det_level.shrink_to_fit();
 
         for (int i = 0; i < sm_info_map_[s]->model_list.size(); i++) {
-            sm_data = sm_info_map_[s]->model_list[i];
-            if (sm_data) {
-                free(sm_data);
+            model_data = sm_info_map_[s]->model_list[i];
+            if (model_data) {
+                if (model_data->is_persistent && model_data->data) {
+                    free(model_data->data);
+                }
+                free(model_data);
             }
         }
         sm_info_map_[s]->model_list.clear();

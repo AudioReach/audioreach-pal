@@ -54,6 +54,13 @@ typedef struct sound_model_data {
     listen_model_indicator_enum type;
     uint8_t *data;
     uint32_t size;
+    /*
+     * This flag indicates if model data is persistent after load.
+     * For first stage and non-QNNUV Second stage models, flag is true.
+     * For QNNUV Second stage models, model data is persistent only when
+     * App isn't handling SSR.
+     */
+    bool is_persistent;
 } sound_model_data_t;
 
 typedef struct detection_prop_list {

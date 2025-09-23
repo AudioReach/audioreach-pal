@@ -569,8 +569,8 @@ private:
 
     std::vector<std::pair<std::string, InstanceListNode_t>> STInstancesLists;
     pal_device_id_t GetAvailCaptureDevice();
-    std::shared_ptr<SoundTriggerEngine> HandleEngineLoad(uint8_t *sm_data,
-                         int32_t sm_size, listen_model_indicator_enum type,
+    std::shared_ptr<SoundTriggerEngine> HandleEngineLoad(
+                         sound_model_data_t *sm_data,
                          st_module_type_t module_type);
     void AddEngine(std::shared_ptr<EngineCfg> engine_cfg);
     void updateStreamAttributes();
@@ -635,8 +635,7 @@ private:
     pal_stream_callback callback_;
     uint64_t cookie_;
     PalRingBufferReader *reader_;
-    uint8_t *gsl_engine_model_;
-    uint32_t gsl_engine_model_size_;
+    sound_model_data_t *gsl_engine_model_;
     uint8_t *gsl_conf_levels_;
     uint32_t gsl_conf_levels_size_;
 

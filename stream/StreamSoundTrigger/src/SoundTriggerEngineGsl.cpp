@@ -755,14 +755,14 @@ exit:
     return status;
 }
 
-int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                                              uint32_t data_size) {
+int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
+                                              sound_model_data_t *sm_data) {
     int32_t status = 0;
     vui_intf_param_t param {};
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     PAL_DBG(LOG_TAG, "Enter");
-    if (!data) {
+    if (!sm_data || !sm_data->data) {
         PAL_ERR(LOG_TAG, "Invalid sound model data status %d", status);
         status = -EINVAL;
         return status;
@@ -772,7 +772,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
     std::unique_lock<std::mutex> lck(mutex_);
     /* Check whether any stream is already attached to this engine */
     if (CheckIfOtherStreamsAttached(s)) {
-        status = HandleMultiStreamLoad(s, data, data_size);
+        status = HandleMultiStreamLoad(s, sm_data->data, sm_data->size);
         goto exit;
     }
 
@@ -784,8 +784,8 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
 
     /* Update interface with sound model to be added*/
     param.stream = (void *)s;
-    param.data = data;
-    param.size = data_size;
+    param.data = sm_data->data;
+    param.size = sm_data->size;
     status = vui_intf_->SetParameter(PARAM_FSTAGE_SOUND_MODEL_ADD, &param);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to update engine model, status = %d", status);

@@ -144,6 +144,7 @@ public:
     bool IsDetPropSupported(uint32_t prop) const;
     bool GetStreamLPIFlag() const { return lpi_enable_; }
     uint32_t GetBatchSizeInMs() const { return batch_size_in_ms_; }
+    bool IsClientHandleSSR() const { return client_handling_ssr_; }
 
 private:
     std::string name_;
@@ -173,6 +174,7 @@ private:
     std::map<uint32_t, std::shared_ptr<VUIFirstStageConfig>> vui_1st_stage_cfg_list_;
     std::map<UUID, std::shared_ptr<VUIFirstStageConfig>> vui_uuid_1st_stage_cfg_list_;
     std::vector<uint32_t> ext_det_prop_list_;
+    bool client_handling_ssr_;
 };
 
 class VoiceUIPlatformInfo : public SoundTriggerPlatformInfo

@@ -1066,7 +1066,7 @@
     </path>
 
     <path name="ultrasound-mic">
-        <path name="qmp3"/>
+        <path name="qmp4"/>
     </path>
 
     <path name="speaker-hdk">
@@ -1109,7 +1109,7 @@
     </path>
 
     <path name="speaker-mic">
-        <path name="qmp2"/>
+        <path name="qmp1"/>
     </path>
 
     <path name="speaker-mic-sbc">

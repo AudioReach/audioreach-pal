@@ -587,28 +587,29 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
                                             PAL_ASR_EVENT_STATUS_SUCCESS;
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
-            if (ev[i].status == ASR_FAIL) {
+            if (ev->status == ASR_FAIL) {
                 PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
                 goto cleanup;
-            } else if (ev[i].num_words >= MAX_NUM_WORDS) {
-                PAL_INFO(LOG_TAG, "Recieved event, with more words than allowed!!!");
+            } else if (ev->num_words >= MAX_NUM_WORDS) {
+                PAL_INFO(LOG_TAG, "Recieved event, with more words %d than allowed %d!!!",
+                         ev->num_words, MAX_NUM_WORDS);
                 goto cleanup;
             }
 
-            eventPayload->status = ev[i].status == ASR_TIMEOUT ? PAL_ASR_EVENT_STATUS_TIMEOUT :
+            eventPayload->status = ev->status == ASR_TIMEOUT ? PAL_ASR_EVENT_STATUS_TIMEOUT :
                                                         PAL_ASR_EVENT_STATUS_SUCCESS;
-            eventPayload->event[i].is_final = ev[i].is_final;
-            eventPayload->event[i].confidence = ev[i].confidence;
-            eventPayload->event[i].text_size = ev[i].text_size < 0 ? 0 : ev[i].text_size;
-            eventPayload->event[i].start_ts = ((uint64_t)ev[i].segment_start_time_ms_msw << 32 |
-                                              (uint64_t)ev[i].segment_start_time_ms_lsw);
-            eventPayload->event[i].end_ts = ((uint64_t)ev[i].segment_end_time_ms_msw << 32 |
-                                            (uint64_t)ev[i].segment_end_time_ms_lsw);
-            eventPayload->event[i].num_words = ev[i].num_words;
-            words = (asr_word_status_t *)(((uint8_t *)&ev[i]) + sizeof(asr_output_status_v2_t));
+            eventPayload->event[i].is_final = ev->is_final;
+            eventPayload->event[i].confidence = ev->confidence;
+            eventPayload->event[i].text_size = ev->text_size < 0 ? 0 : ev->text_size;
+            eventPayload->event[i].start_ts = ((uint64_t)ev->segment_start_time_ms_msw << 32 |
+                                               (uint64_t)ev->segment_start_time_ms_lsw);
+            eventPayload->event[i].end_ts = ((uint64_t)ev->segment_end_time_ms_msw << 32 |
+                                             (uint64_t)ev->segment_end_time_ms_lsw);
+            eventPayload->event[i].num_words = ev->num_words;
+            words = (asr_word_status_t *)(((uint8_t *)ev) + sizeof(asr_output_status_v2_t));
             for (int j = 0; j < eventPayload->event[i].text_size; ++j)
-                eventPayload->event[i].text[j] = ev[i].text[j];
-            for (int j = 0; j < ev[i].num_words; j++) {
+                eventPayload->event[i].text[j] = ev->text[j];
+            for (int j = 0; j < ev->num_words; j++) {
                 eventPayload->event[i].word[j].word_confidence = words[j].word_confidence;
                 eventPayload->event[i].word[j].start_ts = ((uint64_t)words[j].word_start_time_ms_msw << 32 |
                                                           (uint64_t)words[j].word_start_time_ms_lsw);
@@ -617,6 +618,9 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
                 for (int k = 0; k < words[j].word_size; k++)
                     eventPayload->event[i].word[j].word[k] = words[j].word[k];
             }
+            if (i < eventHeader->num_outputs - 1)
+                ev = (asr_output_status_v2_t *)((uint8_t *)ev + sizeof(asr_output_status_v2_t) +
+                                                 ev->num_words * sizeof(asr_word_status_t));
         }
     } else {
         asr_output_status_t *ev = (asr_output_status_t *)(temp + sizeof(struct param_id_asr_output_t));

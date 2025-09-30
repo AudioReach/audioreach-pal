@@ -126,7 +126,7 @@ public:
     int ResetMmapBuffer(Stream *s) override;
     int openGraph(Stream *s) override;
     int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) override;
-    void adjustMmapPeriodCount(struct pcm_config *config, int32_t min_size_frames);
+    void adjustMmapPeriodCount(struct pcm_config *config);
     void registerAdmStream(Stream *s, pal_stream_direction_t dir,
             pal_stream_flags_t flags, struct pcm *, struct pcm_config *cfg);
     void deRegisterAdmStream(Stream *s);

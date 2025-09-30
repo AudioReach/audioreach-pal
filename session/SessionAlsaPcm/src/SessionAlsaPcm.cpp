@@ -61,7 +61,7 @@ int SessionAlsaPcm::pcmLpmRefCnt = 0;
 #define SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE (48000)
 #define SESSION_ALSA_MMAP_PERIOD_SIZE (SESSION_ALSA_MMAP_DEFAULT_OUTPUT_SAMPLING_RATE/1000)
 #define SESSION_ALSA_MMAP_PERIOD_COUNT_MIN 64
-#define SESSION_ALSA_MMAP_PERIOD_COUNT_MAX 2048
+#define SESSION_ALSA_MMAP_PERIOD_COUNT_MAX 4096
 #define SESSION_ALSA_MMAP_PERIOD_COUNT_DEFAULT (SESSION_ALSA_MMAP_PERIOD_COUNT_MAX)
 /* Param ID definitions */
 #define PARAM_ID_FFV_DOA_TRACKING_MONITOR 0x080010A4
@@ -3306,26 +3306,21 @@ int SessionAlsaPcm::getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info,
     return status;
 }
 
-void SessionAlsaPcm::adjustMmapPeriodCount(struct pcm_config *config, int32_t min_size_frames)
+void SessionAlsaPcm::adjustMmapPeriodCount(struct pcm_config *config)
 {
-    int periodCountRequested = (min_size_frames + config->period_size - 1)
-                               / config->period_size;
-    int periodCount = SESSION_ALSA_MMAP_PERIOD_COUNT_MIN;
+    int requested = config->period_count;
+    int adjusted = SESSION_ALSA_MMAP_PERIOD_COUNT_MIN;
 
-    PAL_VERBOSE(LOG_TAG, "original config.period_size = %d config.period_count = %d",
-                config->period_size, config->period_count);
-
-    while (periodCount < periodCountRequested &&
-        (periodCount * 2) < SESSION_ALSA_MMAP_PERIOD_COUNT_MAX) {
-        periodCount *= 2;
+    while (adjusted < requested && adjusted * 2 <= SESSION_ALSA_MMAP_PERIOD_COUNT_MAX) {
+        adjusted *= 2;
     }
-    config->period_count = periodCount;
 
-    PAL_VERBOSE(LOG_TAG, "requested config.period_count = %d",
-                config->period_count);
+    config->period_count = adjusted;
 
+    if (adjusted != requested) {
+        PAL_DBG(LOG_TAG, "adjusted period_count: %d", adjusted);
+    }
 }
-
 
 int SessionAlsaPcm::createMmapBuffer(Stream *s, int32_t min_size_frames,
                                    struct pal_mmap_buffer *info)
@@ -3409,10 +3404,16 @@ int SessionAlsaPcm::createMmapBuffer(Stream *s, int32_t min_size_frames,
                 break;
         }
 
-        this->adjustMmapPeriodCount(&config, min_size_frames);
+        adjustMmapPeriodCount(&config);
 
-        PAL_DBG(LOG_TAG, "Opening PCM device card_id(%d) device_id(%d), channels %d",
-                rm->getVirtualSndCard(), pcmDevIds.at(0), config.channels);
+        PAL_INFO(LOG_TAG, "Opening PCM device card_id %d, device_id %d,"
+                " rate %u, format %u, channels %u, period_size %u, period_count %u,"
+                "start_threshold %lu, stop_threshold %lu, silence_threshold %lu, silence_size %lu,"
+                " avail_min %lu",
+                rm->getVirtualSndCard(), pcmDevIds.at(0),
+                config.rate, config.format, config.channels, config.period_size,
+                config.period_count, config.start_threshold, config.stop_threshold,
+                config.silence_threshold, config.silence_size, config.avail_min);
 
         pcm = pcm_open(rm->getVirtualSndCard(), pcmDevIds.at(0),
                              pcm_flags, &config);
@@ -3494,15 +3495,11 @@ int SessionAlsaPcm::createMmapBuffer(Stream *s, int32_t min_size_frames,
 
  exit:
      if (status < 0) {
-        if (pcm == NULL) {
-            PAL_ERR(LOG_TAG, "%s - %d",step, status);
-        } else {
-            PAL_ERR(LOG_TAG, "%s - %d",step, status);
-            if (pcm) {
-                pcm_close(pcm);
-                pcm = NULL;
-            }
-        }
+         PAL_ERR(LOG_TAG, "%s - %d",step, status);
+         if (pcm) {
+             pcm_close(pcm);
+             pcm = NULL;
+         }
      } else {
          status = 0;
      }

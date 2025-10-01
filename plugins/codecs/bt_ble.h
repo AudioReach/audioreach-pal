@@ -83,6 +83,7 @@ typedef struct audio_lc3_codec_cfg_s {
     lc3_decoder_cfg_t dec_cfg;
     bool is_enc_config_set;
     bool is_dec_config_set;
+    bool streaming_DSA_HW;
 } audio_lc3_codec_cfg_t;
 
 static uint32_t audio_location_map_array[] = {
@@ -188,6 +189,11 @@ static lc3_stream_map_t def_stream_map_out[DEF_STREAM_MAP_SZ] = {
     {1, 1, 0},
 };
 
+#define DEF_STREAM_MAP_IN_SZ 2
+static lc3_stream_map_t def_stream_map_in[DEF_STREAM_MAP_IN_SZ] = {
+    {2, 0, 1},
+    {1, 1, 1},
+};
 static lc3_cfg_t def_toair_cfg = {
     33,
     16000,

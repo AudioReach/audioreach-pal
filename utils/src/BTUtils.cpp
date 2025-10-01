@@ -1,4 +1,4 @@
-/*
+	/*
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
@@ -993,6 +993,12 @@ int32_t a2dpResumeFromDummy(pal_device_id_t dev_id)
     // Retry all orphan streams which failed to restore previously.
     for (sIter = orphanStreams.begin(); sIter != orphanStreams.end(); sIter++) {
         (*sIter)->lockStreamMutex();
+        pal_stream_type_t streamType;
+        (*sIter)->getStreamType(&streamType);
+        if (streamType == PAL_STREAM_CONTEXT_PROXY) {
+            (*sIter)->unlockStreamMutex();
+            continue;
+        }
         if (std::find((*sIter)->suspendedOutDevIds.begin(),
                 (*sIter)->suspendedOutDevIds.end(), a2dpDattr.id)
                 != (*sIter)->suspendedOutDevIds.end()) {
@@ -1007,6 +1013,14 @@ int32_t a2dpResumeFromDummy(pal_device_id_t dev_id)
      */
     for (sIter = retryStreams.begin(); sIter != retryStreams.end(); sIter++) {
         (*sIter)->lockStreamMutex();
+
+        pal_stream_type_t streamType;
+        (*sIter)->getStreamType(&streamType);
+        if (streamType == PAL_STREAM_CONTEXT_PROXY) {
+            (*sIter)->unlockStreamMutex();
+            continue;
+        }
+
         if (std::find((*sIter)->suspendedOutDevIds.begin(),
                 (*sIter)->suspendedOutDevIds.end(), a2dpDattr.id)
                 != (*sIter)->suspendedOutDevIds.end()) {

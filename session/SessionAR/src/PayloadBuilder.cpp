@@ -60,6 +60,7 @@
 #include "cop_packetizer_v0_api.h"
 #include "cop_v2_depacketizer_api.h"
 #include "cop_v2_packetizer_api.h"
+#include "sa_hdt_api.h"
 #include "lc3_encoder_api.h"
 #include "audio_dam_buffer_api.h"
 #include "aptx_classic_encoder_api.h"
@@ -2466,6 +2467,107 @@ void PayloadBuilder::payloadScramblingConfig(uint8_t** payload, size_t* size,
                 *size);
 }
 
+void PayloadBuilder::payloadHdtStreamInfo(uint8_t **payload, size_t *size,
+        uint32_t miid, void *codecInfo, bool isStreamMapDirIn)
+{
+    struct apm_module_param_data_t* header = NULL;
+    struct param_id_sa_hdt_stream_info_t *streamInfo = NULL;
+    uint8_t* payloadInfo = NULL;
+    audio_lc3_codec_cfg_t *bleCfg = NULL;
+    struct sa_hdt_stream_info_map_t* streamMap = NULL;
+    size_t payloadSize = 0, padBytes = 0, streamMapSize = 0;
+    uint64_t channel_mask = 0;
+    int i = 0;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+
+    bleCfg = (audio_lc3_codec_cfg_t *)codecInfo;
+    if (!bleCfg) {
+        PAL_ERR(LOG_TAG, "Invalid input parameters");
+        return;
+    }
+
+    if (!isStreamMapDirIn) {
+        if (!bleCfg->is_enc_config_set)
+            streamMapSize = DEF_STREAM_MAP_SZ;
+        else
+            streamMapSize = bleCfg->enc_cfg.stream_map_size;
+        payloadSize = sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct param_id_sa_hdt_stream_info_t) +
+                      sizeof(struct sa_hdt_stream_info_map_t) * streamMapSize;
+    } else if (isStreamMapDirIn && bleCfg->dec_cfg.stream_map_size != 0) {
+        streamMapSize = bleCfg->dec_cfg.stream_map_size;
+        payloadSize = sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct param_id_sa_hdt_stream_info_t) +
+                      sizeof(struct sa_hdt_stream_info_map_t) * streamMapSize;
+    } else if (isStreamMapDirIn && bleCfg->dec_cfg.stream_map_size == 0) {
+        streamMapSize = DEF_STREAM_MAP_IN_SZ;
+        PAL_DBG(LOG_TAG, "isStreamMapDirIn is true, but empty streamMapIn size %d",streamMapSize);
+        payloadSize = sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct param_id_sa_hdt_stream_info_t) +
+                      sizeof(struct sa_hdt_stream_info_map_t) * streamMapSize;
+    }
+
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo alloc failed %s", strerror(errno));
+        return;
+    }
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    streamInfo = (struct param_id_sa_hdt_stream_info_t*)(payloadInfo +
+                  sizeof(struct apm_module_param_data_t));
+    streamMap = (struct sa_hdt_stream_info_map_t*)(payloadInfo +
+                 sizeof(struct apm_module_param_data_t) +
+                 sizeof(struct param_id_sa_hdt_stream_info_t));
+
+    header->module_instance_id = miid;
+    header->param_id = PARAM_ID_SA_HDT_STREAM_INFO;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
+                      header->module_instance_id, header->param_id,
+                      header->error_code, header->param_size);
+
+    streamInfo->num_streams = streamMapSize;
+    if (!isStreamMapDirIn && !bleCfg->is_enc_config_set) {
+        for (i = 0; i < streamMapSize; i++) {
+            channel_mask = convert_channel_map(def_stream_map_out[i].audio_location);
+            streamMap[i].stream_id = def_stream_map_out[i].stream_id;
+            streamMap[i].direction = def_stream_map_out[i].direction;
+            streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+            streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+        }
+    } else if (!isStreamMapDirIn) {
+        for (i = 0; i < streamMapSize; i++) {
+            channel_mask = convert_channel_map(bleCfg->enc_cfg.streamMapOut[i].audio_location);
+            streamMap[i].stream_id = bleCfg->enc_cfg.streamMapOut[i].stream_id;
+            streamMap[i].direction = bleCfg->enc_cfg.streamMapOut[i].direction;
+            streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+            streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+        }
+    } else {
+        for (i = 0; i < streamMapSize; i++) {
+            if (bleCfg->dec_cfg.stream_map_size == 0) {
+                channel_mask = convert_channel_map(def_stream_map_in[i].audio_location);
+                streamMap[i].stream_id = def_stream_map_in[i].stream_id;
+                streamMap[i].direction = def_stream_map_in[i].direction;
+                streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+                streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+            } else {
+                channel_mask = convert_channel_map(bleCfg->dec_cfg.streamMapIn[i].audio_location);
+                streamMap[i].stream_id = bleCfg->dec_cfg.streamMapIn[i].stream_id;
+                streamMap[i].direction = bleCfg->dec_cfg.streamMapIn[i].direction;
+                streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+                streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+            }
+        }
+    }
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+    PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", payloadInfo, *size);
+}
+
 void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
         uint32_t miid, void *codecInfo, bool isStreamMapDirIn)
 {
@@ -2500,7 +2602,10 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
                       sizeof(struct cop_v2_stream_info_map_t) * streamMapSize;
     } else if (isStreamMapDirIn && bleCfg->dec_cfg.stream_map_size == 0) {
         PAL_ERR(LOG_TAG, "isStreamMapDirIn is true, but empty streamMapIn");
-        return;
+        streamMapSize = DEF_STREAM_MAP_IN_SZ;
+        payloadSize = sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct param_id_cop_v2_stream_info_t) +
+                      sizeof(struct cop_v2_stream_info_map_t) * streamMapSize;
     }
 
     padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
@@ -2544,11 +2649,19 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
         }
     } else {
         for (i = 0; i < streamMapSize; i++) {
-            channel_mask = convert_channel_map(bleCfg->dec_cfg.streamMapIn[i].audio_location);
-            streamMap[i].stream_id = bleCfg->dec_cfg.streamMapIn[i].stream_id;
-            streamMap[i].direction = bleCfg->dec_cfg.streamMapIn[i].direction;
-            streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
-            streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+            if (bleCfg->dec_cfg.stream_map_size == 0) {
+                channel_mask = convert_channel_map(def_stream_map_in[i].audio_location);
+                streamMap[i].stream_id = def_stream_map_in[i].stream_id;
+                streamMap[i].direction = def_stream_map_in[i].direction;
+                streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+                streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+            } else {
+                channel_mask = convert_channel_map(bleCfg->dec_cfg.streamMapIn[i].audio_location);
+                streamMap[i].stream_id = bleCfg->dec_cfg.streamMapIn[i].stream_id;
+                streamMap[i].direction = bleCfg->dec_cfg.streamMapIn[i].direction;
+                streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+                streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+            }
         }
     }
     *size = payloadSize + padBytes;
@@ -2567,12 +2680,13 @@ int PayloadBuilder::getDeviceKV(int dev_id, std::vector<std::pair<int,int>>& dev
 
 /** Used for BT device KVs only */
 int PayloadBuilder::getBtDeviceKV(int dev_id, std::vector<std::pair<int,int>>& deviceKV,
-    uint32_t codecFormat, bool isAbrEnabled, bool isHostless)
+    uint32_t codecFormat, bool isAbrEnabled, bool isHostless, bool isSAOffloadEnabled)
 {
     int status = 0;
     PAL_INFO(LOG_TAG, "Enter: codecFormat:0x%x, isabrEnabled:%d, isHostless:%d",
         codecFormat, isAbrEnabled, isHostless);
     std::vector<std::pair<selector_type_t, std::string>> filled_selector_pairs;
+    std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     filled_selector_pairs.push_back(std::make_pair(CODECFORMAT_SEL,
                                    btCodecFormatLUT.at(codecFormat)));
@@ -2588,6 +2702,11 @@ int PayloadBuilder::getBtDeviceKV(int dev_id, std::vector<std::pair<int,int>>& d
         dev_id == PAL_DEVICE_IN_BLUETOOTH_BLE) {
         filled_selector_pairs.push_back(std::make_pair(HOSTLESS_SEL,
             isHostless ? "TRUE" : "FALSE"));
+        // use HDT feedback graph if HDT is enabled
+        if (rm->IsSAHDTEnabled() && dev_id == PAL_DEVICE_IN_BLUETOOTH_BLE) {
+            filled_selector_pairs.push_back(std::make_pair(BLE_ABR_SEL,
+            isSAOffloadEnabled ? "TRUE" : "FALSE"));
+        }
     }
     status = retrieveKVs(filled_selector_pairs, dev_id, all_devices, deviceKV);
     PAL_INFO(LOG_TAG, "Exit, status %d", status);

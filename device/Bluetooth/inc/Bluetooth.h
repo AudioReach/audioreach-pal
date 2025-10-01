@@ -250,6 +250,7 @@ private:
     bool            mIsA2dpOffloadSupported;
     bool            mSupport_bt_audio_pre_init;
     uint32_t        mA2dpLatencyMode;
+    bool            mA2dpLatencyUpdatedFromFramework;
     uint32_t        mCodecLatency;
     std::unique_ptr<SoundDoseUtility> mSoundDose;
 

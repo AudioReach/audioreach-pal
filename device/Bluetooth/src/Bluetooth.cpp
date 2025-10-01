@@ -126,7 +126,7 @@ int Bluetooth::updateDeviceMetadata()
     }
 
     ret = PayloadBuilder::getBtDeviceKV(deviceAttr.id, keyVector, mCodecFormat,
-        mIsAbrEnabled, false);
+            mIsAbrEnabled, false, false);
     if (ret)
         PAL_ERR(LOG_TAG, "No KVs found for device id %d codec format:0x%x",
             deviceAttr.id, mCodecFormat);
@@ -282,19 +282,33 @@ int Bluetooth::configureCOPModule(int32_t pcmId, const char *backendName, uint32
     if ((tagId == COP_PACKETIZER_V0) && rm->IsCPEnabled())
         return status;
 
+    //if spatial audio headtracking is not enabled, return
+    if ((tagId == MODULE_SA_HDT) && !rm->IsSAHDTEnabled())
+        return status;
+
     status = SessionAlsaUtils::getModuleInstanceId(virtualMixerHandle,
                      pcmId, backendName, tagId, &miid);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
+        if (tagId == MODULE_SA_HDT) {
+            status = 0;
+        }
         goto done;
     }
 
     switch(tagId) {
     case COP_DEPACKETIZER_V2:
     case COP_PACKETIZER_V2:
+    case MODULE_SA_HDT:
         if (streamMapDir & STREAM_MAP_IN) {
-            builder->payloadCopV2StreamInfo(&paramData, &paramSize,
+            if (tagId == MODULE_SA_HDT) {
+                builder->payloadHdtStreamInfo(&paramData, &paramSize,
                     miid, mCodecInfo, true /* StreamMapIn */);
+            }
+            else {
+                builder->payloadCopV2StreamInfo(&paramData, &paramSize,
+                    miid, mCodecInfo, true /* StreamMapIn */);
+            }
             if (isFbPayload)
                 status = mFBDev->checkAndUpdateCustomPayload(&paramData, &paramSize);
             else
@@ -305,13 +319,18 @@ int Bluetooth::configureCOPModule(int32_t pcmId, const char *backendName, uint32
             }
         }
         if (streamMapDir & STREAM_MAP_OUT) {
-            builder->payloadCopV2StreamInfo(&paramData, &paramSize,
+            if (tagId == MODULE_SA_HDT) {
+                builder->payloadHdtStreamInfo(&paramData, &paramSize,
                     miid, mCodecInfo, false /* StreamMapOut */);
+            }
+            else {
+                builder->payloadCopV2StreamInfo(&paramData, &paramSize,
+                    miid, mCodecInfo, false /* StreamMapOut */);
+            }
             if (isFbPayload)
                 status = mFBDev->checkAndUpdateCustomPayload(&paramData, &paramSize);
             else
                 status = this->checkAndUpdateCustomPayload(&paramData, &paramSize);
-            status = checkAndUpdateCustomPayload(&paramData, &paramSize);
             if (status) {
                 PAL_ERR(LOG_TAG, "Invalid COPv2 module param size");
                 goto done;
@@ -836,6 +855,8 @@ void Bluetooth::startAbr()
     PayloadBuilder* builder = NULL;
     bool isDeviceLocked = false;
     audio_lc3_codec_cfg_t* bt_ble_codec = NULL;
+    bool isHWSpatializerEnabled = false;
+    bool isHDTEnabled = rm->IsSAHDTEnabled();
 
     memset(&fbDevice, 0, sizeof(fbDevice));
     memset(&sAttr, 0, sizeof(sAttr));
@@ -896,10 +917,21 @@ void Bluetooth::startAbr()
         PAL_ERR(LOG_TAG, "failed to get Bt device object for %d", fbDevice.id);
         goto done;
     }
+
+    bt_ble_codec = (audio_lc3_codec_cfg_t *)mCodecInfo;
+    if (bt_ble_codec) {
+        if (fbDevice.id == PAL_DEVICE_IN_BLUETOOTH_BLE && mCodecFormat == CODEC_TYPE_LC3 && isHDTEnabled) {
+            if (bt_ble_codec->streaming_DSA_HW) {
+                PAL_DBG(LOG_TAG, "setting tx enabled true for ABR GKV");
+                isHWSpatializerEnabled = true;
+            }
+        }
+    }
+
     builder = new PayloadBuilder();
 
     ret = PayloadBuilder::getBtDeviceKV(fbDevice.id, keyVector, mCodecFormat,
-        true, true);
+              true, true, isHWSpatializerEnabled);
     if (ret)
         PAL_ERR(LOG_TAG, "No KVs found for device id %d codec format:0x%x",
             fbDevice.id, mCodecFormat);
@@ -1048,10 +1080,20 @@ void Bluetooth::startAbr()
         case CODEC_TYPE_LC3:
         case CODEC_TYPE_APTX_AD_QLEA:
         case CODEC_TYPE_APTX_AD_R4:
-            ret = configureCOPModule(mFBPcmDevIds.at(0), backEndName.c_str(), COP_DEPACKETIZER_V2, STREAM_MAP_OUT, true);
+             if (mCodecFormat == CODEC_TYPE_LC3 && isHDTEnabled && isHWSpatializerEnabled)
+                ret = configureCOPModule(mFBPcmDevIds.at(0), backEndName.c_str(), COP_DEPACKETIZER_V2, STREAM_MAP_IN | STREAM_MAP_OUT, true);
+            else
+                ret = configureCOPModule(mFBPcmDevIds.at(0), backEndName.c_str(), COP_DEPACKETIZER_V2, STREAM_MAP_OUT, true);
             if (ret) {
                 PAL_ERR(LOG_TAG, "Failed to configure 0x%x", COP_DEPACKETIZER_V2);
                 goto disconnect_fe;
+            }
+            if (mCodecFormat == CODEC_TYPE_LC3) {
+                ret = configureCOPModule(mFBPcmDevIds.at(0), backEndName.c_str(), MODULE_SA_HDT, STREAM_MAP_IN, true);
+                if (ret) {
+                    PAL_ERR(LOG_TAG, "Failed to configure 0x%x", MODULE_SA_HDT);
+                    goto disconnect_fe;
+                }
             }
             break;
         default:
@@ -1863,7 +1905,15 @@ int BtA2dp::stopPlayback()
 #ifdef FEATURE_IPQ_OPENWRT
     mA2dpLatencyMode = AUDIO_LATENCY_NORMAL;
 #else
-    mA2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
+    if(!mParamBtA2dp.reconfig || !mA2dpLatencyUpdatedFromFramework || mParamBtA2dp.is_in_call)
+    {
+        mA2dpLatencyMode = AUDIO_LATENCY_MODE_FREE;
+    }
+    if (mA2dpLatencyUpdatedFromFramework){
+        mA2dpLatencyUpdatedFromFramework = false;
+    }
+    mParamBtA2dp.reconfig = false;
+    mParamBtA2dp.is_in_call = false;
 #endif
         mCodecInfo = NULL;
         mParamBtA2dp.latency = 0;
@@ -2174,6 +2224,8 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
             goto exit;
 
         mParamBtA2dp.is_suspend_setparam = param_a2dp->is_suspend_setparam;
+        mParamBtA2dp.reconfig = param_a2dp->reconfig;
+        mParamBtA2dp.is_in_call = param_a2dp->is_in_call;
 
         if (mParamBtA2dp.a2dp_suspended == param_a2dp->a2dp_suspended)
             goto exit;
@@ -2348,6 +2400,7 @@ int32_t BtA2dp::setDeviceParameter(uint32_t param_id, void *param)
     {
         if (audio_source_set_latency_mode_api) {
             mA2dpLatencyMode = ((pal_param_latency_mode_t *)param)->modes[0];
+            mA2dpLatencyUpdatedFromFramework = true;
             status = audio_source_set_latency_mode_api(get_session_type(), mA2dpLatencyMode);
             if (status) {
                 PAL_ERR(LOG_TAG, "Set Parameter %d failed for value %d with exit status %d", param_id, mA2dpLatencyMode, status);

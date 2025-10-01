@@ -1722,15 +1722,19 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
 
     monitor_payload.version = ADSPSLEEPMON_IOCTL_AUDIO_VER_1;
 
-    //For calibration mode as we dont have stream associated so skipping it
-    if (str == nullptr) {
-        goto update_sleep_mon;
-    }
-
-    ret = str->getStreamType(&type);
-    if (ret != 0) {
-        PAL_ERR(LOG_TAG, "getStreamType failed with status : %d", ret);
-        return ret;
+    if (str) {
+        ret = str->getStreamType(&type);
+        if (ret != 0) {
+            PAL_ERR(LOG_TAG, "getStreamType failed with status : %d", ret);
+            return ret;
+        }
+    } else {
+        // Using Haptics stream type when called without stream object, as its done only during
+        // calibration mode for Haptics, and as we use stream object only to get type, so that
+        // type of vote can be decided, and all low power streams will always call using stream
+        // object, hence using any NLPI stream type will work here.
+        type = PAL_STREAM_HAPTICS;
+        PAL_VERBOSE(LOG_TAG, "Stream object was null using stream type %d", type);
     }
     PAL_VERBOSE(LOG_TAG, "Enter for stream type %d", type);
 
@@ -1740,13 +1744,25 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
     }
 
     if (sleep_monitor_vote_type_[type] == LPI_VOTE) {
-        lpi_stream = (!force_nlpi_vote && str->ConfigSupportLPI() &&
-                      !IsTransitToNonLPIOnChargingSupported());
+        lpi_stream = !force_nlpi_vote && str->ConfigSupportLPI();
     }
 
-update_sleep_mon:
     mSleepMonitorMutex.lock();
     if (vote) {
+        /* Following 'if' condition checks, when first stream(could be any stream) arrived here to vote,
+         * if charger was connected but hasn't voted for itself, if it turns out to be true, then set
+         * the charger_vote_ to true and make recursive call to vote for charger(by setting force_nlpi_vote
+         * to true), that recursive call will not make any further recursive calls because charging_vote_
+         * is set to true which will make following 'if' condition false in recursive call.
+         * Charger is voted from here only when, charger was already connected when first stream arrivd to
+         * vote for itself.
+         */
+        if (!getChargingVoteState() && CheckForForcedTransitToNonLPI()) {
+            setChargingVoteState(true);
+            mSleepMonitorMutex.unlock();
+            voteSleepMonitor(str, vote, true);
+        }
+
         if (lpi_stream) {
             if (++lpi_counter_ >= 1) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_START;
@@ -1763,6 +1779,17 @@ update_sleep_mon:
             }
         }
     } else {
+        /* Following 'if' condition checks, if vote for charger is done, and total number of votes is 2,
+         * which means the stream, which is here to unvote itself is last stream as one vote is for charger,
+         * hence, first unvote the charger then unvote the last stream here, for this, first we set set the
+         * charging_vote_ as false(to avoid further recursive calls), then make recusive call to unvote by
+         * setting force_nlpi_vote_ to true, as charger vote was nlpi vote only.
+         */
+        if (getChargingVoteState() && getSleepMonitorVoteCount() == 2) {
+            setChargingVoteState(false);
+            mSleepMonitorMutex.unlock();
+            voteSleepMonitor(str, vote, true);
+        }
         if (lpi_stream) {
             if (--lpi_counter_ >= 0) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_STOP;
@@ -1798,8 +1825,18 @@ update_sleep_mon:
     mSleepMonitorMutex.unlock();
     return ret;
 }
+
+int ResourceManager::getSleepMonitorVoteCount()
+{
+    return lpi_counter_ + nlpi_counter_;
+}
 #else
 int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlpi_vote)
+{
+    return 0;
+}
+
+int ResourceManager::getSleepMonitorVoteCount()
 {
     return 0;
 }

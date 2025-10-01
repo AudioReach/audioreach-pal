@@ -611,6 +611,7 @@ private:
     adm_request_focus_v2_1_t  admRequestFocus_v2_1Fn = NULL;
     void *admData = NULL;
     void *admLibHdl = NULL;
+    bool charging_vote_ = false;
     static void *cl_lib_handle;
     static cl_init_t cl_init;
     static cl_deinit_t cl_deinit;
@@ -956,6 +957,8 @@ public:
     void unlockResourceManagerMutex() {mResourceManagerMutex.unlock();};
     void lockChargerBoostMutex() { mChargerBoostMutex.lock(); };
     void unlockChargerBoostMutex() { mChargerBoostMutex.unlock(); };
+    void lockSleepMonitorMutex() { mSleepMonitorMutex.lock(); };
+    void unlockSleepMonitorMutex() {mSleepMonitorMutex.unlock(); };
     void getSharedBEActiveStreamDevs(std::vector <std::tuple<Stream *, uint32_t>> &activeStreamDevs,
                                      int dev_id);
     bool compareSharedBEStreamDevAttr(std::vector <std::tuple<Stream *, uint32_t>> &sharedBEStreamDev,
@@ -984,6 +987,9 @@ public:
     void restoreDevice(std::shared_ptr<Device> dev);
     bool doDevAttrDiffer(struct pal_device *inDevAttr,
                          struct pal_device *curDevAttr);
+    int getSleepMonitorVoteCount();
+    void setChargingVoteState(bool state) { charging_vote_ = state; }
+    bool getChargingVoteState() { return charging_vote_; }
     int32_t voteSleepMonitor(Stream *str, bool vote, bool force_nlpi_vote = false);
     static uint32_t palFormatToBitwidthLookup(const pal_audio_fmt_t format);
     void chargerListenerFeatureInit();

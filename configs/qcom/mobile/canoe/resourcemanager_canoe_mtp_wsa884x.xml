@@ -41,6 +41,7 @@
         <param key="max_sessions" value="128"/>
         <param key="max_nonTunnel_sessions" value="4"/>
         <param key="connectivity_proxy_enabled" value ="true" />
+        <param key="spatialaudio_headtracking_enabled" value ="false" />
         <param key="logging_level" value ="3" />
         <param key="context_manager_enable" value ="true" />
         <!-- change PAL_DEVICE_OUT_ULTRASOUND_DEDICATED backend name when set it to true -->

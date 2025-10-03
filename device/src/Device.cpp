@@ -987,6 +987,10 @@ int Device::setMediaConfig(std::shared_ptr<ResourceManager> rmHandle,
          */
         aif_media_config[2] = bitsToAlsaFormat(dAttr->config.bit_width);
         aif_media_config[3] = AGM_DATA_FORMAT_COMPR_OVER_PCM_PACKETIZED;
+    } else if (backEndName.find("TDM") != std::string::npos && rmHandle->getWsaUsed() == 4) {
+        //  If TDM backend is used with WSA885x_i2c, set the bitwidth to 32
+        aif_media_config[2] = bitsToAlsaFormat(32);
+        aif_media_config[3] = AGM_DATA_FORMAT_FIXED_POINT;
     } else {
         aif_media_config[2] = palToSndDriverFormat((uint32_t)dAttr->config.aud_fmt_id);
         aif_media_config[3] = AGM_DATA_FORMAT_FIXED_POINT;

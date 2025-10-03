@@ -172,7 +172,7 @@
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
             <max_channels>4</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
@@ -299,7 +299,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_SPEAKER_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
             <max_channels>4</max_channels>
             <samplerate>48000</samplerate>
             <channels>1</channels>
@@ -413,7 +413,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>headset-mic</snd_device_name>
@@ -508,7 +508,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF_VA-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
@@ -526,7 +526,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HEADSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF_VA-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>headset-va-mic</snd_device_name>
@@ -587,7 +587,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_FM_TUNER</id>
-            <back_end_name>MI2S-LPAIF-TX-SECONDARY</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-TX-5</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <snd_device_name>play-fm</snd_device_name>
@@ -619,7 +619,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_VI_FEEDBACK</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-TX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-TX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -633,7 +633,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_CPS_FEEDBACK</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-TX-2</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -694,7 +694,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_ULTRASOUND_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-4</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-11</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <samplerate>96000</samplerate>
@@ -707,7 +707,7 @@
         <in-device>
             <id>PAL_DEVICE_IN_EXT_EC_REF</id>
             <!-- The below back_end_name is for internal testing purpose only, needs to be modified to appropriate value if TDM/MI2S -->
-            <back_end_name>CODEC_DMA-LPAIF_WSA-TX-1</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-1</back_end_name>
             <snd_device_name>ext_ec_ref_tx</snd_device_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
@@ -728,11 +728,11 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-TX-0</back_end_name>
-            <snd_device_name>haptics-vi-feedback-mono</snd_device_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <bit_width>32</bit_width>
+            <back_end_name>CODEC_DMA-QAIF-TX-7</back_end_name>
+            <snd_device_name>haptics-vi-feedback</snd_device_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <bit_width>16</bit_width>
             <samplerate>48000</samplerate>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
@@ -770,7 +770,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_NONE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>none</snd_device_name>
@@ -779,7 +779,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -794,14 +794,14 @@
                         Pandeiro     : 3
                         Pandeiro I2S : 4
             -->
-            <wsa_used>3</wsa_used>
+            <wsa_used>4</wsa_used>
             <!-- Flag to specify cps mode which is applicable
                  Values: disable CPS: 0
                          CPS streaming: 1
                          ADSP control mode: 2
             -->
             <cps_mode>1</cps_mode>
-            <vbat_enabled>1</vbat_enabled>
+            <vbat_enabled>0</vbat_enabled>
             <!--specify the supported bit format on speaker end point -->
             <!--this should be in the form of pal_audio_fmt_id-->
             <!--e.g <supported_bit_format >PAL_AUDIO_FMT_PCM_S24_LE</supported_bit_format>-->
@@ -845,7 +845,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -876,7 +876,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-7</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
@@ -916,7 +916,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-7</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
@@ -1120,7 +1120,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-RX-1</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-6</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
@@ -1128,7 +1128,7 @@
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">
-                    <backend_name>CODEC_DMA-LPAIF_WSA2-RX-1</backend_name>
+                    <backend_name>CODEC_DMA-QAIF-RX-6</backend_name>
                     <snd_device_name>haptics-dev</snd_device_name>
                     <samplerate>48000</samplerate>
                     <bit_width>16</bit_width>
@@ -1137,7 +1137,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>ultrasound-handset-wsa</snd_device_name>
@@ -1159,7 +1159,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND_DEDICATED</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>handset-wsa</snd_device_name>

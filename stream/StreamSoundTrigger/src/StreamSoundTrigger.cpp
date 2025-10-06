@@ -118,6 +118,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     ec_rx_dev_ = nullptr;
     conc_notified_ = false;
     session = nullptr;
+    vote_type_ = LPI_VOTE;
     mDevices.clear();
     std::list<Stream*> activeSTStreams;
 
@@ -2488,6 +2489,8 @@ int32_t StreamSoundTrigger::StLoaded::ProcessEvent(
                     dev->setSndName(cap_prof->GetSndName());
                     dev->setDeviceAttributes(dattr);
                 }
+                st_stream_.setVoteType(cap_prof->GetSndName().find("lpi") ==
+                                       std::string::npos ? NLPI_VOTE : LPI_VOTE);
 
                 if (!st_stream_.device_opened_) {
                     /*

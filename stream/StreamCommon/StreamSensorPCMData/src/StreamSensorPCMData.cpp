@@ -72,6 +72,7 @@ StreamSensorPCMData::StreamSensorPCMData(const struct pal_stream_attributes *sat
     int32_t disable_concurrency_count = 0;
     paused_ = false;
     conc_notified_ = false;
+    vote_type_ = LPI_VOTE;
 
     PAL_DBG(LOG_TAG, "Enter");
     /* get ACD platform info */
@@ -237,6 +238,8 @@ int32_t StreamSensorPCMData::start_l()
             goto exit;
         }
 
+        setVoteType(cap_prof_->GetSndName().find("lpi") ==
+                    std::string::npos ? NLPI_VOTE : LPI_VOTE);
         rm->voteSleepMonitor(this, true);
         status = device->open();
         rm->voteSleepMonitor(this, false);
@@ -680,16 +683,23 @@ int32_t StreamSensorPCMData::HandleConcurrentStream(bool active)
             if (status)
                 PAL_ERR(LOG_TAG, "Error:%d Failed to disconnect device %d",
                         status, GetAvailCaptureDevice());
+            rm->voteSleepMonitor(this, false);
         } else {
             /* store the pre-proc KV selected in the config file */
             if (new_cap_prof)
                 mDevPPSelector = new_cap_prof->GetName();
             /* connect the backend device */
+
+            setVoteType(new_cap_prof->GetSndName().find("lpi") ==
+                        std::string::npos ? NLPI_VOTE : LPI_VOTE);
+            rm->voteSleepMonitor(this, true);
             PAL_DBG(LOG_TAG, "connect device %d", GetAvailCaptureDevice());
             status = ConnectDevice_l(GetAvailCaptureDevice());
-            if (status)
+            if (status) {
                 PAL_ERR(LOG_TAG, "Error:%d Failed to connect device %d",
                         status, GetAvailCaptureDevice());
+                rm->voteSleepMonitor(this, false);
+            }
         }
     } else {
       PAL_INFO(LOG_TAG, "no action needed, same capture profile");

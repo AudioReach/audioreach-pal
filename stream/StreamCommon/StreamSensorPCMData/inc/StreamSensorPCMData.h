@@ -73,6 +73,8 @@ public:
     int32_t ConnectDevice(pal_device_id_t device_id) override;
     pal_device_id_t GetAvailCaptureDevice();
     bool isStreamSupported() override {return true;}
+    vote_type_t getVoteType() override { return vote_type_; };
+    void setVoteType(vote_type_t type) { vote_type_ = type; };
 
 private:
     void GetUUID(class SoundTriggerUUID *uuid, const struct st_uuid *vendor_uuid);
@@ -91,6 +93,7 @@ private:
     spcm_param_t spcm_param;
     bool paused_;
     bool conc_notified_;
+    vote_type_t vote_type_;
 
     class InstAllocator {
     private:

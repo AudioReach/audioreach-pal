@@ -1711,8 +1711,8 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
 
     int32_t ret = 0;
     int fd = 0;
-    pal_stream_type_t type;
-    bool lpi_stream = false;
+    pal_stream_type_t type = PAL_STREAM_MAX;
+    vote_type_t vote_type = NLPI_VOTE;
     struct adspsleepmon_ioctl_audio monitor_payload;
 
     if (sleepmon_fd_ == -1) {
@@ -1722,32 +1722,34 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
 
     monitor_payload.version = ADSPSLEEPMON_IOCTL_AUDIO_VER_1;
 
-    //For calibration mode as we dont have stream associated so skipping it
-    if (str == nullptr) {
-        goto update_sleep_mon;
+    /* This API can be called with Stream object as null, in those cases voting will
+     * be done for NLPI only, hence we don't need to update vote_type, as its default
+     * value itself is NLPI. And used PAL_STREAM_MAX as 'type's default value to avoid
+     * printing garbage value for str == null case, this will show in the logs that,
+     * API is called without stream object.
+     */
+    if (str) {
+        ret = str->getStreamType(&type);
+        if (ret != 0) {
+            PAL_ERR(LOG_TAG, "getStreamType failed with status : %d", ret);
+            return ret;
+        }
+
+        vote_type = force_nlpi_vote ? NLPI_VOTE : str->getVoteType();
+        if (vote_type == AVOID_VOTE)
+            vote_type = sleep_monitor_vote_type_[type];
+
+        if (vote_type == AVOID_VOTE) {
+            PAL_INFO(LOG_TAG, "Avoiding vote/unvote for stream type : %d", type);
+            return ret;
+        }
     }
 
-    ret = str->getStreamType(&type);
-    if (ret != 0) {
-        PAL_ERR(LOG_TAG, "getStreamType failed with status : %d", ret);
-        return ret;
-    }
     PAL_VERBOSE(LOG_TAG, "Enter for stream type %d", type);
 
-    if (sleep_monitor_vote_type_[type] == AVOID_VOTE) {
-        PAL_INFO(LOG_TAG, "Avoiding vote/unvote for stream type : %d", type);
-        return ret;
-    }
-
-    if (sleep_monitor_vote_type_[type] == LPI_VOTE) {
-        lpi_stream = (!force_nlpi_vote && str->ConfigSupportLPI() &&
-                      !IsTransitToNonLPIOnChargingSupported());
-    }
-
-update_sleep_mon:
     mSleepMonitorMutex.lock();
     if (vote) {
-        if (lpi_stream) {
+        if (vote_type == LPI_VOTE) {
             if (++lpi_counter_ >= 1) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_START;
                 mSleepMonitorMutex.unlock();
@@ -1763,7 +1765,7 @@ update_sleep_mon:
             }
         }
     } else {
-        if (lpi_stream) {
+        if (vote_type == LPI_VOTE) {
             if (--lpi_counter_ >= 0) {
                 monitor_payload.command = ADSPSLEEPMON_AUDIO_ACTIVITY_LPI_STOP;
                 mSleepMonitorMutex.unlock();
@@ -1789,10 +1791,11 @@ update_sleep_mon:
     }
     if (ret) {
         PAL_ERR(LOG_TAG, "Failed to %s for %s use case", vote ? "vote" : "unvote",
-                         lpi_stream ? "lpi" : "nlpi");
+            (vote_type == LPI_VOTE) ? "lpi" : "nlpi");
     } else {
         PAL_INFO(LOG_TAG, "%s done for %s use case, lpi votes %d, nlpi votes : %d",
-        vote ? "Voting" : "Unvoting", lpi_stream ? "lpi" : "nlpi", lpi_counter_, nlpi_counter_);
+            vote ? "Voting" : "Unvoting", (vote_type == LPI_VOTE) ? "lpi" : "nlpi",
+            lpi_counter_, nlpi_counter_);
     }
 
     mSleepMonitorMutex.unlock();

@@ -36,7 +36,7 @@
             <!-- SPEAKER  -->
             <id>0xA2000001</id>
             <snd_device_name>speaker</snd_device_name>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <usecase>
             <!-- PCM_LL_PLAYBACK  -->
                 <type>0xA100000E</type>
@@ -46,7 +46,7 @@
             <!-- SPEAKER MIC -->
             <id>0xA3000001</id>
             <snd_device_name>speaker-mic</snd_device_name>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
             <usecase>
             <!-- PCM_RECORD   -->
                 <type>0xB1000001</type>
@@ -56,7 +56,7 @@
             <!-- VI TX -->
             <id>0xA3000009</id>
             <snd_device_name>vi-feedback</snd_device_name>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-TX-3</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-TX-1</back_end_name>
             <usecase>
             <!-- PCM_RECORD   -->
                 <type>0xB1000001</type>
@@ -66,7 +66,7 @@
             <!-- HAPTICS_DEVICE  -->
             <id>0xA2000009</id>
             <snd_device_name>haptics-dev</snd_device_name>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-RX-1</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-6</back_end_name>
             <usecase>
             <!-- HAPTICS_PLAYBACK  -->
                 <type>0xA1000015</type>
@@ -75,8 +75,8 @@
         <device>
             <!-- HAPTICS_VI_TX  -->
             <id>0xA300000C</id>
-            <snd_device_name>haptics-vi-feedback-mono</snd_device_name>
-            <back_end_name>CODEC_DMA-LPAIF_WSA2-TX-0</back_end_name>
+            <snd_device_name>haptics-vi-feedback</snd_device_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-7</back_end_name>
             <usecase>
             <!-- PCM_RECORD  -->
                 <type>0xB1000001</type>

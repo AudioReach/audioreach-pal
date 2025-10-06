@@ -604,20 +604,6 @@ exit:
     return status;
 }
 
-int32_t StreamCompress::prepare()
-{
-    int32_t status = 0;
-    PAL_VERBOSE(LOG_TAG,"Enter, session handle - %p", session);
-    mStreamMutex.lock();
-    status = session->prepare(this);
-    if (status)
-       PAL_ERR(LOG_TAG,"session prepare failed with status = %d", status);
-
-    mStreamMutex.unlock();
-    PAL_VERBOSE(LOG_TAG,"Exit, status - %d", status);
-    return status;
-}
-
 int32_t StreamCompress::read(struct pal_buffer *buf)
 {
     int32_t status = 0;

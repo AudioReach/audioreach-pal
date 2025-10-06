@@ -56,7 +56,7 @@ public:
    int32_t close() override;
    int32_t start() override;
    int32_t stop() override;
-   int32_t prepare() override;
+   int32_t prepare() override {return 0;};
    int32_t setVolume( struct pal_volume_data *volume) override;
    int32_t mute(bool state) override;
    int32_t mute_l(bool state) override;

@@ -26,7 +26,7 @@ public:
    int32_t close() override;
    int32_t start() override;
    int32_t stop() override;
-   int32_t prepare() override;
+   int32_t prepare() override {return 0;};
    int32_t setStreamAttributes( struct pal_stream_attributes *sattr __unused) {return 0;};
    int32_t setVolume( struct pal_volume_data *volume __unused) {return 0;};
    int32_t mute(bool state __unused) {return 0;};

@@ -54,7 +54,7 @@ public:
     int32_t close() override;
     int32_t start() override;
     int32_t stop() override;
-    int32_t prepare() override;
+    int32_t prepare() override {return 0;};
     int32_t pause() override;
     int32_t pause_l() override;
     int32_t resume() override;

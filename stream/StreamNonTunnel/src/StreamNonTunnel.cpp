@@ -304,32 +304,6 @@ exit:
     return status;
 }
 
-//TBD: move this to Stream, why duplicate code?
-int32_t StreamNonTunnel::prepare()
-{
-    int32_t status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
-
-    mStreamMutex.lock();
-
-    if ((PAL_CARD_STATUS_DOWN(rm->getSoundCardState()))
-            || ssrInNTMode == true) {
-        PAL_ERR(LOG_TAG, "Sound card offline/standby currentState %d",
-                currentState);
-        mStreamMutex.unlock();
-        return -ENETRESET;
-    }
-
-    status = session->prepare(this);
-    if (0 != status)
-        PAL_ERR(LOG_TAG, "session prepare failed with status = %d", status);
-    mStreamMutex.unlock();
-    PAL_DBG(LOG_TAG, "Exit. status - %d", status);
-
-    return status;
-}
-
 int32_t  StreamNonTunnel::read(struct pal_buffer* buf)
 {
     int32_t status = 0;

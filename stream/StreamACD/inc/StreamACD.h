@@ -164,6 +164,8 @@ class StreamACD : public Stream {
     void SetEngineDetectionData(struct acd_context_event *event);
     struct acd_recognition_cfg *GetRecognitionConfig();
     bool ConfigSupportLPI() override;
+    vote_type_t getVoteType() override { return vote_type_; };
+    void setVoteType(vote_type_t type) { vote_type_ = type; };
 
  private:
     class ACDEventConfigData {
@@ -481,6 +483,7 @@ class StreamACD : public Stream {
     ACDState *cur_state_;
     ACDState *prev_state_;
     acd_state_id_t state_for_restore_;
+    vote_type_t vote_type_;
     bool notificationInProgress = false;
     bool deferredNotification = false;
     bool conc_notified_;

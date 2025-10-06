@@ -205,6 +205,7 @@ public:
     virtual bool ConfigSupportLPI() {return true;}; //Only LPI streams can update their vote to NLPI
     virtual bool checkStreamMatch(Stream *ref);
     virtual bool IsStreamInBuffering() {return false;};
+    virtual vote_type_t getVoteType() { return AVOID_VOTE; };
     int32_t getStreamAttributes(struct pal_stream_attributes *sattr);
     const std::string& getStreamSelector() const;
     const std::string& getDevicePPSelector() const;

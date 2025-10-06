@@ -93,6 +93,7 @@ StreamACD::StreamACD(const struct pal_stream_attributes *sattr,
     prev_state_ = nullptr;
     conc_notified_ = false;
     state_for_restore_ = ACD_STATE_NONE;
+    vote_type_ = LPI_VOTE;
 
     // Setting default volume to unity
     mVolumeData = (struct pal_volume_data *)malloc(sizeof(struct pal_volume_data)
@@ -1261,6 +1262,8 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
             PAL_DBG(LOG_TAG, "Start device %d-%s", dev->getSndDeviceId(),
                     dev->getPALDeviceName().c_str());
             dev->setSndName(cap_prof->GetSndName());
+            acd_stream_.setVoteType(cap_prof->GetSndName().find("lpi") ==
+                                    std::string::npos ? NLPI_VOTE : LPI_VOTE);
 
             if (!acd_stream_.device_opened_) {
                 acd_stream_.rm->voteSleepMonitor(&acd_stream_, true);
@@ -1740,12 +1743,18 @@ int32_t StreamACD::ACDActive::ProcessEvent(
                     if (status)
                         PAL_ERR(LOG_TAG, "Error:%d Failed to disconnect device %d", status,
                                     acd_stream_.GetAvailCaptureDevice());
+                    acd_stream_.rm->voteSleepMonitor(&acd_stream_, false);
                 } else {
+                    acd_stream_.setVoteType(new_cap_prof->GetSndName().find("lpi") ==
+                                            std::string::npos ? NLPI_VOTE : LPI_VOTE);
+                    acd_stream_.rm->voteSleepMonitor(&acd_stream_, true);
                     std::shared_ptr<ACDEventConfig> ev_cfg1(
                         new ACDDeviceConnectedEventConfig(acd_stream_.GetAvailCaptureDevice()));
                     status = acd_stream_.ProcessInternalEvent(ev_cfg1);
-                    if (status)
+                    if (status) {
                         PAL_ERR(LOG_TAG, "Error:%d Failed to connect device %d", status, acd_stream_.GetAvailCaptureDevice());
+                        acd_stream_.rm->voteSleepMonitor(&acd_stream_, false);
+                    }
                 }
             } else {
               PAL_INFO(LOG_TAG,"no action needed, same capture profile");

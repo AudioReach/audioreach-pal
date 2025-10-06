@@ -33,17 +33,8 @@
 
 <mixer>
 <!-- Common File Contents  -->
-    <!-- These are the initial mixer settings -->
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-
-    <!-- WSA controls -->
-    <ctl name="WSA PCM CH1 MUX" value="ZERO" />
-    <ctl name="WSA PCM CH2 MUX" value="ZERO" />
-    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
-    <ctl name="SA1 Rx Channel Select" value="CH_Stereo" />
-    <ctl name="SA1 Die Temperature" value="ZERO" />
-    <ctl name="SA1 Trigger Die Temperature" value="ZERO" />
+    <ctl name="Rx Slot Mask" value="0" />
+    <ctl name="OT23 Usage Mode" value="0" />
 
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
@@ -926,15 +917,12 @@
 
 <!-- WSA File Contents  -->
     <path name="speaker">
-        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
-        <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
-        <ctl name="SA1 OT23 Usage Mode" value="0" />
-        <ctl name="SA1 Rx Channel Select" value="CH_Stereo" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-prot">
         <path name="speaker" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="haptics-dev">
@@ -966,25 +954,21 @@
     </path>
 
     <path name="speaker-mono">
-        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
-        <ctl name="SA1 Rx Channel Select" value="CH1" />
-        <ctl name="SA1 OT23 Usage Mode" value="0" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-mono-prot">
         <path name="speaker-mono" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="speaker-mono-2">
-        <ctl name="WSA PCM CH2 MUX" value="AIF_PCM_PB" />
-        <ctl name="SA1 Rx Channel Select" value="CH2" />
-        <ctl name="SA1 OT23 Usage Mode" value="0" />
+        <ctl name="Rx Slot Mask" value="2" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-mono-2-prot">
         <path name="speaker-mono-2" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
    <path name="speaker-mono-vbat">
@@ -1011,6 +995,7 @@
        <path name="speaker-prot" />
    </path>
 
+    <!-- Not being used in Panderio -->
     <path name="sidetone-handset">
         <path name="sidetone-iir" />
         <ctl name="IIR0 INP0 Volume" value="0" />
@@ -1020,35 +1005,26 @@
     </path>
 
     <path name="vi-feedback">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
     </path>
 
     <path name="vi-feedback-mono-1">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
     </path>
 
     <path name="vi-feedback-mono-2">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
     </path>
 
     <path name="cps-feedback">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
     <path name="cps-feedback-mono-1">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
     </path>
 
     <path name="cps-feedback-mono-2">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
     <path name="handset-wsa">
-        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
-        <ctl name="SA1 Rx Channel Select" value="CH1" />
-        <ctl name="SA1 OT23 Usage Mode" value="8" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="8" />
     </path>
 
     <path name="handset">
@@ -1056,9 +1032,8 @@
     </path>
 
     <path name="handset-wsa-ultrasound">
-        <ctl name="WSA PCM CH1 MUX" value="AIF_PCM_PB" />
-        <ctl name="SA1 Rx Channel Select" value="CH1" />
-        <ctl name="SA1 OT23 Usage Mode" value="4" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="4" />
     </path>
 
     <path name="handset-wsa-vbat-ultrasound">

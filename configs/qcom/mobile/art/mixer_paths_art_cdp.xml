@@ -5,28 +5,8 @@
 
 <mixer>
 <!-- Common File Contents  -->
-    <!-- These are the initial mixer settings -->
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-
-    <!-- WSA controls -->
-    <ctl name="WSA RX0 MUX" value="ZERO" />
-    <ctl name="WSA RX1 MUX" value="ZERO" />
-    <ctl name="WSA_RX0 INP0" value="ZERO" />
-    <ctl name="WSA_RX1 INP0" value="ZERO" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-    <ctl name="Idle Detect" value="0" />
-    <ctl name="WSA SPKRRECV" value="0" />
-    <ctl name="SpkrLeft COMP Switch" value="0" />
-    <ctl name="SpkrRight COMP Switch" value="0" />
-    <ctl name="SpkrLeft VISENSE Switch" value="0" />
-    <ctl name="SpkrRight VISENSE Switch" value="0" />
-    <ctl name="SpkrLeft SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrRight SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrLeft WSA MODE" value="0" />
-    <ctl name="SpkrRight WSA MODE" value="0" />
-
+    <ctl name="Rx Slot Mask" value="0" />
+    <ctl name="OT23 Usage Mode" value="0" />
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
     <ctl name="RX_MACRO RX1 MUX" value="ZERO" />
@@ -181,7 +161,7 @@
         <ctl name="GSM mode Enable" value="ON" />
     </path>
 
-	    <path name="speaker-hdk">
+    <path name="speaker-hdk">
         <path name="speaker-mono" />
     </path>
 
@@ -675,7 +655,7 @@
     <path name="speaker-safe-and-usb-headphones">
         <path name="speaker-safe" />
         <path name="usb-headphones" />
-	</path>
+    </path>
 
     <path name="va-mic-mono">
         <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
@@ -1123,12 +1103,11 @@
 <!-- WSA File Contents  -->
     <path name="speaker">
         <ctl name="Rx Slot Mask" value="3" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-prot">
         <path name="speaker" />
-        <ctl name="OT23 Usage Mode" value="6" />
     </path>
 
     <path name="haptics-dev">
@@ -1148,18 +1127,17 @@
     </path>
 
     <path name="speaker-mono">
-        <ctl name="Rx Slot Mask" value="3" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-mono-prot">
-        <ctl name="Rx Slot Mask" value="3" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <path name="speaker-mono" />
     </path>
 
     <path name="speaker-mono-2">
-        <ctl name="Rx Slot Mask" value="3" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <ctl name="Rx Slot Mask" value="2" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-mono-2-prot">
@@ -1190,6 +1168,7 @@
        <path name="speaker-prot" />
    </path>
 
+   <!--Not being used in Panderio-->
     <path name="sidetone-handset">
         <path name="sidetone-iir" />
         <ctl name="IIR0 INP0 Volume" value="0" />
@@ -1218,12 +1197,12 @@
 
     <path name="handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <ctl name="OT23 Usage Mode" value="8" />
     </path>
 
     <path name="ultrasound-handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
-        <ctl name="OT23 Usage Mode" value="6" />
+        <ctl name="OT23 Usage Mode" value="4" />
     </path>
 
     <path name="ultrasound-handset-wsa-vbat">

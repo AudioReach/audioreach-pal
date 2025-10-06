@@ -790,23 +790,6 @@ exit:
     return status;
 }
 
-//TBD: move this to Stream, why duplicate code?
-int32_t StreamPCM::prepare()
-{
-    int32_t status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter. session handle - %pK", session);
-
-    mStreamMutex.lock();
-    status = session->prepare(this);
-    if (0 != status)
-        PAL_ERR(LOG_TAG, "session prepare failed with status = %d", status);
-    mStreamMutex.unlock();
-    PAL_DBG(LOG_TAG, "Exit. status - %d", status);
-
-    return status;
-}
-
 int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
 {
     int32_t status = 0;

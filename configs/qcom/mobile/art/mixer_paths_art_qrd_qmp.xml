@@ -33,27 +33,8 @@
 
 <mixer>
 <!-- Common File Contents  -->
-    <!-- These are the initial mixer settings -->
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-
-    <!-- WSA controls -->
-    <ctl name="WSA RX0 MUX" value="ZERO" />
-    <ctl name="WSA RX1 MUX" value="ZERO" />
-    <ctl name="WSA_RX0 INP0" value="ZERO" />
-    <ctl name="WSA_RX1 INP0" value="ZERO" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
-    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
-    <ctl name="Idle Detect" value="0" />
-    <ctl name="WSA SPKRRECV" value="0" />
-    <ctl name="SpkrLeft COMP Switch" value="0" />
-    <ctl name="SpkrRight COMP Switch" value="0" />
-    <ctl name="SpkrLeft VISENSE Switch" value="0" />
-    <ctl name="SpkrRight VISENSE Switch" value="0" />
-    <ctl name="SpkrLeft SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrRight SWR DAC_Port Switch" value="0" />
-    <ctl name="SpkrLeft WSA MODE" value="0" />
-    <ctl name="SpkrRight WSA MODE" value="0" />
+    <ctl name="Rx Slot Mask" value="0" />
+    <ctl name="OT23 Usage Mode" value="0" />
 
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
@@ -178,29 +159,13 @@
     </path>
 
     <path name="speaker-mono">
-        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
-        <ctl name="WSA_RX0 INP0" value="RX0" />
-        <ctl name="WSA_COMP1 Switch" value="1" />
-        <ctl name="SpkrLeft COMP Switch" value="1" />
-        <ctl name="SpkrLeft VISENSE Switch" value="1" />
-        <ctl name="SpkrLeft CPS Switch" value="1" />
-        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
-        <ctl name="SpkrLeft PBR Switch" value="1" />
-        <ctl name="WSA PBR Enable" value="1" />
-        <ctl name="Idle Detect" value="1" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-mono-2">
-        <ctl name="WSA RX1 MUX" value="AIF1_PB" />
-        <ctl name="WSA_RX1 INP0" value="RX1" />
-        <ctl name="WSA_COMP2 Switch" value="1" />
-        <ctl name="SpkrRight COMP Switch" value="1" />
-        <ctl name="SpkrRight VISENSE Switch" value="1" />
-        <ctl name="SpkrRight CPS Switch" value="1" />
-        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
-        <ctl name="SpkrRight PBR Switch" value="1" />
-        <ctl name="WSA PBR Enable" value="1" />
-        <ctl name="Idle Detect" value="1" />
+        <ctl name="Rx Slot Mask" value="2" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-hdk">
@@ -212,15 +177,8 @@
     </path>
 
     <path name="handset-wsa">
-        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
-        <ctl name="WSA_RX0 INP0" value="RX0" />
-        <ctl name="WSA_COMP1 Switch" value="1" />
-        <ctl name="Idle Detect" value="1" />
-        <ctl name="SpkrLeft COMP Switch" value="1" />
-        <ctl name="SpkrLeft VISENSE Switch" value="1" />
-        <ctl name="SpkrLeft CPS Switch" value="1" />
-        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
-        <ctl name="WSA_RX0 Digital Volume" value="60" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="8" />
     </path>
 
     <path name="handset">
@@ -229,24 +187,8 @@
 
 <!-- WSA File Contents  -->
     <path name="speaker">
-        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
-        <ctl name="WSA RX1 MUX" value="AIF1_PB" />
-        <ctl name="WSA_RX0 INP0" value="RX0" />
-        <ctl name="WSA_RX1 INP0" value="RX1" />
-        <ctl name="WSA_COMP1 Switch" value="1" />
-        <ctl name="WSA_COMP2 Switch" value="1" />
-        <ctl name="SpkrLeft COMP Switch" value="1" />
-        <ctl name="SpkrLeft VISENSE Switch" value="1" />
-        <ctl name="SpkrLeft CPS Switch" value="1" />
-        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
-        <ctl name="SpkrRight COMP Switch" value="1" />
-        <ctl name="SpkrRight VISENSE Switch" value="1" />
-        <ctl name="SpkrRight CPS Switch" value="1" />
-        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
-        <ctl name="SpkrLeft PBR Switch" value="1" />
-        <ctl name="SpkrRight PBR Switch" value="1" />
-        <ctl name="WSA PBR Enable" value="1" />
-        <ctl name="Idle Detect" value="1" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-liquid">
@@ -259,7 +201,6 @@
 
    <path name="speaker-mono-vbat">
        <path name="speaker-mono" />
-       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
    </path>
 
     <path name="speaker-hdk-vbat">
@@ -272,8 +213,6 @@
 
    <path name="speaker-vbat">
         <path name="speaker" />
-        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
-        <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
    </path>
 
     <path name="speaker-liquid-vbat">
@@ -1205,8 +1144,6 @@
 
     <path name="speaker-prot">
         <path name="speaker" />
-        <ctl name="WSA_RX0 Digital Volume" value="84" />
-        <ctl name="WSA_RX1 Digital Volume" value="84" />
     </path>
 
     <path name="haptics-dev">
@@ -1239,35 +1176,29 @@
 
     <path name="speaker-mono-prot">
         <path name="speaker-mono" />
-        <ctl name="WSA_RX0 Digital Volume" value="84" />
     </path>
 
     <path name="speaker-mono-2-prot">
         <path name="speaker-mono-2" />
-        <ctl name="WSA_RX1 Digital Volume" value="84" />
     </path>
 
    <path name="speaker-mono-2-vbat">
        <path name="speaker-mono-2" />
-       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
    </path>
 
     <path name="speaker-mono-vbat-prot">
        <path name="speaker-mono-prot" />
-       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
     </path>
 
     <path name="speaker-mono-2-vbat-prot">
        <path name="speaker-mono-2-prot" />
-       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
     </path>
 
    <path name="speaker-vbat-prot">
        <path name="speaker-prot" />
-       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
-       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
    </path>
 
+   <!-- Not being used in Panderio -->
     <path name="sidetone-handset">
         <path name="sidetone-iir" />
         <ctl name="IIR0 INP0 Volume" value="0" />
@@ -1277,59 +1208,35 @@
     </path>
 
     <path name="vi-feedback">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
-        <ctl name="WSA_RX0 Digital Volume" value="84" />
-        <ctl name="WSA_RX1 Digital Volume" value="84" />
     </path>
 
     <path name="vi-feedback-mono-1">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
     </path>
 
     <path name="vi-feedback-mono-2">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
     </path>
 
     <path name="cps-feedback">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
     <path name="cps-feedback-mono-1">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
     </path>
 
     <path name="cps-feedback-mono-2">
-        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
     </path>
 
     <path name="handset-wsa-ultrasound">
-        <ctl name="WSA RX_MIX0 MUX" value="AIF_MIX1_PB" />
-        <ctl name="WSA_RX0 MIX INP" value="RX_MIX0" />
-        <ctl name="WSA_COMP1 Switch" value="1" />
-        <ctl name="Idle Detect" value="1" />
-        <ctl name="SpkrLeft COMP Switch" value="1" />
-        <ctl name="SpkrLeft VISENSE Switch" value="1" />
-        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
-        <ctl name="WSA PBR Enable" value="1" />
-        <ctl name="WSA_RX0 Digital Volume" value="50" />
+        <ctl name="Rx Slot Mask" value="1" />
+        <ctl name="OT23 Usage Mode" value="4" />
     </path>
 
     <path name="handset-wsa-vbat-ultrasound">
         <path name="handset-wsa-ultrasound" />
-        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
     </path>
 
     <path name="speaker-mono-2-ultrasound">
-        <ctl name="WSA RX_MIX1 MUX" value="AIF_MIX1_PB" />
-        <ctl name="WSA_RX1 MIX INP" value="RX_MIX1" />
-        <ctl name="WSA_COMP2 Switch" value="1" />
-        <ctl name="Idle Detect" value="1" />
-        <ctl name="SpkrRight COMP Switch" value="1" />
-        <ctl name="SpkrRight VISENSE Switch" value="1" />
-        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
-        <ctl name="WSA PBR Enable" value="1" />
+        <ctl name="Rx Slot Mask" value="2" />
+        <ctl name="OT23 Usage Mode" value="0" />
     </path>
 
     <path name="speaker-ultrasound">

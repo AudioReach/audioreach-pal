@@ -837,6 +837,14 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             }
             break;
         }
+        case PAL_PARAM_ID_HD_VOICE:
+        {
+            status = this->setParamWithTag(s, VOICE_HD_VOICE, param_id, payload);
+            if (status)
+               PAL_ERR(LOG_TAG, "setParamWithTag for hd voice failed with %d",
+                       status);
+            break;
+        }
         case PAL_PARAM_ID_VOLUME_CTRL_RAMP:
             status = this->setParamWithTag(s, TAG_STREAM_VOLUME,
                                         param_id,

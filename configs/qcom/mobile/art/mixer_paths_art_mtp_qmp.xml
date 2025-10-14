@@ -33,8 +33,9 @@
 
 <mixer>
 <!-- Common File Contents  -->
-    <ctl name="Rx Slot Mask" value="0" />
+    <ctl name="Rx Slot Mask" value="3" />
     <ctl name="OT23 Usage Mode" value="0" />
+    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
 
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
@@ -919,10 +920,12 @@
     <path name="speaker">
         <ctl name="Rx Slot Mask" value="3" />
         <ctl name="OT23 Usage Mode" value="0" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
     </path>
 
     <path name="speaker-prot">
         <path name="speaker" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="haptics-dev">
@@ -956,19 +959,23 @@
     <path name="speaker-mono">
         <ctl name="Rx Slot Mask" value="1" />
         <ctl name="OT23 Usage Mode" value="0" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
     </path>
 
     <path name="speaker-mono-prot">
         <path name="speaker-mono" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="speaker-mono-2">
         <ctl name="Rx Slot Mask" value="2" />
         <ctl name="OT23 Usage Mode" value="0" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
     </path>
 
     <path name="speaker-mono-2-prot">
         <path name="speaker-mono-2" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
    <path name="speaker-mono-vbat">
@@ -1025,6 +1032,7 @@
     <path name="handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
         <ctl name="OT23 Usage Mode" value="8" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="66" />
     </path>
 
     <path name="handset">

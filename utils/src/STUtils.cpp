@@ -967,7 +967,6 @@ void onChargingStateChange()
     std::vector<pal_stream_type_t> st_streams;
     bool need_switch = false;
     bool use_lpi_temp = false;
-    bool need_vote = false;
     std::list<Stream*> activeVUIStreams, activeACDStreams, activeASRStreams, activeSPDStreams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
@@ -979,21 +978,6 @@ void onChargingStateChange()
     // no need to handle car mode if no Voice Stream exists
     if (activeVUIStreams.size() == 0)
         return;
-
-    /* Following condition will check, if transit to NLPI on charging is enabled and if there
-     * exists at least one active stream when charger got connected and vote for charger was
-     * not done yet.
-     */
-    rm->lockSleepMonitorMutex();
-    if (CheckForForcedTransitToNonLPI() && !rm->getChargingVoteState() &&
-        rm->getSleepMonitorVoteCount()) {
-            rm->setChargingVoteState(true);
-            need_vote = true;
-    }
-    rm->unlockSleepMonitorMutex();
-
-    if (need_vote)
-        rm->voteSleepMonitor(activeVUIStreams.front(), charging_state_, true);
 
     if (charging_state_ && use_lpi_) {
         use_lpi_temp = false;

@@ -4160,6 +4160,7 @@ int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_pa
     switch (config->module_type) {
         case ST_MODULE_TYPE_GMM:
         case ST_MODULE_TYPE_PDK:
+        case ST_MODULE_TYPE_MMA:
         case ST_MODULE_TYPE_HIST_CAP:
         case ST_MODULE_TYPE_HW:
         case ST_MODULE_TYPE_CUSTOM_1:

@@ -35,7 +35,7 @@
 <!-- Common File Contents  -->
     <ctl name="Rx Slot Mask" value="3" />
     <ctl name="OT23 Usage Mode" value="0" />
-    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
+    <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
 
     <!-- RX Controls -->
     <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
@@ -141,6 +141,16 @@
     <ctl name="TX1 MODE" value="ADC_INVALID" />
     <ctl name="TX2 MODE" value="ADC_INVALID" />
     <ctl name="TX3 MODE" value="ADC_INVALID" />
+
+    <ctl name="TX WSA MUX0" value="NO_WSA" />
+    <ctl name="TX WSA MUX1" value="NO_WSA" />
+    <ctl name="TX WSA MUX2" value="NO_WSA" />
+    <ctl name="TX WSA MUX3" value="NO_WSA" />
+    <ctl name="TX WSA MUX4" value="NO_WSA" />
+    <ctl name="TX WSA MUX5" value="NO_WSA" />
+    <ctl name="TX WSA MUX6" value="NO_WSA" />
+    <ctl name="TX WSA MUX7" value="NO_WSA" />
+
 
     <!-- Volume controls -->
     <ctl name="RX_RX0 Digital Volume" value="84" />
@@ -495,6 +505,8 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
         <ctl name="TX_AIF1_CAP Mixer DEC2" value="1" />
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
         <ctl name="ADC1 ChMap" value="SWRM_TX2_CH1" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="TX0 MODE" value="ADC_LP" />
@@ -507,6 +519,8 @@
         <ctl name="TX SMIC MUX0" value="SWR_MIC5" />
         <ctl name="DEC0_BCS Switch" value="1" />
         <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="TX WSA MUX0" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX0" value="PORT1"/>
         <ctl name="ADC2 MUX" value="CH2_AMIC2" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
         <ctl name="MBHC ChMap" value="SWRM_TX1_CH3" />
@@ -520,6 +534,8 @@
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
         <ctl name="TX_AIF1_CAP Mixer DEC3" value="1" />
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT1"/>
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />
         <ctl name="TX1 MODE" value="ADC_LP" />
@@ -532,6 +548,8 @@
         <ctl name="TX DEC5 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX5" value="SWR_MIC8" />
         <ctl name="TX_AIF1_CAP Mixer DEC5" value="1" />
+        <ctl name="TX WSA MUX5" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX5" value="PORT2"/>
         <ctl name="ADC3 MUX" value="CH3_AMIC4" />
         <ctl name="TX2 MODE" value="ADC_LP" />
         <ctl name="ADC3 ChMap" value="SWRM_TX3_CH1" />
@@ -543,6 +561,8 @@
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC9" />
         <ctl name="TX_AIF1_CAP Mixer DEC3" value="1" />
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT2"/>
         <ctl name="ADC4 ChMap" value="SWRM_TX3_CH2" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="TX3 MODE" value="ADC_LP" />
@@ -555,6 +575,8 @@
         <ctl name="TX SMIC MUX3" value="SWR_MIC5" />
         <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT1"/>
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />
         <ctl name="TX1 MODE" value="ADC_LP" />
         <ctl name="ADC2_BCS Disable" value="1" />
@@ -566,6 +588,8 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
         <ctl name="TX_AIF2_CAP Mixer DEC2" value="1" />
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
         <ctl name="ADC1 ChMap" value="SWRM_TX2_CH1" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="TX0 MODE" value="ADC_LP" />
@@ -964,6 +988,10 @@
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC8" />
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT2"/>
         <ctl name="TX0 MODE" value="ADC_LP" />
         <ctl name="TX1 MODE" value="ADC_LP" />
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
@@ -983,6 +1011,10 @@
         <ctl name="TX DEC3 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC5" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC4" />
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT1"/>
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />
         <ctl name="TX0 MODE" value="ADC_LP" />
@@ -1072,6 +1104,10 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX1" value="SWR_MIC9" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="TX3 MODE" value="ADC_LP" />
@@ -1104,6 +1140,12 @@
         <ctl name="TX SMIC MUX1" value="SWR_MIC4" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC5" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC8" />
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT2"/>
         <ctl name="TX0 MODE" value="ADC_LP" />
         <ctl name="TX1 MODE" value="ADC_LP" />
         <ctl name="TX2 MODE" value="ADC_LP" />
@@ -1131,6 +1173,12 @@
         <ctl name="TX SMIC MUX1" value="SWR_MIC5" />
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC8" />
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT2"/>
         <ctl name="TX0 MODE" value="ADC_LP" />
         <ctl name="TX1 MODE" value="ADC_LP" />
         <ctl name="TX2 MODE" value="ADC_LP" />
@@ -1170,6 +1218,14 @@
         <ctl name="TX SMIC MUX2" value="SWR_MIC4" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC8" />
         <ctl name="TX SMIC MUX4" value="SWR_MIC9" />
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX WSA MUX4" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT0"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX4" value="PORT0"/>
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="ADC4 MUX" value="CH4_AMIC5" />
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />
@@ -1236,6 +1292,10 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC"/>
         <ctl name="TX SMIC MUX1" value="SWR_MIC5"/>
         <ctl name="TX SMIC MUX2" value="SWR_MIC4"/>
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT0"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
         <ctl name="ADC1 MUX" value="CH1_AMIC2" />
         <ctl name="ADC2 MUX" value="CH2_AMIC2" />
         <ctl name="TX0 MODE" value="ADC_HIFI"/>
@@ -1260,6 +1320,14 @@
         <ctl name="TX DEC2 MUX" value="SWR_MIC"/>
         <ctl name="TX DEC3 MUX" value="SWR_MIC"/>
         <ctl name="TX DEC4 MUX" value="SWR_MIC"/>
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX WSA MUX4" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX3" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX4" value="PORT1"/>
         <ctl name="ADC1 MUX" value="CH1_AMIC1" />
         <ctl name="ADC2 MUX" value="CH2_AMIC1" />
         <ctl name="ADC3 MUX" value="CH3_AMIC5" />
@@ -1317,6 +1385,14 @@
         <ctl name="TX SMIC MUX2" value="SWR_MIC8"/>
         <ctl name="TX SMIC MUX3" value="SWR_MIC9"/>
         <ctl name="TX SMIC MUX4" value="SWR_MIC8"/>
+        <ctl name="TX WSA MUX1" value="NO_WSA"/>
+        <ctl name="TX WSA MUX2" value="NO_WSA"/>
+        <ctl name="TX WSA MUX3" value="NO_WSA"/>
+        <ctl name="TX WSA MUX4" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX1" value="PORT2"/>
+        <ctl name="TX PORT SEL MUX2" value="PORT2"/>
         <ctl name="ADC3 MUX" value="CH3_AMIC5"/>
         <ctl name="ADC4 MUX" value="CH4_AMIC5"/>
         <ctl name="TX2 MODE" value="ADC_HIFI"/>
@@ -1352,6 +1428,8 @@
         <ctl name="TX DEC6 MUX" value="SWR_MIC" />
         <ctl name="TX SMIC MUX6" value="SWR_MIC5" />
         <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
+        <ctl name="TX WSA MUX6" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX6" value="PORT1"/>
         <ctl name="ADC2 MUX" value="CH2_AMIC2" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
         <ctl name="MBHC ChMap" value="SWRM_TX3_CH3" />
@@ -1377,16 +1455,39 @@
     </path>
 
     <path name="haptics-vi-feedback-mono">
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_1" value="1" />
-        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
-        <ctl name="WSA2_HAP_VI_DEC ENABLE" value="1" />
+        <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
+        <ctl name="TX_AIF1_CAP Mixer DEC7" value="1" />
+        <ctl name="TX DEC6 MUX" value="SWR_MIC" />
+        <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX6" value="SWR_MIC4" />
+        <ctl name="TX SMIC MUX7" value="SWR_MIC5" />
+        <ctl name="TX WSA MUX6" value="WSA2"/>
+        <ctl name="TX WSA MUX7" value="WSA2"/>
+        <ctl name="TX PORT SEL MUX6" value="PORT1"/>
+        <ctl name="TX PORT SEL MUX7" value="PORT1"/>
     </path>
 
     <path name="haptics-vi-feedback">
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_1" value="1" />
-        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
-        <ctl name="WSA2 2CH_DMA ENABLE" value="1" />
-        <ctl name="WSA2_HAP_VI_DEC ENABLE" value="1" />
+       <ctl name="TX_AIF1_CAP Mixer DEC4" value="1" />
+       <ctl name="TX_AIF1_CAP Mixer DEC5" value="1" />
+       <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
+       <ctl name="TX_AIF1_CAP Mixer DEC7" value="1" />
+       <ctl name="TX DEC4 MUX" value="SWR_MIC" />
+       <ctl name="TX DEC5 MUX" value="SWR_MIC" />
+       <ctl name="TX DEC6 MUX" value="SWR_MIC" />
+       <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+       <ctl name="TX SMIC MUX4" value="SWR_MIC5" />
+       <ctl name="TX SMIC MUX5" value="SWR_MIC5" />
+       <ctl name="TX SMIC MUX6" value="SWR_MIC5" />
+       <ctl name="TX SMIC MUX7" value="SWR_MIC5" />
+       <ctl name="TX WSA MUX4" value="WSA2"/>
+       <ctl name="TX WSA MUX5" value="WSA2"/>
+       <ctl name="TX WSA MUX6" value="WSA2"/>
+       <ctl name="TX WSA MUX7" value="WSA2"/>
+       <ctl name="TX PORT SEL MUX4" value="PORT1"/>
+       <ctl name="TX PORT SEL MUX5" value="PORT1"/>
+       <ctl name="TX PORT SEL MUX6" value="PORT1"/>
+       <ctl name="TX PORT SEL MUX7" value="PORT1"/>
     </path>
 
     <path name="speaker-mono-prot">

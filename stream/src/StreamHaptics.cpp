@@ -250,9 +250,7 @@ session_fail:
         rm->deregisterDevice(mDevices[i], this);
     }
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. state %d, status %d", currentState, status);
     mStreamMutex.unlock();
     return status;

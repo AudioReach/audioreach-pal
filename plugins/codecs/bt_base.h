@@ -95,7 +95,4 @@ int bt_base_populate_enc_output_cfg(custom_block_t *blk, uint32_t fmt_id,
 int bt_base_populate_enc_cmn_param(custom_block_t *blk, uint32_t param_id,
                                    void *payload, size_t size);
 
-int bt_base_populate_dec_media_fmt(custom_block_t *blk,uint32_t fmt_id,
-                                   void *payload, size_t size);
-
 #endif /* _BT_BASE_H_ */

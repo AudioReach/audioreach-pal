@@ -42,19 +42,6 @@
 #include "PalRingBuffer.h"
 #include "SoundTriggerEngine.h"
 #include "VoiceUIPlatformInfo.h"
-#include "VoiceUIInterface.h"
-
-typedef int32_t (*get_vui_intf_f)(struct vui_intf_t *intf_handle,
-    vui_intf_param_t *model);
-
-typedef int32_t (*release_vui_intf_f)(struct vui_intf_t *intf_handle);
-
-typedef struct vui_intf_plugin {
-    void *handle;
-    release_vui_intf_f release_intf;
-    struct vui_intf_t *intf;
-} vui_intf_plugin_t;
-
 
 enum {
     ENGINE_IDLE  = 0x0,
@@ -108,6 +95,8 @@ enum {
     ST_EV_SSR_ONLINE,
     ST_EV_CONCURRENT_STREAM,
     ST_EV_EC_REF,
+    ST_EV_INTERNAL_PAUSE,
+    ST_EV_INTERNAL_RESUME,
 };
 
 class ResourceManager;
@@ -171,8 +160,12 @@ public:
     std::shared_ptr<CaptureProfile> GetCurrentCaptureProfile();
     int32_t DisconnectDevice(pal_device_id_t device_id) override;
     int32_t ConnectDevice(pal_device_id_t device_id) override;
-    int32_t Resume() override;
-    int32_t Pause() override;
+    int disconnectStreamDevice_l(Stream* streamHandle,
+        pal_device_id_t dev_id) override;
+    int connectStreamDevice_l(Stream* streamHandle,
+        struct pal_device *dattr) override;
+    int32_t Resume(bool is_internal = false) override;
+    int32_t Pause(bool is_internal = false) override;
     int32_t GetCurrentStateId();
     int32_t HandleConcurrentStream(bool active);
     int32_t setECRef(std::shared_ptr<Device> dev, bool is_enable) override;
@@ -189,8 +182,9 @@ public:
     void SetModelId(uint32_t model_id) { model_id_ = model_id; }
     uint32_t GetInstanceId();
     bool IsStreamInBuffering() {
-       return capture_requested_ && reader_ && reader_->isEnabled() &&
-              (GetCurrentStateId() == ST_STATE_BUFFERING);
+       return (capture_requested_ && reader_ &&
+              (GetCurrentStateId() == ST_STATE_BUFFERING)) &&
+              (reader_->isEnabled() || reader_->isPrepared());
     }
     struct st_uuid GetVendorUuid();
     void *GetGSLEngine() {
@@ -380,6 +374,18 @@ private:
         ~StResumeEventConfig() {}
     };
 
+    class StInternalPauseEventConfig : public StEventConfig {
+     public:
+        StInternalPauseEventConfig() : StEventConfig(ST_EV_INTERNAL_PAUSE) { }
+        ~StInternalPauseEventConfig() {}
+    };
+
+    class StInternalResumeEventConfig : public StEventConfig {
+     public:
+        StInternalResumeEventConfig() : StEventConfig(ST_EV_INTERNAL_RESUME) { }
+        ~StInternalResumeEventConfig() {}
+    };
+
     class StECRefEventConfigData : public StEventConfigData {
      public:
         StECRefEventConfigData(std::shared_ptr<Device> dev, bool is_enable)
@@ -517,6 +523,7 @@ private:
                          st_module_type_t module_type);
     void AddEngine(std::shared_ptr<EngineCfg> engine_cfg);
     void updateStreamAttributes();
+    int32_t UpdateDeviceConfig();
     void UpdateModelId(st_module_type_t type);
     int32_t LoadSoundModel(struct pal_st_sound_model *sm_data);
     int32_t UnloadSoundModel();
@@ -551,13 +558,13 @@ private:
     int32_t GetPreviousStateId();
     int32_t ProcessInternalEvent(std::shared_ptr<StEventConfig> ev_cfg);
     void GetUUID(class SoundTriggerUUID *uuid, struct pal_st_sound_model *sound_model);
+    void UpdateCaptureHandleInfo(bool start);
+    bool IsSameDeviceType(pal_device_id_t dev_id, pal_device_id_t curr_dev_id);
     std::shared_ptr<VoiceUIPlatformInfo> vui_ptfm_info_;
     std::shared_ptr<VUIStreamConfig> sm_cfg_;
     SoundModelInfo* sm_info_;
     std::vector<std::shared_ptr<EngineCfg>> engines_;
     std::shared_ptr<SoundTriggerEngine> gsl_engine_;
-    int32_t GetVUIInterface(struct vui_intf_t *intf, vui_intf_param_t *model);
-    int32_t ReleaseVUIInterface(struct vui_intf_t *intf);
     std::shared_ptr<VoiceUIInterface> vui_intf_;
     struct vui_intf_t vui_intf_handle_;
 
@@ -605,5 +612,12 @@ private:
     // flag to indicate whether we should update common capture profile in RM
     bool common_cp_update_disable_;
     bool second_stage_processing_;
+    bool is_backend_shared_;
+    /*
+     * Used for device switch case when client need to switch
+     * to specific device attributes instead of capture profile
+     * from resourcemanager xml.
+     */
+    struct pal_device *dattr_specified_;
 };
 #endif // STREAMSOUNDTRIGGER_H_

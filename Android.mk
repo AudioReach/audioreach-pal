@@ -1,17 +1,7 @@
 ifneq ($(AUDIO_USE_STUB_HAL), true)
-ifeq ($(TARGET_USES_QCOM_MM_AUDIO), true)
 
 LOCAL_PATH := $(call my-dir)
 PAL_BASE_PATH := $(call my-dir)
-
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := libarpal_headers
-LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/inc
-
-LOCAL_VENDOR_MODULE := true
-
-include $(BUILD_HEADER_LIBRARY)
 
 include $(CLEAR_VARS)
 
@@ -28,17 +18,13 @@ LOCAL_CFLAGS        += -D_GNU_SOURCE
 LOCAL_CFLAGS        += -DADSP_SLEEP_MONITOR
 LOCAL_CFLAGS        += -DPAL_SP_TEMP_PATH=\"/data/vendor/audio/audio.cal\"
 LOCAL_CFLAGS        += -DACD_SM_FILEPATH=\"/vendor/etc/models/acd/\"
-ifeq ($(call is-board-platform-in-list,kalama pineapple), true)
+ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
 LOCAL_CFLAGS        += -DSOC_PERIPHERAL_PROT
 endif
 LOCAL_CPPFLAGS      += -fexceptions -frtti
 
 ifneq ($(TARGET_BOARD_PLATFORM), anorak)
 LOCAL_CFLAGS        += -DA2DP_SINK_SUPPORTED
-endif
-
-ifeq ($(TARGET_BOARD_PLATFORM), volcano)
-LOCAL_CFLAGS        += -DWSA_V883X_ADDR
 endif
 
 LOCAL_C_INCLUDES := \
@@ -58,7 +44,6 @@ ifneq ($(TARGET_KERNEL_VERSION), 4.19)
 ifneq ($(TARGET_KERNEL_VERSION), 4.4)
 ifneq ($(TARGET_KERNEL_VERSION), 4.9)
 ifneq ($(TARGET_KERNEL_VERSION), 5.4)
-LOCAL_CFLAGS        += -DADSP_SLEEP_MONITOR
 LOCAL_C_INCLUDES += $(TOP)/kernel_platform/msm-kernel/include/uapi/misc
 endif
 endif
@@ -89,6 +74,7 @@ LOCAL_SRC_FILES := \
     stream/src/StreamUltraSound.cpp \
     stream/src/StreamSensorPCMData.cpp\
     stream/src/StreamHaptics.cpp \
+    stream/src/StreamSensorRenderer.cpp \
     device/src/Headphone.cpp \
     device/src/USBAudio.cpp \
     device/src/Device.cpp \
@@ -132,7 +118,8 @@ LOCAL_SRC_FILES := \
     utils/src/SignalHandler.cpp \
     utils/src/AudioHapticsInterface.cpp \
     utils/src/MetadataParser.cpp \
-    utils/src/MemLogBuilder.cpp
+    utils/src/MemLogBuilder.cpp \
+    utils/src/PerfLock.cpp
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \
@@ -160,7 +147,7 @@ LOCAL_SHARED_LIBRARIES := \
     libarmemlog \
     libhidlbase
 
-ifeq ($(call is-board-platform-in-list,kalama pineapple), true)
+ifeq ($(call is-board-platform-in-list,kalama pineapple sun), true)
 LOCAL_SHARED_LIBRARIES += libPeripheralStateUtils
 LOCAL_HEADER_LIBRARIES += peripheralstate_headers \
     vendor_common_inc\
@@ -223,7 +210,6 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 
 include $(PAL_BASE_PATH)/plugins/Android.mk
-include $(PAL_BASE_PATH)/ipc/HwBinders/Android.mk
+include $(PAL_BASE_PATH)/ipc/aidl/Android.mk
 
-endif #TARGET_USES_QCOM_MM_AUDIO
 endif #AUDIO_USE_STUB_HAL

@@ -86,16 +86,16 @@ std::shared_ptr<SignalHandler> SignalHandler::getInstance() {
 // static
 void SignalHandler::invokeDefaultHandler(std::shared_ptr<struct sigaction> sAct,
             int code, struct siginfo *si, void *sc) {
-    ALOGV("%s: invoke default handler for signal %d", __func__, code);
+    ALOGE("%s: invoke default handler for signal %d", __func__, code);
     // Remove custom handler so that default handler is invoked
     sigaction(code, sAct.get(), NULL);
 
     int status = 0;
     if (si->si_code == SI_QUEUE) {
-        ALOGE_IF(code == DEBUGGER_SIGNAL,
-                 "signal %d (<debuggerd signal>), code -1 "
-                 "(SI_QUEUE from pid %d, uid %d)",
-                 code, si->si_pid, si->si_uid);
+        ALOGE("signal %d (%s), code -1 "
+              "(SI_QUEUE from pid %d, uid %d)",
+              code, sigToName.at(code).c_str(),
+              si->si_pid, si->si_uid);
         status = sigqueue(getpid(), code, si->si_value);
 #ifdef _ANDROID_
         if(isBuildDebuggable() && si->si_uid == AID_AUDIOSERVER) {

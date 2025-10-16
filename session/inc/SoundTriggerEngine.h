@@ -50,6 +50,8 @@
 #include "VoiceUIPlatformInfo.h"
 #include "VoiceUIInterface.h"
 
+#define RESTART_IGNORED (1)
+
 using ChronoSteadyClock_t = std::chrono::time_point<std::chrono::steady_clock>;
 
 class Stream;

@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,8 @@
 #define Q24_MULTIPLIER 0x1000000
 
 #define PARAM_ID_VOL_CTRL_MASTER_MUTE 0x08001036
+
+#define MAX_CRS_VOL_INDEX 7
 
 struct volume_ctrl_master_gain_t
 {
@@ -385,65 +387,9 @@ void PayloadBuilder::populateChannelMap(T pcmChannel, uint8_t numChannel)
         pcmChannel[2] = PCM_CHANNEL_C;
         pcmChannel[3] = PCM_CHANNEL_LS;
         pcmChannel[4] = PCM_CHANNEL_RS;
-        pcmChannel[5] = PCM_CHANNEL_LFE;
+        pcmChannel[5] = PCM_CHANNEL_CS;
         pcmChannel[6] = PCM_CHANNEL_LB;
         pcmChannel[7] = PCM_CHANNEL_RB;
-    } else if (numChannel == 10) {
-        pcmChannel[0] = PCM_CHANNEL_L;
-        pcmChannel[1] = PCM_CHANNEL_R;
-        pcmChannel[2] = PCM_CHANNEL_C;
-        pcmChannel[3] = PCM_CHANNEL_LS;
-        pcmChannel[4] = PCM_CHANNEL_RS;
-        pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
-        pcmChannel[9] = PCM_CHANNEL_TS;
-    } else if (numChannel == 12) {
-        pcmChannel[0] = PCM_CHANNEL_L;
-        pcmChannel[1] = PCM_CHANNEL_R;
-        pcmChannel[2] = PCM_CHANNEL_C;
-        pcmChannel[3] = PCM_CHANNEL_LS;
-        pcmChannel[4] = PCM_CHANNEL_RS;
-        pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
-        pcmChannel[9] = PCM_CHANNEL_TS;
-        pcmChannel[10] = PCM_CHANNEL_TFC;
-        pcmChannel[11] = PCM_CHANNEL_MS;
-    } else if (numChannel == 14) {
-        pcmChannel[0] = PCM_CHANNEL_L;
-        pcmChannel[1] = PCM_CHANNEL_R;
-        pcmChannel[2] = PCM_CHANNEL_C;
-        pcmChannel[3] = PCM_CHANNEL_LS;
-        pcmChannel[4] = PCM_CHANNEL_RS;
-        pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
-        pcmChannel[9] = PCM_CHANNEL_TS;
-        pcmChannel[10] = PCM_CHANNEL_TFC;
-        pcmChannel[11] = PCM_CHANNEL_MS;
-        pcmChannel[12] = PCM_CHANNEL_FLC;
-        pcmChannel[13] = PCM_CHANNEL_FRC;
-    } else if (numChannel == 16) {
-        pcmChannel[0] = PCM_CHANNEL_L;
-        pcmChannel[1] = PCM_CHANNEL_R;
-        pcmChannel[2] = PCM_CHANNEL_C;
-        pcmChannel[3] = PCM_CHANNEL_LS;
-        pcmChannel[4] = PCM_CHANNEL_RS;
-        pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
-        pcmChannel[9] = PCM_CHANNEL_TS;
-        pcmChannel[10] = PCM_CHANNEL_TFC;
-        pcmChannel[11] = PCM_CHANNEL_MS;
-        pcmChannel[12] = PCM_CHANNEL_FLC;
-        pcmChannel[13] = PCM_CHANNEL_FRC;
-        pcmChannel[14] = PCM_CHANNEL_RLC;
-        pcmChannel[15] = PCM_CHANNEL_RRC;
     }
 }
 
@@ -582,8 +528,6 @@ void PayloadBuilder::payloadMultichVolumemConfig(uint8_t** payload, size_t* size
     int numChannels;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0, mutePayloadSize = 0, mutePadBytes = 0;
-    uint32_t mute_flag = 1;
-
     numChannels = voldata->no_of_volpair;
     payloadSize = sizeof(struct apm_module_param_data_t) +
                   sizeof(struct volume_ctrl_multichannel_gain_t) +
@@ -611,10 +555,6 @@ void PayloadBuilder::payloadMultichVolumemConfig(uint8_t** payload, size_t* size
          volConf->gain_data[i].channel_mask_msb = 0;
          volConf->gain_data[i].gain = (uint32_t)((voldata->volume_pair[i].vol) *
                                         (PLAYBACK_MULTI_VOLUME_GAIN * 1.0));
-         /* set mute flag to 0, if gain is non-zero for any channel */
-         if (volConf->gain_data[i].gain != 0)
-             mute_flag = 0;
-
     }
     PAL_DBG(LOG_TAG, "header params IID:%x param_id:%x error_code:%d param_size:%d",
                   header->module_instance_id, header->param_id,
@@ -637,7 +577,7 @@ void PayloadBuilder::payloadMultichVolumemConfig(uint8_t** payload, size_t* size
     muteheader->param_size = mutePayloadSize -  sizeof(struct apm_module_param_data_t);
     muteConf = (volume_ctrl_master_mute_t *) (payloadInfo + payloadSize + padBytes +
                                                 sizeof(struct apm_module_param_data_t));
-    muteConf->mute_flag = mute_flag;
+    muteConf->mute_flag = 0;
     PAL_DBG(LOG_TAG, "header params IID:%x param_id:%x error_code:%d param_size:%d",
                   muteheader->module_instance_id, muteheader->param_id,
                   muteheader->error_code, muteheader->param_size);
@@ -2439,7 +2379,7 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
     uint8_t* payloadInfo = NULL;
     audio_lc3_codec_cfg_t *bleCfg = NULL;
     struct cop_v2_stream_info_map_t* streamMap = NULL;
-    size_t payloadSize = 0, padBytes = 0;
+    size_t payloadSize = 0, padBytes = 0, streamMapSize = 0;
     uint64_t channel_mask = 0;
     int i = 0;
 
@@ -2450,13 +2390,18 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
     }
 
     if (!isStreamMapDirIn) {
+        if (!bleCfg->is_enc_config_set)
+            streamMapSize = DEF_STREAM_MAP_SZ;
+        else
+            streamMapSize = bleCfg->enc_cfg.stream_map_size;
         payloadSize = sizeof(struct apm_module_param_data_t) +
-                      sizeof(struct param_id_cop_pack_output_media_fmt_t) +
-                      sizeof(struct cop_v2_stream_info_map_t) * bleCfg->enc_cfg.stream_map_size;
+                      sizeof(struct param_id_cop_v2_stream_info_t) +
+                      sizeof(struct cop_v2_stream_info_map_t) * streamMapSize;
     } else if (isStreamMapDirIn && bleCfg->dec_cfg.stream_map_size != 0) {
+        streamMapSize = bleCfg->dec_cfg.stream_map_size;
         payloadSize = sizeof(struct apm_module_param_data_t) +
-                      sizeof(struct param_id_cop_pack_output_media_fmt_t) +
-                      sizeof(struct cop_v2_stream_info_map_t) * bleCfg->dec_cfg.stream_map_size;
+                      sizeof(struct param_id_cop_v2_stream_info_t) +
+                      sizeof(struct cop_v2_stream_info_map_t) * streamMapSize;
     } else if (isStreamMapDirIn && bleCfg->dec_cfg.stream_map_size == 0) {
         PAL_ERR(LOG_TAG, "isStreamMapDirIn is true, but empty streamMapIn");
         return;
@@ -2477,16 +2422,24 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
                  sizeof(struct param_id_cop_v2_stream_info_t));
 
     header->module_instance_id = miid;
-    header->param_id = ResourceManager::isXPANEnabled ? PARAM_ID_CONN_PROXY_STREAM_INFO : PARAM_ID_COP_V2_STREAM_INFO;
+    header->param_id = ResourceManager::isCPEnabled ? PARAM_ID_CONN_PROXY_STREAM_INFO : PARAM_ID_COP_V2_STREAM_INFO;
     header->error_code = 0x0;
     header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
     PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
                       header->module_instance_id, header->param_id,
                       header->error_code, header->param_size);
 
-    if (!isStreamMapDirIn) {
-        streamInfo->num_streams = bleCfg->enc_cfg.stream_map_size;;
-        for (i = 0; i < streamInfo->num_streams; i++) {
+    streamInfo->num_streams = streamMapSize;
+    if (!isStreamMapDirIn && !bleCfg->is_enc_config_set) {
+        for (i = 0; i < streamMapSize; i++) {
+            channel_mask = convert_channel_map(def_stream_map_out[i].audio_location);
+            streamMap[i].stream_id = def_stream_map_out[i].stream_id;
+            streamMap[i].direction = def_stream_map_out[i].direction;
+            streamMap[i].channel_mask_lsw = channel_mask  & 0x00000000FFFFFFFF;
+            streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
+        }
+    } else if (!isStreamMapDirIn) {
+        for (i = 0; i < streamMapSize; i++) {
             channel_mask = convert_channel_map(bleCfg->enc_cfg.streamMapOut[i].audio_location);
             streamMap[i].stream_id = bleCfg->enc_cfg.streamMapOut[i].stream_id;
             streamMap[i].direction = bleCfg->enc_cfg.streamMapOut[i].direction;
@@ -2494,8 +2447,7 @@ void PayloadBuilder::payloadCopV2StreamInfo(uint8_t **payload, size_t *size,
             streamMap[i].channel_mask_msw = (channel_mask & 0xFFFFFFFF00000000) >> 32;
         }
     } else {
-        streamInfo->num_streams = bleCfg->dec_cfg.stream_map_size;
-        for (i = 0; i < streamInfo->num_streams; i++) {
+        for (i = 0; i < streamMapSize; i++) {
             channel_mask = convert_channel_map(bleCfg->dec_cfg.streamMapIn[i].audio_location);
             streamMap[i].stream_id = bleCfg->dec_cfg.streamMapIn[i].stream_id;
             streamMap[i].direction = bleCfg->dec_cfg.streamMapIn[i].direction;
@@ -2601,6 +2553,13 @@ int PayloadBuilder::populateStreamKV(Stream* s, std::vector<std::pair<int,int>> 
         filled_selector_pairs.push_back(std::make_pair(DIRECTION_SEL, "TX"));
         filled_selector_pairs.push_back(std::make_pair(VSID_SEL,
             vsidLUT.at(sattr->info.voice_call_info.VSID)));
+        retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVectorTx);
+    } else if (sattr->type == PAL_STREAM_ULTRASOUND) {
+        filled_selector_pairs.push_back(std::make_pair(DIRECTION_SEL, "RX"));
+        retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVectorRx);
+
+        filled_selector_pairs.clear();
+        filled_selector_pairs.push_back(std::make_pair(DIRECTION_SEL, "TX"));
         retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVectorTx);
     } else {
         PAL_DBG(LOG_TAG, "KVs not provided for stream type:%d", sattr->type);
@@ -3701,6 +3660,10 @@ int PayloadBuilder::populateTagKeyVector(Stream *s, std::vector <std::pair<int,i
     int status = 0;
     PAL_VERBOSE(LOG_TAG,"enter, tag 0x%x", tag);
     struct pal_stream_attributes sAttr;
+    struct pal_volume_data *voldata = NULL;
+    int voldB = 0;
+    float vol = 0.0f;
+    int vol_index = 0;
 
     memset(&sAttr, 0, sizeof(struct pal_stream_attributes));
     status = s->getStreamAttributes(&sAttr);
@@ -3711,6 +3674,57 @@ int PayloadBuilder::populateTagKeyVector(Stream *s, std::vector <std::pair<int,i
     }
 
     switch (tag) {
+    case CRS_CALL_VOLUME:
+       voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
+                         (sizeof(struct pal_channel_vol_kv) * (0xFFFF))));
+       if (!voldata) {
+           status = -ENOMEM;
+           break;
+       }
+       status = s->getVolumeData(voldata);
+       if (0 != status) {
+           PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
+           goto free_vol;
+       }
+       if (voldata->no_of_volpair == 1) {
+            vol = (voldata->volume_pair[0].vol);
+            PAL_VERBOSE(LOG_TAG,"volume sent:%f \n",(voldata->volume_pair[0].vol));
+        }
+       /*get crs volume index*/
+        voldB = lrint(vol * 10.0);
+        vol_index = MAX_CRS_VOL_INDEX - voldB;;
+
+        if (vol_index >= 0 && vol_index < 1) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_0));
+        }
+        else if (vol_index >= 1 && vol_index < 2) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_1));
+        }
+        else if (vol_index >= 2 && vol_index < 3) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_2));
+        }
+        else if (vol_index >= 3 && vol_index < 4) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_3));
+        }
+        else if (vol_index >= 4 && vol_index < 5) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_4));
+        }
+        else if (vol_index >= 5 && vol_index < 6) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_5));
+        }
+        else if (vol_index >= 6 && vol_index < 7) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_6));
+        }
+        else if (vol_index >= 7) {
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_7));
+        }
+        else {
+            //Sending LEVEL_4 in default case.
+            PAL_INFO(LOG_TAG, "Setting default volume tkv as LEVEL_4");
+            tkv.push_back(std::make_pair(VOLUME,LEVEL_4));
+        }
+        *gsltag = TAG_STREAM_VOLUME;
+        break;
     case MUTE_TAG:
        tkv.push_back(std::make_pair(MUTE,ON));
        *gsltag = TAG_MUTE;
@@ -3915,6 +3929,9 @@ int PayloadBuilder::populateTagKeyVector(Stream *s, std::vector <std::pair<int,i
     }
 
     PAL_VERBOSE(LOG_TAG,"exit status- %d", status);
+free_vol:
+    if (voldata)
+        free(voldata);
     return status;
 }
 
@@ -4836,6 +4853,104 @@ void PayloadBuilder::payloadHapticsDevPConfig(uint8_t** payload, size_t* size, u
     *payload = payloadInfo;
 }
 
+#define NUM_OF_IN_PORTS  1
+#define NUM_OF_OUT_PORTS 3
+void PayloadBuilder::payloadDAMPortConfig(uint8_t** payload, size_t* size,
+                          uint32_t miid, uint8_t numChannel)
+{
+    size_t in_payloadSize = 0, in_padBytes = 0, out_payloadSize = 0, out_padBytes = 0;
+    uint8_t* payloadInfo = NULL;
+    struct apm_module_param_data_t* in_header = NULL;
+    struct apm_module_param_data_t* out_header = NULL;
+    param_id_audio_dam_input_ports_cfg_t* in_port_payload = NULL;
+    param_id_audio_dam_output_ports_cfg_t* out_port_payload = NULL;
+
+    in_payloadSize = sizeof(struct apm_module_param_data_t) +
+                sizeof(param_id_audio_dam_input_ports_cfg_t) +
+                (sizeof(audio_dam_input_port_cfg_t ) * NUM_OF_IN_PORTS +
+                sizeof(uint32_t ) * NUM_OF_IN_PORTS * numChannel);
+    in_padBytes = PAL_PADDING_8BYTE_ALIGN(in_payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, in_payloadSize + in_padBytes);
+    if (payloadInfo == NULL) {
+        PAL_ERR(LOG_TAG, "payload malloc failed %s", strerror(errno));
+        return;
+    }
+
+    in_header = (struct apm_module_param_data_t*)(payloadInfo);
+    in_header->module_instance_id = miid;
+    in_header->param_id = PARAM_ID_AUDIO_DAM_INPUT_PORTS_CFG;
+    in_header->error_code = 0x0;
+    in_header->param_size = in_payloadSize -  sizeof(struct apm_module_param_data_t);
+
+    PAL_DBG(LOG_TAG, "header params IID:%x param_id:%x error_code:%d"
+                " param_size:%d", in_header->module_instance_id, in_header->param_id,
+                in_header->error_code, in_header->param_size);
+
+    in_port_payload = (param_id_audio_dam_input_ports_cfg_t *)
+                            (payloadInfo + sizeof(struct apm_module_param_data_t));
+    in_port_payload->num_input_ports = NUM_OF_IN_PORTS;
+    audio_dam_input_port_cfg_t* in_port_cfg_ptr =
+                    (audio_dam_input_port_cfg_t *)((uint8_t*)in_port_payload + sizeof(uint32_t));
+    in_port_cfg_ptr->input_port_id = 2;
+    in_port_cfg_ptr->num_channels = numChannel;
+    uint32_t* channel_ids = (uint32_t*)((uint8_t*)in_port_cfg_ptr +
+                                         sizeof(audio_dam_input_port_cfg_t));
+    for (int i = 0; i < numChannel; ++i)
+        channel_ids[i] = i + 1;
+
+    out_payloadSize = sizeof(struct apm_module_param_data_t) +
+                sizeof(param_id_audio_dam_output_ports_cfg_t) +
+                (sizeof(audio_dam_output_port_cfg_t ) * NUM_OF_OUT_PORTS +
+                sizeof(channel_map_t) * NUM_OF_OUT_PORTS * numChannel);
+    out_padBytes = PAL_PADDING_8BYTE_ALIGN(out_payloadSize);
+
+    payloadInfo = (uint8_t*) realloc(payloadInfo, in_payloadSize + in_padBytes +
+                                        out_payloadSize + out_padBytes);
+    if (payloadInfo == NULL) {
+        PAL_ERR(LOG_TAG, "payload malloc failed %s", strerror(errno));
+        return;
+    }
+
+    out_header = (struct apm_module_param_data_t*)(payloadInfo + in_payloadSize + in_padBytes);
+    out_header->module_instance_id = miid;
+    out_header->param_id = PARAM_ID_AUDIO_DAM_OUTPUT_PORTS_CFG;
+    out_header->error_code = 0x0;
+    out_header->param_size = out_payloadSize -  sizeof(struct apm_module_param_data_t);
+
+    PAL_DBG(LOG_TAG, "header params IID:%x param_id:%x error_code:%d"
+                " param_size:%d", out_header->module_instance_id, out_header->param_id,
+                out_header->error_code, out_header->param_size);
+
+    out_port_payload = (param_id_audio_dam_output_ports_cfg_t *)
+                            (payloadInfo + in_payloadSize + in_padBytes +
+                            sizeof(struct apm_module_param_data_t));
+    out_port_payload->num_output_ports = NUM_OF_OUT_PORTS;
+    audio_dam_output_port_cfg_t* out_port_cfg_ptr =
+                (audio_dam_output_port_cfg_t *)((uint8_t*)out_port_payload + sizeof(uint32_t));
+    channel_map_t* output_ch_map;
+    for (int i = 0; i < NUM_OF_OUT_PORTS; ++i) {
+        out_port_cfg_ptr->output_port_id = 2 * i + 1;
+        out_port_cfg_ptr->num_channels = numChannel;
+        output_ch_map = (channel_map_t*)((uint8_t*)out_port_cfg_ptr +
+                                         sizeof(audio_dam_output_port_cfg_t));
+        for (int j = 0; j < numChannel; ++j) {
+            output_ch_map[j].input_ch_id = j + 1;
+            output_ch_map[j].output_ch_id = j + 1;
+            out_port_cfg_ptr =
+                (audio_dam_output_port_cfg_t *)((uint8_t*)&output_ch_map[j] +
+                                                sizeof(channel_map_t));
+        }
+    }
+
+    *size = in_payloadSize + in_padBytes + out_payloadSize + out_padBytes;
+    *payload = payloadInfo;
+
+    PAL_DBG(LOG_TAG, "payload %pK size %zu, num of ch: %d", *payload, *size, numChannel);
+}
+#undef NUM_OF_IN_PORTS
+#undef NUM_OF_OUT_PORTS
+
 std::unique_ptr<uint8_t[]> PayloadBuilder::getPayloadEncoderBitrate(
     uint32_t encoderMIID, uint32_t newBitrate, size_t &outputPayloadSize) {
     const auto sizeAPM = sizeof(apm_module_param_data_t);
@@ -4861,96 +4976,55 @@ std::unique_ptr<uint8_t[]> PayloadBuilder::getPayloadEncoderBitrate(
     return std::move(payload);
 }
 
-void PayloadBuilder::payloadCABConfig(uint8_t** payload, size_t* size,
-        uint32_t miid, bt_enc_payload_t *bt_enc_payload)
+void PayloadBuilder::USToneRendererNotifyPayload(uint8_t **payload, size_t *size,
+        struct pal_device *dAttr, uint32_t moduleId,
+        us_tone_renderer_ep_media_format_status_t event)
 {
-    struct apm_module_param_data_t *header = NULL;
-    param_id_congestion_buf_config_t *cong_buff_cfg= NULL;
-    size_t payloadSize = 0, padBytes = 0;
-    uint8_t *payloadInfo = NULL;
-    void *src_data  = NULL;
-
-    if (bt_enc_payload == NULL) {
-        PAL_ERR(LOG_TAG, "null args passed for bt_enc_payload");
-        return;
-    }
+    size_t payloadSize, padBytes;
+    uint8_t* payloadInfo = NULL;
+    struct apm_module_param_data_t* header = NULL;
+    data_event_id_us_tone_renderer_media_format_change_t* fmt_payload = NULL;
+    uint8_t* pcmChannel = NULL;
 
     payloadSize = sizeof(struct apm_module_param_data_t) +
-        sizeof(param_id_congestion_buf_config_t);
-    padBytes    = PAL_PADDING_8BYTE_ALIGN(payloadSize);
-    payloadInfo = new uint8_t[payloadSize + padBytes]();
-    if (!payloadInfo) {
-        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+                sizeof(param_id_us_tone_renderer_ep_media_format_cfg_t) +
+                (sizeof(uint8_t) * dAttr->config.ch_info.channels);
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (payloadInfo == NULL) {
+        PAL_ERR(LOG_TAG, "payload malloc failed %s", strerror(errno));
         return;
     }
 
-    header          = (struct apm_module_param_data_t*)payloadInfo;
-    cong_buff_cfg   = (param_id_congestion_buf_config_t*)(payloadInfo +
-            sizeof(struct apm_module_param_data_t));
+    header = (struct apm_module_param_data_t*)(payloadInfo);
+    header->module_instance_id = moduleId;
+    header->param_id = PARAM_ID_US_TONE_RENDERER_EP_MEDIA_FORMAT_CFG;
+    header->error_code = 0x0;
+    header->param_size = payloadSize -  sizeof(struct apm_module_param_data_t);
+    pcmChannel = (uint8_t*)(payloadInfo + sizeof(struct apm_module_param_data_t) +
+                            sizeof(struct param_id_us_tone_renderer_ep_media_format_cfg_t));
 
-    header->module_instance_id = miid;
-    header->param_id           = PARAM_ID_CONGESTION_BUF_CONFIG;
-    header->error_code         = 0x0;
-    header->param_size         = payloadSize - sizeof(struct apm_module_param_data_t);
-    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
-            header->module_instance_id, header->param_id,
-            header->error_code, header->param_size);
+    PAL_VERBOSE(LOG_TAG, "header params IID:%x param_id:%x error_code:%d"
+                " param_size:%d", header->module_instance_id, header->param_id,
+                header->error_code, header->param_size);
 
-    cong_buff_cfg->sampling_rate = bt_enc_payload->sample_rate;
-    cong_buff_cfg->bit_rate_mode = bt_enc_payload->bitrate_mode;
-    cong_buff_cfg->bit_rate = bt_enc_payload->bitrate;
-    cong_buff_cfg->mtu_size = bt_enc_payload->mtu;
-    cong_buff_cfg->congestion_buffer_duration_ms = bt_enc_payload->congestion_buffer_duration_ms;
-    cong_buff_cfg->delay_buffer_duration_ms = bt_enc_payload->delay_buffer_duration_ms;
-    cong_buff_cfg->frame_size_mode = bt_enc_payload->frame_size_mode;
-    cong_buff_cfg->frame_size_value = bt_enc_payload->frame_size_value;
+    fmt_payload = (param_id_us_tone_renderer_ep_media_format_cfg_t *)
+                            (payloadInfo + sizeof(struct apm_module_param_data_t));
+    fmt_payload->status = event;
+    fmt_payload->sampling_rate = dAttr->config.sample_rate;
+    fmt_payload->bit_width = dAttr->config.bit_width;
+    fmt_payload->num_channels = dAttr->config.ch_info.channels;
 
-    *size = (payloadSize + padBytes);
+    for (int i = 0; i < dAttr->config.ch_info.channels; ++i) {
+        pcmChannel[i] = dAttr->config.ch_info.ch_map[i];
+    }
+
+    *size = payloadSize + padBytes;
     *payload = payloadInfo;
 
-    PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", payloadInfo,
-            *size);
-}
-
-void PayloadBuilder::payloadJBMConfig(uint8_t** payload, size_t* size,
-        uint32_t miid, bt_enc_payload_t *bt_enc_payload)
-{
-    struct apm_module_param_data_t *header = NULL;
-    param_id_jitter_buf_config_t *jitter_buff_cfg = NULL;
-    size_t payloadSize = 0, padBytes = 0;
-    uint8_t *payloadInfo = NULL;
-
-    if (bt_enc_payload == NULL) {
-        PAL_ERR(LOG_TAG, "null args passed for bt_enc_payload");
-        return;
-    }
-
-    payloadSize = sizeof(struct apm_module_param_data_t) +
-        sizeof(param_id_jitter_buf_config_t);
-    padBytes    = PAL_PADDING_8BYTE_ALIGN(payloadSize);
-    payloadInfo = new uint8_t[payloadSize + padBytes]();
-    if (!payloadInfo) {
-        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
-        return;
-    }
-
-    header          = (struct apm_module_param_data_t*)payloadInfo;
-    jitter_buff_cfg   = (param_id_jitter_buf_config_t*)(payloadInfo +
-            sizeof(struct apm_module_param_data_t));
-
-    header->module_instance_id = miid;
-    header->param_id           = PARAM_ID_JITTER_BUF_CONFIG ;
-    header->error_code         = 0x0;
-    header->param_size         = payloadSize - sizeof(struct apm_module_param_data_t);
-    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
-            header->module_instance_id, header->param_id,
-            header->error_code, header->param_size);
-
-    jitter_buff_cfg->jitter_allowance_in_ms = bt_enc_payload->jitter_allowance_in_ms;
-
-    *size = (payloadSize + padBytes);
-    *payload = payloadInfo;
-
-    PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", payloadInfo,
-            *size);
+    PAL_DBG(LOG_TAG, "event: %d sample_rate:%d bit_width:%d num_channels:%d Miid:%d",
+                      fmt_payload->status, fmt_payload->sampling_rate, fmt_payload->bit_width,
+                      fmt_payload->num_channels, header->module_instance_id);
+    PAL_DBG(LOG_TAG, "payload %pK size %zu", *payload, *size);
 }

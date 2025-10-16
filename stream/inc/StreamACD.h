@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -93,11 +93,7 @@ class StreamACD : public Stream {
                        uint32_t no_of_modifiers __unused,
                        std::shared_ptr<ResourceManager> rm);
     ~StreamACD();
-#ifndef PAL_MEMLOG_UNSUPPORTED
     int32_t open() { palStateEnqueue(this, PAL_STATE_OPENED, 0); return 0; }
-#else
-    int32_t open() { return 0; }
-#endif    
     int32_t close() override;
     int32_t prepare() override { return 0; }
     int32_t start() override;
@@ -132,8 +128,8 @@ class StreamACD : public Stream {
         return -ENOSYS;
     }
 
-    int32_t Resume() override;
-    int32_t Pause() override;
+    int32_t Resume(bool is_internal __unused) override;
+    int32_t Pause(bool is_internal __unused) override;
     int32_t HandleConcurrentStream(bool active) override;
 
     pal_device_id_t GetAvailCaptureDevice();

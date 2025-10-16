@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -92,7 +92,8 @@ StreamACD::StreamACD(struct pal_stream_attributes *sattr,
     }
 
     if (!dattr) {
-        goto exit;
+        PAL_ERR(LOG_TAG, "Error: pal_device is passed as null");
+        throw std::runtime_error("pal_device is passed as null");
     }
 
     ar_mem_cpy(mStreamAttr, sizeof(pal_stream_attributes),
@@ -157,7 +158,6 @@ StreamACD::StreamACD(struct pal_stream_attributes *sattr,
     if (disable_concurrency_count) {
         paused_ = true;
     }
-exit:
     PAL_DBG(LOG_TAG, "Exit");
 }
 
@@ -226,9 +226,7 @@ int32_t StreamACD::close()
         free(cached_event_data_);
         cached_event_data_ = nullptr;
     }
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -246,9 +244,7 @@ int32_t StreamACD::start()
     if (!status) {
         currentState = STREAM_STARTED;
     }
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -265,14 +261,12 @@ int32_t StreamACD::stop()
     if (!status) {
         currentState = STREAM_STOPPED;
     }
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
 
-int32_t StreamACD::Resume() {
+int32_t StreamACD::Resume(bool is_internal) {
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -281,15 +275,13 @@ int32_t StreamACD::Resume() {
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Resume failed", status);
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;
 }
 
-int32_t StreamACD::Pause() {
+int32_t StreamACD::Pause(bool is_internal) {
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
@@ -298,9 +290,7 @@ int32_t StreamACD::Pause() {
     status = cur_state_->ProcessEvent(ev_cfg);
     if (status)
         PAL_ERR(LOG_TAG, "Error:%d Pause failed", status);
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
     return status;
@@ -593,11 +583,6 @@ std::shared_ptr<CaptureProfile> StreamACD::GetCurrentCaptureProfile()
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
     enum StInputModes input_mode = ST_INPUT_MODE_HANDSET;
     enum StOperatingModes operating_mode = ST_OPERATING_MODE_HIGH_PERF;
-
-    if (!sm_cfg_) {
-        PAL_ERR(LOG_TAG, "Stream config not created yet");
-        return nullptr;
-    }
 
     if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;
@@ -1151,7 +1136,9 @@ int32_t StreamACD::ACDLoaded::ProcessEvent(
             std::shared_ptr<CaptureProfile> cap_prof = nullptr;
 
             // Do not update capture profile when resuming stream
-            if (ev_cfg->id_ == ACD_EV_START_RECOGNITION) {
+            if (ev_cfg->id_ == ACD_EV_START_RECOGNITION ||
+               (ev_cfg->id_ == ACD_EV_RESUME &&
+                !acd_stream_.rm->GetSoundTriggerCaptureProfile())) {
                 backend_update = acd_stream_.rm->UpdateSoundTriggerCaptureProfile(
                     &acd_stream_, true);
                 if (backend_update) {

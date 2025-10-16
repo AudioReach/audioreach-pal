@@ -554,7 +554,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_BLUETOOTH_A2DP</id>
-            <back_end_name>SLIM-DEV1-TX-9</back_end_name>
+            <back_end_name>SLIM-DEV1-TX-7</back_end_name>
             <max_channels>1</max_channels>
             <channels>1</channels>
             <snd_device_name>bt-a2dp-mic</snd_device_name>
@@ -1235,8 +1235,8 @@
                             <context id="0x0800132E" /> <!-- EVENT_BABYCRYING -->
                             <context id="0x0800132F" /> <!-- EVENT_DOGBARKING -->
                             <context id="0x08001330" /> <!-- EVENT_DOORBELL -->
-                            <context id="0x08001331" /> <!-- EVENT_DOOROPENCLOSE -->
-                            <context id="0x08001332" /> <!-- EVENT_CRASH -->
+                            <context id="0x08001331" /> <!-- EVENT_DOORCLOSE -->
+                            <context id="0x08001332" /> <!-- EVENT_DOOROPEN -->
                             <context id="0x08001333" /> <!-- EVENT_GLASSBREAKING -->
                             <context id="0x08001334" /> <!-- EVENT_SIREN -->
                         </contexts>
@@ -1307,7 +1307,6 @@
                 <name>QC_VOICE_UI</name>
                 <param vendor_uuid="68ab2d40-e860-11e3-95ef-0002a5d5c51b" />
                 <param merge_first_stage_sound_models="false" />
-                <param interface_plugin_lib="libsva_intf.so" />
                 <!--For now total 3 engines are supported, if more engine instances are needed,-->
                 <!-- do update acdb and usecaseKvManager.xml files by adding more instances    -->
                 <param pdk_first_stage_max_engine_count="1"/>

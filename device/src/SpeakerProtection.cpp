@@ -79,7 +79,7 @@
 #endif
 #define FEEDBACK_MONO_1 "-mono-1"
 
-#define MIN_SPKR_IDLE_SEC (60 * 30)
+#define MIN_SPKR_IDLE_SEC (60 * 3)
 #define WAKEUP_MIN_IDLE_CHECK (1000 * 30)
 
 #define SPKR_RIGHT_WSA_TEMP "SpkrRight WSA Temp"
@@ -725,7 +725,6 @@ int SpeakerProtection::spkrStartCalibration()
         }
     }
 
-    enableDevice(audioRoute, mSndDeviceName_vi);
     txPcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdsTx.at(0), flags, &config);
     if (!txPcm) {
         PAL_ERR(LOG_TAG, "txPcm open failed");
@@ -762,6 +761,7 @@ int SpeakerProtection::spkrStartCalibration()
         goto err_pcm_open;
     }
 
+    enableDevice(audioRoute, mSndDeviceName_vi);
 
     PAL_DBG(LOG_TAG, "pcm start for TX path");
     if (pcm_start(txPcm) < 0) {
@@ -940,7 +940,6 @@ int SpeakerProtection::spkrStartCalibration()
         }
     }
 
-    enableDevice(audioRoute, mSndDeviceName_rx);
     rxPcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdsRx.at(0), flags, &config);
     if (!rxPcm) {
         PAL_ERR(LOG_TAG, "pcm open failed for RX path");
@@ -954,6 +953,8 @@ int SpeakerProtection::spkrStartCalibration()
         goto err_pcm_open;
     }
 
+
+    enableDevice(audioRoute, mSndDeviceName_rx);
     PAL_DBG(LOG_TAG, "pcm start for RX path");
     if (pcm_start(rxPcm) < 0) {
         PAL_ERR(LOG_TAG, "pcm start failed for RX path");

@@ -27,7 +27,8 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ *
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -55,8 +56,8 @@ public:
     int32_t start() override;
     int32_t stop() override;
     int32_t close() override;
-    int32_t Resume() override;
-    int32_t Pause() override;
+    int32_t Resume(bool is_internal __unused) override;
+    int32_t Pause(bool is_internal __unused) override;
     int32_t HandleConcurrentStream(bool active) override;
     int32_t DisconnectDevice(pal_device_id_t device_id) override;
     int32_t ConnectDevice(pal_device_id_t device_id) override;
@@ -70,10 +71,12 @@ private:
     int32_t ConnectDevice_l(pal_device_id_t device_id);
     int32_t setECRef(std::shared_ptr<Device> dev, bool is_enable);
     int32_t setECRef_l(std::shared_ptr<Device> dev, bool is_enable);
+    int32_t setParameters(uint32_t param_id, void *payload);
     std::shared_ptr<ACDStreamConfig> sm_cfg_;
     std::shared_ptr<ACDPlatformInfo> acd_info_;
     std::shared_ptr<CaptureProfile> cap_prof_;
     uint32_t pcm_data_stream_effect;
+    uint32_t pcm_data_buffering;
     bool paused_;
 };
 

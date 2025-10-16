@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -163,9 +163,7 @@ int32_t  StreamInCall::open()
         goto exit;
     }
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_OPENED, status);
-#endif
     mStreamMutex.unlock();
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;
@@ -202,9 +200,7 @@ int32_t  StreamInCall::close()
     }
 
     currentState = STREAM_IDLE;
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
-#endif
     mStreamMutex.unlock();
 
 
@@ -319,9 +315,7 @@ int32_t StreamInCall::start()
     }
 
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. state %d", currentState);
     mStreamMutex.unlock();
     rm->unlockActiveStream();
@@ -378,9 +372,7 @@ int32_t StreamInCall::stop()
     }
 
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
-    palStateEnqueue(this, PAL_STATE_STOPPED, status);
-#endif
+   palStateEnqueue(this, PAL_STATE_STOPPED, status);
    mStreamMutex.unlock();
    PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
    return status;
@@ -750,9 +742,7 @@ int32_t StreamInCall::pause_l()
 
     isPaused = true;
     currentState = STREAM_PAUSED;
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. session setConfig successful");
 exit:
     return status;
@@ -787,9 +777,7 @@ int32_t StreamInCall::resume_l()
     }
     isPaused = false;
     currentState = STREAM_STARTED;
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. session setConfig successful");
 exit:
     return status;

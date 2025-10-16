@@ -157,6 +157,8 @@ public:
     int getTagsWithModuleInfo(Stream *s, size_t *size __unused, uint8_t *payload);
     void retryOpenWithoutEC(Stream *s, unsigned int pcm_flags, struct pcm_config *config);
     int reconfigureModule(uint32_t tagID, const char* BE, struct sessionToPayloadParam *data);
+    int notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
+            us_tone_renderer_ep_media_format_status_t event);
 };
 
 #endif //SESSION_ALSAPCM_H

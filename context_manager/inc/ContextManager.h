@@ -122,12 +122,26 @@ class UsecasePCMData : public Usecase
 private:
     std::vector<int32_t> tags;
     uint32_t pcm_data_type;
+    uint32_t pcm_data_buffering;
 public:
     UsecasePCMData(uint32_t usecase_id);
     ~UsecasePCMData();
     int32_t SetUseCaseData(uint32_t size, void *data);
     int32_t Configure();
 
+    // caller can allocate sufficient memory the first time to avoid
+    // calling this api twice. Size, will be updated to actual size;
+    int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);
+};
+
+class UsecasePCMRenderer : public Usecase
+{
+private:
+    std::vector<int32_t> tags;
+public:
+    UsecasePCMRenderer(uint32_t usecase_id);
+    ~UsecasePCMRenderer();
+    int32_t SetUseCaseData(uint32_t size, void *data);
     // caller can allocate sufficient memory the first time to avoid
     // calling this api twice. Size, will be updated to actual size;
     int32_t GetAckDataOnSuccessfullStart(uint32_t *size, void *data);

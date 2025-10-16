@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# configure.ac -- Autoconf script for pal
+# configure.ac -- Autoconf script for qap
 #
 
 # Process this file with autoconf to produce a configure script
@@ -43,13 +43,6 @@ AC_ARG_WITH([glib],
       AS_HELP_STRING([--with-glib],
          [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
 
-
-AC_ARG_WITH([syslog],
-    AS_HELP_STRING([use syslog (default is no)]),
-        [with_syslog=$withval],
-            [with_syslog=no])
-            AM_CONDITIONAL([USE_SYSLOG], [test "x${with_syslog}" = "xyes"])
-
 if (test "x${with_glib}" = "xyes"); then
         PKG_CHECK_MODULES(GTHREAD, gthread-2.0 >= 2.16, dummy=yes,
                                 AC_MSG_ERROR(GThread >= 2.16 is required))
@@ -64,40 +57,21 @@ fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
-AC_ARG_WITH([cutils],
-    AS_HELP_STRING([Use cutils (default is no)]),
-     [with_cutils=$withval],
-     [with_cutils=no])
-AM_CONDITIONAL([CUTILS_SUPPORTED], [test "x${with_cutils}" = "xyes"])
-
 # Checks for libraries
 PKG_CHECK_MODULES([AGM], [agm])
 AC_SUBST([AGM_CFLAGS])
 
-PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
-AC_SUBST([PALHEADERS_CFLAGS])
+PKG_CHECK_MODULES([SPF], [spf])
+AC_SUBST([SPF_CFLAGS])
 
-PKG_CHECK_MODULES([SPFHEADERS], [spf])
-AC_SUBST([SPFHEADERS_CFLAGS])
-AC_SUBST([SPFHEADERS_LIBS])
-
-PKG_CHECK_MODULES([AROUTE], [audioroute])
-AC_SUBST([AROUTE_CFLAGS])
-
-PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
-AC_SUBST([KVH2XML_CFLAGS])
+PKG_CHECK_MODULES([MMHEADERS], [mm-audio-headers])
+AC_SUBST([MMHEADERS_CFLAGS])
 
 AC_ARG_WITH([compress],
     AS_HELP_STRING([compile compress (default is no)]),
     [with_compress=$withval],
     [with_compress=no])
 AM_CONDITIONAL([COMPILE_COMPRESS], [test "x${with_compress}" = "xyes"])
-
-AC_ARG_WITH([adsprpcd],
-    AS_HELP_STRING([compile adsprpcd (default is no)]),
-    [with_adsprpcd=$withval],
-    [with_adsprpcd=no])
-AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
 
 AC_CONFIG_FILES([ Makefile pal.pc ])
 AC_OUTPUT

@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: vui-interface-header
-Description: vui-interface_api headers
+Name: mm-audio-headers
+Description: capiv2_api headers
 Version: @VERSION@
 Libs: -L${libdir}
-Cflags: -I${includedir}/vuiInterfaceHeader
+Cflags: -I${includedir}/acdbdata

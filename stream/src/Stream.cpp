@@ -45,14 +45,13 @@
 #include "StreamSensorPCMData.h"
 #include "StreamCommonProxy.h"
 #include "StreamHaptics.h"
+#include "StreamSensorRenderer.h"
 #include "Session.h"
 #include "SessionAlsaPcm.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include "USBAudio.h"
-#ifndef PAL_MEMLOG_UNSUPPORTED
 #include "mem_logger.h"
-#endif
 
 std::shared_ptr<ResourceManager> Stream::rm = nullptr;
 std::mutex Stream::mBaseStreamMutex;
@@ -113,18 +112,24 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
 
     if (sAttr->type == PAL_STREAM_VOICE_CALL_MUSIC)
         goto stream_create;
+
+    if (sAttr->type == PAL_STREAM_SENSOR_PCM_DATA) {
+        ar_mem_cpy(palDevsAttr, sizeof(struct pal_device),
+                   dAttr, sizeof(struct pal_device));
+        goto stream_create;
+    }
+
     for (int i = 0; i < noOfDevices; i++) {
         struct pal_device_info devinfo = {};
         palDevsAttr[i] = {};
 
-        if (sAttr->type == PAL_STREAM_ULTRASOUND) {
+        if (sAttr->type == PAL_STREAM_ULTRASOUND ||
+            sAttr->type == PAL_STREAM_SENSOR_PCM_RENDERER) {
             if (i == 0) { // first assign output device
                 if (rm->IsVirtualPortForUPDEnabled())
                     dAttr[i].id = PAL_DEVICE_OUT_ULTRASOUND;
-                else if (rm->IsDedicatedBEForUPDEnabled())
-                    dAttr[i].id = PAL_DEVICE_OUT_ULTRASOUND_DEDICATED;
                 else
-                    dAttr[i].id = PAL_DEVICE_OUT_HANDSET;
+                    dAttr[i].id = PAL_DEVICE_OUT_ULTRASOUND_DEDICATED;
             } else { // then assign input device
                 dAttr[i].id = PAL_DEVICE_IN_ULTRASOUND_MIC;
             }
@@ -281,6 +286,14 @@ stream_create:
                                                    noOfModifiers,
                                                    rm);
                 break;
+                case PAL_STREAM_SENSOR_PCM_RENDERER:
+                    stream = new StreamSensorRenderer(sAttr,
+                                                  palDevsAttr,
+                                                  noOfDevices,
+                                                  modifiers,
+                                                  noOfModifiers,
+                                                  rm);
+                    break;
                 default:
                     PAL_ERR(LOG_TAG, "unsupported stream type 0x%x", sAttr->type);
                     break;
@@ -397,9 +410,7 @@ int32_t Stream::setEffectParameters(void *effect_param)
 
     pal_param_payload *pal_param = (pal_param_payload *)effect_param;
     effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
-    mGetParamMutex.lock();
     status = session->setEffectParameters(this, effectPayload);
-    mGetParamMutex.unlock();
     if (status) {
        PAL_ERR(LOG_TAG, "setEffectParameters failed with %d", status);
     }
@@ -858,9 +869,9 @@ int32_t Stream::getTimestamp(struct pal_session_time *stime)
         PAL_ERR(LOG_TAG, "Sound card offline/standby, status %d", status);
         goto exit;
     }
-    mGetParamMutex.lock();
+    rm->lockResourceManagerMutex();
     status = session->getTimestamp(stime);
-    mGetParamMutex.unlock();
+    rm->unlockResourceManagerMutex();
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to get session timestamp status %d", status);
         if (errno == -ENETRESET &&
@@ -1442,8 +1453,10 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
      * For mmap usecase, if device switch happens to A2DP/BLE device
      * before stream_start then start A2DP/BLE dev. since it won't be
      * started again as a part of pal_stream_start().
+     *
+     * Currently device switch to BT is not supported for stopped mmap stream.
      */
-
+    // TODO: add support for device switch to BT for stopped streams
     rm->lockGraph();
     if ((currentState != STREAM_INIT && currentState != STREAM_STOPPED) ||
         (currentState == STREAM_INIT &&
@@ -1457,11 +1470,12 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
             rm->unlockGraph();
             goto dev_close;
         }
-    } else if (rm->isBtDevice((pal_device_id_t)dev->getSndDeviceId())) {
+    } else if (rm->isBtDevice((pal_device_id_t)dev->getSndDeviceId()) &&
+            currentState == STREAM_STOPPED) {
         PAL_DBG(LOG_TAG, "stream is in %d state, no need to switch to BT", currentState);
         status = 0;
         rm->unlockGraph();
-        goto dev_close;
+        goto exit;
     }
 
     status = session->connectSessionDevice(streamHandle, mStreamAttr->type, dev);
@@ -1476,9 +1490,8 @@ int32_t Stream::connectStreamDevice_l(Stream* streamHandle, struct pal_device *d
     }
 
     rm->checkAndSetDutyCycleParam();
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(streamHandle, (pal_state_queue_state) currentState, status);
-#endif
+
     /* For UC2: USB insertion on playback, After USB online notification,
      * As enabling PA is done assuming that current Concurrent Boost state
      * is True and Audio will config Limiter for speaker.
@@ -1579,6 +1592,9 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     int32_t connectCount = 0, disconnectCount = 0;
     bool isNewDeviceA2dp = false;
     bool isCurDeviceA2dp = false;
+    bool isCurDeviceSco = false;
+    bool isCurrentDeviceProxyOut = false;
+    bool isCurrentDeviceDpOut = false;
     bool matchFound = false;
     bool voice_call_switch = false;
     bool force_switch_dev_id[PAL_DEVICE_IN_MAX] = {};
@@ -1597,8 +1613,10 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     bool has_out_device = false, has_in_device = false;
     std::vector <std::shared_ptr<Device>>::iterator dIter;
     struct pal_volume_data *volume = NULL;
+    pal_device_id_t curBtDevId = PAL_DEVICE_NONE;
     pal_device_id_t newBtDevId;
     bool isBtReady = false;
+
     rm->lockActiveStream();
     mStreamMutex.lock();
 
@@ -1620,11 +1638,27 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
 
     for (int i = 0; i < mDevices.size(); i++) {
         pal_device_id_t curDevId = (pal_device_id_t)mDevices[i]->getSndDeviceId();
+
         if (curDevId == PAL_DEVICE_OUT_BLUETOOTH_A2DP ||
             curDevId == PAL_DEVICE_OUT_BLUETOOTH_BLE ||
             curDevId == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST) {
             isCurDeviceA2dp = true;
+            curBtDevId = curDevId;
         }
+
+        if (curDevId == PAL_DEVICE_OUT_BLUETOOTH_SCO) {
+            isCurDeviceSco = true;
+            curBtDevId = curDevId;
+        }
+
+        if (curDevId == PAL_DEVICE_OUT_PROXY)
+            isCurrentDeviceProxyOut = true;
+
+        if (curDevId == PAL_DEVICE_OUT_AUX_DIGITAL ||
+            curDevId == PAL_DEVICE_OUT_AUX_DIGITAL_1 ||
+            curDevId == PAL_DEVICE_OUT_HDMI)
+            isCurrentDeviceDpOut = true;
+
         /*
          * If stream is currently running on same device, then check if
          * it needs device switch. If not needed, then do not add it to
@@ -1685,9 +1719,31 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
         std::shared_ptr<Device> dev = nullptr;
         bool devReadyStatus = false;
         pal_param_bta2dp_t* param_bt_a2dp = nullptr;
-
+        /*
+         * When A2DP, Out Proxy and DP device is disconnected the
+         * music playback is paused and the policy manager sends routing=0
+         * But the audioflinger continues to write data until standby time
+         * (3sec). As BT is turned off, the write gets blocked.
+         * Avoid this by routing audio to speaker until standby.
+         *
+         * If a stream is active on SCO and playback has ended, APM will send
+         * routing=0. Stream will be closed in PAL after standby time. If SCO
+         * device gets disconnected, this stream will not receive new routing
+         * and stream will remain with SCO for the time being. If SCO device
+         * gets connected again with different config in the meantime and
+         * capture stream tries to start ABR path, it will lead to error due to
+         * config mismatch. Added OUT_SCO device handling to resolve this.
+         */
         // This assumes that PAL_DEVICE_NONE comes as single device
+        if ((newDevices[i].id == PAL_DEVICE_NONE) &&
+            ((isCurrentDeviceProxyOut) || (isCurrentDeviceDpOut) ||
+             ((isCurDeviceA2dp || isCurDeviceSco) && (!rm->isDeviceReady(curBtDevId))))) {
+            newDevices[i].id = PAL_DEVICE_OUT_SPEAKER;
 
+            if (rm->getDeviceConfig(&newDevices[i], mStreamAttr)) {
+                continue;
+            }
+        }
 
         if (newDevices[i].id == PAL_DEVICE_NONE) {
             mStreamMutex.unlock();
@@ -2079,6 +2135,7 @@ void Stream::handleStreamException(struct pal_stream_attributes *attributes,
 std::shared_ptr<Device> Stream::GetPalDevice(Stream *streamHandle, pal_device_id_t dev_id)
 {
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
+    std::shared_ptr<CaptureProfile> common_cap_prof = nullptr;
     std::shared_ptr<Device> device = nullptr;
     StreamSoundTrigger *st_st = nullptr;
     StreamACD *st_acd = nullptr;
@@ -2108,20 +2165,24 @@ std::shared_ptr<Device> Stream::GetPalDevice(Stream *streamHandle, pal_device_id
         cap_prof = st_sns_pcm_data->GetCurrentCaptureProfile();
     }
 
-    if (!cap_prof && !rm->GetSoundTriggerCaptureProfile()) {
+    if (!cap_prof && !rm->GetSoundTriggerCaptureProfile() &&
+        !rm->GetTXMacroCaptureProfile()) {
         PAL_ERR(LOG_TAG, "Failed to get local and common cap_prof for stream: %d",
                 mStreamAttr->type);
         goto exit;
     }
 
-    if (rm->GetSoundTriggerCaptureProfile()) {
+    common_cap_prof = (dev_id == PAL_DEVICE_IN_ULTRASOUND_MIC) ?
+                       rm->GetTXMacroCaptureProfile(): rm->GetSoundTriggerCaptureProfile();
+    if (common_cap_prof) {
         /* Use the rm's common capture profile if local capture profile is not
          * available, or the common capture profile has the highest priority.
          */
-        if (!cap_prof || rm->GetSoundTriggerCaptureProfile()->ComparePriority(cap_prof) > 0) {
+        if (!cap_prof ||
+            common_cap_prof->ComparePriority(cap_prof) >= CAPTURE_PROFILE_PRIORITY_HIGH) {
             PAL_DBG(LOG_TAG, "common cap_prof %s has the highest priority.",
-                    rm->GetSoundTriggerCaptureProfile()->GetName().c_str());
-            cap_prof = rm->GetSoundTriggerCaptureProfile();
+                    common_cap_prof->GetName().c_str());
+            cap_prof = common_cap_prof;
         }
     }
 
@@ -2206,112 +2267,4 @@ bool Stream::isStreamSSRDownFeasibile()
     PAL_DBG(LOG_TAG, "Exit: is_ssr_down_feasible %d",
             is_ssr_down_feasible);
     return is_ssr_down_feasible;
-}
-
-int32_t Stream::setTempMute() {
-    int32_t status = 0;
-    struct pal_volume_data *volume = NULL;
-    uint8_t volSize = 0;
-    struct pal_volume_data *voldata = NULL;
-
-    PAL_DBG(LOG_TAG, "set temp mute");
-    /* set ramp period to 0 to make volume be changed to 0 instantly.*/
-    setRampDuration(this, 0);
-    if (mVolumeData) {
-        voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
-                        (sizeof(struct pal_channel_vol_kv) *
-                        (mVolumeData->no_of_volpair))));
-    }
-    if (!voldata) {
-        status = -ENOMEM;
-        goto exit;
-    }
-
-    status = this->getVolumeData(voldata);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
-        goto exit;
-    }
-    volSize = sizeof(uint32_t) + (sizeof(struct pal_channel_vol_kv) *
-                                            (voldata->no_of_volpair));
-
-    volume = (struct pal_volume_data *)calloc(1, volSize);
-    if (!volume) {
-        PAL_ERR(LOG_TAG, "Failed to allocate mem for volume");
-        status = -ENOMEM;
-        goto exit;
-    }
-    ar_mem_cpy(volume, volSize, voldata, volSize);
-    for (int32_t i = 0; i < (voldata->no_of_volpair); i++) {
-            volume->volume_pair[i].vol = 0;
-    }
-    /* set volume to 0*/
-    status = setVolume(volume);
-    if (mVolumeData) {
-        free(mVolumeData);
-        mVolumeData = NULL;
-    }
-    mVolumeData = (struct pal_volume_data *)calloc(1, volSize);
-    if (!mVolumeData) {
-        PAL_ERR(LOG_TAG, "failed to calloc for volume data");
-        status = -ENOMEM;
-        goto exit;
-    }
-    ar_mem_cpy(mVolumeData, volSize, voldata, volSize);
-    /* set ramp period to default */
-    setRampDuration(this, DEFAULT_RAMP_PERIOD);
-exit:
-    PAL_DBG(LOG_TAG, "Exit status: %d", status);
-    if (volume) {
-         free(volume);
-         volume = NULL;
-    }
-    if (voldata) {
-         free(voldata);
-         voldata = NULL;
-    }
-    return status;
-}
-
-int32_t Stream::restoreVolume() {
-    int32_t status = 0;
-    struct pal_volume_data *voldata = NULL;
-    if (mVolumeData) {
-        voldata = (struct pal_volume_data *)calloc(1, (sizeof(uint32_t) +
-                      (sizeof(struct pal_channel_vol_kv) * (mVolumeData->no_of_volpair))));
-    }
-    if (!voldata) {
-        status = -ENOMEM;
-        goto exit;
-    }
-
-    status = this->getVolumeData(voldata);
-    if (0 != status) {
-        PAL_ERR(LOG_TAG,"getVolumeData Failed \n");
-        goto exit;
-    }
-
-    status = setVolume(voldata);
-exit:
-    if (voldata)
-        free(voldata);
-    return status;
-}
-
-void Stream::setRampDuration(Stream *stream, uint32_t duration) {
-    int status = 0;
-    Session *session = nullptr;
-    struct pal_vol_ctrl_ramp_param ramp_param;
-    ramp_param.ramp_period_ms = duration;
-
-    stream->getAssociatedSession(&session);
-    if (session) {
-        status = session->setParameters(stream,
-                                    TAG_STREAM_VOLUME,
-                                    PAL_PARAM_ID_VOLUME_CTRL_RAMP,
-                                    &ramp_param);
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "setParam for vol ctrl failed, status %d", status);
-        }
-    }
 }

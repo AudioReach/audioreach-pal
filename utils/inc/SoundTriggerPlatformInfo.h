@@ -27,6 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
  * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -53,8 +54,10 @@
 enum StOperatingModes {
     ST_OPERATING_MODE_LOW_POWER,
     ST_OPERATING_MODE_LOW_POWER_NS,
+    ST_OPERATING_MODE_LOW_POWER_TX_MACRO,
     ST_OPERATING_MODE_HIGH_PERF,
     ST_OPERATING_MODE_HIGH_PERF_NS,
+    ST_OPERATING_MODE_HIGH_PERF_TX_MACRO,
     ST_OPERATING_MODE_HIGH_PERF_AND_CHARGING
 };
 
@@ -103,6 +106,7 @@ public:
     uint32_t GetBitWidth() const { return bitwidth_; }
     uint32_t GetChannels() const { return channels_; }
     std::string GetSndName() const { return snd_name_; }
+    std::string GetBackend() const { return backend_; }
     bool isECRequired() const { return is_ec_req_; }
     void SetSampleRate(uint32_t sample_rate) { sample_rate_ = sample_rate; }
     void SetBitWidth(uint32_t bit_width) { bitwidth_ = bit_width; }
@@ -121,6 +125,7 @@ private:
     std::pair<uint32_t,uint32_t> device_pp_kv_;
     std::string snd_name_;
     bool is_ec_req_;
+    std::string backend_;
 };
 
 using UUID = SoundTriggerUUID;
@@ -149,6 +154,8 @@ public:
 
     /* reads capture profile names into member variables */
     void ReadCapProfileNames(StOperatingModes mode, const char **attribs, st_op_modes_t& op_modes);
+    /* use capture profile name to retrieve capture profile from capture_profile_map_ */
+    std::shared_ptr<CaptureProfile> GetCaptureProfileFromMap(std::string cap_prof_name);
 
 private:
     static bool lpi_enable_;

@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -60,17 +60,13 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
  */
 
-#ifndef ATRACE_UNSUPPORTED
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
-#endif
 #define LOG_TAG "PAL: ACDEngine"
 
 #include "ACDEngine.h"
 
 #include <cmath>
-#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/trace.h>
-#endif
 #include "Session.h"
 #include "Stream.h"
 #include "StreamACD.h"

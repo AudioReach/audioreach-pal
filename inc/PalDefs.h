@@ -50,7 +50,7 @@
 
 #include <map>
 #include <string>
-#include <set>
+
 extern "C" {
 #endif
 
@@ -58,6 +58,7 @@ extern "C" {
 #define PAL_MAX_CHANNELS_SUPPORTED 64
 #define MAX_KEYWORD_SUPPORTED 8
 #define PAL_MAX_LATENCY_MODES 8
+
 #define PAL_VERSION "1.0"
 
 /** Audio stream handle */
@@ -399,6 +400,7 @@ typedef enum {
     PAL_STREAM_ULTRASOUND = 26,           /**< Ultrasound Proximity detection */
     PAL_STREAM_SPATIAL_AUDIO = 27,        /**< Spatial audio playback */
     PAL_STREAM_COMMON_PROXY = 28,         /**< AFS's WakeUp Algo library detection */
+    PAL_STREAM_SENSOR_PCM_RENDERER = 29,  /**< Sensor Pcm Rendering Stream */
     PAL_STREAM_MAX,                       /**< max stream types - add new ones above */
 } pal_stream_type_t;
 
@@ -642,6 +644,7 @@ const std::map<std::string, uint32_t> usecaseIdLUT {
     {std::string{ "PAL_STREAM_SPATIAL_AUDIO" },            PAL_STREAM_SPATIAL_AUDIO},
     {std::string{ "PAL_STREAM_CONTEXT_PROXY" },            PAL_STREAM_CONTEXT_PROXY},
     {std::string{ "PAL_STREAM_COMMON_PROXY" },             PAL_STREAM_COMMON_PROXY},
+    {std::string{ "PAL_STREAM_SENSOR_PCM_RENDERER" },      PAL_STREAM_SENSOR_PCM_RENDERER},
 };
 
 /* Update the reverse mapping as well when new stream is added */
@@ -674,6 +677,7 @@ const std::map<uint32_t, std::string> streamNameLUT {
     {PAL_STREAM_SENSOR_PCM_DATA,    std::string{ "PAL_STREAM_SENSOR_PCM_DATA" } },
     {PAL_STREAM_SPATIAL_AUDIO,      std::string{ "PAL_STREAM_SPATIAL_AUDIO" } },
     {PAL_STREAM_COMMON_PROXY,       std::string{ "PAL_STREAM_COMMON_PROXY" } },
+    {PAL_STREAM_SENSOR_PCM_RENDERER,std::string{ "PAL_STREAM_SENSOR_PCM_RENDERER" } },
 };
 
 const std::map<uint32_t, std::string> vsidLUT {
@@ -699,28 +703,8 @@ const std::map<uint32_t, std::string> hapticsLUT {
     {PAL_STREAM_HAPTICS_RINGTONE,     std::string{ "PAL_STREAM_HAPTICS_RINGTONE" } },
 };
 
-const std::set<pal_device_id_t> pluginDeviceList {
-    PAL_DEVICE_OUT_USB_DEVICE,
-    PAL_DEVICE_OUT_USB_HEADSET,
-    PAL_DEVICE_OUT_WIRED_HEADPHONE,
-    PAL_DEVICE_OUT_WIRED_HEADSET,
-    PAL_DEVICE_OUT_BLUETOOTH_A2DP,
-    PAL_DEVICE_OUT_BLUETOOTH_BLE,
-    PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST,
-    PAL_DEVICE_OUT_BLUETOOTH_SCO,
-    PAL_DEVICE_OUT_PROXY,
-    PAL_DEVICE_OUT_AUX_DIGITAL,
-    PAL_DEVICE_OUT_AUX_DIGITAL_1,
-    PAL_DEVICE_OUT_HDMI
-};
-
-const std::set<pal_device_id_t> BTPlaybackDeviceList {
-    PAL_DEVICE_OUT_BLUETOOTH_A2DP,
-    PAL_DEVICE_OUT_BLUETOOTH_BLE,
-    PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST,
-    PAL_DEVICE_OUT_BLUETOOTH_SCO
-};
 #endif
+
 
 /* type of asynchronous write callback events. Mutually exclusive */
 typedef enum {
@@ -1046,8 +1030,9 @@ typedef enum {
     PAL_PARAM_ID_VUI_CAPTURE_META_DATA = 71,
     PAL_PARAM_ID_TIMESTRETCH_PARAMS = 72,
     PAL_PARAM_ID_LATENCY_MODE = 73,
-    PAL_PARAM_ID_PROXY_RECORD_SESSION = 74,
-    PAL_PARAM_ID_ULTRASOUND_SET_GAIN = 75,
+    PAL_PARAM_ID_ST_CAPTURE_INFO = 74,
+    PAL_PARAM_ID_ST_RESOURCES_AVAILABLE = 75,
+    PAL_PARAM_ID_PROXY_RECORD_SESSION = 76,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1164,6 +1149,22 @@ typedef struct pal_param_charger_state {
     bool              is_concurrent_boost_enable;
 } pal_param_charger_state_t;
 
+/* Payload For ID: PAL_PARAM_ID_ST_CAPTURE_INFO
+ * Description   : Capture pal_handle in resource_manager
+ */
+typedef struct pal_param_st_capture_info {
+    int                   capture_handle;
+    pal_stream_handle_t   *pal_handle;
+} pal_param_st_capture_info_t;
+
+/* Payload For ID: PAL_PARAM_ID_RESOURCES_AVAILABLE
+ * Description   : capture callback and cookie in resource_manager
+ */
+typedef struct pal_param_resources_available {
+    void*             callback;
+    uint64_t          cookie;
+} pal_param_resources_available_t;
+
 /*
  * Used to identify the swapping type
  */
@@ -1277,7 +1278,6 @@ typedef struct pal_param_bta2dp {
     uint32_t latency;
     pal_device_id_t   dev_id;
     bool     is_suspend_setparam;
-    bool     is_in_call;
 } pal_param_bta2dp_t;
 
 /* Payload For ID: PAL_PARAM_ID_LATENCY_MODE
@@ -1314,13 +1314,6 @@ typedef struct pal_bt_lc3_payload_s {
 typedef struct pal_param_haptics_intensity {
     int intensity;
 } pal_param_haptics_intensity_t;
-
-/* Type of Ultrasound Gain */
-typedef enum {
-    PAL_ULTRASOUND_GAIN_MUTE = 0,
-    PAL_ULTRASOUND_GAIN_LOW,
-    PAL_ULTRASOUND_GAIN_HIGH,
-} pal_ultrasound_gain_t;
 
 /**< PAL device */
 #define DEVICE_NAME_MAX_SIZE 128

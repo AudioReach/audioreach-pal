@@ -38,7 +38,7 @@
 #define HAPTICS_XML_FILE "/vendor/etc/Hapticsconfig.xml"
 #include "rx_haptics_api.h"
 #include "wsa_haptics_vi_api.h"
-#include <stdexcept>
+
 std::shared_ptr<AudioHapticsInterface> AudioHapticsInterface::me_ = nullptr;
 std::vector<haptics_wave_designer_config_t> AudioHapticsInterface::predefined_haptics_info;
 std::vector<haptics_wave_designer_config_t> AudioHapticsInterface::oneshot_haptics_info;

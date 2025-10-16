@@ -76,7 +76,7 @@ struct sound_model_info {
     sec_stage_level_t sec_threshold;
     sec_stage_level_t sec_det_level;
     uint32_t det_result;
-    void *info;
+    SoundModelInfo *info;
     bool state;
 };
 

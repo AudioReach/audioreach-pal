@@ -172,9 +172,7 @@ int32_t  StreamNonTunnel::open()
         goto exit;
     }
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_OPENED, status);
-#endif
     mStreamMutex.unlock();
     return status;
 }
@@ -203,9 +201,7 @@ int32_t  StreamNonTunnel::close()
 
 exit:
     currentState = STREAM_IDLE;
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
-#endif
     mStreamMutex.unlock();
     PAL_INFO(LOG_TAG, "Exit. closed the stream successfully %d status %d",
              currentState, status);
@@ -263,9 +259,7 @@ int32_t StreamNonTunnel::start()
     PAL_DBG(LOG_TAG, "Exit. state %d", currentState);
 
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     mStreamMutex.unlock();
     return status;
 }
@@ -297,9 +291,7 @@ int32_t StreamNonTunnel::stop()
     PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
 
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
-#endif
     mStreamMutex.unlock();
     return status;
 }
@@ -566,9 +558,7 @@ int32_t StreamNonTunnel::suspend()
             goto exit;
         }
         currentState = STREAM_SUSPENDED;
-#ifndef PAL_MEMLOG_UNSUPPORTED
         palStateEnqueue(this, PAL_STATE_SUSPENDED, status);
-#endif
     }
 exit:
     mStreamMutex.unlock();

@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -66,6 +66,7 @@ static struct extDispState {
 } extDisp[MAX_CONTROLLERS][MAX_STREAMS_PER_CONTROLLER];
 
 std::shared_ptr<Device> DisplayPort::objRx = nullptr;
+std::shared_ptr<Device> DisplayPort::objRx1 = nullptr;
 std::shared_ptr<Device> DisplayPort::objTx = nullptr;
 
 std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
@@ -77,13 +78,18 @@ std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
     PAL_DBG(LOG_TAG, "Enter, device id %d", device->id);
 
     if ((device->id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-        (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1) ||
         (device->id == PAL_DEVICE_OUT_HDMI)) {
         if (!objRx) {
             std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
             objRx = sp;
         }
         return objRx;
+    } else if (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (!objRx1) {
+            std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
+            objRx1 = sp;
+        }
+        return objRx1;
     } else if (device->id == PAL_DEVICE_IN_AUX_DIGITAL) {
         if (!objTx) {
             std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
@@ -97,11 +103,15 @@ std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
 std::shared_ptr<Device> DisplayPort::getObject(pal_device_id_t id)
 {
     if ((id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-        (id == PAL_DEVICE_OUT_AUX_DIGITAL_1) ||
         (id == PAL_DEVICE_OUT_HDMI)) {
         if (objRx) {
             if (objRx->getSndDeviceId() == id)
                 return objRx;
+        }
+    } else if (id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (objRx1) {
+            if (objRx1->getSndDeviceId() == id)
+                return objRx1;
         }
     } else if (id == PAL_DEVICE_IN_AUX_DIGITAL) {
         if (objTx) {

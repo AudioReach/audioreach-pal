@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
+<!-- Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
 
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are
@@ -26,486 +26,731 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-* Changes from Qualcomm Innovation Center are provided under the following license:
+* Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
-*  -->
+* -->
 
-<resource_manager_info>
-    <version>2.0</version>
-    <config_params>
-        <param key="native_audio_mode" value="multiple_mix_dsp"/>
-        <!-- Uncomment HIFI Filter Headphones related sections when set this
-             hifi_filter key to true -->
-        <param key="hifi_filter" value="false"/>
-        <param key="max_sessions" value="128"/>
-        <param key="max_nonTunnel_sessions" value="4"/>
-        <param key="logging_level" value ="3" />
-        <param key="context_manager_enable" value ="false" />
-        <param key="upd_dedicated_be" value ="true" />
-        <param key="upd_duty_cycle_enable" value="false" />
-        <param key="dual_mono" value ="false" />
-        <param key="signal_handler" value ="false" />
-        <param key="device_mux_config" value ="false" />
-        <param key="upd_virtual_port" value ="false" />
-    </config_params>
-    <config_volume>
-        <use_volume_set_param>0</use_volume_set_param>
-        <supported_streams>
-            <supported_stream>PAL_STREAM_ULTRA_LOW_LATENCY</supported_stream>
-            <supported_stream>PAL_STREAM_COMPRESSED</supported_stream>
-        </supported_streams>
-    </config_volume>
-    <bt_codecs>
-        <codec codec_format="CODEC_TYPE_AAC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
-        <codec codec_format="CODEC_TYPE_SBC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
-    </bt_codecs>
-    <device_profile>
-        <in-device>
-            <id>PAL_DEVICE_IN_HANDSET_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
-            <max_channels>4</max_channels>
-            <channels>1</channels>
-            <samplerate>48000</samplerate>
-            <snd_device_name>handset-mic</snd_device_name>
-            <ec_enable>0</ec_enable>
-            <usecase>
-                <name>PAL_STREAM_LOW_LATENCY</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-                <ec_enable>1</ec_enable>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>handset-dmic-endfire</snd_device_name>
-                </custom-config>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                </custom-config>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_VOIP_TX</name>
-                <priority>2</priority>
-                <ec_enable>1</ec_enable>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>handset-dmic-endfire</snd_device_name>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                </custom-config>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_RAW</name>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>handset-dmic-endfire</snd_device_name>
-                </custom-config>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                </custom-config>
-            </usecase>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_HANDSET</id>
-                <id>PAL_DEVICE_OUT_SPEAKER</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_SPEAKER_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
-            <max_channels>4</max_channels>
-            <samplerate>48000</samplerate>
-            <channels>1</channels>
-            <ec_enable>0</ec_enable>
-            <snd_device_name>speaker-mic</snd_device_name>
-            <usecase>
-                <name>PAL_STREAM_LOW_LATENCY</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-                <ec_enable>1</ec_enable>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>speaker-dmic-endfire</snd_device_name>
-                </custom-config>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                </custom-config>
+<mixer>
+    <!-- These are the initial mixer settings -->
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
+    <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="0" />
+    <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="0" />
 
-            </usecase>
-           <usecase>
-                <name>PAL_STREAM_RAW</name>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>handset-dmic-endfire</snd_device_name>
-                </custom-config>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                 </custom-config>
-            </usecase>
-        <!--Uncomment these lines instead of above lines if needing to enable EC per custom key
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-                <custom-config key="vr-mic">
-                <ec_enable>1</ec_enable>
-                </custom-config>
-            </usecase>
-        -->
-            <usecase>
-                <name>PAL_STREAM_COMPRESSED</name>
-                <ec_enable>1</ec_enable>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_VOIP_TX</name>
-                <priority>2</priority>
-                <ec_enable>1</ec_enable>
-                <custom-config key="dual-mic">
-                    <channels>2</channels>
-                    <snd_device_name>speaker-dmic-endfire</snd_device_name>
-                </custom-config>
-                <custom-config key="three-mic">
-                    <channels>3</channels>
-                    <snd_device_name>three-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="quad-mic">
-                    <channels>4</channels>
-                    <snd_device_name>quad-mic</snd_device_name>
-                </custom-config>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_LOOPBACK</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
-            </usecase>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_SPEAKER</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <snd_device_name>headset-mic</snd_device_name>
-            <ec_enable>0</ec_enable>
-            <usecase>
-                <name>PAL_STREAM_LOW_LATENCY</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-                <ec_enable>1</ec_enable>
-            </usecase>
-        <!--Uncomment these lines instead of above lines if needing to enable EC per custom key
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-                <custom-config key="vr-mic">
-                <ec_enable>1</ec_enable>
-                </custom-config>
-            </usecase>
-        -->
-            <usecase>
-                <name>PAL_STREAM_COMPRESSED</name>
-                <ec_enable>1</ec_enable>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_VOIP_TX</name>
-                <samplerate>48000</samplerate>
-                <bit_width>16</bit_width>
-                <ec_enable>1</ec_enable>
-            </usecase>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-                <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET</id>
-            <back_end_name>SLIM-DEV1-TX-7</back_end_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <samplerate>8000</samplerate>
-            <bit_width>16</bit_width>
-            <snd_device_name>bt-sco-mic</snd_device_name>
-            <usecase>
-                <name>PAL_STREAM_LOW_LATENCY</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_DEEP_BUFFER</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_COMPRESSED</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_VOIP_TX</name>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_VOICE_CALL</name>
-                <priority>1</priority>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
-            </usecase>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_SCO</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_HANDSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>1</channels>
-            <samplerate>48000</samplerate>
-            <bit_width>16</bit_width>
-            <snd_device_name>va-mic</snd_device_name>
-            <ec_enable>1</ec_enable>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_SPEAKER</id>
-                <id>PAL_DEVICE_OUT_HANDSET</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_HEADSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>1</channels>
-            <snd_device_name>headset-va-mic</snd_device_name>
-            <samplerate>48000</samplerate>
-            <bit_width>16</bit_width>
-            <ec_enable>1</ec_enable>
-            <ec_rx_device>
-                <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-                <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE</id>
-                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST</id>
-            </ec_rx_device>
-        </in-device>
-        <in-device>
-            <id>PAL_DEVICE_IN_BLUETOOTH_A2DP</id>
-            <back_end_name>SLIM-DEV1-TX-9</back_end_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <snd_device_name>bt-a2dp-mic</snd_device_name>
-            <samplerate>44100</samplerate>
-            <bit_width>16</bit_width>
-        </in-device>
-        <out-device>
-            <id>PAL_DEVICE_NONE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>1</channels>
-            <snd_device_name>none</snd_device_name>
-            <samplerate>48000</samplerate>
-            <bit_width>16</bit_width>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
-            <max_channels>4</max_channels>
-            <channels>2</channels>
-            <samplerate>48000</samplerate>
-            <snd_device_name>speaker</snd_device_name>
-            <speaker_protection_enabled>0</speaker_protection_enabled>
-            <fractional_sr>0</fractional_sr>
-            <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
-            <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
-            <cps_mode>2	</cps_mode>
-            <vbat_enabled>1</vbat_enabled>
-            <!--specify the supported bit format on speaker end point -->
-            <!--this should be in the form of pal_audio_fmt_id-->
-            <!--e.g <supported_bit_format >PAL_AUDIO_FMT_PCM_S24_LE</supported_bit_format>-->
-            <supported_bit_format>PAL_AUDIO_FMT_PCM_S16_LE</supported_bit_format>
-            <!-- RAS should be enabled with speaker protection always -->
-            <ras_enabled>0</ras_enabled>
-            <!-- Flag to specify speaker in case Voice call is switched from
-                 handset to speaker with only 1 speaker.
-                 Values: Both speaker : 0
-                         Right speaker: 1
-                         Left speaker : 2
-            -->
-            <speaker_mono_right>0</speaker_mono_right>
-            <!-- Time in seconds for Quick cal. Set 0 to disable -->
-            <quick_cal_time>0</quick_cal_time>
-            <usecase>
-                <name>PAL_STREAM_VOIP_RX</name>
-                <priority>2</priority>
-            </usecase>
-            <usecase>
-                <name>PAL_STREAM_ULTRASOUND</name>
-                <priority>4</priority>
-                <samplerate>96000</samplerate>
-            </usecase>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>1</channels>
-            <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
-            <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
-            <samplerate>48000</samplerate>
-            <fractional_sr>0</fractional_sr>
-            <snd_device_name>handset</snd_device_name>
-          <usecase>
-              <name>PAL_STREAM_VOIP_RX</name>
-              <priority>2</priority>
-          </usecase>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>2</channels>
-            <fractional_sr>1</fractional_sr>
-            <snd_device_name>headphones</snd_device_name>
-           <usecase>
-               <name>PAL_STREAM_VOIP_RX</name>
-               <priority>2</priority>
-               <samplerate>48000</samplerate>
-               <bit_width>16</bit_width>
-           </usecase>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-LPAIF_RXTX-RX-0</back_end_name>
-            <max_channels>2</max_channels>
-            <channels>2</channels>
-            <fractional_sr>1</fractional_sr>
-            <snd_device_name>headphones</snd_device_name>
-           <usecase>
-               <name>PAL_STREAM_VOIP_RX</name>
-               <priority>2</priority>
-               <samplerate>48000</samplerate>
-               <bit_width>16</bit_width>
-           </usecase>
-         </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
-            <back_end_name>SLIM-DEV1-RX-7</back_end_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <snd_device_name>bt-a2dp</snd_device_name>
-            <samplerate>44100</samplerate>
-            <bit_width>16</bit_width>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_BLUETOOTH_SCO</id>
-            <back_end_name>SLIM-DEV1-RX-7</back_end_name>
-            <max_channels>1</max_channels>
-            <channels>1</channels>
-            <snd_device_name>bt-sco</snd_device_name>
-            <samplerate>8000</samplerate>
-            <bit_width>16</bit_width>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_AUX_DIGITAL</id>
-            <back_end_name>DISPLAY_PORT-RX</back_end_name>
-            <max_channels>32</max_channels>
-            <channels>2</channels>
-            <snd_device_name>display-port</snd_device_name>
-            <fractional_sr>1</fractional_sr>
-        </out-device>
-        <out-device>
-            <id>PAL_DEVICE_OUT_HDMI</id>
-            <back_end_name>DISPLAY_PORT-RX</back_end_name>
-            <max_channels>32</max_channels>
-            <channels>2</channels>
-            <fractional_sr>1</fractional_sr>
-            <snd_device_name>display-port</snd_device_name>
-        </out-device>
-    </device_profile>
-    <in_streams>
-        <in_stream>
-            <name>PAL_STREAM_VOIP_TX</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_DEEP_BUFFER</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_COMPRESSED</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_VOICE_UI</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_ACD</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_PROXY</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_COMPRESSED</disabled_stream>
-                        <disabled_stream>PAL_STREAM_ULTRA_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-        <in_stream>
-            <name>PAL_STREAM_RAW</name>
-                <policies>
-                    <ec_ref>
-                        <disabled_stream>PAL_STREAM_COMPRESSED</disabled_stream>
-                        <disabled_stream>PAL_STREAM_ULTRA_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
-                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
-                    </ec_ref>
-                </policies>
-        </in_stream>
-    </in_streams>
-</resource_manager_info>
+    <!-- Codec controls -->
+    <!-- WSA controls -->
+    <ctl name="WSA RX0 MUX" value="ZERO" />
+    <ctl name="WSA RX1 MUX" value="ZERO" />
+    <ctl name="WSA_RX0 INP0" value="ZERO" />
+    <ctl name="WSA_RX1 INP0" value="ZERO" />
+    <ctl name="WSA2 RX0 MUX" value="ZERO" />
+    <ctl name="WSA2 RX1 MUX" value="ZERO" />
+    <ctl name="WSA2_RX0 INP0" value="ZERO" />
+    <ctl name="WSA2_RX1 INP0" value="ZERO" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
+    <ctl name="WSA SPKRRECV" value="0" />
+    <ctl name="WSA PBR Enable" value="0" />
+    <ctl name="Idle Detect" value="0" />
+    <ctl name="WSA2 PBR Enable" value="0" />
+    <ctl name="WSA2 Idle Detect" value="0" />
+    <ctl name="WSA2 SPKRRECV" value="0" />
+    <ctl name="SpkrLeft COMP Switch" value="0" />
+    <ctl name="SpkrRight COMP Switch" value="0" />
+    <ctl name="SpkrLeft VISENSE Switch" value="0" />
+    <ctl name="SpkrRight VISENSE Switch" value="0" />
+    <ctl name="SpkrLeft CPS Switch" value="0" />
+    <ctl name="SpkrRight CPS Switch" value="0" />
+    <ctl name="SpkrLeft SWR DAC_Port Switch" value="0" />
+    <ctl name="SpkrRight SWR DAC_Port Switch" value="0" />
+    <ctl name="SpkrLeft PBR Switch" value="0" />
+    <ctl name="SpkrRight PBR Switch" value="0" />
+    <ctl name="SpkrLeft WSA MODE" value="0" />
+    <ctl name="SpkrRight WSA MODE" value="0" />
+    <ctl name="Spkr2Left COMP Switch" value="0" />
+    <ctl name="Spkr2Right COMP Switch" value="0" />
+    <ctl name="Spkr2Left VISENSE Switch" value="0" />
+    <ctl name="Spkr2Right VISENSE Switch" value="0" />
+    <ctl name="Spkr2Left SWR DAC_Port Switch" value="0" />
+    <ctl name="Spkr2Right SWR DAC_Port Switch" value="0" />
+    <ctl name="Spkr2Left PBR Switch" value="0" />
+    <ctl name="Spkr2Right PBR Switch" value="0" />
+    <ctl name="Spkr2Left WSA MODE" value="0" />
+    <ctl name="Spkr2Right WSA MODE" value="0" />
+
+    <!-- RX Controls -->
+    <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
+    <ctl name="RX_MACRO RX1 MUX" value="ZERO" />
+    <ctl name="RX INT0_1 MIX1 INP0" value="ZERO" />
+    <ctl name="RX INT0_1 MIX1 INP1" value="ZERO" />
+    <ctl name="RX INT0_1 MIX1 INP2" value="ZERO" />
+    <ctl name="RX INT1_1 MIX1 INP0" value="ZERO" />
+    <ctl name="RX INT1_1 MIX1 INP1" value="ZERO" />
+    <ctl name="RX INT1_1 MIX1 INP2" value="ZERO" />
+    <ctl name="RX INT0 DEM MUX" value="NORMAL_DSM_OUT" />
+    <ctl name="RX INT1 DEM MUX" value="NORMAL_DSM_OUT" />
+    <ctl name="RX_COMP1 Switch" value="0" />
+    <ctl name="RX_COMP2 Switch" value="0" />
+    <ctl name="HPHL_COMP Switch" value="0" />
+    <ctl name="HPHR_COMP Switch" value="0" />
+    <ctl name="EAR_RDAC Switch" value="0" />
+    <ctl name="HPHL_RDAC Switch" value="0" />
+    <ctl name="HPHR_RDAC Switch" value="0" />
+    <ctl name="AUX_RDAC Switch" value="0" />
+    <ctl name="RX_FIR Filter" value="OFF" />
+    <ctl name="RX_EAR Mode" value="OFF" />
+
+    <!-- TX Controls -->
+    <ctl name="VA_AIF1_CAP Mixer DEC0" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC1" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC2" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC3" value="0" />
+    <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC1 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC2 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC3 MUX" value="MSM_DMIC" />
+    <ctl name="VA DMIC MUX0" value="ZERO" />
+    <ctl name="VA DMIC MUX1" value="ZERO" />
+    <ctl name="VA DMIC MUX2" value="ZERO" />
+    <ctl name="VA DMIC MUX3" value="ZERO" />
+    <ctl name="VA SMIC MUX0" value="ZERO" />
+    <ctl name="VA SMIC MUX1" value="ZERO" />
+    <ctl name="VA SMIC MUX2" value="ZERO" />
+    <ctl name="VA SMIC MUX3" value="ZERO" />
+    <ctl name="VA_DEC0 MODE" value="ADC_DEFAULT" />
+    <ctl name="ADC2_BCS Disable" value="0" />
+    <ctl name="LPI Enable" value="0" />
+    <ctl name="ADC1_MIXER Switch" value="0" />
+    <ctl name="ADC2_MIXER Switch" value="0" />
+    <ctl name="ADC3_MIXER Switch" value="0" />
+    <ctl name="ADC4_MIXER Switch" value="0" />
+    <ctl name="ADC2 MUX" value="INP2" />
+    <ctl name="DEC0_BCS Switch" value="0" />
+    <ctl name="ADC2_BCS Disable" value="0" />
+    <ctl name="ADC3 MUX" value="INP4" />
+    <ctl name="ADC4 MUX" value="INP5" />
+    <ctl name="VA_AMIC1_MIXER Switch" value="0" />
+    <ctl name="VA_AMIC2_MIXER Switch" value="0" />
+    <ctl name="VA_AMIC3_MIXER Switch" value="0" />
+    <ctl name="VA_AMIC4_MIXER Switch" value="0" />
+    <ctl name="VA_AMIC5_MIXER Switch" value="0" />
+    <ctl name="AMIC1_MIXER Switch" value="0" />
+    <ctl name="AMIC2_MIXER Switch" value="0" />
+    <ctl name="AMIC3_MIXER Switch" value="0" />
+    <ctl name="AMIC4_MIXER Switch" value="0" />
+    <ctl name="AMIC5_MIXER Switch" value="0" />
+
+    <ctl name="TX_AIF1_CAP Mixer DEC0" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC1" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC2" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC3" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC4" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC5" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC6" value="0" />
+    <ctl name="TX_AIF1_CAP Mixer DEC7" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC0" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC1" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC2" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC3" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC4" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC5" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC6" value="0" />
+    <ctl name="TX_AIF2_CAP Mixer DEC7" value="0" />
+    <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX0" value="ZERO" />
+    <ctl name="TX SMIC MUX0" value="ZERO" />
+    <ctl name="TX DEC1 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX1" value="ZERO" />
+    <ctl name="TX SMIC MUX1" value="ZERO" />
+    <ctl name="TX DEC2 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX2" value="ZERO" />
+    <ctl name="TX SMIC MUX2" value="ZERO" />
+    <ctl name="TX DEC3 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX3" value="ZERO" />
+    <ctl name="TX SMIC MUX3" value="ZERO" />
+    <ctl name="TX DEC4 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX4" value="ZERO" />
+    <ctl name="TX SMIC MUX4" value="ZERO" />
+    <ctl name="TX DEC5 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX5" value="ZERO" />
+    <ctl name="TX SMIC MUX5" value="ZERO" />
+    <ctl name="TX DEC6 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX6" value="ZERO" />
+    <ctl name="TX SMIC MUX6" value="ZERO" />
+    <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+    <ctl name="TX DMIC MUX7" value="ZERO" />
+    <ctl name="TX SMIC MUX7" value="ZERO" />
+    <ctl name="ADC1 ChMap" value="ZERO" />
+    <ctl name="ADC2 ChMap" value="ZERO" />
+    <ctl name="ADC3 ChMap" value="ZERO" />
+    <ctl name="ADC4 ChMap" value="ZERO" />
+    <ctl name="HDR12 MUX" value="NO_HDR12" />
+    <ctl name="HDR34 MUX" value="NO_HDR34" />
+    <ctl name="TX0 MODE" value="ADC_NORMAL" />
+    <ctl name="TX1 MODE" value="ADC_NORMAL" />
+    <ctl name="TX2 MODE" value="ADC_NORMAL" />
+    <ctl name="TX3 MODE" value="ADC_NORMAL" />
+
+    <!-- Volume controls -->
+    <ctl name="WSA_RX0 Digital Volume" value="74" />
+    <ctl name="WSA_RX1 Digital Volume" value="74" />
+    <ctl name="RX_RX0 Digital Volume" value="84" />
+    <ctl name="RX_RX1 Digital Volume" value="84" />
+    <ctl name="RX_RX2 Digital Volume" value="84" />
+    <ctl name="HPHL Volume" value="20" />
+    <ctl name="HPHR Volume" value="20" />
+
+    <ctl name="TX_DEC0 Volume" value="102" />
+    <ctl name="TX_DEC1 Volume" value="114" />
+    <ctl name="TX_DEC2 Volume" value="114" />
+    <ctl name="TX_DEC3 Volume" value="114" />
+    <ctl name="TX_DEC4 Volume" value="144" />
+    <ctl name="TX_DEC5 Volume" value="84" />
+    <ctl name="TX_DEC6 Volume" value="84" />
+    <ctl name="TX_DEC7 Volume" value="84" />
+
+    <ctl name="ADC1 Volume" value="12" />
+    <ctl name="ADC2 Volume" value="12" />
+    <ctl name="ADC3 Volume" value="12" />
+    <ctl name="ADC4 Volume" value="12" />
+
+    <ctl name="VA_DEC0 Volume" value="84" />
+    <ctl name="VA_DEC1 Volume" value="84" />
+    <ctl name="VA_DEC2 Volume" value="84" />
+    <ctl name="VA_DEC3 Volume" value="84" />
+
+    <!-- Compander controls -->
+    <ctl name="WSA_COMP1 Switch" value="0" />
+    <ctl name="WSA_COMP2 Switch" value="0" />
+    <ctl name="WSA2_COMP1 Switch" value="0" />
+    <ctl name="WSA2_COMP2 Switch" value="0" />
+
+    <!-- Headphone class-H mode -->
+    <ctl name="RX_HPH_PWR_MODE" value="ULP" />
+    <ctl name="RX HPH Mode" value="CLS_H_ULP" />
+
+    <!-- IIR/voice anc -->
+    <ctl name="IIR0 INP0 Volume" value="54" />
+    <ctl name="IIR0 INP0 MUX" value="ZERO" />
+    <ctl name="IIR0 INP1 MUX" value="ZERO" />
+    <ctl name="IIR0 INP2 MUX" value="ZERO" />
+    <ctl name="IIR0 INP3 MUX" value="ZERO" />
+
+    <!-- vbat related data -->
+    <ctl name="GSM mode Enable" value="OFF" />
+    <ctl name="WSA_Softclip0 Enable" value="0" />
+    <ctl name="WSA_Softclip1 Enable" value="0" />
+    <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="0" />
+    <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="0" />
+
+    <!-- Codec controls end -->
+
+    <!-- These are actual sound device specific mixer settings -->
+    <path name="amic2">
+        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX0" value="ADC1" />
+        <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="ADC2 MUX" value="INP2" />
+        <ctl name="ADC2 Switch" value="1" />
+        <ctl name="ADC2_MIXER Switch" value="1" />
+        <ctl name="TX_DEC0 Volume" value="80" />
+        <ctl name="ADC2 Volume" value="20" />
+    </path>
+
+    <path name="dmic0">
+        <ctl name="VA DMIC MUX0" value="DMIC0" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic1">
+        <ctl name="VA DMIC MUX0" value="DMIC1" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic2">
+        <ctl name="VA DMIC MUX0" value="DMIC2" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic3">
+        <ctl name="VA DMIC MUX0" value="DMIC3" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic4">
+        <ctl name="VA DMIC MUX0" value="DMIC4" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic5">
+        <ctl name="VA DMIC MUX0" value="DMIC5" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="speaker">
+        <ctl name="SpkrLeft PA Volume" value="20" />
+        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX0 INP0" value="RX0" />
+        <ctl name="WSA_COMP1 Switch" value="1" />
+        <ctl name="SpkrLeft COMP Switch" value="1" />
+        <ctl name="SpkrLeft BOOST Switch" value="1" />
+        <ctl name="SpkrLeft DAC Switch" value="1" />
+        <ctl name="SpkrRight PA Volume" value="20" />
+        <ctl name="WSA RX1 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX1 INP0" value="RX1" />
+        <ctl name="WSA_COMP2 Switch" value="1" />
+        <ctl name="SpkrRight COMP Switch" value="1" />
+        <ctl name="SpkrRight BOOST Switch" value="1" />
+        <ctl name="SpkrRight DAC Switch" value="1" />
+    </path>
+
+    <path name="speaker-prot">
+        <path name="speaker" />
+        <ctl name="SpkrLeft VISENSE Switch" value="1" />
+        <ctl name="SpkrRight VISENSE Switch" value="1" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+    <path name="haptics-dev">
+        <ctl name="SWR DAC_Port Switch" value="1" />
+    </path>
+
+    <path name="speaker-mono">
+        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX0 INP0" value="RX0" />
+        <ctl name="WSA_COMP1 Switch" value="1" />
+        <ctl name="SpkrLeft COMP Switch" value="1" />
+        <ctl name="SpkrLeft VISENSE Switch" value="1" />
+        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
+        <ctl name="Idle Detect" value="1" />
+    </path>
+
+    <path name="speaker-mono-prot">
+        <path name="speaker-mono" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+    </path>
+
+    <path name="speaker-mono-2">
+        <ctl name="WSA RX1 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX1 INP0" value="RX1" />
+        <ctl name="WSA_COMP2 Switch" value="1" />
+        <ctl name="SpkrRight COMP Switch" value="1" />
+        <ctl name="SpkrRight VISENSE Switch" value="1" />
+        <ctl name="SpkrRight SWR DAC_Port Switch" value="1" />
+        <ctl name="Idle Detect" value="1" />
+    </path>
+
+    <path name="speaker-mono-2-prot">
+        <path name="speaker-mono-2" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+   <path name="speaker-mono-vbat">
+       <path name="speaker-mono" />
+       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+   </path>
+
+   <path name="speaker-mono-2-vbat">
+       <path name="speaker-mono-2" />
+       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+   </path>
+
+    <path name="speaker-mono-vbat-prot">
+       <path name="speaker-mono-prot" />
+       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+    </path>
+
+   <path name="speaker-mono-2-vbat-prot">
+       <path name="speaker-mono-2-prot" />
+       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+    </path>
+
+   <path name="speaker-vbat">
+       <path name="speaker" />
+       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+   </path>
+
+   <path name="speaker-vbat-prot">
+       <path name="speaker-prot" />
+       <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+       <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+   </path>
+
+    <path name="speaker-hdk">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="speaker-fluid">
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="speaker-liquid">
+        <path name="speaker" />
+    </path>
+
+    <path name="speaker-safe">
+        <path name="speaker-mono"/>
+    </path>
+
+    <path name="speaker-hdk-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="speaker-fluid-vbat">
+        <path name="speaker-mono-vbat" />
+    </path>
+
+    <path name="speaker-liquid-vbat">
+        <path name="speaker-vbat" />
+    </path>
+
+    <path name="speaker-safe-vbat">
+        <path name="speaker-mono-vbat"/>
+    </path>
+
+   <path name="sidetone-iir">
+        <ctl name="IIR0 Enable Band1" value="1" />
+        <ctl name="IIR0 Enable Band2" value="1" />
+        <ctl name="IIR0 Enable Band3" value="1" />
+        <ctl name="IIR0 Enable Band4" value="1" />
+        <ctl name="IIR0 Enable Band5" value="1" />
+    </path>
+
+    <path name="sidetone-headphones">
+        <path name="sidetone-iir" />
+        <ctl name="IIR0 INP0 Volume" value="54" />
+        <ctl name="IIR0 INP0 MUX" value="DEC0" />
+        <ctl name="RX INT0 MIX2 INP" value="SRC0" />
+        <ctl name="RX INT1 MIX2 INP" value="SRC0" />
+    </path>
+
+    <path name="sidetone-handset">
+        <path name="sidetone-iir" />
+        <ctl name="IIR0 INP0 Volume" value="0" />
+        <ctl name="IIR0 INP0 MUX" value="DEC2" />
+        <ctl name="RX INT2 MIX2 INP" value="SRC0" />
+        <ctl name="WSA_RX0 INT0 SIDETONE MIX" value="SRC0" />
+    </path>
+
+    <path name="afe-sidetone">
+    </path>
+
+    <path name="play-fm">
+    </path>
+
+    <path name="speaker-mic">
+        <path name="dmic3" />
+    </path>
+
+    <path name="speaker-protected">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <path name="speaker" />
+    </path>
+
+    <path name="voice-speaker-protected">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <path name="speaker-mono" />
+    </path>
+
+    <path name="voice-speaker-2-protected">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <path name="speaker-mono-2" />
+    </path>
+
+    <path name="voice-speaker-stereo-protected">
+        <path name="speaker-protected" />
+    </path>
+
+    <path name="speaker-protected-vbat">
+        <path name="speaker-protected" />
+        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+        <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+    </path>
+
+    <path name="voice-speaker-protected-vbat">
+        <path name="voice-speaker-protected" />
+        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
+    </path>
+
+    <path name="voice-speaker-2-protected-vbat">
+        <path name="voice-speaker-2-protected" />
+        <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+    </path>
+
+    <path name="voice-speaker-stereo-protected-vbat">
+        <path name="speaker-protected-vbat" />
+    </path>
+
+    <path name="vi-feedback">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+    <path name="vi-feedback-mono-1">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+    </path>
+
+    <path name="vi-feedback-mono-2">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+    </path>
+
+    <path name="cps-feedback">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
+    </path>
+
+    <path name="cps-feedback-mono-1">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_1" value="1" />
+    </path>
+
+    <path name="cps-feedback-mono-2">
+        <ctl name="WSA_AIF_CPS Mixer WSA_SPKR_CPS_2" value="1" />
+    </path>
+
+    <path name="handset">
+        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX0 INP0" value="RX0" />
+        <ctl name="WSA_COMP1 Switch" value="1" />
+        <ctl name="Idle Detect" value="1" />
+        <ctl name="SpkrLeft COMP Switch" value="1" />
+        <ctl name="SpkrLeft VISENSE Switch" value="1" />
+        <ctl name="SpkrLeft SWR DAC_Port Switch" value="1" />
+        <ctl name="WSA_RX0 Digital Volume" value="70" />
+        <ctl name="SpkrLeft WSA MODE" value="1" />
+    </path>
+
+    <path name="handset-mic">
+        <path name="dmic3" />
+    </path>
+
+    <path name="headphones">
+        <ctl name="HPHL_RDAC Switch" value="1" />
+        <ctl name="HPHR_RDAC Switch" value="1" />
+        <ctl name="HPHL Switch" value="1" />
+        <ctl name="HPHR Switch" value="1" />
+        <ctl name="RX_HPH PWR Mode" value="LOHIFI" />
+        <ctl name="RX HPH Mode" value="CLS_H_ULP" />
+        <ctl name="RX_MACRO RX0 MUX" value="AIF1_PB" />
+        <ctl name="RX_MACRO RX1 MUX" value="AIF1_PB" />
+        <ctl name="RX INT0_1 MIX1 INP0" value="RX0" />
+        <ctl name="RX INT1_1 MIX1 INP0" value="RX1" />
+        <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
+        <ctl name="RX INT1 DEM MUX" value="CLSH_DSM_OUT" />
+        <ctl name="RX_COMP1 Switch" value="1" />
+        <ctl name="RX_COMP2 Switch" value="1" />
+        <ctl name="RX_RX0 Digital Volume" value="80" />
+        <ctl name="RX_RX1 Digital Volume" value="80" />
+        <ctl name="HPHR Volume" value="20" />
+        <ctl name="HPHL Volume" value="20" />
+    </path>
+    <path name="line">
+        <path name="headphones" />
+    </path>
+
+    <path name="headset-mic">
+        <path name="amic2" />
+    </path>
+
+    <path name="usb-headphones">
+    </path>
+
+    <path name="display-port">
+    </path>
+
+    <path name="display-port1">
+    </path>
+
+    <path name="bt-sco">
+    </path>
+
+    <path name="bt-sco-mic">
+    </path>
+
+    <path name="usb-headset-mic">
+    </path>
+
+    <path name="va-mic-mono">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+    </path>
+
+    <path name="va-mic-dmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-tmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX2" value="DMIC3" />
+       <ctl name="VA DMIC MUX3" value="DMIC4" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-qmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA DMIC MUX2" value="DMIC4" />
+       <ctl name="VA DMIC MUX3" value="DMIC5" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic">
+       <path name="va-mic-mono" />
+    </path>
+
+    <path name="va-mic-mono-lpi">
+       <ctl name="LPI Enable" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+    </path>
+
+    <path name="va-mic-dmic-lpi">
+       <ctl name="LPI Enable" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-tmic-lpi">
+       <ctl name="LPI Enable" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX2" value="DMIC3" />
+       <ctl name="VA DMIC MUX3" value="DMIC4" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-qmic-lpi">
+       <ctl name="LPI Enable" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA DMIC MUX2" value="DMIC4" />
+       <ctl name="VA DMIC MUX3" value="DMIC5" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-lpi">
+       <path name="va-mic-mono-lpi" />
+    </path>
+
+    <path name="headset-va-mic-lpi">
+       <ctl name="LPI Enable" value="1" />
+       <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+       <ctl name="VA SMIC MUX0" value="ADC1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="ADC2 MUX" value="INP2" />
+       <ctl name="ADC2 Switch" value="1" />
+       <ctl name="ADC2_MIXER Switch" value="1" />
+       <ctl name="VA_DEC0 Volume" value="80" />
+       <ctl name="ADC2 Volume" value="20" />
+    </path>
+
+    <path name="headset-va-mic">
+       <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+       <ctl name="VA SMIC MUX0" value="ADC1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="ADC2 MUX" value="INP2" />
+       <ctl name="ADC2 Switch" value="1" />
+       <ctl name="ADC2_MIXER Switch" value="1" />
+       <ctl name="VA_DEC0 Volume" value="80" />
+       <ctl name="ADC2 Volume" value="20" />
+    </path>
+
+    <path name="lpi-pcm-logging">
+        <ctl name="LPI PCM Logging Enable" value="1" />
+    </path>
+
+    <!-- Dual MIC devices -->
+    <path name="handset-dmic-endfire">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="speaker-dmic-endfire">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+    <!-- Tri MIC devices -->
+
+    <path name="three-mic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX2" value="DMIC3" />
+       <ctl name="VA DMIC MUX3" value="DMIC4" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <!-- Quad MIC devices -->
+
+    <path name="quad-mic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC2" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA DMIC MUX2" value="DMIC4" />
+       <ctl name="VA DMIC MUX3" value="DMIC5" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+</mixer>

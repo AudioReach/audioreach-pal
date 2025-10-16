@@ -192,6 +192,9 @@ int SessionAlsaPcm::open(Stream * s)
                 PAL_DBG(LOG_TAG, "haptics type = %d",sAttr.info.opt_stream_info.haptics_type);
                 ldir = RX_HOSTLESS;
             }
+            if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER) {
+                ldir = RX_HOSTLESS;
+            }
             pcmDevIds = rm->allocateFrontEndIds(sAttr, ldir);
             if (pcmDevIds.size() == 0) {
                 PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
@@ -529,8 +532,6 @@ uint32_t SessionAlsaPcm::getMIID(const char *backendName, uint32_t tagId, uint32
                 break;
             case RAT_RENDER:
             case BT_PCM_CONVERTER:
-            case MODULE_CONGESTION_BUFFER:
-            case MODULE_JITTER_BUFFER:
                 if(strstr(backendName,"TX")) {
                     if (!pcmDevTxIds.size()) {
                         PAL_ERR(LOG_TAG, "pcmDevTxIds not found.");
@@ -943,6 +944,7 @@ int SessionAlsaPcm::start(Stream * s)
     int DeviceId;
     struct disable_lpm_info lpm_info = {};
     bool isStreamAvail = false;
+    bool us_notify_format = false;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -1446,6 +1448,46 @@ set_mixer:
                         goto exit;
                     }
                 }
+            } else if (sAttr.type == PAL_STREAM_SENSOR_PCM_DATA) {
+                status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevIds.at(0),
+                                           txAifBackEnds[0].second.data(), DEVICE_ADAM, &miid);
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                } else {
+                    status = s->getAssociatedDevices(associatedDevices);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                        goto exit;
+                    }
+                    if (associatedDevices.empty()) {
+                        PAL_ERR(LOG_TAG,"No device attached\n");
+                        goto exit;
+                    }
+                    status = associatedDevices[0]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                        goto exit;
+                    }
+                    if (dAttr.config.ch_info.channels > 1) {
+                        builder->payloadDAMPortConfig(&payload, &payloadSize, miid,
+                                                      dAttr.config.ch_info.channels);
+                        if (payloadSize && payload) {
+                            status = updateCustomPayload(payload, payloadSize);
+                            freeCustomPayload(&payload, &payloadSize);
+                            if (0 != status) {
+                                PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
+                                goto exit;
+                            }
+                        }
+                        status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
+                                                                 customPayload, customPayloadSize);
+                        freeCustomPayload();
+                        if (status != 0) {
+                            PAL_ERR(LOG_TAG, "setMixerParameter failed for RAT render");
+                            goto exit;
+                        }
+                    }
+                }
             }
 
             if (sAttr.type == PAL_STREAM_DEEP_BUFFER) {
@@ -1489,6 +1531,7 @@ set_mixer:
                 if (status) {
                     status = errno;
                     PAL_ERR(LOG_TAG, "pcm_start failed %d", status);
+                    goto exit;
                 }
             }
             break;
@@ -1734,6 +1777,65 @@ set_mixer:
                         streamData.sampleRate = codecConfig.sample_rate;
                         streamData.bitWidth   = AUDIO_BIT_WIDTH_DEFAULT_16;
                         streamData.numChannel = 0xFFFF;
+                    } else if (dAttr.id == PAL_DEVICE_OUT_USB_DEVICE || dAttr.id == PAL_DEVICE_OUT_USB_HEADSET) {
+                        streamData.sampleRate = (dAttr.config.sample_rate % SAMPLINGRATE_8K == 0 &&
+                                                     dAttr.config.sample_rate <= SAMPLINGRATE_48K) ?
+                                                     dAttr.config.sample_rate : SAMPLINGRATE_48K;
+                        streamData.bitWidth   = AUDIO_BIT_WIDTH_DEFAULT_16;
+                        streamData.numChannel = 0xFFFF;
+                    } else {
+                        streamData.sampleRate = dAttr.config.sample_rate;
+                        streamData.bitWidth   = AUDIO_BIT_WIDTH_DEFAULT_16;
+                        streamData.numChannel = 0xFFFF;
+                    }
+                    builder->payloadMFCConfig(&payload, &payloadSize, miid, &streamData);
+                    if (payloadSize && payload) {
+                        status = updateCustomPayload(payload, payloadSize);
+                        freeCustomPayload(&payload, &payloadSize);
+                        if (0 != status) {
+                            PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
+                            status = 0;
+                            goto pcm_start;
+                        }
+                    }
+                }
+                status = SessionAlsaUtils::setMixerParameter(mixer, pcmDevIds.at(0),
+                                                             customPayload, customPayloadSize);
+                freeCustomPayload();
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG, "setMixerParameter failed");
+                    status = 0;
+                    goto pcm_start;
+                }
+            }
+            if (sAttr.type == PAL_STREAM_VOIP_RX) {
+                    status = SessionAlsaUtils::getModuleInstanceId(mixer, pcmDevIds.at(0),
+                                               rxAifBackEnds[0].second.data(), DEVICE_MFC, &miid);
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                    status = 0;
+                    goto pcm_start;
+                }
+                PAL_INFO(LOG_TAG, "miid : %x id = %d\n", miid, pcmDevIds.at(0));
+                status = s->getAssociatedDevices(associatedDevices);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                    status = 0;
+                    goto pcm_start;
+                }
+                for (int i = 0; i < associatedDevices.size();i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                        status = 0;
+                        goto pcm_start;
+                    }
+                    if (dAttr.id == PAL_DEVICE_OUT_USB_DEVICE || dAttr.id == PAL_DEVICE_OUT_USB_HEADSET) {
+                        streamData.sampleRate = (dAttr.config.sample_rate % SAMPLINGRATE_8K == 0 &&
+                                                     dAttr.config.sample_rate <= SAMPLINGRATE_48K) ?
+                                                     dAttr.config.sample_rate : SAMPLINGRATE_48K;
+                        streamData.bitWidth   = AUDIO_BIT_WIDTH_DEFAULT_16;
+                        streamData.numChannel = 0xFFFF;
                     } else {
                         streamData.sampleRate = dAttr.config.sample_rate;
                         streamData.bitWidth   = AUDIO_BIT_WIDTH_DEFAULT_16;
@@ -1760,6 +1862,35 @@ set_mixer:
                 }
             }
 pcm_start:
+            if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER) {
+                if (rm->activeGroupDevConfig) {
+                    if ((dAttr.config.sample_rate !=
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate) ||
+                        (dAttr.config.ch_info.channels !=
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels) ||
+                        (dAttr.config.bit_width != ResourceManager::palFormatToBitwidthLookup(
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id))) {
+                         us_notify_format = true;
+                         dAttr.config.sample_rate =
+                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate;
+                         dAttr.config.ch_info.channels =
+                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels;
+                         dAttr.config.bit_width = ResourceManager::palFormatToBitwidthLookup(
+                             rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id);
+                    }
+                } else if (dAttr.id != PAL_DEVICE_OUT_ULTRASOUND_DEDICATED) {
+                    us_notify_format = true;
+                }
+            }
+            if (us_notify_format) {
+                status = notifyUPDToneRendererFmtChng(&dAttr,
+                            US_TONE_RENDERER_EP_MEDIA_FORMAT_INFO_CHANGE_START);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Error notifying Ultrasound tone renderer "
+                            "format change START. status = %d", status);
+                    goto exit;
+                }
+            }
             status = setInitialVolume();
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "setVolume failed");
@@ -1784,6 +1915,16 @@ pcm_start:
                 if (status) {
                     status = errno;
                     PAL_ERR(LOG_TAG, "pcm_start failed %d", status);
+                } else {
+                    if (us_notify_format) {
+                        status = notifyUPDToneRendererFmtChng(&dAttr,
+                                    US_TONE_RENDERER_EP_MEDIA_FORMAT_INFO_CHANGE_DONE);
+                        if (status) {
+                            PAL_ERR(LOG_TAG, "Error notifying Ultrasound tone renderer "
+                                    "format change START. status = %d", status);
+                            goto exit;
+                        }
+                    }
                 }
             }
 
@@ -1884,6 +2025,7 @@ pcm_start:
                 if (status) {
                     status = errno;
                     PAL_ERR(LOG_TAG, "pcm_start tx failed %d", status);
+                    goto exit;
                 }
             }
            break;
@@ -2202,7 +2344,8 @@ int SessionAlsaPcm::close(Stream * s)
             if ((sAttr.type == PAL_STREAM_HAPTICS &&
                  sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH) ||
                 (sAttr.type == PAL_STREAM_LOOPBACK &&
-                 sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY))
+                 sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY) ||
+                (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
                 ldir = RX_HOSTLESS;
 
             rm->freeFrontEndIds(pcmDevIds, sAttr, ldir);
@@ -2297,6 +2440,7 @@ int SessionAlsaPcm::disconnectSessionDevice(Stream *streamHandle,
     struct pal_device dAttr = {};
     std::vector<std::pair<int32_t, std::string>> rxAifBackEndsToDisconnect;
     std::vector<std::pair<int32_t, std::string>> txAifBackEndsToDisconnect;
+    struct pal_stream_attributes sAttr = {};
     int32_t status = 0;
 
     deviceList.push_back(deviceToDisconnect);
@@ -2304,10 +2448,27 @@ int SessionAlsaPcm::disconnectSessionDevice(Stream *streamHandle,
             txAifBackEndsToDisconnect);
     deviceToDisconnect->getDeviceAttributes(&dAttr);
 
+    if (streamType == PAL_STREAM_SENSOR_PCM_RENDERER) {
+        status = notifyUPDToneRendererFmtChng(&dAttr,
+                    US_TONE_RENDERER_EP_MEDIA_FORMAT_INFO_CHANGE_START);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Error notifying Ultrasound tone renderer "
+                    "format change START. status = %d", status);
+        } else {
+            /*sleep for 20ms to wait for EOS propagation to HWEP*/
+            usleep(20000);
+        }
+    }
+
+    status = streamHandle->getStreamAttributes(&sAttr);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+    }
     if (!rxAifBackEndsToDisconnect.empty()) {
         int cnt = 0;
-        if (streamType != PAL_STREAM_ULTRASOUND &&
-            streamType != PAL_STREAM_LOOPBACK)
+        if ((streamType != PAL_STREAM_ULTRASOUND &&
+            streamType != PAL_STREAM_LOOPBACK) || (streamType == PAL_STREAM_LOOPBACK &&
+            sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY))
             status = SessionAlsaUtils::disconnectSessionDevice(streamHandle, streamType, rm,
                      dAttr, (pcmDevIds.size() ? pcmDevIds : pcmDevRxIds), rxAifBackEndsToDisconnect);
         else {
@@ -2320,6 +2481,7 @@ int SessionAlsaPcm::disconnectSessionDevice(Stream *streamHandle,
                 /* TODO: Need to adjust the delay based on requirement */
                 usleep(20000);
             }
+
             status = SessionAlsaUtils::disconnectSessionDevice(streamHandle, streamType, rm,
                      dAttr, pcmDevTxIds, pcmDevRxIds, rxAifBackEndsToDisconnect);
         }
@@ -2397,6 +2559,7 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
     struct pal_device dAttr = {};
     std::vector<std::pair<int32_t, std::string>> rxAifBackEndsToConnect;
     std::vector<std::pair<int32_t, std::string>> txAifBackEndsToConnect;
+    struct pal_stream_attributes sAttr = {};
     int32_t status = 0;
 
     deviceList.push_back(deviceToConnect);
@@ -2404,12 +2567,17 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
             txAifBackEndsToConnect);
     deviceToConnect->getDeviceAttributes(&dAttr);
 
+    status = streamHandle->getStreamAttributes(&sAttr);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+    }
     if (!rxAifBackEndsToConnect.empty()) {
         for (const auto &elem : rxAifBackEndsToConnect)
             rxAifBackEnds.push_back(elem);
 
-        if (streamType != PAL_STREAM_ULTRASOUND &&
-            streamType != PAL_STREAM_LOOPBACK)
+        if ((streamType != PAL_STREAM_ULTRASOUND &&
+            streamType != PAL_STREAM_LOOPBACK) || (streamType == PAL_STREAM_LOOPBACK &&
+            sAttr.info.opt_stream_info.loopback_type == PAL_STREAM_LOOPBACK_PLAYBACK_ONLY))
             status = SessionAlsaUtils::connectSessionDevice(this, streamHandle, streamType, rm,
                      dAttr, (pcmDevIds.size() ? pcmDevIds : pcmDevRxIds), rxAifBackEndsToConnect);
         else
@@ -2428,6 +2596,24 @@ int SessionAlsaPcm::connectSessionDevice(Stream* streamHandle, pal_stream_type_t
                         cnt--;
                         break;
                     }
+                }
+            }
+        } else {
+            if (streamType == PAL_STREAM_SENSOR_PCM_RENDERER) {
+                // update sr/ch/bw in dAttr if virtual port is enabled
+                if (rm->activeGroupDevConfig) {
+                    dAttr.config.sample_rate =
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.sample_rate;
+                    dAttr.config.ch_info.channels =
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.channels;
+                    dAttr.config.bit_width = ResourceManager::palFormatToBitwidthLookup(
+                         rm->currentGroupDevConfig.grp_dev_hwep_cfg.aud_fmt_id);
+                }
+                status = notifyUPDToneRendererFmtChng(&dAttr,
+                            US_TONE_RENDERER_EP_MEDIA_FORMAT_INFO_CHANGE_DONE);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Error notifying Ultrasound tone renderer "
+                            "format change START. status = %d", status);
                 }
             }
         }
@@ -2852,6 +3038,12 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
             struct agm_tag_config* tagConfig = NULL;
             int tkv_size = 0;
 
+            status = streamHandle->getStreamAttributes(&sAttr);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "getStreamAttributes Failed \n");
+                goto exit;
+            }
+
             tkv.push_back(std::make_pair(TAG_KEY_DUTY_CYCLE, *(int*)payload));
             tagConfig = (struct agm_tag_config*)malloc(sizeof(struct agm_tag_config) +
                     (tkv.size() * sizeof(agm_key_value)));
@@ -2869,7 +3061,10 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
             }
 
             // set UPD RX tag data
-            tagCntrlNameRx<<streamPcm<<pcmDevRxIds.at(0)<<setParamTagControl;
+            if (sAttr.type == PAL_STREAM_ULTRASOUND)
+                tagCntrlNameRx<<streamPcm<<pcmDevRxIds.at(0)<<setParamTagControl;
+            else // SENSOR_RENDERER
+                tagCntrlNameRx<<streamPcm<<pcmDevIds.at(0)<<setParamTagControl;
             ctl = mixer_get_ctl_by_name(mixer, tagCntrlNameRx.str().data());
             if (!ctl) {
                 PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlNameRx.str().data());
@@ -2883,6 +3078,10 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
             if (status != 0) {
                 PAL_ERR(LOG_TAG, "failed to set the RX duty cycle calibration %d", status);
             }
+
+            // TX duty cycle param is N/A for sensor renderer
+            if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER)
+                return 0;
 
             // set UPD TX tag data
             tagCntrlNameTx<<streamPcm<<pcmDevTxIds.at(0)<<setParamTagControl;
@@ -3067,93 +3266,6 @@ int SessionAlsaPcm::setParameters(Stream *streamHandle, int tagId, uint32_t para
             }
             return 0;
         }
-
-        case PAL_PARAM_ID_ULTRASOUND_SET_GAIN:
-        {
-            std::vector <std::pair<int, int>> tkv;
-            const char *setParamTagControl = " setParamTag";
-            const char *streamPcm = "PCM";
-            struct mixer_ctl *ctl;
-            std::ostringstream tagCntrlName;
-            int sendToRx = 1;
-            struct agm_tag_config* tagConfig = NULL;
-            int tkv_size = 0;
-            pal_ultrasound_gain_t gain = PAL_ULTRASOUND_GAIN_MUTE;
-
-            if (!rm->IsCustomGainEnabledForUPD()) {
-                PAL_ERR(LOG_TAG, "Custom Gain not enabled for UPD, returning");
-                goto skip_ultrasound_gain;
-            }
-
-            /* Search for the tag in Rx path first */
-            device = pcmDevRxIds.at(0);
-            status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
-                    rxAifBackEnds[0].second.data(),
-                    tagId, &miid);
-
-            /* Rx search failed, Check if we can find the tag in Tx path */
-            if ((0 != status) || (0 == miid)) {
-                PAL_DBG(LOG_TAG, "Fail to find module in Rx path status(%d), Now checking in Tx path", status);
-                device = pcmDevTxIds.at(0);
-                status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
-                        txAifBackEnds[0].second.data(),
-                        tagId, &miid);
-                sendToRx = 0;
-            }
-            if (0 != status) {
-                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
-                goto skip_ultrasound_gain;
-            }
-
-            PAL_INFO(LOG_TAG, "Found module with TAG_ULTRASOUND_GAIN, miid = 0x%04x", miid);
-            gain = *((pal_ultrasound_gain_t *)payload);
-
-            tkv.clear();
-            tkv.push_back(std::make_pair(TAG_KEY_ULTRASOUND_GAIN, (uint32_t)gain));
-            PAL_INFO(LOG_TAG, "Setting TAG_KEY_ULTRASOUND_GAIN, Value %d\n", gain);
-
-            tagConfig = (struct agm_tag_config*)malloc(sizeof(struct agm_tag_config) +
-                    (tkv.size() * sizeof(agm_key_value)));
-
-            if (!tagConfig) {
-                status = -EINVAL;
-                goto skip_ultrasound_gain;
-            }
-
-            status = SessionAlsaUtils::getTagMetadata(TAG_ULTRASOUND_GAIN, tkv, tagConfig);
-            if (0 != status)
-                goto skip_ultrasound_gain;
-
-            if (sendToRx) {
-                tagCntrlName<<streamPcm<<pcmDevRxIds.at(0)<<setParamTagControl;
-                ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
-                if (!ctl) {
-                    PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
-                    status = -EINVAL;
-                    goto skip_ultrasound_gain;
-                }
-                tkv_size = tkv.size()*sizeof(struct agm_key_value);
-                status = mixer_ctl_set_array(ctl, tagConfig, sizeof(struct agm_tag_config) + tkv_size);
-            } else {
-                tagCntrlName<<streamPcm<<pcmDevTxIds.at(0)<<setParamTagControl;
-                ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
-                if (!ctl) {
-                    PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
-                    status = -EINVAL;
-                    goto skip_ultrasound_gain;
-                }
-                tkv_size = tkv.size()*sizeof(struct agm_key_value);
-                status = mixer_ctl_set_array(ctl, tagConfig, sizeof(struct agm_tag_config) + tkv_size);
-            }
-
-skip_ultrasound_gain:
-            if (tagConfig)
-                free(tagConfig);
-            if (status)
-                PAL_ERR(LOG_TAG, "Failed to set Ultrasound Gain %d", status);
-            return 0;
-        }
-
         default:
             status = -EINVAL;
             PAL_ERR(LOG_TAG, "Unsupported param id %u status %d", param_id, status);
@@ -3596,8 +3708,12 @@ int SessionAlsaPcm::getTagsWithModuleInfo(Stream *s, size_t *size __unused, uint
 
     }
 
-    status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
-                                  txAifBackEnds[0].second.data(), payload);
+    if (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER)
+        status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
+                                      rxAifBackEnds[0].second.data(), payload);
+    else
+        status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
+                                      txAifBackEnds[0].second.data(), payload);
     if (0 != status)
         PAL_ERR(LOG_TAG, "get tags failed = %d", status);
 
@@ -4048,3 +4164,39 @@ int SessionAlsaPcm::reconfigureModule(uint32_t tagID, const char* BE, struct ses
 exit:
     return status;
 }
+
+int SessionAlsaPcm::notifyUPDToneRendererFmtChng(struct pal_device *dAttr,
+        us_tone_renderer_ep_media_format_status_t event)
+{
+    std::string backEndName;
+    int status = 0;
+    int device = 0;
+    uint32_t miid = 0;
+    int tagId = 0;
+    uint8_t* paramData = NULL;
+    size_t paramSize = 0;
+
+    if (pcmDevIds.size() > 0)
+        device = pcmDevIds.at(0);
+
+    rm->getBackendName(dAttr->id, backEndName);
+
+    status = getMIID(backEndName.c_str(), TAG_TONE_RENDERER_MODULE, &miid);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d",
+                tagId, status);
+        return status;
+    }
+
+    builder->USToneRendererNotifyPayload(&paramData, &paramSize, dAttr, miid, event);
+    if (paramSize) {
+        status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                paramData, paramSize);
+        PAL_INFO(LOG_TAG, "mixer notify US tone renderer format change,"
+                    " status=%d", status);
+        return status;
+    }
+
+    return 0;
+}
+

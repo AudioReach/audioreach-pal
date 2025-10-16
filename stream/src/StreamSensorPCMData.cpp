@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -93,7 +93,6 @@ StreamSensorPCMData::~StreamSensorPCMData()
     PAL_DBG(LOG_TAG, "Enter");
     rm->resetStreamInstanceID(this);
     rm->deregisterStream(this);
-    mDevices.clear();
     PAL_DBG(LOG_TAG, "Exit");
 }
 
@@ -124,9 +123,7 @@ int32_t StreamSensorPCMData::open()
         goto exit;
     }
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_OPENED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit ret %d", status);
     return status;
 }
@@ -159,9 +156,7 @@ int32_t  StreamSensorPCMData::close()
         PAL_ERR(LOG_TAG, "Error:session close failed with status %d", status);
     }
     currentState = STREAM_IDLE;
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_CLOSED, status);
-#endif
     mStreamMutex.unlock();
 
     PAL_DBG(LOG_TAG, "Exit ret %d", status);
@@ -265,9 +260,7 @@ int32_t StreamSensorPCMData::start()
     }
 
 exit:
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STARTED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. state %d, status %d", currentState, status);
     return status;
 }
@@ -326,15 +319,13 @@ int32_t StreamSensorPCMData::stop()
         PAL_ERR(LOG_TAG, "Error:Stream should be in start/pause state, %d", currentState);
         status = -EINVAL;
     }
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_STOPPED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit. status %d, state %d", status, currentState);
 
     return status;
 }
 
-int32_t StreamSensorPCMData::Resume()
+int32_t StreamSensorPCMData::Resume(bool is_internal)
 {
     int32_t status = 0;
 
@@ -349,7 +340,7 @@ int32_t StreamSensorPCMData::Resume()
     return status;
 }
 
-int32_t StreamSensorPCMData::Pause()
+int32_t StreamSensorPCMData::Pause(bool is_internal)
 {
     int32_t status = 0;
 
@@ -363,9 +354,7 @@ int32_t StreamSensorPCMData::Pause()
     }
     else
         PAL_ERR(LOG_TAG, "Error:%d Pause Stream failed", status);
-#ifndef PAL_MEMLOG_UNSUPPORTED
     palStateEnqueue(this, PAL_STATE_PAUSED, status);
-#endif
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -426,11 +415,16 @@ exit:
 
 pal_device_id_t StreamSensorPCMData::GetAvailCaptureDevice()
 {
-    if (acd_info_->GetSupportDevSwitch() &&
-        rm->isDeviceAvailable(PAL_DEVICE_IN_WIRED_HEADSET))
-        return PAL_DEVICE_IN_HEADSET_VA_MIC;
-    else
-        return PAL_DEVICE_IN_HANDSET_VA_MIC;
+    if (mPalDevices[0] &&
+        mPalDevices[0]->getSndDeviceId() == PAL_DEVICE_IN_ULTRASOUND_MIC) {
+        return PAL_DEVICE_IN_ULTRASOUND_MIC;
+    } else {
+        if (acd_info_->GetSupportDevSwitch() &&
+            rm->isDeviceAvailable(PAL_DEVICE_IN_WIRED_HEADSET))
+            return PAL_DEVICE_IN_HEADSET_VA_MIC;
+        else
+            return PAL_DEVICE_IN_HANDSET_VA_MIC;
+    }
 }
 
 std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
@@ -438,26 +432,24 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
     std::shared_ptr<CaptureProfile> cap_prof = nullptr;
     enum StInputModes input_mode = ST_INPUT_MODE_HANDSET;
     enum StOperatingModes operating_mode = ST_OPERATING_MODE_HIGH_PERF_NS;
+    pal_device_id_t current_capture_device = GetAvailCaptureDevice();
 
     PAL_DBG(LOG_TAG, "Enter");
 
-    if (!sm_cfg_) {
-        PAL_ERR(LOG_TAG, "Stream config not created yet");
-        return nullptr;
-    }
-
-    if (GetAvailCaptureDevice() == PAL_DEVICE_IN_HEADSET_VA_MIC)
+    if (current_capture_device == PAL_DEVICE_IN_HEADSET_VA_MIC)
         input_mode = ST_INPUT_MODE_HEADSET;
 
     /* Check lpi here again to determine the actual operating_mode */
     if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
         DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
         && rm->getLPIUsage())
-        operating_mode = ST_OPERATING_MODE_LOW_POWER;
+        operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
+                          ST_OPERATING_MODE_LOW_POWER_TX_MACRO : ST_OPERATING_MODE_LOW_POWER);
     else if ((DEVICEPP_TX_RAW_LPI == pcm_data_stream_effect ||
              DEVICEPP_TX_FLUENCE_FFEC == pcm_data_stream_effect)
              && !rm->getLPIUsage())
-        operating_mode = ST_OPERATING_MODE_HIGH_PERF;
+        operating_mode = (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC ?
+                          ST_OPERATING_MODE_HIGH_PERF_TX_MACRO : ST_OPERATING_MODE_HIGH_PERF);
     else if ((DEVICEPP_TX_FLUENCE_FFNS == pcm_data_stream_effect ||
              DEVICEPP_TX_FLUENCE_FFECNS == pcm_data_stream_effect)
              && rm->getLPIUsage())
@@ -467,15 +459,74 @@ std::shared_ptr<CaptureProfile> StreamSensorPCMData::GetCurrentCaptureProfile()
              && !rm->getLPIUsage())
         operating_mode = ST_OPERATING_MODE_HIGH_PERF_NS;
 
-    cap_prof = sm_cfg_->GetCaptureProfile(std::make_pair(operating_mode, input_mode));
+    if (current_capture_device == PAL_DEVICE_IN_ULTRASOUND_MIC) {
+        std::shared_ptr<SoundTriggerPlatformInfo> st_info = nullptr;
+        std::string capture_profile_name;
+        uint32_t sample_rate = 0;
+        uint32_t bit_width = 0;
+        uint16_t channels = 0;
+        struct pal_device dev_config = {};
+
+        if (mPalDevices[0] &&
+            mPalDevices[0]->getDeviceAttributes(&dev_config) == 0) {
+            sample_rate = dev_config.config.sample_rate;
+            bit_width = dev_config.config.bit_width;
+            channels = dev_config.config.ch_info.channels;
+        }
+
+        cap_prof = rm->GetTXMacroCaptureProfile();
+        if (cap_prof) {
+            channels = (channels >= cap_prof->GetChannels()) ?
+                        channels : cap_prof->GetChannels();
+            sample_rate = (sample_rate >= cap_prof->GetSampleRate()) ?
+                           sample_rate : cap_prof->GetSampleRate();
+            bit_width = (bit_width >= cap_prof->GetBitWidth()) ?
+                           bit_width : cap_prof->GetBitWidth();
+        }
+
+        if (channels == 1)
+            capture_profile_name.append("SINGLE_MIC_");
+        else if (channels == 2)
+            capture_profile_name.append("DUAL_MIC_");
+
+        if (sample_rate == 48000)
+            capture_profile_name.append("48KHZ_");
+        else if (sample_rate == 96000)
+            capture_profile_name.append("96KHZ_");
+
+        if (bit_width == 16)
+            capture_profile_name.append("16BIT_");
+        else if (bit_width == 24)
+            capture_profile_name.append("24BIT_");
+
+        if (operating_mode == ST_OPERATING_MODE_LOW_POWER_TX_MACRO &&
+            pcm_data_buffering == 1)
+            capture_profile_name.append("RAW_LPI_TX_MACRO");
+        else if (operating_mode == ST_OPERATING_MODE_LOW_POWER_TX_MACRO &&
+                 pcm_data_buffering == 0)
+            capture_profile_name.append("RAW_LPI_NO_BUFFER_TX_MACRO");
+        else if (operating_mode == ST_OPERATING_MODE_HIGH_PERF_TX_MACRO &&
+                 pcm_data_buffering == 1)
+            capture_profile_name.append("FFEC_TX_MACRO");
+        else if (operating_mode == ST_OPERATING_MODE_HIGH_PERF_TX_MACRO &&
+                 pcm_data_buffering == 0)
+            capture_profile_name.append("FFEC_NO_BUFFER_TX_MACRO");
+
+        PAL_DBG(LOG_TAG, "capture_profile_name: %s", capture_profile_name.c_str());
+        st_info = SoundTriggerPlatformInfo::GetInstance();
+        if (st_info)
+            cap_prof = st_info->GetCaptureProfileFromMap(capture_profile_name);
+    } else {
+        cap_prof = sm_cfg_->GetCaptureProfile(std::make_pair(operating_mode, input_mode));
+    }
 
     if (cap_prof) {
-        PAL_DBG(LOG_TAG, "cap_prof %s: bw=%d, chs=%d, sr=%d, snd_name=%s, ec_ref=%d",
+        PAL_DBG(LOG_TAG, "cap_prof: %s bw=%d, chs=%d, sr=%d, snd_name=%s, ec_ref=%d",
                 cap_prof->GetName().c_str(), cap_prof->GetBitWidth(),
                 cap_prof->GetChannels(), cap_prof->GetSampleRate(),
                 cap_prof->GetSndName().c_str(), cap_prof->isECRequired());
     } else {
-        PAL_ERR(LOG_TAG, "Invalid capture profile");
+        PAL_INFO(LOG_TAG, "Invalid capture profile");
     }
 
     return cap_prof;
@@ -657,6 +708,12 @@ int32_t StreamSensorPCMData::ConnectDevice_l(pal_device_id_t device_id)
 
     PAL_DBG(LOG_TAG, "Enter, device_id: %d", device_id);
 
+    if (GetAvailCaptureDevice() != device_id) {
+        PAL_INFO(LOG_TAG, "Skip, device %d is alreay connected",
+                 GetAvailCaptureDevice());
+        goto connect_err;
+    }
+
     device = GetPalDevice(this, device_id);
     if (!device) {
         status = -EINVAL;
@@ -765,5 +822,34 @@ int32_t StreamSensorPCMData::setECRef(std::shared_ptr<Device> dev, bool is_enabl
     else
         PAL_DBG(LOG_TAG, "set EC Ref will be handled in LPI/NLPI switch");
 
+    return status;
+}
+
+int32_t StreamSensorPCMData::setParameters(uint32_t param_id, void *payload)
+{
+    int32_t status = 0;
+    pal_param_payload *param_payload = (pal_param_payload *)payload;
+
+    if (!param_payload) {
+        PAL_ERR(LOG_TAG, "Error: Invalid payload for param ID: %d", param_id);
+        return -EINVAL;
+    }
+
+    PAL_DBG(LOG_TAG, "Enter, param id %d", param_id);
+
+    std::lock_guard<std::mutex> lck(mStreamMutex);
+    switch (param_id) {
+        case PAL_PARAM_ID_CUSTOM_CONFIGURATION: {
+            pcm_data_buffering = *((uint32_t *) param_payload->payload);
+            break;
+        }
+        default: {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Error:%d Unsupported param %u", status, param_id);
+            break;
+        }
+    }
+
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }

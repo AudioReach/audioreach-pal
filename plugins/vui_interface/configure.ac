@@ -46,6 +46,7 @@ if (test "x${with_glib}" = "xyes"); then
         AC_SUBST(GLIB_LIBS)
 fi
 
+
 PKG_CHECK_MODULES([PALHEADERS],[pal-headers])
 AC_SUBST([PALHEADERS_CFLAGS])
 
@@ -55,13 +56,16 @@ AC_SUBST([SPFHEADER_CFLAGS])
 PKG_CHECK_MODULES([KVH2XML],[kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
 
-AC_CONFIG_FILES([
-        Makefile
-        sva_intf/Makefile
-        sva_intf/sva_interface.pc
-        uitls/Makefile
-        utils/vui_interface_utils.pc
-        ])
+PKG_CHECK_MODULES([AUDIOLISTEN],[audio-listen])
+AC_SUBST([AUDIOLISTEN_CFLAGS])
+
+PKG_CHECK_MODULES([AROSAL],[ar_osal])
+AC_SUBST([AROSAL_CFLAGS])
+
+AC_CONFIG_FILES([ \
+        Makefile \
+        vui_interface.pc \
+	])
 
 AC_OUTPUT
 

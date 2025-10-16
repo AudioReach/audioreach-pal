@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -186,10 +186,14 @@ void ACDStreamConfig::HandleStartTag(const char* tag, const char** attribs)
         st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER, attribs, acd_op_modes_);
     } else if (!strcmp(tag, "low_power_ns")) {
         st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER_NS, attribs, acd_op_modes_);
+    } else if (!strcmp(tag, "low_power_tx_macro")) {
+        st_info->ReadCapProfileNames(ST_OPERATING_MODE_LOW_POWER_TX_MACRO, attribs, acd_op_modes_);
     } else if (!strcmp(tag, "high_performance")) {
         st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF, attribs, acd_op_modes_);
     } else if (!strcmp(tag, "high_performance_ns")) {
         st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF_NS, attribs, acd_op_modes_);
+    } else if (!strcmp(tag, "high_performance_tx_macro")) {
+        st_info->ReadCapProfileNames(ST_OPERATING_MODE_HIGH_PERF_TX_MACRO, attribs, acd_op_modes_);
     } else {
           PAL_ERR(LOG_TAG, "Invalid tag %s", (char *)tag);
     }

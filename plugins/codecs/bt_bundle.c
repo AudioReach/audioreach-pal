@@ -35,10 +35,7 @@
 #define LOG_TAG "PAL: bt_bundle"
 //#define LOG_NDEBUG 0
 
-#ifndef PAL_USE_SYSLOG
 #include <log/log.h>
-#endif
-#include "PalCommon.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,22 +45,6 @@
 #include <media_fmt_api.h>
 #include <ldac_encoder_api.h>
 #include <aac_encoder_api.h>
-
-static int bt_aac_conv_channel(int btipc_channel)
-{
-    int num_channel;
-
-    switch (btipc_channel) {
-        case AAC_CHANNEL_MONO:
-            num_channel = 1;
-            break;
-        case AAC_CHANNEL_STEREO:
-        default:
-            num_channel = 2;
-            break;
-    }
-    return num_channel;
-}
 
 static int bt_aac_populate_enc_frame_size_ctrl(custom_block_t *blk, uint32_t ctl_type,
                                         uint32_t ctl_value)
@@ -139,14 +120,9 @@ static int aac_pack_enc_config(bt_codec_t *codec, void *src, void **dst)
     }
     enc_payload->bit_format     = aac_bt_cfg->bits_per_sample;
     enc_payload->sample_rate    = aac_bt_cfg->sampling_rate;
-    enc_payload->channel_count  = bt_aac_conv_channel(aac_bt_cfg->channels);
+    enc_payload->channel_count  = aac_bt_cfg->channels;
     enc_payload->is_abr_enabled = aac_bt_cfg->abr_ctl_ptr && aac_bt_cfg->abr_ctl_ptr->is_abr_enabled;
     enc_payload->num_blks       = num_blks;
-
-    ALOGD("enc_payload->bit_format=%u, enc_payload->sample_rate=%u, "
-          "enc_payload->num_blks=%u, enc_payload->channel_count=%u, enc_payload->is_abr_enabled=%u\n",
-          enc_payload->bit_format, enc_payload->sample_rate, enc_payload->num_blks,
-          enc_payload->channel_count, enc_payload->is_abr_enabled);
 
     for (i = 0; i < num_blks; i++) {
         blk[i] = (custom_block_t *)calloc(1, sizeof(custom_block_t));
@@ -248,117 +224,6 @@ free_payload:
 }
 
 static int aac_pack_dec_config(bt_codec_t *codec __unused, void *src __unused, void **dst __unused) {
-    audio_aac_decoder_config_t *aac_bt_cfg = NULL;
-    bt_enc_payload_t *dec_payload = NULL;
-    struct payload_media_fmt_aac_t *media_fmt_aac = NULL;
-    struct payload_pcm_output_format_cfg_t * pcm_out_cfg = NULL;
-    int num_blks = 2, i = 0, ret = 0;
-    custom_block_t *blk[3] = {NULL};
-    audio_sink_buffer_config_t * snk_buff_cfg = NULL;
-
-    ALOGV("%s", __func__);
-
-    if ((src == NULL) || (dst == NULL)) {
-        ALOGE("%s: invalid input parameters", __func__);
-        return -EINVAL;
-    }
-
-    aac_bt_cfg = (audio_aac_decoder_config_t *)src;
-    snk_buff_cfg = (audio_sink_buffer_config_t*)&(aac_bt_cfg->snk_buffer);
-    dec_payload = (bt_enc_payload_t *)calloc(1, sizeof(bt_enc_payload_t) +
-            num_blks * sizeof(custom_block_t *));
-    if (dec_payload == NULL) {
-        ALOGE("%s: fail to allocate memory", __func__);
-        return -ENOMEM;
-    }
-    dec_payload->bitrate        = snk_buff_cfg->bitrate;
-    dec_payload->bitrate_mode   = snk_buff_cfg->bitrate_mode;
-    dec_payload->mtu            = snk_buff_cfg->mtu;
-    dec_payload->bit_format     = aac_bt_cfg->bits_per_sample;
-    dec_payload->sample_rate    = aac_bt_cfg->sampling_rate;
-    dec_payload->channel_count  = bt_aac_conv_channel(aac_bt_cfg->channels);
-    dec_payload->is_abr_enabled = false;
-
-    dec_payload->congestion_buffer_duration_ms = DEFAULT_CONG_BUFFER_DURATION;
-    dec_payload->delay_buffer_duration_ms      = 0;
-    dec_payload->frame_size_mode               = FRAME_SIZE_MODE_IN_SAMPLES;
-    dec_payload->frame_size_value              = DEFAULT_DECODER_FRAME_SIZE_SAMPLE;
-    dec_payload->jitter_allowance_in_ms        = DEFAULT_JITTER_BUFFER_DURATION;
-
-    dec_payload->num_blks       = num_blks;
-
-    ALOGD("dec_payload->bitrate=%u, dec_payload->bitrate_mode=%u, dec_payload->mtu=%u, "
-          "dec_payload->bit_format=%u, dec_payload->sample_rate=%u, dec_payload->channel_count=%u, "
-          "dec_payload->is_abr_enabled=%u, dec_payload->congestion_buffer_duration_ms=%u, "
-          "dec_payload->delay_buffer_duration_ms=%u, dec_payload->frame_size_mode=%u, "
-          "dec_payload->frame_size_value=%u, dec_payload->jitter_allowance_in_ms=%u, "
-          "dec_payload->num_blks=%u\n",
-          dec_payload->bitrate, dec_payload->bitrate_mode, dec_payload->mtu,
-          dec_payload->bit_format, dec_payload->sample_rate, dec_payload->channel_count,
-          dec_payload->is_abr_enabled, dec_payload->congestion_buffer_duration_ms,
-          dec_payload->delay_buffer_duration_ms, dec_payload->frame_size_mode,
-          dec_payload->frame_size_value, dec_payload->jitter_allowance_in_ms,
-          dec_payload->num_blks);
-
-    for (i = 0; i < num_blks; i++) {
-        blk[i] = (custom_block_t *)calloc(1, sizeof(custom_block_t));
-        if (!blk[i]) {
-            ret = -ENOMEM;
-            goto free_payload;
-        }
-    }
-    /* pack real module id */
-    ret = bt_base_populate_real_module_id(blk[0], MODULE_ID_AAC_DEC);
-    if (ret)
-        goto free_payload;
-
-    /* PARAM_ID_MEDIA_FORMAT ->payload_media_fmt_aac_t */
-    media_fmt_aac = (payload_media_fmt_aac_t*) calloc(1,sizeof(payload_media_fmt_aac_t));
-    media_fmt_aac->aac_fmt_flag = aac_bt_cfg->format_flag;
-
-    switch(aac_bt_cfg->obj_type) {
-        case 0:
-            media_fmt_aac->audio_obj_type = AAC_AOT_LC;
-            break;
-        case 2:
-            media_fmt_aac->audio_obj_type = AAC_AOT_PS;
-            break;
-        case 1:
-        default:
-            media_fmt_aac->audio_obj_type = AAC_AOT_SBR;
-            break;
-    }
-
-    media_fmt_aac->num_channels = aac_bt_cfg->channels;
-    media_fmt_aac->sample_rate = aac_bt_cfg->sampling_rate;
-    media_fmt_aac->total_size_of_PCE_bits = DEFAULT_PCE_BITS;
-
-    ret= bt_base_populate_dec_media_fmt(blk[1],MEDIA_FMT_ID_AAC,
-            media_fmt_aac,sizeof(payload_media_fmt_aac_t));
-    free(media_fmt_aac);
-    media_fmt_aac = NULL;
-    if (ret)
-        goto free_payload;
-
-
-    dec_payload->blocks[0] = blk[0];
-    dec_payload->blocks[1] = blk[1];
-
-    *dst = dec_payload;
-    codec->payload = dec_payload;
-
-    return ret;
-free_payload:
-    for (i = 0; i < num_blks; i++) {
-        if (blk[i]) {
-            if (blk[i]->payload)
-                free(blk[i]->payload);
-            free(blk[i]);
-        }
-    }
-    if (dec_payload)
-        free(dec_payload);
-
     return 0;
 }
 
@@ -387,10 +252,6 @@ static int sbc_pack_enc_config(bt_codec_t *codec, void *src, void **dst)
     enc_payload->bit_format  = sbc_bt_cfg->bits_per_sample;
     enc_payload->sample_rate = sbc_bt_cfg->sampling_rate;
     enc_payload->num_blks    = num_blks;
-
-    ALOGD("enc_payload->bit_format=%u, enc_payload->sample_rate=%u, "
-          "enc_payload->num_blks=%u\n",
-          enc_payload->bit_format, enc_payload->sample_rate, enc_payload->num_blks);
 
     for (i = 0; i < num_blks; i++) {
         blk[i] = (custom_block_t *)calloc(1, sizeof(custom_block_t));
@@ -421,19 +282,19 @@ static int sbc_pack_enc_config(bt_codec_t *codec, void *src, void **dst)
     sbc_enc_cfg->num_subbands = sbc_bt_cfg->subband;
     sbc_enc_cfg->blk_len      = sbc_bt_cfg->blk_len;
     switch (sbc_bt_cfg->channels) {
-        case SBC_CHANNEL_MONO:
+        case 0:
             sbc_enc_cfg->channel_mode = MEDIA_FMT_SBC_CHANNEL_MODE_MONO;
             enc_payload->channel_count = 1;
             break;
-        case SBC_CHANNEL_DUAL_MONO:
+        case 1:
             sbc_enc_cfg->channel_mode = MEDIA_FMT_SBC_CHANNEL_MODE_DUAL_MONO;
             enc_payload->channel_count = 2;
             break;
-        case SBC_CHANNEL_JOINT_STEREO:
+        case 3:
             sbc_enc_cfg->channel_mode = MEDIA_FMT_SBC_CHANNEL_MODE_JOINT_STEREO;
             enc_payload->channel_count = 2;
             break;
-        case SBC_CHANNEL_STEREO:
+        case 2:
         default:
             sbc_enc_cfg->channel_mode = MEDIA_FMT_SBC_CHANNEL_MODE_STEREO;
             enc_payload->channel_count = 2;
@@ -470,97 +331,9 @@ free_payload:
     return ret;
 }
 
-static int sbc_pack_dec_config(bt_codec_t *codec , void *src , void **dst )
+static int sbc_pack_dec_config(bt_codec_t *codec __unused, void *src __unused, void **dst __unused)
 {
-    bt_enc_payload_t *dec_payload = NULL;
-    audio_sbc_decoder_config_t *sbc_bt_cfg = NULL;
-    int ret = 0, num_blks = 1, i = 0;
-    custom_block_t *blk[1] = {NULL};
-    audio_sink_buffer_config_t * snk_buff_cfg = NULL;
-
-    ALOGV("%s", __func__);
-    if ((src == NULL) || (dst == NULL)) {
-        ALOGE("%s: invalid input parameters", __func__);
-        return -EINVAL;
-    }
-
-    sbc_bt_cfg = (audio_sbc_decoder_config_t *)src;
-    snk_buff_cfg = (audio_sink_buffer_config_t*)&(sbc_bt_cfg->snk_buffer);
-    dec_payload = (bt_enc_payload_t *)calloc(1, sizeof(bt_enc_payload_t) +
-            num_blks * sizeof(custom_block_t *));
-    if (dec_payload == NULL) {
-        ALOGE("%s: fail to allocate memory", __func__);
-        return -ENOMEM;
-    }
-
-    dec_payload->bitrate        = snk_buff_cfg->bitrate;
-    dec_payload->bitrate_mode   = snk_buff_cfg->bitrate_mode;
-    dec_payload->mtu            = snk_buff_cfg->mtu;
-    dec_payload->bit_format     = sbc_bt_cfg->bits_per_sample;
-    dec_payload->sample_rate    = sbc_bt_cfg->sampling_rate;
-    dec_payload->is_abr_enabled = false;
-
-    switch (sbc_bt_cfg->channels) {
-        case SBC_CHANNEL_MONO:
-            dec_payload->channel_count = 1;
-            break;
-        case SBC_CHANNEL_DUAL_MONO:
-        case SBC_CHANNEL_STEREO:
-        case SBC_CHANNEL_JOINT_STEREO:
-        default:
-            dec_payload->channel_count = 2;
-            break;
-    }
-
-    dec_payload->congestion_buffer_duration_ms = DEFAULT_CONG_BUFFER_DURATION;
-    dec_payload->delay_buffer_duration_ms      = 0;
-    dec_payload->frame_size_mode               = 0;
-    dec_payload->frame_size_value              = DEFAULT_DECODER_FRAME_SIZE_SAMPLE;
-    dec_payload->jitter_allowance_in_ms        = DEFAULT_JITTER_BUFFER_DURATION;
-    dec_payload->num_blks       = num_blks;
-
-    ALOGD("dec_payload->bitrate=%u, dec_payload->bitrate_mode=%u, dec_payload->mtu=%u, "
-          "dec_payload->bit_format=%u, dec_payload->sample_rate=%u, dec_payload->channel_count=%u, "
-          "dec_payload->is_abr_enabled=%u, dec_payload->congestion_buffer_duration_ms=%u, "
-          "dec_payload->delay_buffer_duration_ms=%u, dec_payload->frame_size_mode=%u, "
-          "dec_payload->frame_size_value=%u, dec_payload->jitter_allowance_in_ms=%u, "
-          "dec_payload->num_blks=%u\n",
-          dec_payload->bitrate, dec_payload->bitrate_mode, dec_payload->mtu,
-          dec_payload->bit_format, dec_payload->sample_rate, dec_payload->channel_count,
-          dec_payload->is_abr_enabled, dec_payload->congestion_buffer_duration_ms,
-          dec_payload->delay_buffer_duration_ms, dec_payload->frame_size_mode,
-          dec_payload->frame_size_value, dec_payload->jitter_allowance_in_ms,
-          dec_payload->num_blks);
-
-    for (i = 0; i < num_blks; i++) {
-        blk[i] = (custom_block_t *)calloc(1, sizeof(custom_block_t));
-        if (!blk[i]) {
-            ret = -ENOMEM;
-            goto free_payload;
-        }
-    }
-    ret = bt_base_populate_real_module_id(blk[0], MODULE_ID_SBC_DEC);
-    if (ret)
-        goto free_payload;
-
-    dec_payload->blocks[0] = blk[0];
-
-    *dst = dec_payload;
-    codec->payload = dec_payload;
-
-    return ret;
-
-free_payload:
-    for (i = 0; i < num_blks; i++) {
-        if (blk[i]) {
-            if (blk[i]->payload)
-                free(blk[i]->payload);
-            free(blk[i]);
-        }
-    }
-    if (dec_payload)
-        free(dec_payload);
-    return ret;
+    return 0;
 }
 
 static int celt_pack_enc_config(bt_codec_t *codec, void *src, void **dst)

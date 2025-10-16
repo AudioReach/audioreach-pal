@@ -32,6 +32,35 @@ Changes from Qualcomm Innovation Center, Inc. are provided under the following l
 Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 
+Redistribution and use in source and binary forms, with or without
+modification, are permitted (subject to the limitations in the
+disclaimer below) provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
+HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
@@ -46,9 +75,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include <string>
 #include <agm/agm_api.h>
 #include "audio_route/audio_route.h"
-#ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
-#endif
 
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)
 #define MAX_VOL_INDEX 5
@@ -58,6 +85,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #define NUM_OF_CAL_KEYS 3
 #define MAX_RETRY 3
+#define POP_SUPPRESSOR_RAMP_DELAY (1*1000)
 
 static uint32_t retries = 0;
 
@@ -797,8 +825,8 @@ int SessionAlsaVoice::setTaggedSlotMask(Stream * s)
         status = -EINVAL;
         return status;
     }
-    if (rm->isDeviceMuxConfigEnabled && (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||
-         dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
+    if ((rm->isDeviceMuxConfigEnabled || rm->isUPDVirtualPortEnabled) &&
+        (dAttr.id == PAL_DEVICE_OUT_SPEAKER ||dAttr.id == PAL_DEVICE_OUT_HANDSET)) {
          setSlotMask(rm, sAttr, dAttr, pcmDevRxIds);
     }
 
@@ -916,7 +944,11 @@ int SessionAlsaVoice::start(Stream * s)
         s->setVolume(volume);
     };
     /*call to apply volume*/
-    setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
+    if (rm->isCRSCallEnabled) {
+        setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
+    } else {
+        setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
+    }
 
     /*set tty mode*/
     if (ttyMode) {
@@ -1030,11 +1062,9 @@ err_pcm_open:
         if (status)
             rm->voteSleepMonitor(s, false);
         PAL_ERR(LOG_TAG,"graph open failure reach to max allowed value");
-#ifdef PAL_CUTILS_SUPPORTED
         if (property_set("vendor.audio.ssr.trigger", "1")) {
             PAL_ERR(LOG_TAG, "set property failed");
         }
-#endif
         status = 0;
         retries = 0;
      }
@@ -1073,6 +1103,10 @@ int SessionAlsaVoice::stop(Stream * s)
             }
         }
     }
+    /*config mute on pop suppressor*/
+    setPopSuppressorMute(s);
+    usleep(POP_SUPPRESSOR_RAMP_DELAY);
+
     if (pcmRx) {
         status = pcm_stop(pcmRx);
         if (status) {
@@ -1340,6 +1374,15 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type, int tag)
               status = -EINVAL;
             }
             break;
+        case CRS_CALL_VOLUME:
+            if (pcmDevRxIds.size()) {
+               device = pcmDevRxIds.at(0);
+               status = payloadTaged(s, type, tag, device, RX_HOSTLESS);
+            } else {
+               PAL_ERR(LOG_TAG, "pcmDevRxIds is not available.");
+               status = -EINVAL;
+            }
+            break;
         default:
             PAL_ERR(LOG_TAG,"Failed unsupported tag type %d", static_cast<uint32_t>(tag));
             status = -EINVAL;
@@ -1419,7 +1462,6 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
                         status);
                 goto exit;
             }
-
             break;
 
         case CHANNEL_INFO:
@@ -1439,7 +1481,16 @@ int SessionAlsaVoice::setConfig(Stream * s, configType type __unused, int tag, i
                 PAL_ERR(LOG_TAG, "failed to get payload status %d", status);
                 goto exit;
             }
+            break;
 
+        case CRS_CALL_VOLUME:
+            if (pcmDevRxIds.size()) {
+               device = pcmDevRxIds.at(0);
+               status = payloadTaged(s, type, tag, device, RX_HOSTLESS);
+            } else {
+               PAL_ERR(LOG_TAG, "pcmDevRxIds is not available.");
+               status = -EINVAL;
+            }
             break;
 
         default:
@@ -1836,7 +1887,10 @@ int SessionAlsaVoice::disconnectSessionDevice(Stream *streamHandle,
 
     if (rxAifBackEnds.size() > 0) {
         /*config mute on pop suppressor*/
-        setPopSuppressorMute(streamHandle);
+        if (streamHandle->getCurState() != STREAM_INIT) {
+            setPopSuppressorMute(streamHandle);
+            usleep(POP_SUPPRESSOR_RAMP_DELAY);
+        }
 
         /*if HW sidetone is enable disable it */
         if (sideTone_cnt > 0) {
@@ -1941,6 +1995,7 @@ int SessionAlsaVoice::connectSessionDevice(Stream* streamHandle,
     deviceToConnect->getDeviceAttributes(&dAttr);
 
     if (rxAifBackEnds.size() > 0) {
+        setTaggedSlotMask(streamHandle);
         status =  SessionAlsaUtils::connectSessionDevice(this, streamHandle,
                                                          streamType, rm,
                                                          dAttr, pcmDevRxIds,

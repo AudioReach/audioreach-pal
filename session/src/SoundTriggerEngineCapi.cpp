@@ -26,20 +26,18 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Innovation Center are provided under the following license:
  *
  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
-#ifndef ATRACE_UNSUPPORTED
+
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
-#endif
 #define LOG_TAG "PAL: SoundTriggerEngineCapi"
 
 #include "SoundTriggerEngineCapi.h"
-#ifdef PAL_CUTILS_SUPPORTED
+
 #include <cutils/trace.h>
-#endif
 #include <dlfcn.h>
 
 #include "StreamSoundTrigger.h"
@@ -161,6 +159,7 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
     uint32_t ftrt_sz = 0, read_offset = 0;
     uint32_t max_processing_sz = 0, processed_sz = 0;
     vui_intf_param_t param;
+    struct keyword_index kw_index {};
 
     PAL_DBG(LOG_TAG, "Enter");
     if (!reader_) {
@@ -282,14 +281,10 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi Process");
         capi_call_start = std::chrono::steady_clock::now();
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage KW process");
-#endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
-#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -321,15 +316,23 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
         }
 
         det_conf_score_ = result_cfg_ptr->best_confidence;
+        PAL_INFO(LOG_TAG, "PDK Stage2 Result: is_detected = %d, best_confidence = %d, start_position = %d, end_position = %d, current_confidence = %d",
+            result_cfg_ptr->is_detected, result_cfg_ptr->best_confidence, result_cfg_ptr->start_position, result_cfg_ptr->end_position, result_cfg_ptr->current_confidence);
         if (result_cfg_ptr->is_detected) {
             exit_buffering_ = true;
             detection_state_ = KEYWORD_DETECTION_SUCCESS;
-            start_idx = result_cfg_ptr->start_position * CNN_FRAME_SIZE;
-            end_idx = result_cfg_ptr->end_position * CNN_FRAME_SIZE;
+            start_idx = result_cfg_ptr->start_position * CNN_FRAME_SIZE + read_offset;
+            end_idx = result_cfg_ptr->end_position * CNN_FRAME_SIZE + read_offset;
             param.stream = (void *)stream_handle_;
             param.data = (void *)&det_conf_score_;
             param.size = sizeof(int32_t);
             vui_intf_->SetParameter(PARAM_SSTAGE_KW_DET_LEVEL, &param);
+
+            kw_index.start_index = start_idx;
+            kw_index.end_index = end_idx;
+            param.data = (void *)&kw_index;
+            param.size = sizeof(struct keyword_index);
+            vui_intf_->SetParameter(PARAM_KEYWORD_INDEX, &param);
             PAL_INFO(LOG_TAG, "KWD Second Stage Detected, start index %u, end index %u",
                 start_idx, end_idx);
         } else if (processed_sz >= max_processing_sz) {
@@ -372,6 +375,21 @@ exit:
         (long long)total_capi_get_param_duration);
     if (vui_ptfm_info_->GetEnableDebugDumps()) {
         ST_DBG_FILE_CLOSE(keyword_detection_fd);
+    }
+
+    if (sm_cfg_->IsDetPropSupported(ST_PARAM_KEY_SSTAGE_KW_ENGINE_INFO)) {
+        struct st_det_engine_stats engine_info;
+        engine_info.version = 0x1;
+        engine_info.detection_state = detection_state_;
+        engine_info.processed_length =
+            BytesToFrames(processed_sz) * MS_PER_SEC / sample_rate_;
+        engine_info.total_process_duration = process_duration;
+        engine_info.total_capi_process_duration = total_capi_process_duration;
+        engine_info.total_capi_get_param_duration = total_capi_get_param_duration;
+        param.stream = (void *)stream_handle_;
+        param.data = (void *)&engine_info;
+        param.size = sizeof(struct st_det_engine_stats);
+        vui_intf_->SetParameter(PARAM_SSTAGE_KW_DET_STATS, &param);
     }
 
     if (reader_)
@@ -566,14 +584,10 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi Process\n");
         capi_call_start = std::chrono::steady_clock::now();
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage uv process");
-#endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
-#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -592,14 +606,10 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 
         PAL_VERBOSE(LOG_TAG, "Calling Capi get param for result\n");
         capi_call_start = std::chrono::steady_clock::now();
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_BEGIN("Second stage uv get result");
-#endif
         rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
             STAGE2_UV_WRAPPER_ID_RESULT, nullptr, &capi_result);
-#ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
-#endif
         capi_call_end = std::chrono::steady_clock::now();
         total_capi_get_param_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -653,6 +663,21 @@ exit:
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
                 status);
+    }
+
+    if (sm_cfg_->IsDetPropSupported(ST_PARAM_KEY_SSTAGE_UV_ENGINE_INFO)) {
+        struct st_det_engine_stats engine_info;
+        engine_info.version = 1;
+        engine_info.detection_state = detection_state_;
+        engine_info.processed_length =
+            BytesToFrames(processed_sz) * MS_PER_SEC / sample_rate_;
+        engine_info.total_process_duration = process_duration;
+        engine_info.total_capi_process_duration = total_capi_process_duration;
+        engine_info.total_capi_get_param_duration = total_capi_get_param_duration;
+        param.stream = (void *)stream_handle_;
+        param.data = (void *)&engine_info;
+        param.size = sizeof(struct st_det_engine_stats);
+        vui_intf_->SetParameter(PARAM_SSTAGE_UV_DET_STATS, &param);
     }
 
     if (reader_)

@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -37,6 +37,7 @@
 #define SOUNDTRIGGERENGINECAPI_H
 
 #include "capi_v2.h"
+#include "capi_v2_extn.h"
 #include "PalRingBuffer.h"
 #include "SoundTriggerEngine.h"
 

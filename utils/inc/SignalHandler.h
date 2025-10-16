@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -42,6 +42,7 @@
 #include <vector>
 #include <unordered_map>
 #include <signal.h>
+#include <map>
 
 #ifndef __SIGRTMIN
 #define __SIGRTMIN 32
@@ -50,6 +51,13 @@
 static const constexpr int DEBUGGER_SIGNAL = (__SIGRTMIN + 3);
 static const constexpr uint32_t kDefaultSignalPendingTries = 10;
 static const constexpr uint32_t kDefaultRegistrationDelayMs = 500;
+
+static const std::map<uint32_t, std::string> sigToName {
+    {DEBUGGER_SIGNAL,   std::string{"<debuggerd signal>"}},
+    {SIGABRT,  std::string{"SIGABRT"}},
+    {SIGSEGV,  std::string{"SIGSEGV"}},
+};
+
 
 struct SignalHandler {
     static std::shared_ptr<SignalHandler> getInstance();

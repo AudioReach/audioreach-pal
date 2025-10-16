@@ -161,6 +161,9 @@ public:
         std::pair<StOperatingModes, StInputModes> mode_pair) const {
         return vui_op_modes_.at(mode_pair);
     }
+    void GetDetectionPropertyList(std::vector<uint32_t> &list);
+    void ReadDetectionPropertyList(const char *prop_string);
+    bool IsDetPropSupported(uint32_t prop) const;
 
 private:
     std::string name_;
@@ -186,6 +189,7 @@ private:
     std::map<uint32_t, std::shared_ptr<VUISecondStageConfig>> vui_2nd_stage_cfg_list_;
     std::map<uint32_t, std::shared_ptr<VUIFirstStageConfig>> vui_1st_stage_cfg_list_;
     std::map<UUID, std::shared_ptr<VUIFirstStageConfig>> vui_uuid_1st_stage_cfg_list_;
+    std::vector<uint32_t> ext_det_prop_list_;
 };
 
 class VoiceUIPlatformInfo : public SoundTriggerPlatformInfo

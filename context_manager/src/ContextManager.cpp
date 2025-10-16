@@ -27,43 +27,16 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *
- *   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #include <iostream>
 #include <chrono>
 #include "ContextManager.h"
 #include <asps/asps_acm_api.h>
+#include <asps/asps_us_rendering_usecase_api.h>
 #include "apm_api.h"
 
 #define LOG_TAG "PAL: ContextManager"
@@ -102,15 +75,15 @@ int32_t ContextManager::process_register_request(uint32_t see_id, uint32_t useca
             goto exit;
         }
 
-        rc = uc->Open();
-        if (rc) {
-            PAL_ERR(LOG_TAG, "Error:%d, Failed to Open() usecase:0x%x for see_client:%d", rc, usecase_id, see_id);
-            goto exit;
-        }
-
         rc = uc->SetUseCaseData(size, payload);
         if (rc) {
             PAL_ERR(LOG_TAG, "Error:%d, Failed to Setusecase() usecase:0x%x for see_client:%d", rc, usecase_id, see_id);
+            goto exit;
+        }
+
+        rc = uc->Open();
+        if (rc) {
+            PAL_ERR(LOG_TAG, "Error:%d, Failed to Open() usecase:0x%x for see_client:%d", rc, usecase_id, see_id);
             goto exit;
         }
 
@@ -950,10 +923,14 @@ Usecase* UsecaseFactory::UsecaseCreate(int32_t usecase_id)
             ret_usecase = new UsecaseACD(usecase_id);
             break;
         case ASPS_USECASE_ID_PCM_DATA:
+        case ASPS_USECASE_ID_PCM_DATA_V2:
             ret_usecase = new UsecasePCMData(usecase_id);
             break;
         case ASPS_USECASE_ID_UPD:
             ret_usecase = new UsecaseUPD(usecase_id);
+            break;
+        case ASPS_USECASE_ID_ULTRASOUND_RENDERING:
+            ret_usecase = new UsecasePCMRenderer(usecase_id);
             break;
         default:
             ret_usecase = NULL;
@@ -1343,6 +1320,7 @@ UsecasePCMData::UsecasePCMData(uint32_t usecase_id) : Usecase(usecase_id)
     this->pal_devices[0].config.bit_width = 16;
     this->pal_devices[0].config.sample_rate = 16000;
     this->pal_devices[0].config.ch_info.channels = 1;
+    this->pal_devices[0].config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
 
     this->tags.push_back(RD_SHMEM_ENDPOINT);
     this->tags.push_back(TAG_STREAM_MFC);
@@ -1391,10 +1369,27 @@ exit:
 int32_t UsecasePCMData::Configure()
 {
     int32_t rc = 0;
+    pal_param_payload *pal_param = NULL;
     pal_audio_effect_t effect = PAL_AUDIO_EFFECT_NONE;
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x, pcm_data_type:%d",
                 this->usecase_id, this->pcm_data_type);
+
+    if (this->usecase_id == ASPS_USECASE_ID_PCM_DATA_V2) {
+        pal_param = (pal_param_payload *) calloc(1, sizeof(pal_param_payload) + sizeof(uint32_t));
+        if (!pal_param) {
+            rc = -ENOMEM;
+            goto exit;
+        }
+
+        pal_param->payload_size = sizeof(uint32_t);
+        memcpy(pal_param->payload, &(this->pcm_data_buffering), sizeof(uint32_t));
+        rc = pal_stream_set_param(this->pal_stream, PAL_PARAM_ID_CUSTOM_CONFIGURATION, pal_param);
+        if (rc) {
+            PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x", rc, this->usecase_id);
+            goto exit;
+        }
+    }
 
     if (this->pcm_data_type == PCM_DATA_EFFECT_NS)
         effect = PAL_AUDIO_EFFECT_NS;
@@ -1406,6 +1401,8 @@ int32_t UsecasePCMData::Configure()
     }
 
 exit:
+    if (pal_param)
+        free(pal_param);
     PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
     return rc;
 }
@@ -1414,7 +1411,7 @@ int32_t UsecasePCMData::SetUseCaseData(uint32_t size, void *data)
 {
     int rc = 0;
     uint32_t pcm_data_type_requested = 0;
-    bool rx_concurrency = false;
+    uint32_t pcm_data_buffering_requested = 0;
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x, size:%d", this->usecase_id, size);
 
@@ -1422,6 +1419,21 @@ int32_t UsecasePCMData::SetUseCaseData(uint32_t size, void *data)
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "Error:%d Invalid size:%d or data:%p for usecase:0x%x", rc, size, data, this->usecase_id);
         goto exit;
+    }
+
+    if (this->usecase_id == ASPS_USECASE_ID_PCM_DATA_V2) {
+        pcm_data_buffering_requested = ((asps_pcm_data_v2_usecase_register_payload_t *)data)->requires_buffering;
+        //update the pcm_data_buffering config based on the request of sensor
+        this->pcm_data_buffering = pcm_data_buffering_requested;
+        this->pal_devices[0].config.bit_width = ((asps_pcm_data_v2_usecase_register_payload_t *)data)->bit_width;
+        this->pal_devices[0].config.sample_rate = ((asps_pcm_data_v2_usecase_register_payload_t *)data)->sample_rate;
+        this->pal_devices[0].config.ch_info.channels = ((asps_pcm_data_v2_usecase_register_payload_t *)data)->num_channels;
+
+        if (this->pal_devices[0].config.sample_rate == 16000)
+            this->pal_devices[0].id = PAL_DEVICE_IN_HANDSET_VA_MIC;
+        else if (this->pal_devices[0].config.sample_rate == 48000 ||
+                 this->pal_devices[0].config.sample_rate == 96000)
+            this->pal_devices[0].id = PAL_DEVICE_IN_ULTRASOUND_MIC;
     }
 
     pcm_data_type_requested = ((asps_pcm_data_usecase_register_payload_t *)data)->stream_type;
@@ -1468,6 +1480,113 @@ UsecaseUPD::~UsecaseUPD()
 }
 
 int32_t UsecaseUPD::GetAckDataOnSuccessfullStart(uint32_t * size, void * data)
+{
+    int32_t rc = 0;
+    uint32_t *data_ptr = (uint32_t *)data;
+    int32_t no_of_miid = 0;
+    std::map<int32_t, std::vector<uint32_t>> tag_miid_map;
+
+    PAL_VERBOSE(LOG_TAG, "Enter");
+
+    rc = GetModuleIIDs(this->tags, tag_miid_map);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d failed to get module iids", rc);
+        goto exit;
+    }
+
+    // grab all miids for all tags, in the order that tags exist in the UC vector
+    for (auto tag : tags) {
+        for (uint32_t miid : tag_miid_map[tag]) {
+            *data_ptr = miid;
+            ++data_ptr;
+            ++no_of_miid;
+        }
+    }
+    *size = (no_of_miid * sizeof(uint32_t));
+exit:
+    PAL_VERBOSE(LOG_TAG, "Exit %d", rc);
+    return rc;
+}
+
+UsecasePCMRenderer::UsecasePCMRenderer(uint32_t usecase_id) : Usecase(usecase_id)
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+
+    this->stream_attributes->type = PAL_STREAM_SENSOR_PCM_RENDERER;
+    this->stream_attributes->direction = PAL_AUDIO_OUTPUT;
+
+    this->no_of_devices = 1;
+    this->pal_devices = (struct pal_device *) calloc(this->no_of_devices, sizeof(struct pal_device));
+
+    if (!this->pal_devices) {
+         PAL_ERR(LOG_TAG, "Error:%d Failed to allocate memory for pal_devices", -ENOMEM);
+         throw std::runtime_error("Failed to allocate memory for pal_devices");
+    }
+
+    this->tags.push_back(TAG_TONE_RENDERER_MODULE);
+
+    PAL_VERBOSE(LOG_TAG, "Exit");
+}
+
+UsecasePCMRenderer::~UsecasePCMRenderer()
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
+    //cleanup is done in baseclass
+    PAL_VERBOSE(LOG_TAG, "Exit");
+}
+
+int32_t UsecasePCMRenderer::SetUseCaseData(uint32_t size, void *data)
+{
+    int rc = 0;
+    asps_ultrasound_rendering_usecase_register_payload_t *us_renderer_reg = NULL;
+    uint8_t* channel_type = NULL;
+
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x, size:%d", this->usecase_id, size);
+    if (size < sizeof(asps_ultrasound_rendering_usecase_register_payload_t) || !data) {
+        rc = -EINVAL;
+        PAL_ERR(LOG_TAG, "Error:%d Invalid size:%d or data:%p for usecase:0x%x", rc, size, data, this->usecase_id);
+        goto exit;
+    }
+
+    us_renderer_reg = (asps_ultrasound_rendering_usecase_register_payload_t *)data;
+    this->stream_attributes->out_media_config.sample_rate = us_renderer_reg->sampling_rate;
+    // currently only support up to 2 channels
+    if (us_renderer_reg->num_channels > 2) {
+        rc = -EINVAL;
+        PAL_ERR(LOG_TAG, "invalid num of channels: %d", us_renderer_reg->num_channels);
+        goto exit;
+    }
+    this->stream_attributes->out_media_config.ch_info.channels = us_renderer_reg->num_channels;
+    this->stream_attributes->out_media_config.bit_width = us_renderer_reg->bit_width;
+
+    if (us_renderer_reg->num_channels >
+         (size - sizeof(asps_ultrasound_rendering_usecase_register_payload_t))) {
+        rc = -EINVAL;
+        PAL_ERR(LOG_TAG, "num of channels: %d surpass payload size: %d",
+                          us_renderer_reg->num_channels, size);
+        goto exit;
+    }
+    channel_type = (uint8_t*)data + sizeof(asps_ultrasound_rendering_usecase_register_payload_t);
+    for (uint32_t i = 0; i < us_renderer_reg->num_channels; i++)
+        this->stream_attributes->out_media_config.ch_info.ch_map[i] = channel_type[i];
+
+    // set custom key to apply corresponding path
+    if (us_renderer_reg->num_channels == 1) {
+        if (channel_type[0] == 0x1)
+            strlcpy(this->pal_devices->custom_config.custom_key, "top-spkr",
+                sizeof(this->pal_devices->custom_config.custom_key));
+        else
+            strlcpy(this->pal_devices->custom_config.custom_key, "bottom-spkr",
+                sizeof(this->pal_devices->custom_config.custom_key));
+    } else {
+        strlcpy(this->pal_devices->custom_config.custom_key, "stereo-spkr",
+                sizeof(this->pal_devices->custom_config.custom_key));
+    }
+exit:
+    return rc;
+}
+
+int32_t UsecasePCMRenderer::GetAckDataOnSuccessfullStart(uint32_t * size, void * data)
 {
     int32_t rc = 0;
     uint32_t *data_ptr = (uint32_t *)data;

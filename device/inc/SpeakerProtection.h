@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -77,15 +77,9 @@
 
 class Device;
 
-#ifdef WSA_V883X_ADDR
-#define LPASS_WR_CMD_REG_PHY_ADDR 0x325031C
-#define LPASS_RD_CMD_REG_PHY_ADDR 0x3250320
-#define LPASS_RD_FIFO_REG_PHY_ADDR 0x3250334
-#else
 #define LPASS_WR_CMD_REG_PHY_ADDR 0x6B14020
 #define LPASS_RD_CMD_REG_PHY_ADDR 0x6B14024
 #define LPASS_RD_FIFO_REG_PHY_ADDR 0x6B14040
-#endif
 #define CPS_WSA_VBATT_REG_ADDR 0x0003429
 #define CPS_WSA_TEMP_REG_ADDR 0x0003422
 

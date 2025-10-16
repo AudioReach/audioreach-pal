@@ -775,7 +775,14 @@ int Session::setSlotMask(const std::shared_ptr<ResourceManager>& rm, struct pal_
     uint32_t slot_mask = 0;
 
     if (rm->activeGroupDevConfig) {
-        tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, rm->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask));
+        if (0 == rm->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask) {
+            slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
+                            slotMaskBwLUT.at(dAttr.config.bit_width);
+            tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK, slot_mask));
+        } else {
+            tkv.push_back(std::make_pair(TAG_KEY_SLOT_MASK,
+                          rm->activeGroupDevConfig->grp_dev_hwep_cfg.slot_mask));
+        }
     } else if (rm->isDeviceMuxConfigEnabled) {
          slot_mask = slotMaskLUT.at(dAttr.config.ch_info.channels) |
                          slotMaskBwLUT.at(dAttr.config.bit_width);
@@ -996,7 +1003,8 @@ int Session::configureMFC(const std::shared_ptr<ResourceManager>& rm, struct pal
         }
     } else {
         PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
-        if (sAttr.direction == (PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT))
+        if ((sAttr.direction == (PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT))||
+            (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
             status = 0;
     }
 

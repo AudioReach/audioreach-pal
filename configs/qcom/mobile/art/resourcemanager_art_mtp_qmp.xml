@@ -172,7 +172,7 @@
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>
-            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>4</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
@@ -299,7 +299,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_SPEAKER_MIC</id>
-            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>4</max_channels>
             <samplerate>48000</samplerate>
             <channels>1</channels>
@@ -413,7 +413,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-QAIF-TX-10</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>headset-mic</snd_device_name>
@@ -694,7 +694,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_ULTRASOUND_MIC</id>
-            <back_end_name>CODEC_DMA-QAIF-TX-11</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <samplerate>96000</samplerate>
@@ -728,7 +728,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK</id>
-            <back_end_name>CODEC_DMA-QAIF-TX-7</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-2</back_end_name>
             <snd_device_name>haptics-vi-feedback</snd_device_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
@@ -876,7 +876,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-7</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
@@ -916,7 +916,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-7</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
@@ -1120,7 +1120,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-6</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-3</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
@@ -1128,7 +1128,7 @@
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">
-                    <backend_name>CODEC_DMA-QAIF-RX-6</backend_name>
+                    <backend_name>CODEC_DMA-QAIF-RX-3</backend_name>
                     <snd_device_name>haptics-dev</snd_device_name>
                     <samplerate>48000</samplerate>
                     <bit_width>16</bit_width>

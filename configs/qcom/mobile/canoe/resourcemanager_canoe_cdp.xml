@@ -1721,6 +1721,22 @@
                 </operating_modes>
                 <sound_model_info>
                     <sound_model>
+                        <name>ACD_SOUND_MODEL_ID_ENVIRONMENT</name>
+                        <bin>environment.eai</bin>
+                        <uuid>0x0B001006</uuid>
+                        <contexts>
+                            <context id="0x08001324" /> <!-- ENV_HOME -->
+                            <context id="0x08001325" /> <!-- ENV_OFFICE -->
+                            <context id="0x08001326" /> <!-- ENV_RESTAURANT -->
+                            <context id="0x08001327" /> <!-- ENV_INDOOR -->
+                            <context id="0x08001328" /> <!-- ENV_INSTREET -->
+                            <context id="0x08001329" /> <!-- ENV_OUTDOOR -->
+                            <context id="0x0800132A" /> <!-- ENV_INCAR -->
+                            <context id="0x0800132B" /> <!-- ENV_INTRAIN -->
+                            <context id="0x0800132C" /> <!-- ENV_UNKNOWN -->
+                        </contexts>
+                    </sound_model>
+                    <sound_model>
                         <name>ACD_SOUND_MODEL_ID_EVENT</name>
                         <bin>event.eai</bin>
                         <uuid>0x0B001007</uuid>

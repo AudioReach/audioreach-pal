@@ -1136,12 +1136,12 @@
     <path name="haptics-vi-feedback-mono">
         <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
         <ctl name="TX_AIF1_CAP Mixer DEC7" value="1" />
-        <ctl name="TX DEC6 MUX" value="SWR_MIC" />
-        <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+        <ctl name="TX DEC6 MUX" value="RX_SWR_MIC" />
+        <ctl name="TX DEC7 MUX" value="RX_SWR_MIC" />
         <ctl name="TX SMIC MUX6" value="SWR_MIC4" />
         <ctl name="TX SMIC MUX7" value="SWR_MIC5" />
-        <ctl name="TX WSA MUX6" value="WSA2"/>
-        <ctl name="TX WSA MUX7" value="WSA2"/>
+        <ctl name="TX WSA MUX6" value="NO_WSA"/>
+        <ctl name="TX WSA MUX7" value="NO_WSA"/>
         <ctl name="TX PORT SEL MUX6" value="PORT1"/>
         <ctl name="TX PORT SEL MUX7" value="PORT1"/>
     </path>
@@ -1151,18 +1151,18 @@
        <ctl name="TX_AIF1_CAP Mixer DEC5" value="1" />
        <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
        <ctl name="TX_AIF1_CAP Mixer DEC7" value="1" />
-       <ctl name="TX DEC4 MUX" value="SWR_MIC" />
-       <ctl name="TX DEC5 MUX" value="SWR_MIC" />
-       <ctl name="TX DEC6 MUX" value="SWR_MIC" />
-       <ctl name="TX DEC7 MUX" value="SWR_MIC" />
+       <ctl name="TX DEC4 MUX" value="RX_SWR_MIC" />
+       <ctl name="TX DEC5 MUX" value="RX_SWR_MIC" />
+       <ctl name="TX DEC6 MUX" value="RX_SWR_MIC" />
+       <ctl name="TX DEC7 MUX" value="RX_SWR_MIC" />
        <ctl name="TX SMIC MUX4" value="SWR_MIC5" />
        <ctl name="TX SMIC MUX5" value="SWR_MIC5" />
        <ctl name="TX SMIC MUX6" value="SWR_MIC5" />
        <ctl name="TX SMIC MUX7" value="SWR_MIC5" />
-       <ctl name="TX WSA MUX4" value="WSA2"/>
-       <ctl name="TX WSA MUX5" value="WSA2"/>
-       <ctl name="TX WSA MUX6" value="WSA2"/>
-       <ctl name="TX WSA MUX7" value="WSA2"/>
+       <ctl name="TX WSA MUX4" value="NO_WSA"/>
+       <ctl name="TX WSA MUX5" value="NO_WSA"/>
+       <ctl name="TX WSA MUX6" value="NO_WSA"/>
+       <ctl name="TX WSA MUX7" value="NO_WSA"/>
        <ctl name="TX PORT SEL MUX4" value="PORT1"/>
        <ctl name="TX PORT SEL MUX5" value="PORT1"/>
        <ctl name="TX PORT SEL MUX6" value="PORT1"/>

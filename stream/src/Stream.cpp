@@ -1853,6 +1853,31 @@ void Stream::handleStreamCreateFailure(struct pal_stream_attributes *attributes,
     }
 }
 
+void Stream::mixerEventCallbackEntry(uint64_t hdl, uint32_t event_id,
+                                     void *data, uint32_t event_size)
+{
+    rm->lockActiveStream();
+    if (!rm->isActiveStream((pal_stream_handle_t *)hdl)) {
+        PAL_ERR(LOG_TAG, "callback called on invalid stream object");
+        rm->unlockActiveStream();
+        return;
+    }
+    Stream *str = reinterpret_cast<Stream*>(hdl);
+    int ret = rm->increaseStreamUserCounter(str);
+    if (ret) {
+        rm->unlockActiveStream();
+        PAL_ERR(LOG_TAG, "callback called on invalid stream object");
+        return;
+    }
+    rm->unlockActiveStream();
+
+    str->HandleCallback(hdl, event_id, data, event_size);
+
+    rm->lockActiveStream();
+    rm->decreaseStreamUserCounter(str);
+    rm->unlockActiveStream();
+}
+
 void Stream::setCachedState(stream_state_t state)
 {
     mStreamMutex.lock();

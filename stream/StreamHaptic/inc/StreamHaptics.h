@@ -68,12 +68,12 @@ public:
     int32_t isChannelSupported(uint32_t numChannels) override;
     int32_t isBitWidthSupported(uint32_t bitWidth) override;
     bool isStreamSupported() override;
+    void HandleCallback(uint64_t hdl, uint32_t event_id,
+                        void *data, uint32_t event_size) override;
 
 private:
     static pal_stream_haptics_type_t activeHapticsType;
     static std::mutex activeHapticsTypeMutex;
-    static void HandleCallBack(uint64_t hdl, uint32_t event_id,
-                               void *data, uint32_t event_size);
     void HandleEvent(uint32_t event_id, void *data, uint32_t event_size);
     void UpdateCurrentHapticsStream(struct pal_stream_attributes *sattr);
 };

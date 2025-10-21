@@ -272,8 +272,12 @@ public:
     virtual int32_t DisconnectDevice(pal_device_id_t device_id) { return 0; }
     virtual int32_t ConnectDevice(pal_device_id_t device_id) { return 0; }
     virtual uint32_t getCallbackEventId() { return 0; }
+    virtual void HandleCallback(uint64_t hdl, uint32_t event_id,
+                                void *data, uint32_t event_size) { return; }
     static void handleStreamCreateFailure(struct pal_stream_attributes *attributes,
                                       pal_stream_callback cb, uint64_t cookie);
+    static void mixerEventCallbackEntry(uint64_t cookie, uint32_t event_id,
+                                        void *payload, uint32_t payload_size);
     void lockStreamMutex() {
         mStreamMutex.lock();
         mutexLockedbyRm = true;

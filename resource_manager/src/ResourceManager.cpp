@@ -3746,12 +3746,14 @@ int ResourceManager::handleMixerEvent(struct mixer *mixer, char *mixer_str) {
     }
 
 acquire_event_callback:
+    mResourceManagerMutex.lock();
     // acquire callback/cookie with pcm dev id
     it = mixerEventCallbackMap.find(pcm_id);
     if (it != mixerEventCallbackMap.end()) {
         session_cb = it->second.first;
         cookie = it->second.second;
     }
+    mResourceManagerMutex.unlock();
 
     if (!session_cb) {
         status = -EINVAL;

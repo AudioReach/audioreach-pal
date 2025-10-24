@@ -103,9 +103,15 @@ uint32_t SessionAR::getModuleInfo(const char *control, uint32_t tagId, uint32_t 
             status = -ENOENT;
             goto exit;
         }
-        status = SessionAlsaUtils::getModuleInstanceId(mixer, dev, rxAifBackEnds[0].second.data(), tagId, miid);
-        if (status) /** if not found, reset miid to 0 again */
-            *miid = 0;
+        for (int i = 0; i < rxAifBackEnds.size(); i++) {
+            status = SessionAlsaUtils::getModuleInstanceId(
+                    mixer, dev, rxAifBackEnds[i].second.data(), tagId, miid);
+            if (status) { /** if not found, reset miid to 0 again */
+                *miid = 0;
+            } else {
+                break;
+            }
+        }
     }
 
     if (!txAifBackEnds.empty() && !(*miid)) { /** search in TX GKV */
@@ -115,9 +121,15 @@ uint32_t SessionAR::getModuleInfo(const char *control, uint32_t tagId, uint32_t 
             status = -ENOENT;
             goto exit;
         }
-        status = SessionAlsaUtils::getModuleInstanceId(mixer, dev, txAifBackEnds[0].second.data(), tagId, miid);
-        if (status)
-            *miid = 0;
+        for (int i = 0; i < txAifBackEnds.size(); i++) {
+            status = SessionAlsaUtils::getModuleInstanceId(
+                    mixer, dev, txAifBackEnds[i].second.data(), tagId, miid);
+            if (status) { /** if not found, reset miid to 0 again */
+                *miid = 0;
+            } else {
+                break;
+            }
+        }
     }
 
     if (*miid == 0) {

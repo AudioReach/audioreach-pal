@@ -755,6 +755,7 @@ int SpeakerProtectionwsa885xI2s::viTxSetupThreadLoop()
     param_id_sp_vi_op_mode_cfg_t modeConfg;
     param_id_sp_vi_channel_map_cfg_t viChannelMapConfg;
     param_id_sp_ex_vi_mode_cfg_t viExModeConfg;
+    param_id_cps_ch_map_t cpsChannelMapConfg;
     PayloadBuilder* builder = new PayloadBuilder();
     struct pal_device rxDevAttr;
     struct agm_event_reg_cfg event_cfg;
@@ -1151,6 +1152,28 @@ int SpeakerProtectionwsa885xI2s::viTxSetupThreadLoop()
         if (ret) {
             PAL_ERR(LOG_TAG, "Unable to set custom param for mode");
             goto free_fe;
+        }
+    }
+
+    if (rm->getCpsMode()) {
+        ret = SessionAlsaUtils::getModuleInstanceId(virtMixer, pcmDevIdTx.at(0),
+                                                    backEndName.c_str(), TAG_MODULE_CPS, &miid);
+        if (0 != ret) {
+            PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", TAG_MODULE_CPS, ret);
+            goto free_fe;
+        }
+
+        cpsChannelMapConfg.num_ch = vi_device.channels;
+        payloadSize = 0;
+
+        builder->payloadSPConfig(&payload, &payloadSize, miid,
+                                 PARAM_ID_CPS_CHANNEL_MAP, (void *)&cpsChannelMapConfg);
+        if (payloadSize) {
+            ret = updateCustomPayload(payload, payloadSize);
+            free(payload);
+            if (0 != ret){
+                PAL_ERR(LOG_TAG, " updateCustomPayload Failed for CPS CHANNEL_MAP_CFG\n");
+            }
         }
     }
 

@@ -1070,8 +1070,11 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
         return -EINVAL;
     }
 
-    if (det_type == GMM_DETECTED)
+    if (det_type == GMM_DETECTED) {
         rm->acquireWakeLock();
+        if (reader_)
+            reader_->updateState(READER_PREPARED);
+    }
 
     std::shared_ptr<StEventConfig> ev_cfg(
        new StDetectedEventConfig(det_type));
@@ -1978,7 +1981,6 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
     if (callback_) {
         // update stream state to stopped before unlock stream mutex
         currentState = STREAM_STOPPED;
-        reader_->updateState(READER_PREPARED);
         notify_time = std::chrono::steady_clock::now();
         total_process_duration =
             std::chrono::duration_cast<std::chrono::milliseconds>(

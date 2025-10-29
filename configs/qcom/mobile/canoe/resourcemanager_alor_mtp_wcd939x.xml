@@ -2022,6 +2022,35 @@
                     </arm_ss_module_params>
                 </sound_model_info>
             </stream_config>
+            <!-- History buffer capture usecase -->
+            <stream_config>
+                <name>QC_HIST_CAP</name>
+                <param vendor_uuid="1b9cabd9-4eb9-4012-9766-2ce6597a9658" />
+                <param interface_plugin_lib="sva_plugin.so" />
+                <!-- batch size (in ms) for BATCHING buffer mode -->
+                <param batch_size_in_ms="5000" />
+                <param capture_keyword="10000" /> <!-- Default history buffer length -->
+                <!-- Module output media format -->
+                <param sample_rate="16000" />
+                <param bit_width="16" />
+                <param out_channels="1" />
+                <!-- NOTE: HIST_CAP usecase is typically running with ASR concurrency -->
+                <!-- supposed to use same capture profile as ASR due to shared dam and device pp -->
+                <operating_modes>
+                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
+                    <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                    <high_performance_and_charging capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                </operating_modes>
+                <sound_model_info>
+                    <first_stage_module_params>
+                        <param module_type="HIST_CAP" />
+                        <param buffering_mode_ids="0xC0000008, 0x08001B87" />
+                        <param trigger_detection_ids="0xC0000008, 0x08001B7E" />
+                        <param buffering_config_ids="0xC0000008, 0x08001044" />
+                        <param engine_reset_ids="0xC0000008, 0x08001051" />
+                    </first_stage_module_params>
+                </sound_model_info>
+            </stream_config>
         </vui_platform_info>
     </sound_trigger_platform_info>
 </resource_manager_info>

@@ -172,7 +172,18 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
 
     PAL_DBG(LOG_TAG, "Enter");
     UpdateState(ENG_BUFFERING);
-    s->getBufInfo(&input_buf_size, &input_buf_num, nullptr, nullptr);
+    /*
+     * input buf size/num are used to calculate sleep time
+     * for real time data reading. When mmap is enabled for
+     * VoiceUI, use default value for input buf size/num to
+     * avoid long sleep time which is unexpected.
+     */
+    if (mmap_buffer_size_ != 0) {
+        input_buf_size = BUF_SIZE_CAPTURE;
+        input_buf_num = NO_OF_BUF;
+    } else {
+        s->getBufInfo(&input_buf_size, &input_buf_num, nullptr, nullptr);
+    }
     sleep_ms = (input_buf_size * input_buf_num) *
         BITS_PER_BYTE * MS_PER_SEC / (sample_rate_ * bit_width_ * channels_);
 

@@ -1631,6 +1631,7 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
     uint32_t ring_buffer_len = 0;
     uint32_t ring_buffer_size = 0;
     uint32_t mmap_buf_len = 0;
+    uint32_t mmap_frame_len = 0;
     vui_intf_param_t param {};
     struct buffer_config buf_config;
 
@@ -1730,13 +1731,17 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
     // update input buffer size for mmap usecase
     if (vui_ptfm_info_->GetMmapEnable()) {
         mmap_buf_len = vui_ptfm_info_->GetMmapBufferDuration();
-        inBufSize = vui_ptfm_info_->GetMmapFrameLength() *
+        mmap_frame_len = vui_ptfm_info_->GetMmapFrameLength();
+        inBufSize = mmap_frame_len *
             ((hist_buffer_duration + mmap_buf_len - 1) / mmap_buf_len) *
             sm_cfg_->GetSampleRate() * sm_cfg_->GetBitWidth() *
             sm_cfg_->GetOutChannels() / (MS_PER_SEC * BITS_PER_BYTE);
         if (!inBufSize) {
-            PAL_ERR(LOG_TAG, "Invalid frame size, use default value");
-            inBufSize = BUF_SIZE_CAPTURE;
+            PAL_ERR(LOG_TAG, "Invalid frame size");
+            status = -EINVAL;
+            goto error_exit;
+        } else {
+            inBufCount = (mmap_buf_len + mmap_frame_len - 1) / mmap_frame_len;
         }
     }
 

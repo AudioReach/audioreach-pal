@@ -649,6 +649,8 @@ int32_t StreamSoundTrigger::setParameters(uint32_t param_id, void *payload) {
             break;
         }
         case PAL_PARAM_ID_RECOGNITION_CONFIG: {
+            if (reader_)
+                reader_->reset();
             new_rec_config =
                 (struct pal_st_recognition_config *)param_payload->payload;
             std::shared_ptr<StEventConfig> ev_cfg(
@@ -3591,6 +3593,9 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
                 if (st_stream_.vui_ptfm_info_->GetNotifySecondStageFailure()) {
                     st_stream_.rejection_notified_ = true;
                     st_stream_.notifyClient(PAL_RECOGNITION_STATUS_FAILURE);
+                    if (st_stream_.reader_) {
+                        st_stream_.reader_->reset();
+                    }
                 } else {
                     if (st_stream_.reader_) {
                         st_stream_.reader_->reset();

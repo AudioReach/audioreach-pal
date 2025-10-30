@@ -122,8 +122,9 @@ endif
 libpal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs
 libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.a
 
-if BUILDSYSTEM_QLI
-
+if BUILDSYSTEM_OPENWRT
+# config files for IOT
+else
 libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_idp.xml \
                       ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_rb3.xml \

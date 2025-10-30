@@ -51,10 +51,6 @@ libdev_display_la_LDFLAGS   = -shared -avoid-version
 
 libdev_display_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
-if BUILDSYSTEM_QLI
-libdev_display_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
-endif
-
 libdev_display_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_display_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 libdev_display_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
@@ -63,6 +59,8 @@ libdev_display_la_list      = ../../configs/$(MACHINE_ENABLED)/kvh2xml.xml \
 
 if BUILDSYSTEM_OPENWRT
 libdev_display_la_LIBADD += -lglib-2.0 -llog
+else
+libdev_display_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED

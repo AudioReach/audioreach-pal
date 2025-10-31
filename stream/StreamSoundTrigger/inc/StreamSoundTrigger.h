@@ -178,7 +178,7 @@ public:
         return -ENOSYS;
     }
     bool isActive() override;
-    void SetDetectedToEngines(bool detected);
+    void SetDetectedToEngines();
     int32_t SetEngineDetectionState(int32_t state);
 
     int32_t isSampleRateSupported(uint32_t sampleRate) override;
@@ -226,6 +226,7 @@ public:
     bool isLPIProfile();
     vote_type_t getVoteType() override { return vote_type_; };
     void setVoteType(vote_type_t type) { vote_type_ = type; };
+    bool isModelLoaded(listen_model_indicator_enum type);
 
     std::vector<PalRingBufferReader *> GetReaders() { return reader_list_;}
 

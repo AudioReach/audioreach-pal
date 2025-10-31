@@ -48,6 +48,7 @@
 
 #define CNN_BUFFER_LENGTH 10000
 #define CNN_FRAME_SIZE 320
+#define MAX_UV_POST_TOLERANCE_US 2000000
 
 ST_DBG_DECLARE(static int keyword_detection_cnt = 0);
 ST_DBG_DECLARE(static int user_verification_cnt = 0);
@@ -91,6 +92,7 @@ void SoundTriggerEngineCapi::BufferThreadLoop(
 
         if (capi_engine->processing_started_) {
             s = capi_engine->stream_handle_;
+            capi_engine->sec_kw_detect_state_ = 0;
             if (capi_engine->detection_type_ ==
                 ST_SM_TYPE_KEYWORD_DETECTION) {
                 status = capi_engine->StartKeywordDetection();
@@ -111,10 +113,11 @@ void SoundTriggerEngineCapi::BufferThreadLoop(
                 }
             } else if (capi_engine->detection_type_ ==
                 ST_SM_TYPE_USER_VERIFICATION) {
-                if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_USER)
-                    status = capi_engine->StartUserVerification();
-                else if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_CTIUV)
+                if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_USER) {
+                    status = capi_engine->StartUserVerification(lck);
+                } else if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_CTIUV) {
                     status = capi_engine->StartTIUserVerification();
+                }
                 /*
                  * StreamSoundTrigger may call stop recognition to second stage
                  * engines when one of the second stage engine reject detection.
@@ -148,7 +151,6 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
     sva_result_t *result_cfg_ptr = nullptr;
     int32_t read_size = 0;
     capi_v2_buf_t capi_result;
-    bool buffer_advanced = false;
     size_t lab_buffer_size = 0;
     bool first_buffer_processed = false;
     FILE *keyword_detection_fd = nullptr;
@@ -164,9 +166,10 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
     uint32_t max_processing_sz = 0, processed_sz = 0;
     vui_intf_param_t param;
     struct keyword_index kw_index {};
+    int32_t det_conf_score = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
-    if (!reader_) {
+    if (!reader_ || !reader_->isEnabled()) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
         goto exit;
@@ -185,6 +188,7 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
         ftrt_sz = (end_idx - start_idx) + UsToBytes(kw_start_tolerance_);
         max_processing_sz = (end_idx - start_idx) +
             UsToBytes(kw_start_tolerance_ + kw_end_tolerance_ + data_after_kw_end_);
+        reader_->advanceReadOffset(read_offset);
     } else {
         /*
          * When there's no enough data before kw start,
@@ -245,22 +249,6 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
 
     process_start = std::chrono::steady_clock::now();
     while (!exit_buffering_ && (processed_sz < max_processing_sz)) {
-        /* Original code had some time of wait will need to revisit*/
-        /* need to take into consideration the start and end buffer*/
-        if (!reader_->isEnabled()) {
-            status = -EINVAL;
-            goto exit;
-        }
-
-        /* advance the offset to ensure we are reading at the right place */
-        if (!buffer_advanced && read_offset > 0) {
-            if (reader_->advanceReadOffset(read_offset)) {
-                buffer_advanced = true;
-            } else {
-                continue;
-            }
-        }
-
         if (!reader_->waitForBuffers(buffer_size_))
             continue;
 
@@ -323,14 +311,14 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
             goto exit;
         }
 
-        det_conf_score_ = result_cfg_ptr->best_confidence;
+        det_conf_score = result_cfg_ptr->best_confidence;
         if (result_cfg_ptr->is_detected) {
             exit_buffering_ = true;
             detection_state_ = KEYWORD_DETECTION_SUCCESS;
             start_idx = result_cfg_ptr->start_position * CNN_FRAME_SIZE + read_offset;
             end_idx = result_cfg_ptr->end_position * CNN_FRAME_SIZE + read_offset;
             param.stream = (void *)stream_handle_;
-            param.data = (void *)&det_conf_score_;
+            param.data = (void *)&det_conf_score;
             param.size = sizeof(int32_t);
             vui_intf_->SetParameter(PARAM_SSTAGE_KW_DET_LEVEL, &param);
 
@@ -344,13 +332,13 @@ int32_t SoundTriggerEngineCapi::StartKeywordDetection()
         } else if (processed_sz >= max_processing_sz) {
             detection_state_ = KEYWORD_DETECTION_REJECT;
             param.stream = (void *)stream_handle_;
-            param.data = (void *)&det_conf_score_;
+            param.data = (void *)&det_conf_score;
             param.size = sizeof(int32_t);
             vui_intf_->SetParameter(PARAM_SSTAGE_KW_DET_LEVEL, &param);
             PAL_INFO(LOG_TAG, "KWD Second Stage rejected");
         }
         PAL_INFO(LOG_TAG, "KWD second stage conf level %d, processed %u bytes",
-            det_conf_score_, processed_sz);
+            det_conf_score, processed_sz);
 
         if (!first_buffer_processed) {
             buffer_size_ = lab_buffer_size;
@@ -416,7 +404,8 @@ exit:
     return status;
 }
 
-int32_t SoundTriggerEngineCapi::StartUserVerification()
+int32_t SoundTriggerEngineCapi::StartUserVerification(
+    std::unique_lock<std::mutex> &lck)
 {
     int32_t status = 0;
     char *process_input_buff = nullptr;
@@ -427,7 +416,6 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
     stage2_uv_wrapper_stage1_uv_score_t *uv_cfg_ptr = nullptr;
     int32_t read_size = 0;
     capi_v2_buf_t capi_result;
-    bool buffer_advanced = false;
     FILE *user_verification_fd = nullptr;
     ChronoSteadyClock_t process_start;
     ChronoSteadyClock_t process_end;
@@ -440,7 +428,13 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
     uint32_t ftrt_sz = 0, read_offset = 0;
     uint32_t max_processing_sz = 0, processed_sz = 0;
     st_module_type_t fstage_module_type;
-    vui_intf_param_t param;
+    vui_intf_param_t param = {};
+    int32_t det_conf_score = 0;
+    uint32_t process_count = 0, max_process_count = 0;
+    uint32_t sec_kw_end_index = 0;
+    uint32_t write_offset = 0, size_to_read = 0;
+    uint32_t fstage_est_proc_sz = 0, sstage_est_proc_sz = 0;
+    bool is_post_tolerance_processed = false;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -450,7 +444,7 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
         goto exit;
     }
 
-    if (!reader_) {
+    if (!reader_ || !reader_->isEnabled()) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
         goto exit;
@@ -466,16 +460,12 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 
     if (start_idx > UsToBytes(data_before_kw_start_)) {
         read_offset = start_idx - UsToBytes(data_before_kw_start_);
-        max_processing_sz = (end_idx - start_idx) +
-            UsToBytes(data_before_kw_start_ + kw_end_tolerance_);
-    } else {
-        /*
-         * When there's no enough data before kw start,
-         * just read data from beginning of the keyword
-         */
-        max_processing_sz = end_idx + UsToBytes(kw_end_tolerance_);
+        /* advance the offset to ensure we are reading at the right place */
+        reader_->advanceReadOffset(read_offset);
     }
-    PAL_INFO(LOG_TAG, "processing size %u", max_processing_sz);
+    fstage_est_proc_sz = end_idx + UsToBytes(kw_end_tolerance_) - read_offset;
+    PAL_INFO(LOG_TAG, "processing size %u", fstage_est_proc_sz);
+
     if (vui_ptfm_info_->GetEnableDebugDumps()) {
         ST_DBG_FILE_OPEN_WR(user_verification_fd, ST_DEBUG_DUMP_LOCATION,
             "user_verification", "bin", user_verification_cnt);
@@ -487,6 +477,8 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
     memset(&capi_uv_ptr, 0, sizeof(capi_uv_ptr));
     memset(&capi_result, 0, sizeof(capi_result));
 
+    max_processing_sz = end_idx + UsToBytes(kw_end_tolerance_) +
+        UsToBytes(MAX_UV_POST_TOLERANCE_US);
     process_input_buff = (char*)calloc(1, max_processing_sz);
     if (!process_input_buff) {
         PAL_ERR(LOG_TAG, "failed to allocate process input buff");
@@ -550,43 +542,104 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
             PAL_ERR(LOG_TAG, "set param STAGE2_UV_WRAPPER_ID_SVA_UV_SCORE failed with %d",
                     rc);
             status = -EINVAL;
-            goto exit;
+            goto reinit;
         }
     }
 
+    /*
+     * For Second stage UV processing, we have following options
+     * as input buffer end for process:
+     *     1. first stage kw end index + post tolerance
+     *     2. second stage kw end index
+     * When UV processing starts, wait until there's enough data
+     * equivalent to one of above options and then starts UV process
+     * with that amount of data. If UV is detected, then populate
+     * detection result and send it to stream. If UV is rejected,
+     * then wait again until there's enough data equivalent to the
+     * rest option and then starts UV process again. After process
+     * done, send detection result to stream.
+     */
+    max_process_count =
+        stream_handle_->isModelLoaded(ST_SM_ID_SVA_S_STAGE_PDK) ? 2 : 1;
     process_start = std::chrono::steady_clock::now();
-    while (!exit_buffering_ && (processed_sz < max_processing_sz)) {
-        /* Original code had some time of wait will need to revisit*/
-        /* need to take into consideration the start and end buffer*/
-        if (!reader_->isEnabled()) {
-            status = -EINVAL;
-            goto exit;
+    while (!exit_buffering_ && (process_count <= max_process_count)) {
+        if (process_count == max_process_count) {
+            detection_state_ = USER_VERIFICATION_REJECT;
+            param.stream = (void *)stream_handle_;
+            param.data = (void *)&det_conf_score;
+            param.size = sizeof(int32_t);
+            vui_intf_->SetParameter(PARAM_SSTAGE_UV_DET_LEVEL ,&param);
+            PAL_INFO(LOG_TAG, "UV Second Stage Rejected");
+            goto reinit;
         }
 
-        /* advance the offset to ensure we are reading at the right place */
-        if (!buffer_advanced && read_offset > 0) {
-            if (reader_->advanceReadOffset(read_offset)) {
-                buffer_advanced = true;
-            } else {
+        /* update if second stage KW detected/rejected
+         * or post-tolerance data is ready
+         */
+        if (sec_kw_detect_state_ == KEYWORD_DETECTION_SUCCESS) {
+            sec_kw_detect_state_ = 0;
+            param.stream = stream_handle_;
+            status = vui_intf_->GetParameter(PARAM_KEYWORD_INDEX, &param);
+            if (!param.data) {
+                PAL_ERR(LOG_TAG, "Failed to get kw index");
+                process_count++;
                 continue;
             }
+            sec_kw_end_index = ((keyword_index *)param.data)->end_index;
+            if (sec_kw_end_index > read_offset) {
+                sstage_est_proc_sz = sec_kw_end_index - read_offset;
+            } else {
+                PAL_ERR(LOG_TAG, "Invalid second stage kw end index %d",
+                    sec_kw_end_index);
+                process_count++;
+                continue;
+            }
+            size_to_read = sstage_est_proc_sz;
+        } else if (sec_kw_detect_state_ == KEYWORD_DETECTION_REJECT) {
+            sec_kw_detect_state_ = 0;
+            break;
+        } else if (!is_post_tolerance_processed &&
+                   (reader_->getUnreadSize() + processed_sz >=
+                    fstage_est_proc_sz)) {
+            size_to_read = fstage_est_proc_sz;
+            is_post_tolerance_processed = true;
+        } else {
+            size_to_read = 0;
+            // wait for 10ms when UV process is not ready to start
+            cv_.wait_for(lck, std::chrono::microseconds(CNN_BUFFER_LENGTH));
+            continue;
         }
 
-        if (!reader_->waitForBuffers(max_processing_sz))
+        if (processed_sz < size_to_read) {
+            size_to_read -= processed_sz;
+            read_size = reader_->read(
+                (uint8_t*)process_input_buff + write_offset, size_to_read);
+            if (read_size == 0) {
+                continue;
+            } else if (read_size < 0) {
+                status = read_size;
+                PAL_ERR(LOG_TAG, "Failed to read from buffer, status %d", status);
+                goto reinit;
+            }
+            write_offset += read_size;
+            stream_input->bufs_num = 1;
+            stream_input->buf_ptr->max_data_len = max_processing_sz;
+            stream_input->buf_ptr->actual_data_len = write_offset;
+            stream_input->buf_ptr->data_ptr = (int8_t *)process_input_buff;
+            processed_sz += read_size;
+        } else if (processed_sz > size_to_read) { // unlikely to happen, just add in case
+            stream_input->bufs_num = 1;
+            stream_input->buf_ptr->max_data_len = max_processing_sz;
+            stream_input->buf_ptr->actual_data_len = size_to_read;
+            stream_input->buf_ptr->data_ptr = (int8_t *)process_input_buff;
+        } else {
+            /* when sstage kw end idx = fstage end idx + post tolerance,
+             * no need to process with same size again, just skip the process.
+             */
+            PAL_INFO(LOG_TAG, "Same process size with first iteration, skip");
+            process_count++;
             continue;
-
-        read_size = reader_->read((void*)process_input_buff, max_processing_sz);
-        if (read_size == 0) {
-            continue;
-        } else if (read_size < 0) {
-            status = read_size;
-            PAL_ERR(LOG_TAG, "Failed to read from buffer, status %d", status);
-            goto exit;
         }
-        stream_input->bufs_num = 1;
-        stream_input->buf_ptr->max_data_len = max_processing_sz;
-        stream_input->buf_ptr->actual_data_len = read_size;
-        stream_input->buf_ptr->data_ptr = (int8_t *)process_input_buff;
 
         if (vui_ptfm_info_->GetEnableDebugDumps()) {
             ST_DBG_FILE_WRITE(user_verification_fd,
@@ -600,6 +653,7 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
 #endif
         rc = capi_handle_->vtbl_ptr->process(capi_handle_,
             &stream_input, nullptr);
+        process_count++;
 #ifndef ATRACE_UNSUPPORTED
         ATRACE_END();
 #endif
@@ -610,10 +664,8 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
         if (rc != CAPI_V2_EOK) {
             PAL_ERR(LOG_TAG, "capi process failed with %d", rc);
             status = -EINVAL;
-            goto exit;
+            goto reinit;
         }
-
-        processed_sz += read_size;
 
         capi_result.data_ptr = (int8_t*)result_cfg_ptr;
         capi_result.actual_data_len = sizeof(stage2_uv_wrapper_result);
@@ -636,28 +688,51 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
         if (CAPI_V2_EFAILED == rc) {
             PAL_ERR(LOG_TAG, "capi get param failed\n");
             status = -EINVAL;
-            goto exit;
+            goto reinit;
         }
 
-        det_conf_score_ = (int32_t)result_cfg_ptr->final_user_score;
+        det_conf_score = (int32_t)result_cfg_ptr->final_user_score;
+        PAL_INFO(LOG_TAG, "UV second stage conf level %d, processing %u bytes",
+            det_conf_score, processed_sz);
         if (result_cfg_ptr->is_detected) {
             exit_buffering_ = true;
             detection_state_ = USER_VERIFICATION_SUCCESS;
             param.stream = (void *)stream_handle_;
-            param.data = (void *)&det_conf_score_;
+            param.data = (void *)&det_conf_score;
             param.size = sizeof(int32_t);
             vui_intf_->SetParameter(PARAM_SSTAGE_UV_DET_LEVEL ,&param);
             PAL_INFO(LOG_TAG, "UV Second Stage Detected");
-        } else if (processed_sz >= max_processing_sz) {
-            detection_state_ = USER_VERIFICATION_REJECT;
-            param.stream = (void *)stream_handle_;
-            param.data = (void *)&det_conf_score_;
-            param.size = sizeof(int32_t);
-            vui_intf_->SetParameter(PARAM_SSTAGE_UV_DET_LEVEL ,&param);
-            PAL_INFO(LOG_TAG, "UV Second Stage Rejected");
+            goto reinit;
         }
-        PAL_INFO(LOG_TAG, "UV second stage conf level %d, processing %u bytes",
-            det_conf_score_, processed_sz);
+
+        if (process_count < max_process_count) {
+            /* Reinit the UV module for next processing */
+            PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
+                    STAGE2_UV_WRAPPER_ID_REINIT);
+            rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
+            if (CAPI_V2_EOK != rc) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG,
+                    "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
+                    status);
+                goto exit;
+            }
+        }
+    }
+
+reinit:
+    if (CAPI_V2_ENETRESET != rc) {
+        /* Reinit the UV module except SSR occurrence */
+        PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
+            STAGE2_UV_WRAPPER_ID_REINIT);
+        rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+            STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
+        if (CAPI_V2_EOK != rc) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
+                    status);
+        }
     }
 
 exit:
@@ -671,19 +746,6 @@ exit:
         (long long)total_capi_get_param_duration);
     if (vui_ptfm_info_->GetEnableDebugDumps()) {
         ST_DBG_FILE_CLOSE(user_verification_fd);
-    }
-
-    if (CAPI_V2_ENETRESET != rc) {
-        /* Reinit the UV module except SSR occurrence */
-        PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
-            STAGE2_UV_WRAPPER_ID_REINIT);
-        rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-            STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
-        if (CAPI_V2_EOK != rc) {
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
-                    status);
-        }
     }
 
     if (sm_cfg_->IsDetPropSupported(ST_PARAM_KEY_SSTAGE_UV_ENGINE_INFO)) {
@@ -753,6 +815,7 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
     vui_intf_param_t param = {};
     tiuv_detection_result_t tiuv_detection_result = {};
     struct buffer_config buf_config = {};
+    int32_t det_conf_score = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -762,7 +825,7 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
         goto exit;
     }
 
-    if (!reader_) {
+    if (!reader_ || !reader_->isEnabled()) {
         status = -EINVAL;
         PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
         goto exit;
@@ -828,15 +891,6 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
 
     process_start = std::chrono::steady_clock::now();
     while (!exit_buffering_) {
-        /*
-         * Original code had some time of wait will need to revisit
-         * need to take into consideration the start and end buffer
-         */
-        if (!reader_->isEnabled()) {
-            status = -EINVAL;
-            goto exit;
-        }
-
         if (!reader_->waitForBuffers(proc_size))
             continue;
 
@@ -904,13 +958,13 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
             goto exit;
         }
 
-        det_conf_score_ = (int32_t)result_cfg_ptr->final_user_score;
+        det_conf_score = (int32_t)result_cfg_ptr->final_user_score;
         if (result_cfg_ptr->is_detected) {
             exit_buffering_ = true;
             detection_state_ = USER_VERIFICATION_SUCCESS;
             PAL_INFO(LOG_TAG, "TI-UV Second Stage Detected");
             tiuv_detection_result.detection_status = detection_state_;
-            tiuv_detection_result.user_score = det_conf_score_;
+            tiuv_detection_result.user_score = det_conf_score;
             param.stream = (void *)stream_handle_;
             param.data = (void *)&tiuv_detection_result;
             param.size = sizeof(int32_t);
@@ -920,14 +974,14 @@ int32_t SoundTriggerEngineCapi::StartTIUserVerification()
             detection_state_ = USER_VERIFICATION_REJECT;
             PAL_INFO(LOG_TAG, "TI-UV Second Stage Rejected due to timeout");
             tiuv_detection_result.detection_status = detection_state_;
-            tiuv_detection_result.user_score = det_conf_score_;
+            tiuv_detection_result.user_score = det_conf_score;
             param.stream = (void *)stream_handle_;
             param.data = (void *)&tiuv_detection_result;
             param.size = sizeof(int32_t);
             vui_intf_->SetParameter(PARAM_TIUV_DETECTION_RESULT, &param);
         }
         PAL_INFO(LOG_TAG, "TI-UV second stage conf level %d, processing %u bytes",
-            det_conf_score_, processed_sz);
+            det_conf_score, processed_sz);
         if (proc_size == hist_data_size)
             proc_size = frame_size;
     }
@@ -1003,7 +1057,7 @@ SoundTriggerEngineCapi::SoundTriggerEngineCapi(
     capi_lib_handle_ = nullptr;
     capi_init_ = nullptr;
     keyword_detected_ = false;
-    det_conf_score_ = 0;
+    sec_kw_detect_state_ = 0;
     memset(&in_model_buffer_param_, 0, sizeof(in_model_buffer_param_));
     memset(&scratch_param_, 0, sizeof(scratch_param_));
 
@@ -1564,6 +1618,7 @@ int32_t SoundTriggerEngineCapi::RestartRecognition(StreamSoundTrigger *s __unuse
     {
         exit_buffering_ = true;
         std::lock_guard<std::mutex> event_lck(event_mutex_);
+        cv_.notify_all();
     }
     if (reader_) {
         reader_->reset();
@@ -1588,6 +1643,7 @@ int32_t SoundTriggerEngineCapi::StopRecognition(StreamSoundTrigger *s __unused)
     {
         exit_buffering_ = true;
         std::lock_guard<std::mutex> event_lck(event_mutex_);
+        cv_.notify_all();
     }
     if (reader_) {
         reader_->reset();
@@ -1602,18 +1658,39 @@ exit:
     return status;
 }
 
-void SoundTriggerEngineCapi::SetDetected(bool detected)
+void SoundTriggerEngineCapi::SetDetected(int32_t detection_state)
 {
-    PAL_DBG(LOG_TAG, "SetDetected %d", detected);
+    PAL_DBG(LOG_TAG, "SetDetected %d", detection_state);
     std::lock_guard<std::mutex> lck(event_mutex_);
-    if (detected != processing_started_) {
-        if (detected)
-            reader_->updateState(READER_ENABLED);
-        processing_started_ = detected;
+    if (detection_state == GMM_DETECTED) {
+        reader_->updateState(READER_ENABLED);
+        processing_started_ = true;
         exit_buffering_ = !processing_started_;
-        PAL_INFO(LOG_TAG, "setting processing started %d", detected);
+        cv_.notify_one();
+    } else if (detection_state == KEYWORD_DETECTION_SUCCESS) {
+        if (!processing_started_)
+            return;
+        /*
+         * NOTE: Applicable to Second stage UV only
+         * Second stage KW detected, wake up processing thread
+         * to start processing with index from second stage KW
+         */
+        PAL_INFO(LOG_TAG, "Second stage KW detection success");
+        sec_kw_detect_state_ = detection_state;
+        cv_.notify_one();
+    } else if (detection_state == KEYWORD_DETECTION_REJECT) {
+        if (!processing_started_)
+            return;
+        /*
+         * NOTE: Applicable to Second stage UV only
+         * Second stage KW rejected, set exit_buffering_
+         * to true to exit processing
+         */
+        exit_buffering_ = true;
+        PAL_INFO(LOG_TAG, "exit UV processing as KW detection fails");
+        sec_kw_detect_state_ = detection_state;
         cv_.notify_one();
     } else {
-        PAL_VERBOSE(LOG_TAG, "processing started unchanged");
+        PAL_ERR(LOG_TAG, "Invalid detection state");
     }
 }

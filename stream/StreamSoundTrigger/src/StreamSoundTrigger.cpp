@@ -1076,6 +1076,16 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
             reader_->updateState(READER_PREPARED);
     }
 
+    // notify 2nd stage UV engine of 2nd stage KW result
+    if (det_type == KEYWORD_DETECTION_SUCCESS ||
+        det_type == KEYWORD_DETECTION_REJECT) {
+        for (auto &eng : engines_) {
+            if (eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_USER) {
+                eng->GetEngine()->SetDetected(det_type);
+            }
+        }
+    }
+
     std::shared_ptr<StEventConfig> ev_cfg(
        new StDetectedEventConfig(det_type));
     status = cur_state_->ProcessEvent(ev_cfg);
@@ -2037,17 +2047,17 @@ exit:
     return status;
 }
 
-void StreamSoundTrigger::SetDetectedToEngines(bool detected) {
+void StreamSoundTrigger::SetDetectedToEngines() {
     for (auto& eng: engines_) {
         if (eng->GetEngineId() != ST_SM_ID_SVA_F_STAGE_GMM) {
-            PAL_VERBOSE(LOG_TAG, "Notify detection event %d to engine %d",
-                    detected, eng->GetEngineId());
-            eng->GetEngine()->SetDetected(detected);
+            PAL_VERBOSE(LOG_TAG, "Notify detection event to engine %d",
+                eng->GetEngineId());
+            eng->GetEngine()->SetDetected(GMM_DETECTED);
         }
     }
 }
 
-pal_device_id_t StreamSoundTrigger::GetAvailCaptureDevice(){
+pal_device_id_t StreamSoundTrigger::GetAvailCaptureDevice() {
     if (vui_ptfm_info_->GetSupportDevSwitch() &&
         rm->isDeviceAvailable(PAL_DEVICE_IN_WIRED_HEADSET))
         return PAL_DEVICE_IN_HEADSET_VA_MIC;
@@ -2841,7 +2851,7 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
                 if (st_stream_.engines_.size() > 1)
                     st_stream_.second_stage_processing_ = true;
                 TransitTo(ST_STATE_BUFFERING);
-                st_stream_.SetDetectedToEngines(true);
+                st_stream_.SetDetectedToEngines();
             }
             if (st_stream_.engines_.size() == 1) {
                 st_stream_.notifyClient(PAL_RECOGNITION_STATUS_SUCCESS);
@@ -4156,6 +4166,14 @@ bool StreamSoundTrigger::isLPIProfile() {
     } else {
         return false;
     }
+}
+
+bool StreamSoundTrigger::isModelLoaded(listen_model_indicator_enum type) {
+    for (auto& eng: engines_) {
+        if (eng->GetEngineId() == type)
+            return true;
+    }
+    return false;
 }
 
 int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_param_t *model) {

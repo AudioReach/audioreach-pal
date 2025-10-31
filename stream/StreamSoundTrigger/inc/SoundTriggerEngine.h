@@ -76,7 +76,7 @@ public:
                           uint32_t pre_roll_duration) = 0;
     virtual void GetUpdatedBufConfig(uint32_t *hist_buffer_duration,
                                     uint32_t *pre_roll_duration) = 0;
-    virtual void SetDetected(bool detected) = 0;
+    virtual void SetDetected(int32_t detection_state) = 0;
     virtual int32_t GetParameters(uint32_t param_id, void **payload) = 0;
     virtual int32_t ConnectSessionDevice(
         StreamSoundTrigger* stream_handle,

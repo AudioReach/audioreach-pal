@@ -24,6 +24,7 @@ SpeakerProtectionwsa885xI2s::SpeakerProtectionwsa885xI2s(struct pal_device *devi
                         std::shared_ptr<ResourceManager> Rm):SpeakerProtection(device, Rm)
 {
     viTxSetupThrdCreated = false;
+    wsaTemp = 0;
 }
 
 SpeakerProtectionwsa885xI2s::~SpeakerProtectionwsa885xI2s()
@@ -39,27 +40,33 @@ int SpeakerProtectionwsa885xI2s::getSpeakerTemperature(int spkr_pos) {
 
     PAL_DBG(LOG_TAG, "Enter Speaker Get Temperature");
 
-    trigger_temp_ctl = mixer_get_ctl_by_name(hwMixer, "SA1 Trigger Die Temperature");
+    if (wsaTemp != 0) {
+        PAL_DBG(LOG_TAG, "Exiting Speaker Get Temperature %d", wsaTemp);
+        return wsaTemp;
+    }
+
+    trigger_temp_ctl = mixer_get_ctl_by_name(hwMixer, "Trigger Die Temperature");
     if (!trigger_temp_ctl) {
-       PAL_ERR(LOG_TAG, "Invalid mixer control: SA1 Trigger Die Temperature");
+       PAL_ERR(LOG_TAG, "Invalid mixer control: Trigger Die Temperature");
        return -ENOENT;
     }
 
     ret = mixer_ctl_set_value(trigger_temp_ctl, 0, 1);
     if (ret) {
          PAL_ERR(LOG_TAG, "Could not Enable ctl for mixer cmd - %s ret %d\n",
-                  "SA1 Trigger Die Temperature", ret);
+                  "Trigger Die Temperature", ret);
         return -EINVAL;
     }
 
-    temp_ctl = mixer_get_ctl_by_name(hwMixer, "SA1 Die Temperature");
+    temp_ctl = mixer_get_ctl_by_name(hwMixer, "Die Temperature");
     if (!temp_ctl) {
-       PAL_ERR(LOG_TAG, "Invalid mixer control: SA1 Die Temperature");
+       PAL_ERR(LOG_TAG, "Invalid mixer control: Die Temperature");
        status = -EINVAL;
        goto exit;
     }
 
     status = mixer_ctl_get_value(temp_ctl, 0);
+    wsaTemp = status;
 
     PAL_DBG(LOG_TAG, "Exiting Speaker Get Temperature %d", status);
 exit:
@@ -67,7 +74,7 @@ exit:
    ret = mixer_ctl_set_value(trigger_temp_ctl, 0, 0);
    if (ret)
       PAL_ERR(LOG_TAG, "Could not Disable ctl for mixer cmd - %s ret %d\n",
-         "SA1 Trigger Die Temperature", ret);
+         "Trigger Die Temperature", ret);
 
     PAL_DBG(LOG_TAG, "Status : %d", status);
     return status;

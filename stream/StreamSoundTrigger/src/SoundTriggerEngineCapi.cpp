@@ -607,8 +607,8 @@ int32_t SoundTriggerEngineCapi::StartUserVerification()
         total_capi_process_duration +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 capi_call_end - capi_call_start).count();
-        if (CAPI_V2_EFAILED == rc) {
-            PAL_ERR(LOG_TAG, "capi process failed\n");
+        if (rc != CAPI_V2_EOK) {
+            PAL_ERR(LOG_TAG, "capi process failed with %d", rc);
             status = -EINVAL;
             goto exit;
         }
@@ -673,21 +673,28 @@ exit:
         ST_DBG_FILE_CLOSE(user_verification_fd);
     }
 
-    /* Reinit the UV module */
-    PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
+    if (CAPI_V2_ENETRESET != rc) {
+        /* Reinit the UV module except SSR occurrence */
+        PAL_DBG(LOG_TAG, "%s: Issuing capi_set_param for param %d", __func__,
             STAGE2_UV_WRAPPER_ID_REINIT);
-    rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-        STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
-    if (CAPI_V2_EOK != rc) {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
-                status);
+        rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+            STAGE2_UV_WRAPPER_ID_REINIT, nullptr, nullptr);
+        if (CAPI_V2_EOK != rc) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "set_param STAGE2_UV_WRAPPER_ID_REINIT failed, status = %d",
+                    status);
+        }
     }
 
     if (sm_cfg_->IsDetPropSupported(ST_PARAM_KEY_SSTAGE_UV_ENGINE_INFO)) {
         struct st_det_engine_stats engine_info;
         engine_info.version = 1;
-        engine_info.detection_state = detection_state_;
+        if (CAPI_V2_ENETRESET == rc) {
+            /* USER_VERIFICATION_REJECT will be notified to the client. */
+            engine_info.detection_state = SSTAGE_SUBSYSTEM_RESTART;
+        } else {
+            engine_info.detection_state = detection_state_;
+        }
         engine_info.processed_length =
             BytesToFrames(processed_sz) * MS_PER_SEC / sample_rate_;
         engine_info.total_process_duration = process_duration;

@@ -104,7 +104,6 @@ class Session;
 class Stream
 {
 protected:
-    bool mInitialized{false};
     uint32_t mNoOfDevices;
     std::vector <std::shared_ptr<Device>> mDevices;  // current running devices
     std::vector <std::shared_ptr<Device>> mPalDevices; // pal devices set from client, which may differ from mDevices
@@ -154,7 +153,6 @@ public:
     bool isComboHeadsetActive = false;
     std::vector<pal_device_id_t> suspendedOutDevIds;
     std::vector<pal_device_id_t> suspendedInDevIds;
-    virtual bool isInitialized() const { return mInitialized; }
     virtual int32_t open() = 0;
     virtual int32_t close() = 0;
     virtual int32_t start() = 0;

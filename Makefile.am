@@ -5,40 +5,41 @@ EXTRA_DIST = $(pkgconfig_DATA)
 
 if BUILDSYSTEM_OPENWRT
 
-AM_CPPFLAGS := -I ./stream/inc
-AM_CPPFLAGS += -I ./device/inc
-AM_CPPFLAGS += -I ./session/inc
-AM_CPPFLAGS += -I ./session/SessionAR/inc
-AM_CPPFLAGS += -I ./context_manager/inc
-AM_CPPFLAGS += -I ./plugins/PluginManager/inc
-AM_CPPFLAGS += -I ./resource_manager/inc
-AM_CPPFLAGS += -I ./utils/inc
-AM_CPPFLAGS += -I ./inc
-AM_CPPFLAGS += -I ./
+AM_CPPFLAGS := -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)/
 
 AM_CPPFLAGS += $(SPF_CFLAGS)/
 AM_CPPFLAGS += $(ACDBDATA_CFLAGS)
 AM_CPPFLAGS += -I $(TOPDIR)/src/audio/mm-audio-headers/capiv2_api/
 AM_CPPFLAGS += -I $(TOPDIR)/system/media/audio_route/include/
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 
-pal_sources = ./stream/src/Stream.cpp \
-              ./device/src/Device.cpp \
-              ./session/src/Session.cpp \
-              ./context_manager/src/ContextManager.cpp \
-              ./resource_manager/src/SndCardMonitor.cpp \
-              ./resource_manager/src/ResourceManager.cpp \
-              ./Pal.cpp \
-              ./PalAR.cpp \
-              ./utils/src/SoundTriggerPlatformInfo.cpp \
-              ./utils/src/SignalHandler.cpp \
-              ./utils/src/MetadataParser.cpp \
-              ./utils/src/PerfLock.cpp \
-              ./utils/src/VoiceUIPlatformInfo.cpp \
-              ./utils/src/AudioHapticsInterface.cpp \
-              ./utils/src/ACDPlatformInfo.cpp \
-              ./utils/src/ASRPlatformInfo.cpp \
-              ./utils/src/STUtils.cpp
+pal_sources = $(top_srcdir)/stream/src/Stream.cpp \
+              $(top_srcdir)/device/src/Device.cpp \
+              $(top_srcdir)/session/src/Session.cpp \
+              $(top_srcdir)/context_manager/src/ContextManager.cpp \
+              $(top_srcdir)/resource_manager/src/SndCardMonitor.cpp \
+              $(top_srcdir)/resource_manager/src/ResourceManager.cpp \
+              $(top_srcdir)/Pal.cpp \
+              $(top_srcdir)/utils/src/SoundTriggerPlatformInfo.cpp \
+              $(top_srcdir)/utils/src/SignalHandler.cpp \
+              $(top_srcdir)/utils/src/MetadataParser.cpp \
+              $(top_srcdir)/utils/src/MemLogBuilder.cpp \
+              $(top_srcdir)/utils/src/PerfLock.cpp \
+              $(top_srcdir)/utils/src/VoiceUIPlatformInfo.cpp \
+              $(top_srcdir)/utils/src/AudioHapticsInterface.cpp \
+              $(top_srcdir)/utils/src/ACDPlatformInfo.cpp \
+              $(top_srcdir)/utils/src/ASRPlatformInfo.cpp \
+              $(top_srcdir)/utils/src/STUtils.cpp
 else
 AM_CPPFLAGS := -I $(top_srcdir)/stream/inc
 AM_CPPFLAGS += -I $(top_srcdir)/device/inc
@@ -122,8 +123,13 @@ endif
 libpal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs
 libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.a
 
+if CUTILS_SUPPORTED
+libpal_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
+libpal_la_LIBADD += -lcutils
+endif
+
 if BUILDSYSTEM_OPENWRT
-# config files for IOT
+# config files for OPENWRT
 else
 libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcom/IoT/qcm6490/resourcemanager_qcm6490_idp.xml \

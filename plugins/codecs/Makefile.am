@@ -2,6 +2,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = codecs.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
+library_includedir = $(includedir)/codecs
 lib_LTLIBRARIES     = libbt_bundle.la
 
 bt_bundle_sources = \

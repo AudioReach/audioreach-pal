@@ -132,12 +132,13 @@ int32_t pal_init(void)
         goto exit;
     }
 
+#ifndef HAPTICS_UNSUPPORTED
     ret = ri->initHapticsInterface();
     if (ret != 0) {
         PAL_ERR(LOG_TAG, "HapticsInterface init failed, error:%d", ret);
         goto exit;
     }
-
+#endif
 exit:
     pal_mutex.unlock();
     PAL_DBG(LOG_TAG, "Exit. exit status : %d ", ret);

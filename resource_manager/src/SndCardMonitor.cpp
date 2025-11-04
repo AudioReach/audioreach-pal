@@ -35,7 +35,6 @@
 #define LOG_TAG "PAL: SndMonitor"
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/poll.h>
 #include <list>

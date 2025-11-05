@@ -34,6 +34,13 @@
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
 #define LOG_TAG "PAL: ASREngine"
 
+#if defined(MUSL_SYS_LIBRARIES)
+#ifdef __unused
+#undef __unused
+#endif
+#define __unused
+#endif
+
 #include "ASREngine.h"
 
 #include <cmath>

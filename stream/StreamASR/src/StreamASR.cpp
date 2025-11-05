@@ -36,8 +36,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#ifdef PAL_CUTILS_SUPPORTED
+#if defined(PAL_CUTILS_SUPPORTED) && !defined(MUSL_SYS_LIBRARIES)
 #include <cutils/ashmem.h>
+#endif
+#if defined(MUSL_SYS_LIBRARIES)
+#ifdef __unused
+#undef __unused
+#endif
+#define __unused
 #endif
 #include <fstream>
 
@@ -336,7 +342,7 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
             PAL_ERR(LOG_TAG, "Invalid fd and size, and no existing model to use");
             return -EINVAL;
         }
-#ifdef PAL_CUTILS_SUPPORTED
+#if defined(PAL_CUTILS_SUPPORTED) && !defined(MUSL_SYS_LIBRARIES)
     } else if(!ashmem_valid(fd)) {
         PAL_ERR(LOG_TAG, "ashmem_valid(fd) validation failed");
         return -EINVAL;

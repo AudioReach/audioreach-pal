@@ -1161,12 +1161,34 @@
         <ctl name="SpkrRight PBR Switch" value="1" />
         <ctl name="WSA PBR Enable" value="1" />
         <ctl name="Idle Detect" value="1" />
+        <ctl name="WSA2 RX0 MUX" value="AIF1_PB" />
+        <ctl name="WSA2 RX1 MUX" value="AIF1_PB" />
+	<ctl name="WSA2_RX0 INP0" value="RX0" />
+        <ctl name="WSA2_RX1 INP0" value="RX1" />
+        <ctl name="WSA2_COMP1 Switch" value="1" />
+        <ctl name="WSA2_COMP2 Switch" value="1" />
+        <ctl name="Spkr2Left COMP Switch" value="1" />
+        <ctl name="Spkr2Left VISENSE Switch" value="1" />
+        <ctl name="Spkr2Left SWR DAC_Port Switch" value="1" />
+        <ctl name="Spkr2Right COMP Switch" value="1" />
+        <ctl name="Spkr2Right VISENSE Switch" value="1" />
+        <ctl name="Spkr2Right SWR DAC_Port Switch" value="1" />
+        <ctl name="Spkr2Left PBR Switch" value="1" />
+        <ctl name="Spkr2Right PBR Switch" value="1" />
+        <ctl name="WSA2 PBR Enable" value="1" />
+	<ctl name="WSA2 Idle Detect" value="1" />
+	<ctl name="WSA_RX0 comp_mode" value="G_15_DB" />
+        <ctl name="WSA_RX1 comp_mode" value="G_15_DB" />
+        <ctl name="WSA2_RX0 comp_mode" value="G_15_DB" />
+        <ctl name="WSA2_RX1 comp_mode" value="G_15_DB" />
     </path>
 
     <path name="speaker-prot">
         <path name="speaker" />
         <ctl name="WSA_RX0 Digital Volume" value="84" />
         <ctl name="WSA_RX1 Digital Volume" value="84" />
+        <ctl name="WSA2_RX0 Digital Volume" value="84" />
+        <ctl name="WSA2_RX1 Digital Volume" value="84" />
     </path>
 
     <path name="haptics-dev">
@@ -1254,12 +1276,16 @@
        <path name="speaker" />
        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
        <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+       <ctl name="WSA2_RX INT0 VBAT WSA2 RX0 VBAT Enable" value="1" />
+       <ctl name="WSA2_RX INT1 VBAT WSA2 RX1 VBAT Enable" value="1" />
    </path>
 
    <path name="speaker-vbat-prot">
        <path name="speaker-prot" />
        <ctl name="WSA_RX INT0 VBAT WSA RX0 VBAT Enable" value="1" />
        <ctl name="WSA_RX INT1 VBAT WSA RX1 VBAT Enable" value="1" />
+       <ctl name="WSA2_RX INT0 VBAT WSA2 RX0 VBAT Enable" value="1" />
+       <ctl name="WSA2_RX INT1 VBAT WSA2 RX1 VBAT Enable" value="1" />
    </path>
 
     <path name="sidetone-handset">
@@ -1273,8 +1299,12 @@
     <path name="vi-feedback">
         <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
         <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_1" value="1" />
+        <ctl name="WSA2_AIF_VI Mixer WSA2_SPKR_VI_2" value="1" />
         <ctl name="WSA_RX0 Digital Volume" value="84" />
         <ctl name="WSA_RX1 Digital Volume" value="84" />
+        <ctl name="WSA2_RX0 Digital Volume" value="84" />
+        <ctl name="WSA2_RX1 Digital Volume" value="84" />
     </path>
 
     <path name="vi-feedback-mono-1">

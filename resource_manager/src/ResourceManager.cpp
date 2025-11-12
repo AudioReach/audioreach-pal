@@ -1451,7 +1451,7 @@ int ResourceManager::init_audio()
                 PAL_INFO(LOG_TAG, "mixer_open success. snd_card_num = %d, snd_card_name %s",
                 snd_hw_card, snd_card_name);
 
-                if (strstr(snd_card_name, VENDOR_SKU)) {
+                if (strcasestr(VENDOR_SKU,snd_card_name)) {
                     PAL_DBG(LOG_TAG, "Found Codec sound card, %s", VENDOR_SKU);
                     snd_card_found = true;
                     audio_hw_mixer = tmp_mixer;

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: mm-audio-headers
+Description: capiv2_api headers
+Version: @VERSION@
+Libs: -L${libdir}
+Cflags: -I${includedir}/acdbdata

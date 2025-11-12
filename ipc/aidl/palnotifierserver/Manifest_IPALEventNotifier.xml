@@ -5,7 +5,7 @@
     <!-- Audio PALEventNotifier service -->
     <hal format="aidl">
         <name>vendor.qti.hardware.paleventnotifier</name>
-        <version>2</version>
+        <version>3</version>
         <fqname>IPALEventNotifier/default</fqname>
     </hal>
 </manifest>

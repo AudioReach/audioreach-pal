@@ -85,7 +85,8 @@ AM_CONDITIONAL(USE_G_STR_FUNC, ! test "x$ac_cv_func_strlcpy" = "xyes")
 PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
 AC_SUBST([PALHEADERS_CFLAGS])
 
-PKG_CHECK_MODULES([CAPIV2HEADERS], [capiv2-api-headers])
+PKG_CHECK_MODULES([CAPIV2HEADERS], [capiv2-api-headers], [have_capiv2_headers=yes], [have_capiv2_headers=no])
+AM_CONDITIONAL([HAVE_CAPIV2HEADERS], [test "x$have_capiv2_headers" = "xyes"])
 AC_SUBST([CAPIV2HEADERS_CFLAGS])
 
 AC_ARG_WITH([acdbdata],
@@ -121,6 +122,12 @@ AC_ARG_WITH([adsprpcd],
     [with_adsprpcd=$withval],
     [with_adsprpcd=no])
 AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
+
+AC_ARG_WITH([streamSoundTrigger],
+    AS_HELP_STRING([compile streamSoundTrigger (default is no)]),
+    [with_streamSoundTrigger=$withval],
+    [with_streamSoundTrigger=no])
+AM_CONDITIONAL([COMPILE_STREAMSOUNDTRIGGER], [test "x${with_streamSoundTrigger}" = "xyes"])
 
 AC_CONFIG_FILES([ Makefile \
 pal.pc \

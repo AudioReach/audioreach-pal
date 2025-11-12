@@ -40,7 +40,9 @@ AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
+if HAVE_CAPIV2HEADERS
 AM_CPPFLAGS += @CAPIV2HEADERS_CFLAGS@
+endif
 
 stream_soundtrigger_sources = $(top_srcdir)/stream/StreamSoundTrigger/src/StreamSoundTrigger.cpp \
                               $(top_srcdir)/stream/StreamSoundTrigger/src/SoundTriggerEngineGsl.cpp \

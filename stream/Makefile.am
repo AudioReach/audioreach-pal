@@ -1,1 +1,5 @@
+if COMPILE_STREAMSOUNDTRIGGER
 SUBDIRS = StreamCommon StreamSoundTrigger StreamPCM StreamNonTunnel StreamInCall StreamHaptic StreamCompress StreamASR StreamACD StreamCallTranslation
+else
+SUBDIRS = StreamCommon StreamPCM StreamNonTunnel StreamInCall StreamHaptic StreamCompress StreamASR StreamACD StreamCallTranslation
+endif

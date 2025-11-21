@@ -750,11 +750,11 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
-            <channels>1</channels>
+            <channels>2</channels>
             <samplerate>48000</samplerate>
-            <snd_device_name>speaker-mono-2</snd_device_name>
+            <snd_device_name>speaker</snd_device_name>
             <speaker_protection_enabled>1</speaker_protection_enabled>
             <fractional_sr>0</fractional_sr>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -817,7 +817,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -1092,7 +1092,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <bit_width>32</bit_width>
@@ -1101,7 +1101,7 @@
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">
-                    <backend_name>TDM-LPAIF_WSA-RX-PRI</backend_name>
+                    <backend_name>TDM-LPAIF_WSA-RX-PRIMARY</backend_name>
                     <snd_device_name>haptics-dev</snd_device_name>
                     <samplerate>48000</samplerate>
                     <bit_width>32</bit_width>
@@ -1110,7 +1110,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-1</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>ultrasound-handset-wsa</snd_device_name>
@@ -1132,7 +1132,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND_DEDICATED</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>handset-wsa</snd_device_name>

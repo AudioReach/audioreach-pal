@@ -3,6 +3,7 @@
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries. 
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  * -->
+
 <resource_manager_info>
     <version>2.0</version>
     <config_params>
@@ -24,9 +25,8 @@
         <param key="device_mux_config" value ="false" />
         <param key="upd_duty_cycle_enable" value="false" />
         <param key="upd_virtual_port" value ="false" />
-        <param key="i2s_dual_mono" value ="true" />
         <param key="haptics_priority" value ="touch_haptics" />
-        <param key="haptics_through_wsa" value ="true" />
+        <param key="haptics_through_wsa" value ="false" />
         <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_gapless key="gapless_supported" value="1"/>
@@ -80,33 +80,21 @@
             <group_dev sample_rate = "0" channels="0" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="1" />
         </handset>
         <speaker>
-            <snd_device name="speaker" />
-            <devicepp_mfc sample_rate="48000" channels="2" bit_width="32" />
-            <group_dev sample_rate = "0" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S32_LE" slot_mask="3" />
+            <group_dev sample_rate = "0" channels="0" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="3" />
         </speaker>
-        <haptics>
-            <snd_device name="speaker" />
-            <devicepp_mfc sample_rate="48000" channels="2" bit_width="32" />
-            <group_dev sample_rate = "48000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S32_LE" slot_mask="3" />
-        </haptics>
         <speaker_voice>
             <group_dev sample_rate = "0" channels="0" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="1" />
         </speaker_voice>
         <upd_rx_handset>
             <snd_device name="speaker" />
-            <devicepp_mfc sample_rate="48000" channels="2" bit_width="16" />
-            <group_dev sample_rate = "48000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="3" />
+            <devicepp_mfc sample_rate="96000" channels="2" bit_width="16" />
+            <group_dev sample_rate = "96000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="3" />
         </upd_rx_handset>
         <upd_rx_speaker>
             <snd_device name="speaker" />
-            <devicepp_mfc sample_rate="48000" channels="2" bit_width="16" />
-            <group_dev sample_rate = "48000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S32_LE" slot_mask="3" />
+            <devicepp_mfc sample_rate="96000" channels="2" bit_width="16" />
+            <group_dev sample_rate = "96000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S16_LE" slot_mask="3" />
         </upd_rx_speaker>
-        <haptics_rx_speaker>
-            <snd_device name="speaker" />
-            <devicepp_mfc sample_rate="48000" channels="2" bit_width="32" />
-            <group_dev sample_rate = "48000" channels="2" bit_fmt="PAL_AUDIO_FMT_PCM_S32_LE" slot_mask="3" />
-        </haptics_rx_speaker>
     </group_device_cfg>
     <config_max_sessions>
         <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
@@ -209,7 +197,7 @@
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
                 <priority>1</priority>
-                <sidetone_mode>HW</sidetone_mode>
+                <sidetone_mode>SW</sidetone_mode>
                 <bit_width>16</bit_width>
                 <ec_enable>1</ec_enable>
                 <custom-config key="nn-sm">
@@ -379,6 +367,7 @@
                 <ec_enable>1</ec_enable>
             </usecase>
             <ec_rx_device>
+                <id>PAL_DEVICE_OUT_HANDSET</id>
                 <id>PAL_DEVICE_OUT_SPEAKER</id>
             </ec_rx_device>
         </in-device>
@@ -592,10 +581,10 @@
             <id>PAL_DEVICE_IN_VI_FEEDBACK</id>
             <back_end_name>TDM-LPAIF_WSA-TX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
-            <channels>1</channels>
+            <channels>2</channels>
             <samplerate>48000</samplerate>
             <bit_width>32</bit_width>
-            <snd_device_name>vi-feedback-mono-2</snd_device_name>
+            <snd_device_name>vi-feedback</snd_device_name>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
                 <channels>1</channels>
@@ -698,7 +687,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK</id>
-            <back_end_name>TDM-LPAIF_WSA-TX-PRIMARY</back_end_name>
+            <back_end_name>CODEC_DMA-LPAIF_WSA2-TX-0</back_end_name>
             <snd_device_name>haptics-vi-feedback-mono</snd_device_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
@@ -740,7 +729,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_NONE</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
+            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-3</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>none</snd_device_name>
@@ -749,12 +738,12 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
-            <channels>1</channels>
+            <channels>2</channels>
             <samplerate>48000</samplerate>
-            <snd_device_name>speaker-mono-2</snd_device_name>
-            <speaker_protection_enabled>1</speaker_protection_enabled>
+            <snd_device_name>speaker</snd_device_name>
+            <speaker_protection_enabled>0</speaker_protection_enabled>
             <fractional_sr>0</fractional_sr>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
@@ -765,13 +754,12 @@
                         Pandeiro I2S : 4
             -->
             <wsa_used>4</wsa_used>
-            <bit_width>32</bit_width>
             <!-- Flag to specify cps mode which is applicable
                  Values: disable CPS: 0
                          CPS streaming: 1
                          ADSP control mode : 2
             -->
-            <cps_mode>0</cps_mode>
+            <cps_mode>2</cps_mode>
             <vbat_enabled>0</vbat_enabled>
             <!--specify the supported bit format on speaker end point -->
             <!--this should be in the form of pal_audio_fmt_id-->
@@ -816,7 +804,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -1091,25 +1079,24 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HAPTICS_DEVICE</id>
-            <back_end_name>TDM-LPAIF_WSA-RX-PRI</back_end_name>
+            <back_end_name>CODEC_DMA-LPAIF_WSA2-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <bit_width>32</bit_width>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>1</haptics_protection_enabled>
+            <haptics_protection_enabled>0</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">
-                    <backend_name>TDM-LPAIF_WSA-RX-PRI</backend_name>
+                    <backend_name>CODEC_DMA-LPAIF_WSA2-RX-1</backend_name>
                     <snd_device_name>haptics-dev</snd_device_name>
                     <samplerate>48000</samplerate>
-                    <bit_width>32</bit_width>
+                    <bit_width>16</bit_width>
                 </custom-config>
             </usecase>
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-1</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>ultrasound-handset-wsa</snd_device_name>
@@ -1131,7 +1118,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_ULTRASOUND_DEDICATED</id>
-            <back_end_name>CODEC_DMA-LPAIF_WSA-RX-0</back_end_name>
+            <back_end_name>TDM-LPAIF_WSA-RX-PRIMARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>handset-wsa</snd_device_name>
@@ -1708,6 +1695,22 @@
                 </operating_modes>
                 <sound_model_info>
                     <sound_model>
+                        <name>ACD_SOUND_MODEL_ID_ENVIRONMENT</name>
+                        <bin>environment.eai</bin>
+                        <uuid>0x0B001006</uuid>
+                        <contexts>
+                            <context id="0x08001324" /> <!-- ENV_HOME -->
+                            <context id="0x08001325" /> <!-- ENV_OFFICE -->
+                            <context id="0x08001326" /> <!-- ENV_RESTAURANT -->
+                            <context id="0x08001327" /> <!-- ENV_INDOOR -->
+                            <context id="0x08001328" /> <!-- ENV_INSTREET -->
+                            <context id="0x08001329" /> <!-- ENV_OUTDOOR -->
+                            <context id="0x0800132A" /> <!-- ENV_INCAR -->
+                            <context id="0x0800132B" /> <!-- ENV_INTRAIN -->
+                            <context id="0x0800132C" /> <!-- ENV_UNKNOWN -->
+                        </contexts>
+                    </sound_model>
+                    <sound_model>
                         <name>ACD_SOUND_MODEL_ID_EVENT</name>
                         <bin>event.eai</bin>
                         <uuid>0x0B001007</uuid>
@@ -2068,7 +2071,7 @@
                 <!-- NOTE: HIST_CAP usecase is typically running with ASR concurrency -->
                 <!-- supposed to use same capture profile as ASR due to shared dam and device pp -->
                 <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
+                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
                     <high_performance_and_charging capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
                 </operating_modes>

@@ -729,7 +729,7 @@
         <in-device>
             <id>PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK</id>
             <back_end_name>CODEC_DMA-QAIF-TX-2</back_end_name>
-            <snd_device_name>haptics-vi-feedback</snd_device_name>
+            <snd_device_name>haptics-vi-feedback-mono</snd_device_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <bit_width>16</bit_width>
@@ -1124,7 +1124,7 @@
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>1</haptics_protection_enabled>
+            <haptics_protection_enabled>0</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">

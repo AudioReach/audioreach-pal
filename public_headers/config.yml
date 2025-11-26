@@ -1,0 +1,9 @@
+project: https://github.com/AudioReach/audioreach-pal
+
+branches:
+  qclinux1.0:
+    modes:
+      non-blocking:
+        headers:
+          - inc/PalDefs.h
+          - inc/PalApi.h

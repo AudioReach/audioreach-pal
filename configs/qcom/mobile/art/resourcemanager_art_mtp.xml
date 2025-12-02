@@ -1938,6 +1938,8 @@
                     </first_stage_module_params>
                     <first_stage_module_params>
                         <param module_type="PDK" />
+                        <!-- whether lpi lab buffering ec is supported -->
+                        <param enable_lpi_lab_ec="true" />
                         <param load_sound_model_ids="0xC0000008, 0x0800124E" />
                         <param unload_sound_model_ids="0xC0000008, 0x08001250" />
                         <param wakeup_config_ids="0xC0000008, 0x08001049" />

@@ -748,7 +748,8 @@ int32_t StreamSoundTrigger::setECRef(std::shared_ptr<Device> dev, bool is_enable
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (getLPIUsage() && ConfigSupportLPI() && !sm_cfg_->GetEnableBufferingEC()) {
+    if (getLPIUsage() && ConfigSupportLPI() &&
+        !sm_cfg_->GetEnableLPILabEC(model_type_)) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -767,7 +768,8 @@ int32_t StreamSoundTrigger::setECRef_l(std::shared_ptr<Device> dev, bool is_enab
             dev ? dev->getPALDeviceName().c_str() : "Null");
 
     if (!cap_prof_ ||
-        (!cap_prof_->isECRequired() && !sm_cfg_->GetEnableBufferingEC())) {
+        (!cap_prof_->isECRequired() &&
+         !sm_cfg_->GetEnableLPILabEC(model_type_))) {
         PAL_DBG(LOG_TAG, "No need to set ec ref");
         goto exit;
     }

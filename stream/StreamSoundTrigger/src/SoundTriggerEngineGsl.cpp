@@ -251,7 +251,8 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         }
 
         // make sure history data is drained when LPI EC is setup
-        if (ftrt_size == 0 && sm_cfg_->GetEnableBufferingEC() && use_lpi_) {
+        if (ftrt_size == 0 && use_lpi_ &&
+            sm_cfg_->GetEnableLPILabEC(module_type_)) {
             ftrt_size = UsToBytes(buffer_config_.hist_buffer_duration_in_ms * 1000);
         }
 
@@ -1818,7 +1819,7 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             return status;
         }
         if (force_enable || ec_ref_count_ == 1) {
-            if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+            if (sm_cfg_->GetEnableLPILabEC(module_type_) && use_lpi_)
                 session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, true);
             status = session_->setECRef(s, dev, is_enable);
             if (status) {
@@ -1840,7 +1841,7 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             if (ec_ref_count_ > 0) {
                 ec_ref_count_--;
                 if (ec_ref_count_ == 0) {
-                    if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+                    if (sm_cfg_->GetEnableLPILabEC(module_type_) && use_lpi_)
                         session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, false);
                     status = session_->setECRef(s, dev, is_enable);
                     if (status == -ENETRESET) {

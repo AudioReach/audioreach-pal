@@ -966,10 +966,15 @@ void onChargingStateChange()
 {
     std::vector<pal_stream_type_t> st_streams;
     bool need_switch = false;
-    bool use_lpi_temp = false;
+    bool use_lpi_temp = use_lpi_;
     std::list<Stream*> activeVUIStreams, activeACDStreams, activeASRStreams, activeSPDStreams;
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
+    if (deferredSwitchState == DEFER_LPI_NLPI_SWITCH) {
+        use_lpi_temp = false;
+    } else if (deferredSwitchState == DEFER_NLPI_LPI_SWITCH) {
+        use_lpi_temp = true;
+    }
 
     rm->getActiveStreamByType_l(activeVUIStreams, PAL_STREAM_VOICE_UI);
     rm->getActiveStreamByType_l(activeACDStreams, PAL_STREAM_ACD);
@@ -979,10 +984,10 @@ void onChargingStateChange()
     if (activeVUIStreams.size() == 0)
         return;
 
-    if (charging_state_ && use_lpi_) {
+    if (charging_state_ && use_lpi_temp) {
         use_lpi_temp = false;
         need_switch = true;
-    } else if (!charging_state_ && !use_lpi_) {
+    } else if (!charging_state_ && !use_lpi_temp) {
         if (!mNLPIStreams.size()) {
             use_lpi_temp = true;
             need_switch = true;

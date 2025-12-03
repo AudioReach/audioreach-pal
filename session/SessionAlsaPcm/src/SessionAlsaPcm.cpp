@@ -3027,11 +3027,25 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
                           PARAM_ID_ASR_OUTPUT, configSize);
             break;
         }
+        case PAL_PARAM_ID_MULTI_CLIENT_ASR_OUTPUT:
+        {
+            configSize = s->GetPayloadSize();
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_ASR_OUTPUT_V3, configSize);
+            break;
+        }
         case PAL_PARAM_ID_SDZ_OUTPUT:
         {
             configSize = s->GetSdzPayloadSize();
             builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
                           PARAM_ID_SDZ_OUTPUT, configSize);
+            break;
+        }
+        case PAL_PARAM_ID_MULTI_CLIENT_SDZ_OUTPUT:
+        {
+            configSize = s->GetSdzPayloadSize();
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_SDZ_OUTPUT_V2, configSize);
             break;
         }
         case PAL_PARAM_ID_NMT_OUTPUT:

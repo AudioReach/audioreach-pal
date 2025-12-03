@@ -82,8 +82,12 @@ ASREngine::ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg)
     asrInfo = nullptr;
     smCfg = smCfg;
     engState = ASR_ENG_IDLE;
-    streamHandle = s;
     builder = new PayloadBuilder();
+    speechCfg = nullptr;
+    outputCfg = nullptr;
+    sdzOutputCfg = nullptr;
+    outputCfgSize = 0;
+    sdzOutputCfgSize = 0;
 
     asrInfo = ASRPlatformInfo::GetInstance();
     if (!asrInfo) {
@@ -96,7 +100,7 @@ ASREngine::ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg)
         moduleTagIds[i] = smCfg->GetModuleTagId((asr_param_id_type)i);
     }
 
-    status = streamHandle->getStreamAttributes(&sAttr);
+    status = s->getStreamAttributes(&sAttr);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to get stream attributes");
         throw std::runtime_error("Failed to get stream attributes");
@@ -133,11 +137,23 @@ ASREngine::~ASREngine()
     smCfg = nullptr;
     asrInfo = nullptr;
     session = nullptr;
-    streamHandle = nullptr;
 
     if (builder) {
         delete builder;
         builder = nullptr;
+    }
+
+    if (speechCfg) {
+        free(speechCfg);
+        speechCfg = nullptr;
+    }
+    if (outputCfg) {
+        free(outputCfg);
+        outputCfg = nullptr;
+    }
+    if (sdzOutputCfg) {
+        free(sdzOutputCfg);
+        sdzOutputCfg = nullptr;
     }
 
     {
@@ -172,6 +188,288 @@ bool ASREngine::IsEngineActive()
     return false;
 }
 
+int32_t ASREngine::UpdateASRConfiguration(StreamASR *s)
+{
+    int32_t status = 0;
+    uint8_t *ev_reg_payload = nullptr;
+    size_t ev_reg_size = 0;
+    std::vector<asr_param_id_type_t> param_id_list;
+    struct event_id_asr_output_reg_cfg_t *asr_reg_cfg = nullptr;
+    struct event_id_asr_output_reg_cfg_v2_t *asr_reg_v2_cfg = nullptr;
+    asr_client_id_t client_id = ASR_CLIENT_INVALID;
+    param_id_asr_output_config_t *asr_out_cfg = nullptr;
+    param_id_asr_output_config_v2_base_t *client_configs = nullptr;
+    uint32_t event_id = 0;
+
+    if (!s) {
+        PAL_ERR(LOG_TAG, "Invalid stream pointer");
+        return -EINVAL;
+    }
+
+    client_id = s->GetClientId();
+    if (client_id == ASR_CLIENT_INVALID) {
+        ev_reg_size = sizeof(struct event_id_asr_output_reg_cfg_t);
+        ev_reg_payload = (uint8_t *)calloc(1, ev_reg_size);
+        if (ev_reg_payload == NULL) {
+            PAL_ERR(LOG_TAG, "Failed to allocate event payload");
+            status = -ENOMEM;
+            goto exit;
+        }
+        asr_reg_cfg =
+            (struct event_id_asr_output_reg_cfg_t *)ev_reg_payload;
+        asr_reg_cfg->event_payload_type = 0;
+        event_id = EVENT_ID_ASR_OUTPUT;
+        param_id_list.push_back(ASR_INPUT_CONFIG);
+        param_id_list.push_back(ASR_INPUT_BUF_DURATON);
+        param_id_list.push_back(ASR_OUTPUT_CONFIG);
+    } else {
+        if (client_id == ASR_CLIENT_HLOS) {
+            // update event registration payload for HLOS client only
+            ev_reg_size = sizeof(struct event_id_asr_output_reg_cfg_v2_t);
+            ev_reg_payload = (uint8_t *)calloc(1, ev_reg_size);
+            if (ev_reg_payload == NULL) {
+                PAL_ERR(LOG_TAG, "Failed to allocate event payload");
+                status = -ENOMEM;
+                goto exit;
+            }
+            asr_reg_v2_cfg =
+                (struct event_id_asr_output_reg_cfg_v2_t *)ev_reg_payload;
+            asr_reg_v2_cfg->client_id = client_id;
+            asr_reg_v2_cfg->event_payload_type = 0;
+            event_id = EVENT_ID_ASR_OUTPUT_V2;
+        }
+        param_id_list.push_back(ASR_INPUT_CONFIG);
+        param_id_list.push_back(ASR_INPUT_BUF_DURATON_V2);
+        param_id_list.push_back(ASR_OUTPUT_CONFIG_V2);
+
+        outputCfgSize = sizeof(param_id_asr_output_config_v2_t) +
+            streamList.size() *
+            sizeof(struct param_id_asr_output_config_v2_base_t);
+        outputCfg = (param_id_asr_output_config_v2_t *)calloc(1, outputCfgSize);
+        if (!outputCfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate output config");
+            status = -ENOMEM;
+            goto exit;
+        }
+        outputCfg->num_clients = streamList.size();
+        client_configs = (param_id_asr_output_config_v2_base_t *)
+            ((uint8_t *)outputCfg + sizeof(param_id_asr_output_config_v2_t));
+        for (int i = 0; i < outputCfg->num_clients; i++) {
+            client_configs[i].client_id = streamList[i]->GetClientId();
+            asr_out_cfg = streamList[i]->GetOutputConfig();
+            if (!asr_out_cfg) {
+                PAL_ERR(LOG_TAG, "Invalid asr output config");
+                status = -EINVAL;
+                goto exit;
+            }
+            client_configs[i].output_mode = asr_out_cfg->output_mode;
+            client_configs[i].out_buf_size = asr_out_cfg->out_buf_size;
+            client_configs[i].num_bufs = asr_out_cfg->num_bufs;
+            if (streamList[i]->GetClientId() == ASR_CLIENT_HLOS) {
+                loggerModeEnabled = (asr_out_cfg->output_mode == ASR_LOGGER) ||
+                    (asr_out_cfg->output_mode == ASR_TS_LOGGER);
+                timestampEnabled = (asr_out_cfg->output_mode == ASR_TS_BUFFERED) ||
+                    (asr_out_cfg->output_mode == ASR_TS_NON_BUFFERED) ||
+                    (asr_out_cfg->output_mode == ASR_TS_LOGGER);
+            }
+        }
+    }
+    if (ev_reg_payload) {
+        dynamic_cast<SessionAR*>(session)->setEventPayload(
+            event_id, (void *)ev_reg_payload, ev_reg_size);
+    }
+
+    for (auto iter: param_id_list) {
+        status = setParameters(s, iter);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to set config %d", iter);
+            goto exit;
+        }
+    }
+
+exit:
+    if (ev_reg_payload)
+        free(ev_reg_payload);
+    if (outputCfg) {
+        free(outputCfg);
+        outputCfg = nullptr;
+    }
+    return status;
+}
+
+int32_t ASREngine::UpdateSDZConfiguration(StreamASR *s)
+{
+    int32_t status = 0;
+    uint8_t *ev_reg_payload = nullptr;
+    size_t ev_reg_size = 0;
+    struct event_id_sdz_output_reg_cfg_t *sdz_reg_cfg = nullptr;
+    struct event_id_sdz_output_reg_cfg_v2_t *sdz_reg_cfg_v2 = nullptr;
+    std::vector<asr_param_id_type_t> param_id_list;
+    sdz_client_id_t client_id = SDZ_CLIENT_INVALID;
+    param_id_sdz_output_config_t *sdz_out_cfg = nullptr;
+    param_id_sdz_output_config_v2_base_t *client_configs = nullptr;
+    uint32_t event_id = 0;
+
+    if (!s) {
+        PAL_ERR(LOG_TAG, "Invalid stream pointer");
+        return -EINVAL;
+    }
+
+    client_id = (sdz_client_id_t)s->GetClientId();
+    if (client_id == SDZ_CLIENT_INVALID) {
+        // update event registration payload
+        ev_reg_size = sizeof(struct event_id_sdz_output_reg_cfg_t);
+        ev_reg_payload = (uint8_t *)calloc(1, ev_reg_size);
+        if (ev_reg_payload == NULL) {
+            PAL_ERR(LOG_TAG, "Failed to allocate event payload");
+            status = -ENOMEM;
+            goto exit;
+        }
+        sdz_reg_cfg = (struct event_id_sdz_output_reg_cfg_t *)ev_reg_payload;
+        sdz_reg_cfg->event_payload_type = 0;
+        event_id = EVENT_ID_SDZ_OUTPUT;
+
+        // update input/output configurations
+        param_id_list.push_back(SDZ_ENABLE);
+        param_id_list.push_back(SDZ_INPUT_BUF_DURATION);
+        param_id_list.push_back(SDZ_OUTPUT_CONFIG);
+    } else {
+        if (client_id == SDZ_CLIENT_HLOS) {
+            // update event registration payload
+            ev_reg_size = sizeof(struct event_id_sdz_output_reg_cfg_v2_t);
+            ev_reg_payload = (uint8_t *)calloc(1, ev_reg_size);
+            if (ev_reg_payload == NULL) {
+                PAL_ERR(LOG_TAG, "Failed to allocate event payload");
+                status = -ENOMEM;
+                goto exit;
+            }
+            sdz_reg_cfg_v2 = (struct event_id_sdz_output_reg_cfg_v2_t *)ev_reg_payload;
+            sdz_reg_cfg_v2->client_id = client_id;
+            sdz_reg_cfg_v2->event_payload_type = 0;
+            event_id = EVENT_ID_SDZ_OUTPUT_V2;
+        }
+        param_id_list.push_back(SDZ_ENABLE);
+        param_id_list.push_back(SDZ_INPUT_BUF_DURATION_V2);
+        param_id_list.push_back(SDZ_OUTPUT_CONFIG_V2);
+
+        sdzOutputCfgSize = sizeof(param_id_sdz_output_config_v2_t) +
+            streamList.size() *
+            sizeof(struct param_id_sdz_output_config_v2_base_t);
+        sdzOutputCfg = (param_id_sdz_output_config_v2_t *)calloc(1, sdzOutputCfgSize);
+        if (!sdzOutputCfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate sdz output config");
+            status = -ENOMEM;
+            goto exit;
+        }
+        sdzOutputCfg->num_clients = streamList.size();
+        client_configs = (param_id_sdz_output_config_v2_base_t *)
+            ((uint8_t *)sdzOutputCfg + sizeof(param_id_sdz_output_config_v2_t));
+        for (int i = 0; i < sdzOutputCfg->num_clients; i++) {
+            client_configs[i].client_id = streamList[i]->GetClientId();
+            sdz_out_cfg = streamList[i]->GetSdzOutputConfig();
+            if (!sdz_out_cfg) {
+                PAL_ERR(LOG_TAG, "Invalid sdz output config");
+                status = -EINVAL;
+                goto exit;
+            }
+            client_configs[i].output_mode = sdz_out_cfg->output_mode;
+            client_configs[i].out_buf_size = sdz_out_cfg->out_buf_size;
+            client_configs[i].num_bufs = sdz_out_cfg->num_bufs;
+        }
+    }
+
+    if (ev_reg_payload) {
+        dynamic_cast<SessionAR*>(session)->setEventPayload(
+            event_id, (void *)ev_reg_payload, ev_reg_size);
+    }
+
+    for (auto iter: param_id_list) {
+        status = setParameters(s, iter);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to set config %d", iter);
+            goto exit;
+        }
+    }
+
+exit:
+    if (ev_reg_payload)
+        free(ev_reg_payload);
+    if (sdzOutputCfg) {
+        free(sdzOutputCfg);
+        sdzOutputCfg = nullptr;
+    }
+    return status;
+}
+
+int32_t ASREngine::AttachStream(StreamASR *s)
+{
+    StreamASR *str = nullptr;
+
+    if (!s) {
+        PAL_ERR(LOG_TAG, "Invalid stream pointer");
+        return -EINVAL;
+    }
+
+    if (!speechCfg) {
+        speechCfg = (param_id_asr_config_t *)calloc(1,
+            sizeof(param_id_asr_config_t));
+        if (!speechCfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for asr config");
+            return -ENOMEM;
+        }
+    }
+
+    auto iter = std::find(streamList.begin(), streamList.end(), s);
+    if (iter == streamList.end())
+        streamList.push_back(s);
+
+    for (int i = 0; i < streamList.size(); i++) {
+        str = streamList[i];
+        if (str && str->GetClientId() != ASR_CLIENT_LLS)
+            break;
+    }
+
+    if (str && str->GetSpeechConfig()) {
+        memcpy(speechCfg, str->GetSpeechConfig(),
+            sizeof(param_id_asr_config_t));
+    }
+
+    return 0;
+}
+
+int32_t ASREngine::DetachStream(StreamASR *s)
+{
+    param_id_asr_config_t *asr_config = nullptr;
+
+    auto iter = std::find(streamList.begin(), streamList.end(), s);
+    if (iter != streamList.end())
+        streamList.erase(iter);
+
+    if (streamList.size() && speechCfg) {
+        asr_config = streamList[0]->GetSpeechConfig();
+        if (asr_config)
+            memcpy(speechCfg, asr_config, sizeof(param_id_asr_config_t));
+    } else if (speechCfg) {
+        free(speechCfg);
+        speechCfg = nullptr;
+    }
+
+    return 0;
+}
+
+int32_t ASREngine::getCustomParam(
+    custom_payload_uc_info_t* uc_info, std::string param_str,
+    void* param_payload, size_t* payload_size, Stream *s)
+{
+    if (!session) {
+        PAL_ERR(LOG_TAG, "Invalid session");
+        return -EINVAL;
+    }
+
+    return session->getCustomParam(
+        uc_info, param_str, param_payload, payload_size, s);
+}
+
 int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *paramPayload)
 {
     int32_t status = 0;
@@ -183,6 +481,9 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
     size_t dataSize = 0;
     uint32_t sesParamId = 0;
     uint32_t miid = 0;
+    param_id_asr_input_threshold_v2_t asrInputBufCfg = {};
+    param_id_sdz_input_threshold_v2_t sdzInputBufCfg = {};
+    param_id_module_enable_t param;
 
     PAL_DBG(LOG_TAG, "Enter, param id %d ", pid);
 
@@ -204,12 +505,11 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
 
     switch (pid) {
         case ASR_INPUT_CONFIG : {
-            param_id_asr_config_t *config = s->GetSpeechConfig();
-            if (config == nullptr) {
+            if (speechCfg == nullptr) {
                 PAL_ERR(LOG_TAG, "No config available, can't start the engine!!!");
                 goto exit;
             }
-            data = (uint8_t *)config;
+            data = (uint8_t *)speechCfg;
             dataSize = sizeof(param_id_asr_config_t);
             sesParamId = PAL_PARAM_ID_ASR_CONFIG;
             break;
@@ -269,6 +569,43 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             sesParamId = PAL_PARAM_ID_ASR_FORCE_OUTPUT;
             break;
         }
+        case ASR_FORCE_OUTPUT_V2 : {
+            if (loggerModeEnabled) {
+                /* In logger mode, HLOS will not get any event from DSP, HLOS need to
+                 * trigger a getParam to get the transcription, hence following dummy event
+                 * is pushed in the event queue, so that getParam and all other handling
+                 * can be leveraged by logger mode. Number of output is updated with 1,
+                 * and payloadSize with outputBufSize, as these will be used by payload
+                 * builder during getParam, as DSP will send payload of output buffer size,
+                 * which was used while setting up the usecase.
+                 */
+                event_id_asr_output_event_t *event = (event_id_asr_output_event_t *)
+                                     calloc(1, sizeof(event_id_asr_output_event_t));
+                if (event == nullptr) {
+                    PAL_ERR(LOG_TAG, "Failed to allocate memory for ASR output event");
+                    goto exit;
+                }
+                event->output_token = 0;
+                event->num_outputs = 1;
+                event->payload_size = outputBufSize;
+                eventQ.push({EVENT_ID_ASR_OUTPUT_V2, event});
+                cv.notify_one();
+                goto exit;
+            }
+
+            param_id_asr_force_output_v2_t *param = (param_id_asr_force_output_v2_t *)
+                                    calloc(1, sizeof(param_id_asr_force_output_v2_t));
+            if (param == nullptr) {
+                 PAL_ERR(LOG_TAG, "Failed to allocate memory for ASR force output config!!!");
+                 goto exit;
+            }
+            param->client_id = s->GetClientId();
+            param->force_output = 1;
+            data = (uint8_t *)param;
+            dataSize = sizeof(param_id_asr_force_output_v2_t);
+            sesParamId = PAL_PARAM_ID_ASR_FORCE_OUTPUT;
+            break;
+        }
         case SDZ_FORCE_OUTPUT : {
             param_id_sdz_force_output_t *param = (param_id_sdz_force_output_t *)
                                 calloc(1, sizeof(param_id_sdz_force_output_t));
@@ -282,21 +619,45 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             sesParamId = PAL_PARAM_ID_SDZ_FORCE_OUTPUT;
             break;
         }
+        case SDZ_FORCE_OUTPUT_V2 : {
+            param_id_sdz_force_output_v2_t *param = (param_id_sdz_force_output_v2_t *)
+                                calloc(1, sizeof(param_id_sdz_force_output_v2_t));
+            if (param == nullptr) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for SDZ force output config!!!");
+                goto exit;
+            }
+            param->client_id = s->GetClientId();
+            param->force_output = 1;
+            data = (uint8_t *)param;
+            dataSize = sizeof(param_id_sdz_force_output_v2_t);
+            sesParamId = PAL_PARAM_ID_SDZ_FORCE_OUTPUT;
+            break;
+        }
         case ASR_OUTPUT_CONFIG : {
             param_id_asr_output_config_t *opConfig = s->GetOutputConfig();
             if (opConfig == nullptr) {
                 PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
                 goto exit;
             }
-            if (opConfig->output_mode == LOGGER || opConfig->output_mode == TS_LOGGER)
+            if (opConfig->output_mode == ASR_LOGGER || opConfig->output_mode == ASR_TS_LOGGER)
                 loggerModeEnabled = true;
-            if (opConfig->output_mode == TS_BUFFERED ||
-                opConfig->output_mode == TS_NON_BUFFERED ||
-                opConfig->output_mode == TS_LOGGER)
+            if (opConfig->output_mode == ASR_TS_BUFFERED ||
+                opConfig->output_mode == ASR_TS_NON_BUFFERED ||
+                opConfig->output_mode == ASR_TS_LOGGER)
                 timestampEnabled = true;
             outputBufSize = opConfig->out_buf_size;
             data = (uint8_t *)opConfig;
             dataSize = sizeof(param_id_asr_output_config_t);
+            sesParamId = PAL_PARAM_ID_ASR_OUTPUT;
+            break;
+        }
+        case ASR_OUTPUT_CONFIG_V2 : {
+            if (outputCfg == nullptr || outputCfgSize == 0) {
+                PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
+                goto exit;
+            }
+            data = (uint8_t *)outputCfg;
+            dataSize = outputCfgSize;
             sesParamId = PAL_PARAM_ID_ASR_OUTPUT;
             break;
         }
@@ -311,6 +672,16 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             sesParamId = PAL_PARAM_ID_SDZ_OUTPUT;
             break;
         }
+        case SDZ_OUTPUT_CONFIG_V2 : {
+            if (sdzOutputCfg == nullptr || sdzOutputCfgSize == 0) {
+                PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
+                goto exit;
+            }
+            data = (uint8_t *)sdzOutputCfg;
+            dataSize = sdzOutputCfgSize;
+            sesParamId = PAL_PARAM_ID_SDZ_OUTPUT;
+            break;
+        }
         case ASR_INPUT_BUF_DURATON: {
             param_id_asr_input_threshold_t *ipConfig = s->GetInputBufConfig();
             if (ipConfig == nullptr) {
@@ -319,6 +690,19 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             }
             data = (uint8_t *)ipConfig;
             dataSize = sizeof(param_id_asr_input_threshold_t);
+            sesParamId = PAL_PARAM_ID_ASR_SET_PARAM;
+            break;
+        }
+        case ASR_INPUT_BUF_DURATON_V2: {
+            param_id_asr_input_threshold_t *ipConfig = s->GetInputBufConfig();
+            if (ipConfig == nullptr) {
+                PAL_ERR(LOG_TAG, "No input config available, can't start the engine!!!");
+                goto exit;
+            }
+            asrInputBufCfg.client_id = s->GetClientId();
+            asrInputBufCfg.buf_duration_ms = ipConfig->buf_duration_ms;
+            data = (uint8_t *)&asrInputBufCfg;
+            dataSize = sizeof(param_id_asr_input_threshold_v2_t);
             sesParamId = PAL_PARAM_ID_ASR_SET_PARAM;
             break;
         }
@@ -333,8 +717,20 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
             break;
         }
+        case SDZ_INPUT_BUF_DURATION_V2: {
+            param_id_sdz_input_threshold_t *ipConfigSdz = s->GetSdzInputBufferConfig();
+            if (ipConfigSdz == nullptr) {
+                PAL_ERR(LOG_TAG, "No input config available for Sdz!!!");
+                goto exit;
+            }
+            sdzInputBufCfg.client_id = s->GetClientId();
+            sdzInputBufCfg.buf_duration_ms = ipConfigSdz->buf_duration_ms;
+            data = (uint8_t *)&sdzInputBufCfg;
+            dataSize = sizeof(param_id_sdz_input_threshold_v2_t);
+            sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
+            break;
+        }
         case SDZ_ENABLE : {
-            param_id_module_enable_t param;
             param.enable = 1;
             data = (uint8_t *)&param;
             dataSize = sizeof(param_id_module_enable_t);
@@ -354,7 +750,7 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
         return -ENOMEM;
     }
 
-    status = dynamic_cast<SessionAR*>(session)->setParamWithTag(streamHandle, tagId,
+    status = dynamic_cast<SessionAR*>(session)->setParamWithTag(s, tagId,
                                                                 sesParamId, payload);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to set payload for param id %x, status = %d",
@@ -377,73 +773,39 @@ int32_t ASREngine::StartEngine(StreamASR *s)
 
     int32_t status = 0;
     int32_t tempStatus = 0;
-    uint8_t *eventPayload = NULL;
-    size_t eventPayloadSize = sizeof(struct event_id_asr_output_reg_cfg_t);
-    struct event_id_asr_output_reg_cfg_t *eventConfig =  NULL;
-    size_t eventPayloadSizeSdz = sizeof(struct event_id_sdz_output_reg_cfg_t);
-    struct event_id_sdz_output_reg_cfg_t *eventConfigSdz = NULL;
 
     std::lock_guard<std::mutex> lck(mutexEngine);
 
-    eventPayload = (uint8_t *)calloc(1, eventPayloadSize);
-    if (eventPayload == NULL)
-        goto exit;
+    if (IsEngineActive()) {
+        status = session->stop(streamList[0]);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "Error:%d Failed to stop session", status);
+            goto exit;
+        }
+    } else {
+        status = session->open(s);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "Error:%d Failed to open session", status);
+            goto exit;
+        }
+    }
 
-    eventConfig = (struct event_id_asr_output_reg_cfg_t *)eventPayload;
-    eventConfig->event_payload_type = 0;
-
-    status = session->open(s);
+    status = AttachStream(s);
     if (0 != status) {
-        PAL_ERR(LOG_TAG, "Error:%d Failed to open session", status);
-        goto exit;
-    }
-    dynamic_cast<SessionAR*>(session)->setEventPayload(
-        EVENT_ID_ASR_OUTPUT, (void *)eventPayload, eventPayloadSize);
-
-    status = setParameters(s, ASR_INPUT_CONFIG);
-    if (status) {
-        PAL_ERR(LOG_TAG, "Failed to set engine config, can't start the engine!!!");
+        PAL_ERR(LOG_TAG, "Failed to attach stream, status = %d", status);
         goto err_cleanup;
     }
 
-    status = setParameters(s, ASR_INPUT_BUF_DURATON);
-    if (status) {
-        PAL_ERR(LOG_TAG, "Failed to set input config, can't start the engine!!!");
-        goto err_cleanup;
-    }
-
-    status = setParameters(s, ASR_OUTPUT_CONFIG);
-    if (status) {
-        PAL_ERR(LOG_TAG, "Failed to set output config, can't start the engine!!!");
+    status = UpdateASRConfiguration(s);
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "Failed to update ASR config, status = %d", status);
         goto err_cleanup;
     }
 
     if (s->EnableSpeakerDiarization()) {
-        status = setParameters(s, SDZ_ENABLE);
-        if (status) {
-            PAL_ERR(LOG_TAG, "Failed to enable SDZ module, can't start the engine!!!");
-            goto err_cleanup;
-        }
-
-        eventPayload = (uint8_t *)calloc(1, eventPayloadSizeSdz);
-        if (eventPayload == NULL)
-            goto err_cleanup;
-
-        eventConfigSdz = (struct event_id_sdz_output_reg_cfg_t *)eventPayload;
-        eventConfigSdz->event_payload_type = 0;
-
-        dynamic_cast<SessionAR*>(session)->setEventPayload(
-               EVENT_ID_SDZ_OUTPUT, (void *)eventPayload, eventPayloadSizeSdz);
-
-        status = setParameters(s, SDZ_INPUT_BUF_DURATION);
-        if (status) {
-            PAL_ERR(LOG_TAG, "Failed to set input config, can't start the engine!!!");
-            goto err_cleanup;
-        }
-
-        status = setParameters(s, SDZ_OUTPUT_CONFIG);
-        if (status) {
-            PAL_ERR(LOG_TAG, "Failed to set output config, can't start the engine!!!");
+        status = UpdateSDZConfiguration(s);
+        if (0 != status) {
+            PAL_ERR(LOG_TAG, "Failed to update SDZ config, status = %d", status);
             goto err_cleanup;
         }
     }
@@ -469,16 +831,6 @@ err_cleanup:
         PAL_ERR(LOG_TAG, "Error: %d Failed to close session", tempStatus);
 
 exit:
-    if (eventConfig) {
-        free(eventConfig);
-        eventConfig = nullptr;
-    }
-
-    if (eventConfigSdz) {
-        free(eventConfigSdz);
-        eventConfigSdz = nullptr;
-    }
-
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -488,19 +840,42 @@ int32_t ASREngine::StopEngine(StreamASR *s)
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
+    std::lock_guard<std::mutex> lck(mutexEngine);
 
     status = session->stop(s);
     if (status) {
         PAL_ERR(LOG_TAG, "Error:%d Failed to stop session", status);
     }
 
-    status = session->close(s);
-    if (status)
-        PAL_ERR(LOG_TAG, "Error: %d Failed to close session", status);
+    DetachStream(s);
 
-    engState = ASR_ENG_IDLE;
-    loggerModeEnabled = false;
-    timestampEnabled = false;
+    if (streamList.size()) {
+        status = UpdateASRConfiguration(streamList[0]);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to update ASR config, status = %d", status);
+            goto exit;
+        }
+
+        if (streamList[0]->EnableSpeakerDiarization()) {
+            status = UpdateSDZConfiguration(streamList[0]);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to update SDZ config, status = %d", status);
+                goto exit;
+            }
+        }
+        status = session->start(streamList[0]);
+        if (status)
+            PAL_ERR(LOG_TAG, "Error: %d Failed to close session", status);
+    } else {
+        status = session->close(s);
+        if (status)
+            PAL_ERR(LOG_TAG, "Error: %d Failed to close session", status);
+
+        engState = ASR_ENG_IDLE;
+        loggerModeEnabled = false;
+        timestampEnabled = false;
+    }
+
 exit:
     PAL_DBG(LOG_TAG, "Exit, status = %d", status);
     return status;
@@ -511,9 +886,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     PAL_DBG(LOG_TAG, "Enter.");
 
     int32_t status = 0;
-    int32_t eventStatus = 0;
     bool abortEvent = false;
-    size_t eventSize = 0;
     void *payload = nullptr;
     uint8_t *temp = nullptr;
     event_id_asr_output_event_t *event = nullptr;
@@ -521,6 +894,19 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     param_id_asr_output_t *eventHeader = nullptr;
     eventPayload eventToStream {};
     StreamASR *sAsr = nullptr;
+    uint32_t paramId = 0;
+
+    for (int i = 0; i < streamList.size(); i++) {
+        if (streamList[i] &&
+            streamList[i]->GetClientId() != ASR_CLIENT_LLS) {
+            sAsr = streamList[i];
+            break;
+        }
+    }
+    if (!sAsr) {
+        PAL_ERR(LOG_TAG, "No matching ASR stream");
+        goto exit;
+    }
 
     event = (struct event_id_asr_output_event_t *)eventData;
     if (event == nullptr) {
@@ -546,10 +932,11 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     outputToken = event->output_token;
     payloadSize = event->payload_size;
 
+    paramId = (sAsr->GetClientId() == ASR_CLIENT_HLOS) ?
+        PAL_PARAM_ID_MULTI_CLIENT_ASR_OUTPUT : PAL_PARAM_ID_ASR_OUTPUT;
     if (!abortEvent) {
-        status = dynamic_cast<SessionAR*>(session)->getParamWithTag(streamHandle,
-                           moduleTagIds[ASR_OUTPUT], PAL_PARAM_ID_ASR_OUTPUT,
-                           &payload);
+        status = dynamic_cast<SessionAR*>(session)->getParamWithTag(sAsr,
+                           moduleTagIds[ASR_OUTPUT], paramId, &payload);
         if (status != 0) {
             PAL_ERR(LOG_TAG, "Failed to get output payload");
             goto cleanup;
@@ -567,9 +954,17 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
     payloadSize = 0;
 
     temp = (uint8_t *)payload;
+    if (sAsr->GetClientId() == ASR_CLIENT_HLOS && !abortEvent) {
+        if (*(uint32_t *)temp != ASR_CLIENT_HLOS) {
+            PAL_ERR(LOG_TAG, "Invalid client id");
+            goto cleanup;
+        }
+        temp += sizeof(uint32_t);
+    }
+
     eventHeader = (struct param_id_asr_output_t *)temp;
     if (timestampEnabled) {
-        PAL_INFO(LOG_TAG, "Timestamp based event recieved");
+        PAL_INFO(LOG_TAG, "Timestamp based event received");
         asr_output_status_v2_t *ev = (asr_output_status_v2_t *)(temp + sizeof(struct param_id_asr_output_t));
         pal_asr_ts_event *eventPayload = nullptr;
         asr_word_status_t *words = nullptr;
@@ -589,10 +984,10 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
             if (ev->status == ASR_FAIL) {
-                PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
+                PAL_INFO(LOG_TAG, "Received failure event, ignoring this event!!!");
                 goto cleanup;
             } else if (ev->num_words >= MAX_NUM_WORDS) {
-                PAL_INFO(LOG_TAG, "Recieved event, with more words %d than allowed %d!!!",
+                PAL_INFO(LOG_TAG, "Received event, with more words %d than allowed %d!!!",
                          ev->num_words, MAX_NUM_WORDS);
                 goto cleanup;
             }
@@ -642,7 +1037,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
 
         for (int i = 0; i < eventHeader->num_outputs; i++) {
             if (ev[i].status == ASR_FAIL) {
-                PAL_INFO(LOG_TAG, "Recieved failure event, ignoring this event!!!");
+                PAL_INFO(LOG_TAG, "Received failure event, ignoring this event!!!");
                 goto cleanup;
             }
             eventPayload->status = ev[i].status == ASR_TIMEOUT ? PAL_ASR_EVENT_STATUS_TIMEOUT :
@@ -655,7 +1050,9 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         }
     }
 
-    streamHandle->HandleEventData(eventToStream);
+    mutexEngine.unlock();
+    sAsr->HandleEventData(eventToStream);
+    mutexEngine.lock();
 
 cleanup:
     if (eventToStream.payload) {
@@ -683,23 +1080,43 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
     PAL_DBG(LOG_TAG, "Enter.");
 
     int32_t status = 0;
-    bool eventStatus = false;
     bool overlapDetected = true;
     void *payload = nullptr;
     uint8_t *temp = nullptr;
-    size_t eventSize = 0;
     uint32_t numSpeakers = 0;
     std::vector<std::vector<struct sdz_speaker_info>> sdzOutputVector;
     std::vector<std::pair<bool, uint32_t>> sdzOverlapNumSpeakerVector;
     event_id_sdz_output_event_t *event = nullptr;
+    event_id_sdz_output_event_v2_t *eventV2 = nullptr;
     sdz_output_status_t *ev = nullptr;
+    sdz_output_status_v2_t *evV2 = nullptr;
     param_id_sdz_output_t *eventHeader = nullptr;
+    param_id_sdz_output_v2_t *eventHeaderV2 = nullptr;
     sdz_speaker_info_t *eventSpeakerInfo = nullptr;
+    sdz_speaker_segment_t *eventSpeakerSegment = nullptr;
     pal_sdz_event *sdzEventPayload = nullptr;
     eventPayload eventToStream;
     StreamASR *sAsr = nullptr;
+    uint32_t paramId = 0;
 
-    event = (event_id_sdz_output_event_t *)eventData;
+    for (int i = 0; i < streamList.size(); i++) {
+        if (streamList[i] &&
+            streamList[i]->GetClientId() != ASR_CLIENT_LLS) {
+            sAsr = streamList[i];
+            break;
+        }
+    }
+    if (!sAsr) {
+        PAL_ERR(LOG_TAG, "No matching ASR stream");
+        goto exit;
+    }
+
+    if (sAsr->GetClientId() == SDZ_CLIENT_INVALID) {
+        event = (event_id_sdz_output_event_t *)eventData;
+    } else {
+        eventV2 = (event_id_sdz_output_event_v2_t *)eventData;
+        event = (event_id_sdz_output_event_t *)&eventV2->event_payload_type;
+    }
     if (event == nullptr) {
         PAL_ERR(LOG_TAG, "Invalid event!!!");
         goto exit;
@@ -715,43 +1132,80 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
 
     sdzNumOutput = event->num_outputs;
     sdzOutputToken = event->output_token;
-    sdzPayloadSize = sizeof(param_id_sdz_output_t) + event->payload_size;
+    if (sAsr->GetClientId() == SDZ_CLIENT_HLOS) {
+        sdzPayloadSize = sizeof(param_id_sdz_output_v2_t) + event->payload_size;
+        paramId = PAL_PARAM_ID_MULTI_CLIENT_SDZ_OUTPUT;
+    } else {
+        sdzPayloadSize = sizeof(param_id_sdz_output_t) + event->payload_size;
+        paramId = PAL_PARAM_ID_SDZ_OUTPUT;
+    }
 
-    status = dynamic_cast<SessionAR*>(session)->getParamWithTag(streamHandle,
-                           moduleTagIds[SDZ_OUTPUT], PAL_PARAM_ID_SDZ_OUTPUT,
-                           &payload);
+    status = dynamic_cast<SessionAR*>(session)->getParamWithTag(sAsr,
+                           moduleTagIds[SDZ_OUTPUT], paramId, &payload);
     if (status != 0) {
         PAL_ERR(LOG_TAG, "Failed to get output payload");
         goto cleanup;
     }
 
-    eventHeader = (param_id_sdz_output_t *)payload;
-
-    ev = (sdz_output_status_t *)((uint8_t *)payload + sizeof(param_id_sdz_output_t));
-    for (int i = 0; i < eventHeader->num_outputs; i++) {
-        std::vector<struct sdz_speaker_info> speakerInfoVector;
-        eventSpeakerInfo = (sdz_speaker_info_t *)((uint8_t *)ev + sizeof(sdz_output_status_t));
-        numSpeakers += ev->num_speakers;
-        for (int j = 0; j < ev->num_speakers; j++) {
-            struct sdz_speaker_info speakerInfo;
-            speakerInfo.speaker_id = eventSpeakerInfo->speaker_id;
-            speakerInfo.start_ts = ((uint64_t)eventSpeakerInfo->start_ts_msw << 32 |
-                                     (uint64_t)eventSpeakerInfo->start_ts_lsw);
-            speakerInfo.end_ts = ((uint64_t)eventSpeakerInfo->end_ts_msw << 32 |
-                                     (uint64_t)eventSpeakerInfo->end_ts_lsw);
-            speakerInfoVector.push_back(speakerInfo);
-            eventSpeakerInfo++;
-            temp = (uint8_t *)eventSpeakerInfo;
+    if (sAsr->GetClientId() == SDZ_CLIENT_HLOS) {
+        eventHeaderV2 = (param_id_sdz_output_v2_t *)payload;
+        if (eventHeaderV2->client_id != SDZ_CLIENT_HLOS) {
+            PAL_ERR(LOG_TAG, "Invalid client id");
+            goto cleanup;
         }
-        sdzOutputVector.push_back(speakerInfoVector);
-        sdzOverlapNumSpeakerVector.push_back({ev->overlap_detected, ev->num_speakers});
-        ev = (sdz_output_status_t *)temp;
+
+        evV2 = (sdz_output_status_v2_t *)((uint8_t *)payload + sizeof(param_id_sdz_output_v2_t));
+        for (int i = 0; i < eventHeaderV2->num_outputs; i++) {
+            std::vector<struct sdz_speaker_info> speakerInfoVector;
+            eventSpeakerSegment = (sdz_speaker_segment_t *)((uint8_t *)evV2 + sizeof(sdz_output_status_v2_t));
+            numSpeakers += evV2->num_segments;
+            for (int j = 0; j < evV2->num_segments; j++) {
+                struct sdz_speaker_info speakerInfo;
+                speakerInfo.speaker_id = eventSpeakerSegment->speaker_id;
+                speakerInfo.start_ts = ((uint64_t)eventSpeakerSegment->time_stamp_start_msw << 32 |
+                                        (uint64_t)eventSpeakerSegment->time_stamp_start_lsw);
+                speakerInfo.end_ts = ((uint64_t)eventSpeakerSegment->time_stamp_end_msw << 32 |
+                                        (uint64_t)eventSpeakerSegment->time_stamp_end_lsw);
+                speakerInfoVector.push_back(speakerInfo);
+                eventSpeakerSegment++;
+                temp = (uint8_t *)eventSpeakerSegment;
+            }
+            sdzOutputVector.push_back(speakerInfoVector);
+            sdzOverlapNumSpeakerVector.push_back({evV2->num_segments > 1, evV2->num_segments});
+            evV2 = (sdz_output_status_v2_t *)temp;
+        }
+        eventToStream.payloadSize = sizeof(pal_sdz_event) +
+            sdzOverlapNumSpeakerVector.size() * sizeof(struct sdz_output) +
+            numSpeakers * sizeof(sdz_speaker_segment_t);
+    } else {
+        eventHeader = (param_id_sdz_output_t *)payload;
+
+        ev = (sdz_output_status_t *)((uint8_t *)payload + sizeof(param_id_sdz_output_t));
+        for (int i = 0; i < eventHeader->num_outputs; i++) {
+            std::vector<struct sdz_speaker_info> speakerInfoVector;
+            eventSpeakerInfo = (sdz_speaker_info_t *)((uint8_t *)ev + sizeof(sdz_output_status_t));
+            numSpeakers += ev->num_speakers;
+            for (int j = 0; j < ev->num_speakers; j++) {
+                struct sdz_speaker_info speakerInfo;
+                speakerInfo.speaker_id = eventSpeakerInfo->speaker_id;
+                speakerInfo.start_ts = ((uint64_t)eventSpeakerInfo->start_ts_msw << 32 |
+                                        (uint64_t)eventSpeakerInfo->start_ts_lsw);
+                speakerInfo.end_ts = ((uint64_t)eventSpeakerInfo->end_ts_msw << 32 |
+                                        (uint64_t)eventSpeakerInfo->end_ts_lsw);
+                speakerInfoVector.push_back(speakerInfo);
+                eventSpeakerInfo++;
+                temp = (uint8_t *)eventSpeakerInfo;
+            }
+            sdzOutputVector.push_back(speakerInfoVector);
+            sdzOverlapNumSpeakerVector.push_back({ev->overlap_detected, ev->num_speakers});
+            ev = (sdz_output_status_t *)temp;
+        }
+        eventToStream.payloadSize = sizeof(pal_sdz_event) +
+            sdzOverlapNumSpeakerVector.size() * sizeof(struct sdz_output) +
+            numSpeakers * sizeof(sdz_speaker_info);
     }
 
     eventToStream.type = SPEAKER_DIARIZATION;
-    eventToStream.payloadSize = sizeof(pal_sdz_event) +
-                                sdzOverlapNumSpeakerVector.size() * sizeof(struct sdz_output) +
-                                numSpeakers * sizeof(sdz_speaker_info);
     eventToStream.payload = (void *)calloc(1, eventToStream.payloadSize);
     if (eventToStream.payload == nullptr) {
         PAL_ERR(LOG_TAG, "Failed to allocate memory for stream event!!");
@@ -773,9 +1227,11 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
     sdzOutputVector.clear();
     sdzOverlapNumSpeakerVector.clear();
 
-    PAL_INFO(LOG_TAG, "Total number of speakers : %d",numSpeakers)
+    PAL_INFO(LOG_TAG, "Total number of speakers : %d", numSpeakers)
 
-    streamHandle->HandleEventData(eventToStream);
+    mutexEngine.unlock();
+    sAsr->HandleEventData(eventToStream);
+    mutexEngine.lock();
 
 cleanup:
     if (eventToStream.payload) {
@@ -819,7 +1275,8 @@ void ASREngine::EventProcessingThread(ASREngine *engine)
         if (!engine->eventQ.empty()) {
             event = engine->eventQ.front();
             engine->eventQ.pop();
-            if (event.first == EVENT_ID_SDZ_OUTPUT) {
+            if (event.first == EVENT_ID_SDZ_OUTPUT ||
+                event.first == EVENT_ID_SDZ_OUTPUT_V2) {
                 engine->ParseSdzEventAndNotifyStream(event.second);
             } else {
                 engine->ParseEventAndNotifyStream(event.second);
@@ -865,7 +1322,10 @@ void ASREngine::HandleSessionCallBack(uint64_t hdl, uint32_t eventId,
         return;
     }
 
-    if (eventId != EVENT_ID_ASR_OUTPUT && eventId != EVENT_ID_SDZ_OUTPUT)
+    if (eventId != EVENT_ID_ASR_OUTPUT &&
+        eventId != EVENT_ID_ASR_OUTPUT_V2 &&
+        eventId != EVENT_ID_SDZ_OUTPUT &&
+        eventId != EVENT_ID_SDZ_OUTPUT_V2)
         return;
 
     engine = (ASREngine *)hdl;

@@ -167,7 +167,7 @@
         <stream name="PAL_STREAM_SPATIAL_AUDIO" max_size="1" />
         <stream name="PAL_STREAM_COMMON_PROXY" max_size="8" />
         <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" max_size="1" />
-        <stream name="PAL_STREAM_ASR" max_size="1" />
+        <stream name="PAL_STREAM_ASR" max_size="2" />
         <stream name="PAL_STREAM_CALL_TRANSLATION" max_size="2" />
     </config_max_sessions>
     <device_profile>
@@ -1865,7 +1865,29 @@
                 <param partial_mode_in_lpi="true"/>
                 <!-- Output buffer size for speaker diarization in bytes -->
                 <param sdz_output_buffer_size="102400" />
+                <!-- Whether life logger is enabled -->
+                <param enable_life_logger="false"/>
+                <!-- ASR input DAM buffer size for life logger usecase -->
+                <!-- Valid only when it is set to non-zero value -->
+                <!-- Config from ASPS is used when this is set to 0 -->
+                <param life_logger_asr_input_buf_size_ms="0"/>
             </common_config>
+            <default_config>
+                <!-- Default ASR configurations for LLS -->
+                <param input_language_code="0"/>
+                <param output_language_code="0"/>
+                <param enable_language_detection="false"/>
+                <param enable_translation="false"/>
+                <param enable_continuous_mode="false"/>
+                <param enable_partial_transcription="false"/>
+                <param enable_logger_mode="false"/>
+                <param enable_timestamp="true"/>
+                <param enable_speaker_diarization="false"/>
+                <param threshold="50"/>
+                <param timeout_duration="0"/>
+                <param silence_detection_duration="5000"/>
+                <param outputBufferMode="false"/>
+            </default_config>
             <stream_config>
                 <name>QC_ASR</name>
                 <param vendor_uuid = "018ebfb8-1364-7417-b92e-f6ab16b55431" />
@@ -1883,6 +1905,12 @@
                     <param sdz_output_config_id = "0xC0000064, 0x08001B0D" />
                     <param sdz_force_output_id = "0xC0000064, 0x08001B0E" />
                     <param sdz_output_id = "0xC0000064, 0x08001B0C" />
+                    <param asr_output_config_v2_id ="0xC0000057, 0x08001BC3" />
+                    <param asr_input_buffer_duration_v2_id = "0xC0000057, 0x08001BC5" />
+                    <param asr_force_output_v2_id = "0xC0000057, 0x08001BC6" />
+                    <param sdz_output_config_v2_id = "0xC0000064, 0x08001BDA" />
+                    <param sdz_input_buffer_duration_v2_id = "0xC0000064, 0x08001BC7" />
+                    <param sdz_force_output_v2_id = "0xC0000064, 0x08001B0E" />
                 </module_Info>
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />

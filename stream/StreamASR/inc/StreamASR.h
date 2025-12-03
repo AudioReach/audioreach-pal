@@ -133,6 +133,8 @@ class StreamASR : public Stream {
     int32_t registerCallBack(pal_stream_callback cb,  uint64_t cookie) override;
     int32_t getCallBack(pal_stream_callback *cb) override { return 0; }
     int32_t getParameters(uint32_t paramId, void **payload) override { return 0; }
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                           void* param_payload, size_t* payload_size) override;
     int32_t setParameters(uint32_t paramId, void *payload) override;
 
     int32_t Resume(bool isInternal = false) override;
@@ -171,6 +173,7 @@ class StreamASR : public Stream {
     bool ConfigSupportLPI() override;
     param_id_sdz_output_config_t* GetSdzOutputConfig() { return sdzOutputConfig; }
     param_id_sdz_input_threshold_t* GetSdzInputBufferConfig() { return sdzInputConfig; }
+    asr_client_id_t GetClientId() { return client_id_; }
 
  private:
     class ASREventData {
@@ -462,5 +465,7 @@ class StreamASR : public Stream {
 
     std::condition_variable cv;
     bool conc_notified_;
+
+    asr_client_id_t client_id_;
 };
 #endif // STREAMASR_H_

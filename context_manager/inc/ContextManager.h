@@ -37,10 +37,12 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
+#include <asps/asps_acm_api.h>
 #include <PalApi.h>
 #include <PalCommon.h>
 #include "kvh2xml.h"
 #include "ACDPlatformInfo.h"
+#include "ASRPlatformInfo.h"
 #include "SoundTriggerPlatformInfo.h"
 
 enum PCM_DATA_EFFECT {
@@ -61,6 +63,7 @@ typedef struct spcm_param {
 
 class ContextManager; /* forward declaration for RequestCommand */
 class ACDPlatformInfo;
+class ASRPlatformInfo;
 using ACDUUID = SoundTriggerUUID;
 
 class Usecase
@@ -152,6 +155,18 @@ private:
 public:
     UsecaseSDZ(uint32_t usecase_id);
     ~UsecaseSDZ();
+    int32_t Configure();
+};
+
+class UsecaseASR : public Usecase
+{
+private:
+    struct asps_asr_usecase_register_payload_t *asr_reg_config;
+
+public:
+    UsecaseASR(uint32_t usecase_id);
+    ~UsecaseASR();
+    int32_t SetUseCaseData(uint32_t size, void *data);
     int32_t Configure();
 };
 

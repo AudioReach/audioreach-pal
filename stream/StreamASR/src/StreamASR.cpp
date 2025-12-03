@@ -148,6 +148,24 @@ StreamASR::StreamASR(const struct pal_stream_attributes *sattr, struct pal_devic
         throw std::runtime_error("Failed to get common config");
     }
 
+    /*
+     * When life logger is enabled, client_id_ is set to
+     * ASR_CLIENT_LLS by default, if the ASR client is
+     * LLS through internal context manager, the callback
+     * will not be registered by client. registerCallback
+     * serves as indication whether to set the client_id_
+     * as HLOS or LLS. Use this information to override
+     * the default client_id_ during callback registration.
+     *
+     * When life logger is disabled, client_id_ is set to
+     * ASR_CLIENT_INVALID, indicating that legacy ASR apis
+     * are used.
+     */
+    if (cmCfg->GetEnableLifeLogger())
+        client_id_ = ASR_CLIENT_LLS;
+    else
+        client_id_ = ASR_CLIENT_INVALID;
+
     rm->registerStream(this);
 
     // Create internal states
@@ -422,6 +440,31 @@ int32_t StreamASR::deleteModelFile() {
     return 0;
 }
 
+int32_t StreamASR::getCustomParam(
+    custom_payload_uc_info_t* uc_info,
+    std::string param_str,
+    void* param_payload,
+    size_t* payload_size)
+{
+    int32_t status = 0;
+    if (!param_payload) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Error:%d, Invalid payload", status);
+        goto exit;
+    }
+
+    if (!engine) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Error:%d, Engine not initialized yet", status);
+        goto exit;
+    }
+    status = engine->getCustomParam(
+        uc_info, param_str, param_payload, payload_size, this);
+exit:
+    return status;
+
+}
+
 int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
 {
     PAL_INFO(LOG_TAG, "Enter, param id %d", paramId);
@@ -462,6 +505,19 @@ int32_t StreamASR::setParameters(uint32_t paramId, void *payload)
         }
         case PAL_PARAM_ID_ASR_CUSTOM: {
             PAL_INFO(LOG_TAG, "Currently this param id is not in use!!");
+            break;
+        }
+        case PAL_PARAM_ID_ASR_SET_PARAM: {
+            if (inputConfig) {
+                inputConfig->buf_duration_ms = *(uint32_t*)paramPayload->payload;
+                PAL_INFO(LOG_TAG, "Update ASR input frame size as %d",
+                    inputConfig->buf_duration_ms);
+            }
+            if (sdzInputConfig) {
+                sdzInputConfig->buf_duration_ms = *(uint32_t*)paramPayload->payload;
+                PAL_INFO(LOG_TAG, "Update SDZ input frame size as %d",
+                    sdzInputConfig->buf_duration_ms);
+            }
             break;
         }
         default: {
@@ -577,6 +633,15 @@ int32_t StreamASR::registerCallBack(pal_stream_callback cb,
     callback = cb;
     cookie = ck;
 
+    /*
+     * When life logger is enabled, ASR may be enabled by
+     * difference client(LLS and HLOS) and registerCallback
+     * is called only when client is HLOS, so we add this
+     * check to replace client_id_ with HLOS.
+     */
+    if (cmCfg->GetEnableLifeLogger())
+        client_id_ = ASR_CLIENT_HLOS;
+
     PAL_INFO(LOG_TAG, "Exit, callback = %pK", callback);
 
     return 0;
@@ -636,7 +701,7 @@ pal_device_id_t StreamASR::GetAvailCaptureDevice()
 
 bool StreamASR::UseLpiCaptureProfile() {
 
-    if (outputConfig->output_mode == BUFFERED ||
+    if (outputConfig->output_mode == ASR_BUFFERED ||
         cmCfg->PartialModeInLpiSupported())
         return true;
 
@@ -928,25 +993,26 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
                                                   asrRecCfg->silence_detection_duration;
     recConfig->enable_partial_transcription = asrRecCfg->enable_partial_transcription;
 
-    outputConfig->output_mode  = asrRecCfg->outputBufferMode ? BUFFERED : NON_BUFFERED;
-    outputConfig->output_mode  = asrRecCfg->enable_logger_mode ? LOGGER :
+    outputConfig->output_mode  = asrRecCfg->outputBufferMode ? ASR_BUFFERED : ASR_NON_BUFFERED;
+    outputConfig->output_mode  = asrRecCfg->enable_logger_mode ? ASR_LOGGER :
                                  outputConfig->output_mode;
-    outputConfig->out_buf_size = cmCfg->GetOutputBufferSize(outputConfig->output_mode);
     outputConfig->num_bufs     = 2;
     if (asrRecCfg->enable_timestamp) {
         switch (outputConfig->output_mode) {
-            case BUFFERED:
-                outputConfig->output_mode = TS_BUFFERED;
+            case ASR_BUFFERED:
+                outputConfig->output_mode = ASR_TS_BUFFERED;
                 break;
-            case NON_BUFFERED:
-                outputConfig->output_mode = TS_NON_BUFFERED;
+            case ASR_NON_BUFFERED:
+                outputConfig->output_mode = ASR_TS_NON_BUFFERED;
                 break;
-            case LOGGER:
-                outputConfig->output_mode = TS_LOGGER;
+            case ASR_LOGGER:
+                outputConfig->output_mode = ASR_TS_LOGGER;
                 break;
             default : PAL_ERR(LOG_TAG, "Invalid output mode!!!");
         }
     }
+    // TODO: calculate out buf size based on in buf size for NON_BUFFERED mode
+    outputConfig->out_buf_size = cmCfg->GetOutputBufferSize(outputConfig->output_mode);
 
     inputConfig->buf_duration_ms = cmCfg->GetInputBufferSize(outputConfig->output_mode);
     enableSpeakerDiarization = asrRecCfg->enable_speaker_diarization;
@@ -966,7 +1032,7 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
             goto cleanup;
         }
 
-        sdzOutputConfig->output_mode  = asrRecCfg->outputBufferMode ? BUFFERED_MODE : NON_BUFFERED_MODE;
+        sdzOutputConfig->output_mode  = asrRecCfg->outputBufferMode ? SDZ_BUFFERED : SDZ_NON_BUFFERED;
         sdzOutputConfig->out_buf_size = cmCfg->GetSdzOutputBufferSize();
         sdzOutputConfig->num_bufs     = 2;
 
@@ -1288,13 +1354,17 @@ int32_t StreamASR::ASRActive::ProcessEvent(
             break;
         }
         case ASR_EV_FORCE_OUTPUT: {
-            status = asrStream.engine->setParameters(&asrStream, ASR_FORCE_OUTPUT);
+            status = asrStream.engine->setParameters(&asrStream,
+                (asrStream.client_id_ != ASR_CLIENT_INVALID) ?
+                ASR_FORCE_OUTPUT_V2 : ASR_FORCE_OUTPUT);
             if (status) {
                 PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for ASR force output", status);
                 break;
             }
             if (asrStream.enableSpeakerDiarization) {
-                status = asrStream.engine->setParameters(&asrStream, SDZ_FORCE_OUTPUT);
+                status = asrStream.engine->setParameters(&asrStream,
+                    (asrStream.client_id_ != ASR_CLIENT_INVALID) ?
+                    SDZ_FORCE_OUTPUT_V2 : SDZ_FORCE_OUTPUT);
                 if (status)
                     PAL_ERR(LOG_TAG, "Error:%d Failed to setparam for SDZ force output", status);
             }

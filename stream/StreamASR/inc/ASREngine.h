@@ -74,6 +74,8 @@ public:
         std::shared_ptr<Device> deviceToDisconnect);
     int32_t setECRef(StreamASR *s, std::shared_ptr<Device> dev,
                      bool is_enable, bool setECForFirstTime = false);
+    int32_t getCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
+                           void* param_payload, size_t* payload_size, Stream *s);
     int32_t setParameters(StreamASR *s, asr_param_id_type_t pid, void* paramPayload = nullptr);
     uint32_t GetNumOutput() { return numOutput; }
     uint32_t GetOutputToken() { return outputToken; }
@@ -92,6 +94,10 @@ private:
     void ParseSdzEventAndNotifyStream(void* eventData);
     void HandleSessionEvent(uint32_t eventId __unused, void *data, uint32_t size);
     bool IsEngineActive();
+    int32_t UpdateASRConfiguration(StreamASR *s);
+    int32_t UpdateSDZConfiguration(StreamASR *s);
+    int32_t AttachStream(StreamASR *s);
+    int32_t DetachStream(StreamASR *s);
 
     bool isCrrDevUsingExtEc;
     bool exitThread;
@@ -112,8 +118,10 @@ private:
     std::queue<std::pair<uint32_t, void *>> eventQ;
     static std::shared_ptr<ASREngine> eng;
     param_id_asr_config_t *speechCfg;
-    param_id_asr_output_config_t *outputCfg;
-    param_id_asr_input_threshold_t *inputCfg;
+    uint32_t outputCfgSize;
+    param_id_asr_output_config_v2_t *outputCfg;
+    uint32_t sdzOutputCfgSize;
+    param_id_sdz_output_config_v2_t *sdzOutputCfg;
     std::shared_ptr<Device> rxEcDev;
     std::recursive_mutex ecRefMutex;
     std::shared_ptr<ASRPlatformInfo> asrInfo;
@@ -125,7 +133,7 @@ private:
     std::condition_variable cv;
 
     Session *session;
-    StreamASR *streamHandle;
     PayloadBuilder *builder;
+    std::vector<StreamASR *> streamList;
 };
 #endif  // ASRENGINE_H

@@ -31,6 +31,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+#include "ResourceManager.h"
 #include "ASRPlatformInfo.h"
 #include "asr_module_calibration_api.h"
 
@@ -54,6 +55,10 @@ void ASRCommonConfig::HandleStartTag(const std::string& tag, const char** attrib
             partial_mode_in_lpi_ = (value == "true");
         } else if (key == "sdz_output_buffer_size") {
             sdz_output_buffer_size_ = std::stoi(value);
+        } else if (key == "enable_life_logger") {
+            enable_life_logger_ = (value == "true");
+        } else if (key == "life_logger_asr_input_buf_size_ms") {
+            life_logger_asr_input_buf_size_ms_ = std::stoi(value);
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
@@ -72,13 +77,15 @@ ASRCommonConfig::ASRCommonConfig():
     input_buffer_size_(0),
     partial_mode_input_buffer_size_(0),
     buffering_mode_out_buffer_size_(0),
-    sdz_output_buffer_size_(0)
+    sdz_output_buffer_size_(0),
+    enable_life_logger_(false),
+    life_logger_asr_input_buf_size_ms_(0)
 {
 }
 
 uint32_t ASRCommonConfig::GetOutputBufferSize(int mode) {
 
-    if (mode != NON_BUFFERED && mode != TS_NON_BUFFERED)
+    if (mode != ASR_NON_BUFFERED && mode != ASR_TS_NON_BUFFERED)
         return GetBufferingModeOutBufferSize();
 
     return OUT_BUF_SIZE_DEFAULT;
@@ -86,11 +93,74 @@ uint32_t ASRCommonConfig::GetOutputBufferSize(int mode) {
 
 uint32_t ASRCommonConfig::GetInputBufferSize(int mode) {
 
-    if (mode == BUFFERED || mode == TS_BUFFERED)
+    if (mode == ASR_BUFFERED || mode == ASR_TS_BUFFERED)
         return GetInputBufferSize();
 
     return GetPartialModeInputBufferSize();
 
+}
+
+void ASRDefaultConfig::HandleStartTag(const std::string& tag, const char** attribs)
+{
+    PAL_VERBOSE(LOG_TAG, "Start tag %s", tag.c_str());
+    std::string key = attribs[0];
+    std::string value = attribs[1];
+
+    if (tag == "param") {
+        if (key == "input_language_code") {
+            asr_config_.input_language_code = std::stoi(value);
+        } else if (key == "output_language_code") {
+            asr_config_.output_language_code = std::stoi(value);
+        } else if (key == "enable_language_detection") {
+            asr_config_.enable_language_detection = (value == "true");
+        } else if (key == "enable_translation") {
+            asr_config_.enable_translation = (value == "true");
+        } else if (key == "enable_continuous_mode") {
+            asr_config_.enable_continuous_mode = (value == "true");
+        } else if (key == "enable_partial_transcription") {
+            asr_config_.enable_partial_transcription = (value == "true");
+        } else if (key == "enable_logger_mode") {
+            asr_config_.enable_logger_mode = (value == "true");
+        } else if (key == "enable_timestamp") {
+            asr_config_.enable_timestamp = (value == "true");
+        } else if (key == "enable_speaker_diarization") {
+            asr_config_.enable_speaker_diarization = (value == "true");
+        } else if (key == "threshold") {
+            asr_config_.threshold = std::stoi(value);
+        } else if (key == "timeout_duration") {
+            asr_config_.timeout_duration = std::stoi(value);
+        } else if (key == "silence_detection_duration") {
+            asr_config_.silence_detection_duration = std::stoi(value);
+        } else if (key == "outputBufferMode") {
+            asr_config_.outputBufferMode = (value == "true");
+        } else {
+            PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
+        }
+    }
+}
+
+void ASRDefaultConfig::HandleEndTag(struct xml_userdata *data, const std::string& tag)
+{
+    PAL_VERBOSE(LOG_TAG, "Got end tag %s, nothing to handle here.", tag.c_str());
+
+    return;
+}
+
+ASRDefaultConfig::ASRDefaultConfig()
+{
+    memset(&asr_config_, 0, sizeof(asr_config_));
+}
+
+int32_t ASRDefaultConfig::GetDefaultASRConfig(struct pal_asr_config *config)
+{
+    if (!config) {
+        PAL_ERR(LOG_TAG, "Invalid config");
+        return -EINVAL;
+    }
+
+    memcpy(config, &asr_config_, sizeof(asr_config_));
+
+    return 0;
 }
 
 int32_t ASRStreamConfig::GetIndex(std::string& param_name) {
@@ -117,6 +187,18 @@ int32_t ASRStreamConfig::GetIndex(std::string& param_name) {
        index = SDZ_OUTPUT;
     } else if (param_name == "sdz_force_output_id") {
        index = SDZ_FORCE_OUTPUT;
+    } else if (param_name == "asr_output_config_v2_id") {
+        index = ASR_OUTPUT_CONFIG_V2;
+    } else if (param_name == "asr_input_buffer_duration_v2_id") {
+       index = ASR_INPUT_BUF_DURATON_V2;
+    } else if (param_name == "asr_force_output_v2_id") {
+       index = ASR_FORCE_OUTPUT_V2;
+    } else if (param_name == "sdz_output_config_v2_id") {
+       index = SDZ_OUTPUT_CONFIG_V2;
+    } else if (param_name == "sdz_input_buffer_duration_v2_id") {
+       index = SDZ_INPUT_BUF_DURATION_V2;
+    } else if (param_name == "sdz_force_output_v2_id") {
+       index = SDZ_FORCE_OUTPUT_V2;
     } else {
        PAL_ERR(LOG_TAG, "Invalid attribute %s", param_name.c_str());
     }
@@ -197,7 +279,8 @@ ASRStreamConfig::ASRStreamConfig() :
 
 ASRPlatformInfo::ASRPlatformInfo() :
     curr_child_(nullptr),
-    cm_cfg_(nullptr)
+    cm_cfg_(nullptr),
+    def_cfg_(nullptr)
 {
 }
 
@@ -237,6 +320,10 @@ void ASRPlatformInfo::HandleStartTag(const std::string& tag, const char** attrib
         curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
                            std::make_shared<ASRCommonConfig>());
         return;
+    } else if (tag == "default_config") {
+        curr_child_ = std::static_pointer_cast<SoundTriggerXml>(
+                           std::make_shared<ASRDefaultConfig>());
+        return;
     } else {
         PAL_ERR(LOG_TAG, "Invalid tag %s", tag.c_str());
     }
@@ -260,6 +347,11 @@ void ASRPlatformInfo::HandleEndTag(struct xml_userdata *data, const std::string&
         std::shared_ptr<ASRCommonConfig> cm_cfg(
              std::static_pointer_cast<ASRCommonConfig>(curr_child_));
         cm_cfg_ = cm_cfg;
+        curr_child_ = nullptr;
+    } else if (tag == "default_config") {
+        std::shared_ptr<ASRDefaultConfig> def_cfg(
+             std::static_pointer_cast<ASRDefaultConfig>(curr_child_));
+        def_cfg_ = def_cfg;
         curr_child_ = nullptr;
     }
 

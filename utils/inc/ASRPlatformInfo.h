@@ -34,10 +34,10 @@
 #ifndef ASR_PLATFORM_INFO_H
 #define ASR_PLATFORM_INFO_H
 
-#define OUT_BUF_SIZE_DEFAULT 10000 /* In bytes. Around 98sec of text */
+#define OUT_BUF_SIZE_DEFAULT 12000 /* In bytes. Around 98sec of text */
 #define VAD_HANG_OVER_DURTION_DEFAULT_MS 1000
 
-#include "ResourceManager.h"
+#include "SoundTriggerPlatformInfo.h"
 
 typedef enum asr_param_id_type {
     ASR_INPUT_CONFIG = 0,
@@ -51,8 +51,14 @@ typedef enum asr_param_id_type {
     SDZ_OUTPUT,
     SDZ_FORCE_OUTPUT,
     ASR_ABORT_EVENT,
+    ASR_OUTPUT_CONFIG_V2,
+    ASR_INPUT_BUF_DURATON_V2,
+    ASR_FORCE_OUTPUT_V2,
+    SDZ_OUTPUT_CONFIG_V2,
+    SDZ_INPUT_BUF_DURATION_V2,
+    SDZ_FORCE_OUTPUT_V2,
     ASR_MAX_PARAM_IDS
-}asr_param_id_type_t;
+} asr_param_id_type_t;
 
 class ASRCommonConfig : public SoundTriggerXml
 {
@@ -69,6 +75,8 @@ public:
     uint32_t GetSdzOutputBufferSize() const { return sdz_output_buffer_size_; }
     uint32_t GetInputBufferSize(int mode);
     uint32_t GetOutputBufferSize(int mode);
+    bool GetEnableLifeLogger() { return enable_life_logger_; }
+    size_t GetLifeLoggerASRInputBufferSize() { return life_logger_asr_input_buf_size_ms_;  }
 
 private:
     bool partial_mode_in_lpi_;
@@ -76,14 +84,30 @@ private:
     size_t partial_mode_input_buffer_size_;
     size_t buffering_mode_out_buffer_size_;
     size_t sdz_output_buffer_size_;
+    bool enable_life_logger_;
+    size_t life_logger_asr_input_buf_size_ms_;
+};
+
+class ASRDefaultConfig : public SoundTriggerXml
+{
+public:
+    ASRDefaultConfig();
+
+    void HandleStartTag(const std::string& tag, const char **attribs);
+    void HandleEndTag(struct xml_userdata *data, const std::string& tag);
+
+    int32_t GetDefaultASRConfig(struct pal_asr_config *config);
+
+private:
+    struct pal_asr_config asr_config_;
 };
 
 class ASRStreamConfig : public SoundTriggerXml
 {
 public:
     ASRStreamConfig();
-    ASRStreamConfig(ACDStreamConfig &rhs) = delete;
-    ASRStreamConfig & operator=(ACDStreamConfig &rhs) = delete;
+    ASRStreamConfig(ASRStreamConfig &rhs) = delete;
+    ASRStreamConfig & operator=(ASRStreamConfig &rhs) = delete;
 
     void HandleStartTag(const std::string& tag, const char **attribs);
     void HandleEndTag(struct xml_userdata *data, const std::string& tag);
@@ -126,11 +150,13 @@ public:
     static std::shared_ptr<ASRPlatformInfo> GetInstance();
     std::shared_ptr<ASRStreamConfig> GetStreamConfig(const UUID& uuid) const;
     std::shared_ptr<ASRCommonConfig> GetCommonConfig() const { return cm_cfg_; }
+    std::shared_ptr<ASRDefaultConfig> GetDefaultConfig() const { return def_cfg_; }
 
 private:
     static std::shared_ptr<ASRPlatformInfo> me_;
     std::map<UUID, std::shared_ptr<ASRStreamConfig>> stream_cfg_list_;
     std::shared_ptr<SoundTriggerXml> curr_child_;
     std::shared_ptr<ASRCommonConfig> cm_cfg_;
+    std::shared_ptr<ASRDefaultConfig> def_cfg_;
 };
 #endif

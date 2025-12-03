@@ -34,9 +34,9 @@
 #include <iostream>
 #include <chrono>
 #include "ContextManager.h"
-#include <asps/asps_acm_api.h>
 #include "apm_api.h"
 #include "kvh2xml.h"
+#include "asr_module_calibration_api.h"
 
 #define LOG_TAG "PAL: ContextManager"
 #define TAG_MODULE_DEFAULT_SIZE 1024
@@ -938,13 +938,18 @@ Usecase* UsecaseFactory::UsecaseCreate(int32_t usecase_id)
         case ASPS_USECASE_ID_SDZ:
             ret_usecase = new UsecaseSDZ(usecase_id);
             break;
+        case ASPS_USECASE_ID_ASR:
+            ret_usecase = new UsecaseASR(usecase_id);
+            break;
         default:
             ret_usecase = NULL;
             PAL_ERR(LOG_TAG, "Error:%d Invalid usecaseid:%d", -EINVAL, usecase_id);
             break;
         }
     }
-    catch (std::exception &) {
+    catch (std::exception &e) {
+        PAL_ERR(LOG_TAG, "Exception creating usecase 0x%x: %s",
+            usecase_id, e.what());
         return NULL;
     }
 
@@ -1657,4 +1662,159 @@ UsecaseSDZ::~UsecaseSDZ()
     }
     //cleanup is done in baseclass
     PAL_VERBOSE(LOG_TAG, "Exit");
+}
+
+UsecaseASR::UsecaseASR(uint32_t usecase_id) : Usecase(usecase_id)
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+
+    stream_attributes->type = PAL_STREAM_ASR;
+    stream_attributes->direction = PAL_AUDIO_INPUT;
+    no_of_devices = 1;
+    pal_devices = (struct pal_device *)calloc(no_of_devices, sizeof(struct pal_device));
+    if (!pal_devices) {
+        PAL_ERR(LOG_TAG, "Error:%d Failed to allocate memory for pal_devices", -ENOMEM);
+        throw std::runtime_error("Failed to allocate mem for pal_devices");
+    }
+
+    //input device
+    pal_devices[0].id = PAL_DEVICE_IN_HANDSET_VA_MIC;
+    pal_devices[0].config.bit_width = 16;
+    pal_devices[0].config.sample_rate = 48000;
+    pal_devices[0].config.ch_info.channels = 2;
+    pal_devices[0].config.ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+    pal_devices[0].config.ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
+    pal_devices[0].config.aud_fmt_id = PAL_AUDIO_FMT_PCM_S16_LE;
+
+    tags.push_back(TAG_MODULE_ASR);
+    tags.push_back(TAG_MODULE_SDZ);
+
+    asr_reg_config = nullptr;
+
+    PAL_VERBOSE(LOG_TAG, "Exit");
+}
+
+UsecaseASR::~UsecaseASR()
+{
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+    if (asr_reg_config)
+        free(asr_reg_config);
+    PAL_VERBOSE(LOG_TAG, "Exit");
+}
+
+int32_t UsecaseASR::Configure()
+{
+    int32_t rc = 0;
+    std::shared_ptr<ASRPlatformInfo> info;
+    std::shared_ptr<ASRCommonConfig> common_cfg;
+    std::shared_ptr<ASRDefaultConfig> def_cfg;
+    pal_param_payload *paramPayload = nullptr;
+    struct pal_asr_config *asr_config = nullptr;
+    size_t frame_size_in_ms = 0;
+
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+    if (!asr_reg_config) {
+        PAL_ERR(LOG_TAG, "Fail to configure as no asr config registered");
+        rc = -EINVAL;
+        goto exit;
+    }
+    info = ASRPlatformInfo::GetInstance();
+    if (!info) {
+        PAL_ERR(LOG_TAG, "Failed to get ASR platform info");
+        rc = -EINVAL;
+        goto exit;
+    }
+    common_cfg = info->GetCommonConfig();
+    if (!common_cfg) {
+        PAL_ERR(LOG_TAG, "Failed to get ASR common info");
+        rc = -EINVAL;
+        goto exit;
+    }
+    def_cfg = info->GetDefaultConfig();
+    if (!def_cfg) {
+        PAL_ERR(LOG_TAG, "Failed to get default config");
+        rc = -EINVAL;
+        goto exit;
+    }
+
+    paramPayload = (pal_param_payload *)calloc(1,
+        sizeof(pal_param_payload) + sizeof(struct pal_asr_config));
+    if (!paramPayload) {
+        PAL_ERR(LOG_TAG, "Failed to allocate memory for param payload");
+        rc = -ENOMEM;
+        goto exit;
+    }
+    paramPayload->payload_size = sizeof(struct pal_asr_config);
+    asr_config = (struct pal_asr_config *)paramPayload->payload;
+    rc = def_cfg->GetDefaultASRConfig(asr_config);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Failed to get default ASR config");
+        goto exit;
+    }
+
+    asr_config->input_language_code = asr_reg_config->language_code;
+    asr_config->output_language_code = asr_reg_config->language_code;
+    asr_config->enable_speaker_diarization = asr_reg_config->enable_sdz;
+    // TODO: correct output buffer mode generation by input frame size
+    if (common_cfg->GetLifeLoggerASRInputBufferSize())
+        frame_size_in_ms = common_cfg->GetLifeLoggerASRInputBufferSize();
+    else
+        frame_size_in_ms = asr_reg_config->frame_length_ms;
+
+    rc = pal_stream_set_param(pal_stream, PAL_PARAM_ID_ASR_CONFIG, paramPayload);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x",
+            rc, usecase_id);
+        goto exit;
+    }
+
+    if (paramPayload)
+        free(paramPayload);
+    paramPayload = (pal_param_payload *)calloc(1,
+        sizeof(pal_param_payload) + sizeof(uint32_t));
+    if (!paramPayload) {
+        PAL_ERR(LOG_TAG, "Failed to allocate memory for param payload");
+        rc = -ENOMEM;
+        goto exit;
+    }
+    paramPayload->payload_size = sizeof(uint32_t);
+    *(uint32_t *)paramPayload->payload = frame_size_in_ms;
+    // update input frame size to asr stream
+    rc = pal_stream_set_param(pal_stream, PAL_PARAM_ID_ASR_SET_PARAM, paramPayload);
+    if (rc) {
+        PAL_ERR(LOG_TAG, "Error:%d setting parameters to stream usecase:0x%x",
+            rc, usecase_id);
+        goto exit;
+    }
+
+exit:
+    if (paramPayload)
+        free(paramPayload);
+    PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
+    return rc;
+}
+
+int32_t UsecaseASR::SetUseCaseData(uint32_t size, void *data)
+{
+    int rc = 0;
+
+    PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", usecase_id);
+    if (!data || size != sizeof(struct asps_asr_usecase_register_payload_t)) {
+        PAL_ERR(LOG_TAG, "Invalid usecase data");
+        return -EINVAL;
+    }
+
+    asr_reg_config = (struct asps_asr_usecase_register_payload_t *)calloc(1,
+        sizeof(struct asps_asr_usecase_register_payload_t));
+    if (!asr_reg_config) {
+        PAL_ERR(LOG_TAG, "Failed to allocate memory for asr_reg_config");
+        rc = -ENOMEM;
+        goto exit;
+    }
+
+    memcpy(asr_reg_config, data, size);
+
+exit:
+    PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
+    return rc;
 }

@@ -1879,7 +1879,9 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
 
     struct apm_module_param_data_t* header;
     struct param_id_asr_output_t* asrOutputParam = NULL;
+    struct param_id_asr_output_v3_t* asrOutputParamV3 = NULL;
     param_id_sdz_output_t* sdzOutputParam = NULL;
+    param_id_sdz_output_v2_t* sdzOutputParamV2 = NULL;
     struct param_id_nmt_output_t* nmtOutputParam = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0;
@@ -1903,13 +1905,27 @@ void PayloadBuilder::payloadGetParam(Stream* s, uint8_t **payload, size_t *size,
                          (payloadInfo + (sizeof(struct apm_module_param_data_t)));
         asrOutputParam->output_token = s->GetOutputToken();
         asrOutputParam->num_outputs = s->GetNumEvents();
-        asrOutputParam->payload_size =  s->GetPayloadSize();
+        asrOutputParam->payload_size = s->GetPayloadSize();
+    } else if (param_id == PARAM_ID_ASR_OUTPUT_V3) {
+        asrOutputParamV3 = (struct param_id_asr_output_v3_t *)
+                         (payloadInfo + (sizeof(struct apm_module_param_data_t)));
+        asrOutputParamV3->client_id = ASR_CLIENT_HLOS;
+        asrOutputParamV3->output_token = s->GetOutputToken();
+        asrOutputParamV3->num_outputs = s->GetNumEvents();
+        asrOutputParamV3->payload_size = s->GetPayloadSize();
     } else if (param_id == PARAM_ID_SDZ_OUTPUT) {
         sdzOutputParam = (param_id_sdz_output_t *)
                          (payloadInfo + (sizeof(struct apm_module_param_data_t)));
         sdzOutputParam->output_token = s->GetSdzOutputToken();
         sdzOutputParam->num_outputs = s->GetSdzNumEvents();
-        sdzOutputParam->payload_size =  s->GetSdzPayloadSize();
+        sdzOutputParam->payload_size = s->GetSdzPayloadSize();
+    } else if (param_id == PARAM_ID_SDZ_OUTPUT_V2) {
+        sdzOutputParamV2 = (param_id_sdz_output_v2_t *)
+                         (payloadInfo + (sizeof(struct apm_module_param_data_t)));
+        sdzOutputParamV2->client_id = SDZ_CLIENT_HLOS;
+        sdzOutputParamV2->output_token = s->GetSdzOutputToken();
+        sdzOutputParamV2->num_outputs = s->GetSdzNumEvents();
+        sdzOutputParamV2->payload_size = s->GetSdzPayloadSize();
     } else if (param_id == PARAM_ID_NMT_OUTPUT) {
         nmtOutputParam = (struct param_id_nmt_output_t *)
                          (payloadInfo + (sizeof(struct apm_module_param_data_t)));

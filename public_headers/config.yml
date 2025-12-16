@@ -7,3 +7,6 @@ branches:
         headers:
           - inc/PalDefs.h
           - inc/PalApi.h
+          - device/inc/Device.h
+          - session/inc/Session.h
+          - stream/inc/Stream.h

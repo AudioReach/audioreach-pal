@@ -64,6 +64,16 @@
         <gain_level_map db="-10.2" level="2"/>
         <gain_level_map db="0" level="1"/>
     </gain_db_to_level_mapping>
+    <config_max_sessions>
+        <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
+        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="3" />
+        <stream name="PAL_STREAM_COMPRESSED" max_size="10" />
+        <stream name="PAL_STREAM_VOIP" max_size="8" />
+        <stream name="PAL_STREAM_VOIP_RX" max_size="8" />
+        <stream name="PAL_STREAM_VOIP_TX" max_size="8" />
+        <stream name="PAL_STREAM_RAW" max_size="1" />
+        <stream name="PAL_STREAM_PCM_OFFLOAD" max_size="2" />
+    </config_max_sessions>
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_SPEAKER_MIC</id>

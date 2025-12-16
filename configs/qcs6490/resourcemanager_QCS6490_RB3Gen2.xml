@@ -60,6 +60,16 @@
         <codec codec_format="CODEC_TYPE_AAC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
         <codec codec_format="CODEC_TYPE_SBC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
     </bt_codecs>
+    <config_max_sessions>
+        <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
+        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="3" />
+        <stream name="PAL_STREAM_COMPRESSED" max_size="10" />
+        <stream name="PAL_STREAM_VOIP" max_size="8" />
+        <stream name="PAL_STREAM_VOIP_RX" max_size="8" />
+        <stream name="PAL_STREAM_VOIP_TX" max_size="8" />
+        <stream name="PAL_STREAM_RAW" max_size="1" />
+        <stream name="PAL_STREAM_PCM_OFFLOAD" max_size="2" />
+    </config_max_sessions>
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>

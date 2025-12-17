@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<plugin_manager_info>
+    <version>1.0</version>
+    <!-- .so mapping for all streams supported on target-->
+    <streams>
+        <stream name="PAL_STREAM_DEEP_BUFFER" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_SPATIAL_AUDIO" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_GENERIC" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOIP_TX" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOIP_RX" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PCM_OFFLOAD" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_LOOPBACK" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_PROXY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_RAW" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_VOICE_RECOGNITION" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
+        <stream name="PAL_STREAM_COMPRESSED" lib="libstream_compress.so" entryFunction="CreateCompressStream"/>
+        <stream name="PAL_STREAM_VOICE_UI" lib="libstream_soundtrigger.so" entryFunction="CreateSoundTriggerStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL_RECORD" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
+        <stream name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libstream_incall.so" entryFunction="CreateInCallStream"/>
+        <stream name="PAL_STREAM_CALL_TRANSLATION" lib="libstream_calltranslation.so" entryFunction="CreateCallTranslationStream"/>
+        <stream name="PAL_STREAM_NON_TUNNEL" lib="libstream_nontunnel.so" entryFunction="CreateNonTunnelStream"/>
+        <stream name="PAL_STREAM_ACD" lib="libstream_acd.so" entryFunction="CreateACDStream"/>
+        <stream name="PAL_STREAM_HAPTICS" lib="libstream_haptics.so" entryFunction="CreateHapticsStream"/>
+        <stream name="PAL_STREAM_CONTEXT_PROXY" lib="libstream_contextproxy.so" entryFunction="CreateContextProxyStream"/>
+        <stream name="PAL_STREAM_ULTRASOUND" lib="libstream_ultrasound.so" entryFunction="CreateUltraSoundStream"/>
+        <stream name="PAL_STREAM_SENSOR_PCM_DATA" lib="libstream_sensorpcmdata.so" entryFunction="CreateSensorPCMDataStream"/>
+        <stream name="PAL_STREAM_COMMON_PROXY" lib="libstream_commonproxy.so" entryFunction="CreateCommonProxyStream"/>
+        <stream name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libstream_sensorrenderer.so" entryFunction="CreateSensorRendererStream"/>
+        <stream name="PAL_STREAM_DUMMY" lib="libstream_dummy.so" entryFunction="CreateDummyStream"/>
+        <stream name="PAL_STREAM_ASR" lib="libstream_asr.so" entryFunction="CreateASRStream"/>
+    </streams>
+    <sessions>
+        <session name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SPATIAL_AUDIO" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_GENERIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOIP_TX" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOIP_RX" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_LOOPBACK" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_RAW" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_UI" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_CALL_TRANSLATION" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ACD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_HAPTICS" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ULTRASOUND" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SENSOR_PCM_DATA" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_COMMON_PROXY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_ASR" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_VOICE_CALL" lib="libsession_voice.so" entryFunction="CreateVoiceSession"/>
+        <session name="PAL_STREAM_COMPRESSED" lib="libsession_compress.so" entryFunction="CreateCompressSession"/>
+        <session name="PAL_STREAM_NON_TUNNEL" lib="libsession_agm.so" entryFunction="CreateAgmSession"/>
+        <session name="PAL_STREAM_DUMMY" lib="libsession_agm.so" entryFunction="CreateAgmSession"/>
+    </sessions>
+    <devices>
+        <!--Handset-->
+        <device name="PAL_DEVICE_OUT_HANDSET" lib="libdev_handset.so" entryFunction="CreateHandsetDevice"/>
+        <device name="PAL_DEVICE_IN_HANDSET_MIC" lib="libdev_handset_mic.so" entryFunction="CreateHandsetMicDevice"/>
+        <device name="PAL_DEVICE_IN_HANDSET_VA_MIC" lib="libdev_handset_va.so" entryFunction="CreateHandsetVaDevice"/>
+        <!--Speaker-->
+        <device name="PAL_DEVICE_OUT_SPEAKER" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_SPEAKER_MIC" lib="libdev_speaker_mic.so" entryFunction="CreateSpeakerMicDevice"/>
+        <device name="PAL_DEVICE_IN_CPS_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_CPS2_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_VI_FEEDBACK" lib="libdev_speaker.so" entryFunction="CreateSpeakerDevice"/>
+        <device name="PAL_DEVICE_IN_HAPTICS_VI_FEEDBACK" lib="libdev_haptics.so" entryFunction="CreateHapticsDevice"/>
+        <!--Headphone -->
+        <device name="PAL_DEVICE_OUT_WIRED_HEADSET" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>
+        <device name="PAL_DEVICE_OUT_WIRED_HEADPHONE" lib="libdev_headphone.so" entryFunction="CreateHeadphoneDevice"/>
+        <!--Headset-->
+        <device name="PAL_DEVICE_IN_WIRED_HEADSET" lib="libdev_headset_mic.so" entryFunction="CreateHeadsetMicDevice"/>
+        <device name="PAL_DEVICE_IN_HEADSET_VA_MIC" lib="libdev_headset_va.so" entryFunction="CreateHeadsetVaDevice"/>
+        <!--Bluetooth-->
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_SCO" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_A2DP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_A2DP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_BLE" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_OUT_BLUETOOTH_HFP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <device name="PAL_DEVICE_IN_BLUETOOTH_HFP" lib="libdev_bt.so" entryFunction="CreateBtDevice"/>
+        <!--FM-->
+        <device name="PAL_DEVICE_OUT_FM" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>
+        <device name="PAL_DEVICE_IN_FM_TUNER" lib="libdev_fm.so" entryFunction="CreateFmDevice"/>
+        <!--USB-->
+        <device name="PAL_DEVICE_OUT_USB_DEVICE" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_DEVICE" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_OUT_USB_HEADSET" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_HEADSET" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <device name="PAL_DEVICE_IN_USB_ACCESSORY" lib="libdev_usb.so" entryFunction="CreateUsbDevice"/>
+        <!--Ultrasound-->
+        <device name="PAL_DEVICE_OUT_ULTRASOUND" lib="libdev_ultrasound.so" entryFunction="CreateUltrasoundDevice"/>
+        <device name="PAL_DEVICE_OUT_ULTRASOUND_DEDICATED" lib="libdev_ultrasound.so" entryFunction="CreateUltrasoundDevice"/>
+        <device name="PAL_DEVICE_IN_ULTRASOUND_MIC" lib="libdev_ultrasound.so" entryFunction="CreateUltrasoundDevice"/>
+        <!--Proxy-->
+        <device name="PAL_DEVICE_OUT_RECORD_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_IN_RECORD_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_IN_TELEPHONY_RX" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_OUT_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_IN_PROXY" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <device name="PAL_DEVICE_OUT_HEARING_AID" lib="libdev_proxy.so" entryFunction="CreateRTProxyDevice"/>
+        <!--Display-->
+        <device name="PAL_DEVICE_OUT_HDMI" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <device name="PAL_DEVICE_IN_HDMI" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <device name="PAL_DEVICE_OUT_AUX_DIGITAL" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <device name="PAL_DEVICE_IN_AUX_DIGITAL" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <device name="PAL_DEVICE_OUT_AUX_DIGITAL_1" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <!--Dummy-->
+        <device name="PAL_DEVICE_OUT_DUMMY" lib="libdev_dummy.so" entryFunction="CreateDummyDevice"/>
+        <device name="PAL_DEVICE_IN_DUMMY" lib="libdev_dummy.so" entryFunction="CreateDummyDevice"/>
+
+        <device name="PAL_DEVICE_OUT_HAPTICS_DEVICE" lib="libdev_haptics.so" entryFunction="CreateHapticsDevice"/>
+        <device name="PAL_DEVICE_IN_EXT_EC_REF" lib="libdev_ext_ec.so" entryFunction="CreateExtEcDevice"/>
+        <device name="PAL_DEVICE_IN_ECHO_REF" lib="libdev_ec_ref.so" entryFunction="CreateECRefDevice"/>
+    </devices>
+    <configs>
+        <!--pcm_config-->
+        <config name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_LOW_LATENCY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SPATIAL_AUDIO" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_GENERIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOIP_TX" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOIP_RX" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_LOOPBACK" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_RAW" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_RECOGNITION" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_UI" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ASR" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_CALL_RECORD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_VOICE_CALL_MUSIC" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_CALL_TRANSLATION" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ACD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_HAPTICS" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_CONTEXT_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_ULTRASOUND" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SENSOR_PCM_DATA" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_COMMON_PROXY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <config name="PAL_STREAM_SENSOR_PCM_RENDERER" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <!--voice_config-->
+        <config name="PAL_STREAM_VOICE_CALL" lib="libsession_voice_config.so" entryFunction="voicePluginConfig"/>
+        <!--compress_config-->
+        <config name="PAL_STREAM_COMPRESSED" lib="libsession_compress_config.so" entryFunction="compressPluginConfig"/>
+    </configs>
+</plugin_manager_info>

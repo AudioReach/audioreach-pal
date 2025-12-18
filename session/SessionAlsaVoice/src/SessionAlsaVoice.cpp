@@ -44,15 +44,15 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include <sstream>
 #include <string>
 #include <agm/agm_api.h>
+#ifdef PAL_CUTILS_SUPPORTED
+#include <cutils/properties.h>
+#endif
 #ifdef FEATURE_IPQ_OPENWRT
 #include "audio_route.h"
 #include <stdarg.h>
 #include <err.h>
 #else
 #include "audio_route/audio_route.h"
-#ifdef PAL_CUTILS_SUPPORTED
-#include <cutils/properties.h>
-#endif
 #endif
 
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)

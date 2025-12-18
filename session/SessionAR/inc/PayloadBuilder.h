@@ -52,8 +52,9 @@
 #include "jitter_buf_api.h"
 #include "AudioHapticsInterface.h"
 #include "us_tone_renderer_api.h"
+#ifndef SOUNDDOSE_UNSUPPORTED
 #include "sound_dose_api.h"
-
+#endif
 #define PAL_ALIGN_8BYTE(x) (((x) + 7) & (~7))
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)
 

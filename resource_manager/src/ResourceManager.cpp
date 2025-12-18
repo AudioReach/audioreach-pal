@@ -9629,6 +9629,7 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     std::vector <std::tuple<Stream *, struct pal_device *>> streamDevConnect;
     std::vector <Stream *> streamsToSwitch;
     std::vector <Stream*>::iterator sIter;
+    std::vector <Stream *> tempMutedStreams;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -9701,6 +9702,11 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
                  sharedStream = std::get<0>(elem);
                  streamDevDisconnect.push_back({sharedStream,dev->getSndDeviceId()});
                  streamDevConnect.push_back({sharedStream,&curDevAttr});
+                 if (!rm->increaseStreamUserCounter(sharedStream)) {
+                    PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", sharedStream);
+                    sharedStream->mute(true);
+                    tempMutedStreams.push_back(sharedStream);
+                 }
             }
         }
 
@@ -9734,6 +9740,16 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     if (!streamDevDisconnect.empty() && !IsI2sDualMonoEnabled())
         streamDevSwitch(streamDevDisconnect, streamDevConnect);
 exit:
+    if (!tempMutedStreams.empty()) {
+        mActiveStreamMutex.lock();
+        for(sIter = tempMutedStreams.begin(); sIter != tempMutedStreams.end(); sIter++) {
+            (*sIter)->mute(false);
+            rm->decreaseStreamUserCounter(*sIter);
+            PAL_DBG(LOG_TAG, "unmute stream %pk during restoreDevice", *sIter);
+        }
+        mActiveStreamMutex.unlock();
+    }
+    tempMutedStreams.clear();
     PAL_DBG(LOG_TAG, "Exit");
     return;
 }

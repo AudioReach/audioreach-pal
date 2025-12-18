@@ -3,17 +3,18 @@ pkgconfig_DATA = stream_nontunnel.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 if BUILDSYSTEM_OPENWRT
-AM_CPPFLAGS := -I ./inc
-AM_CPPFLAGS += -I ../../inc
-AM_CPPFLAGS += -I ../../
-AM_CPPFLAGS += -I ../../utils/inc
-AM_CPPFLAGS += -I ../../device/inc
-AM_CPPFLAGS += -I ../../session/inc
-AM_CPPFLAGS += -I ../../stream/inc
-AM_CPPFLAGS += -I ../../session/SessionAR/inc
-AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
-AM_CPPFLAGS += -I ../../resource_manager/inc
-AM_CPPFLAGS += -I ../../context_manager/inc
+AM_CPPFLAGS := -I $(top_srcdir)/stream/StreamNonTunnel/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)/
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 stream_nontunnel_sources = ./src/StreamNonTunnel.cpp
 else

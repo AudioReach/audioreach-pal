@@ -36,8 +36,9 @@
 #include "Device.h"
 #include "PalAudioRoute.h"
 
+#ifndef SOUNDDOSE_UNSUPPORTED
 #include "SoundDoseUtility.h"
-
+#endif
 
 extern "C" void CreateHeadphoneDevice(struct pal_device *device,
                                         const std::shared_ptr<ResourceManager> rm,
@@ -65,8 +66,9 @@ public:
     virtual ~Headphone();
 
 private:
+#ifndef SOUNDDOSE_UNSUPPORTED
     std::unique_ptr<SoundDoseUtility> mSoundDose;
-
+#endif
 };
 
 

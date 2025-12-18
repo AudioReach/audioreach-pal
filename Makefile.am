@@ -152,6 +152,11 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcom/IoT/qcs6490/resourcemanager_QCS6490_RB3Gen2.xml \
                       ./configs/qcom/IoT/qcs9075/mixer_paths_LEMANS_EVK.xml \
                       ./configs/qcom/IoT/qcs9075/resourcemanager_LEMANS_EVK.xml
+                      ./configs/qcs9100/resourcemanager_qcs9100_ridesx.xml \
+                      ./configs/qcs6490/mixer_paths_QCS6490_RB3Gen2.xml \
+                      ./configs/qcs6490/resourcemanager_QCS6490_RB3Gen2.xml \
+                      ./configs/qcs9075/mixer_paths_LEMANS_EVK.xml \
+                      ./configs/qcs9075/resourcemanager_LEMANS_EVK.xml
 
 # install essential xml files under /etc
 root_etcdir      = "/etc"

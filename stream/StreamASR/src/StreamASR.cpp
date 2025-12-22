@@ -48,6 +48,7 @@
 #include <fstream>
 
 #include "StreamASR.h"
+#include "ASREngine.h"
 #include "ResourceManager.h"
 #include "Device.h"
 #include "kvh2xml.h"
@@ -1402,9 +1403,8 @@ int32_t StreamASR::ASRActive::ProcessEvent(
         }
         case ASR_EV_EC_REF: {
             ASRECRefEventData *data = (ASRECRefEventData *)evCfg->data.get();
-            Stream *s = static_cast<Stream *>(&asrStream);
             PAL_INFO(LOG_TAG, "EC enable : %d", data->isEnable);
-            status = asrStream.engine->setECRef(s, data->dev, data->isEnable,
+            status = asrStream.engine->setECRef(&asrStream, data->dev, data->isEnable,
                                                 asrStream.ecDev == nullptr);
             if (status) {
                 PAL_ERR(LOG_TAG, "Error:%d Failed to set EC Ref in engine", status);

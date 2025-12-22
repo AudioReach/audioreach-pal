@@ -50,7 +50,6 @@
 #include <string.h>
 #include "Session.h"
 #include "SessionAR.h"
-#include "Stream.h"
 #include "StreamASR.h"
 #include "ResourceManager.h"
 #include "kvh2xml.h"
@@ -63,7 +62,7 @@
 #define FILENAME_LEN 128
 std::shared_ptr<ASREngine> ASREngine::eng;
 
-ASREngine::ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg)
+ASREngine::ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg)
 {
     PAL_DBG(LOG_TAG, "Enter");
     int status = 0;
@@ -155,7 +154,7 @@ ASREngine::~ASREngine()
 }
 
 std::shared_ptr<ASREngine> ASREngine::GetInstance(
-     Stream *s,
+     StreamASR *s,
      std::shared_ptr<ASRStreamConfig> smCfg)
 {
      if (!eng)
@@ -173,12 +172,9 @@ bool ASREngine::IsEngineActive()
     return false;
 }
 
-int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *paramPayload)
+int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *paramPayload)
 {
     int32_t status = 0;
-
-    PAL_DBG(LOG_TAG, "Enter, param id %d ", pid);
-
     uint32_t tagId = 0;
     uint32_t paramId = 0;
     uint8_t *payload = nullptr;
@@ -187,8 +183,8 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
     size_t dataSize = 0;
     uint32_t sesParamId = 0;
     uint32_t miid = 0;
-    uint32_t id = pid;
-    StreamASR* sAsr = dynamic_cast<StreamASR *>(s);
+
+    PAL_DBG(LOG_TAG, "Enter, param id %d ", pid);
 
     if (pid < ASR_INPUT_CONFIG || pid >= ASR_MAX_PARAM_IDS) {
         PAL_ERR(LOG_TAG, "Invalid param id %d", pid);
@@ -206,9 +202,9 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
         goto exit;
     }
 
-    switch (id) {
+    switch (pid) {
         case ASR_INPUT_CONFIG : {
-            param_id_asr_config_t *config = sAsr->GetSpeechConfig();
+            param_id_asr_config_t *config = s->GetSpeechConfig();
             if (config == nullptr) {
                 PAL_ERR(LOG_TAG, "No config available, can't start the engine!!!");
                 goto exit;
@@ -274,20 +270,20 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             break;
         }
         case SDZ_FORCE_OUTPUT : {
-             param_id_sdz_force_output_t *param = (param_id_sdz_force_output_t *)
-                                   calloc(1, sizeof(param_id_sdz_force_output_t));
-             if (param == nullptr) {
-                 PAL_ERR(LOG_TAG, "Failed to allocate memory for SDZ force output config!!!");
-                 goto exit;
-             }
-             param->force_output = 1;
-             data = (uint8_t *)param;
-             dataSize = sizeof(param_id_sdz_force_output_t);
-             sesParamId = PAL_PARAM_ID_SDZ_FORCE_OUTPUT;
-             break;
+            param_id_sdz_force_output_t *param = (param_id_sdz_force_output_t *)
+                                calloc(1, sizeof(param_id_sdz_force_output_t));
+            if (param == nullptr) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for SDZ force output config!!!");
+                goto exit;
+            }
+            param->force_output = 1;
+            data = (uint8_t *)param;
+            dataSize = sizeof(param_id_sdz_force_output_t);
+            sesParamId = PAL_PARAM_ID_SDZ_FORCE_OUTPUT;
+            break;
         }
         case ASR_OUTPUT_CONFIG : {
-            param_id_asr_output_config_t *opConfig = sAsr->GetOutputConfig();
+            param_id_asr_output_config_t *opConfig = s->GetOutputConfig();
             if (opConfig == nullptr) {
                 PAL_ERR(LOG_TAG, "No output config available, can't start the engine!!!");
                 goto exit;
@@ -305,7 +301,7 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             break;
         }
         case SDZ_OUTPUT_CONFIG : {
-            param_id_sdz_output_config_t *opConfigSdz = sAsr->GetSdzOutputConfig();
+            param_id_sdz_output_config_t *opConfigSdz = s->GetSdzOutputConfig();
             if (opConfigSdz == nullptr) {
                 PAL_ERR(LOG_TAG, "No output config available for Sdz!!!");
                 goto exit;
@@ -316,7 +312,7 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             break;
         }
         case ASR_INPUT_BUF_DURATON: {
-            param_id_asr_input_threshold_t *ipConfig = sAsr->GetInputBufConfig();
+            param_id_asr_input_threshold_t *ipConfig = s->GetInputBufConfig();
             if (ipConfig == nullptr) {
                 PAL_ERR(LOG_TAG, "No input config available, can't start the engine!!!");
                 goto exit;
@@ -327,7 +323,7 @@ int32_t ASREngine::setParameters(Stream *s, asr_param_id_type_t pid, void *param
             break;
         }
         case SDZ_INPUT_BUF_DURATION: {
-            param_id_sdz_input_threshold_t *ipConfigSdz = sAsr->GetSdzInputBufferConfig();
+            param_id_sdz_input_threshold_t *ipConfigSdz = s->GetSdzInputBufferConfig();
             if (ipConfigSdz == nullptr) {
                 PAL_ERR(LOG_TAG, "No input config available for Sdz!!!");
                 goto exit;
@@ -375,7 +371,7 @@ exit:
     return status;
 }
 
-int32_t ASREngine::StartEngine(Stream *s)
+int32_t ASREngine::StartEngine(StreamASR *s)
 {
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -386,7 +382,6 @@ int32_t ASREngine::StartEngine(Stream *s)
     struct event_id_asr_output_reg_cfg_t *eventConfig =  NULL;
     size_t eventPayloadSizeSdz = sizeof(struct event_id_sdz_output_reg_cfg_t);
     struct event_id_sdz_output_reg_cfg_t *eventConfigSdz = NULL;
-    StreamASR *sAsr = nullptr;
 
     std::lock_guard<std::mutex> lck(mutexEngine);
 
@@ -423,8 +418,7 @@ int32_t ASREngine::StartEngine(Stream *s)
         goto err_cleanup;
     }
 
-    sAsr = dynamic_cast<StreamASR *>(s);
-    if (sAsr->EnableSpeakerDiarization()) {
+    if (s->EnableSpeakerDiarization()) {
         status = setParameters(s, SDZ_ENABLE);
         if (status) {
             PAL_ERR(LOG_TAG, "Failed to enable SDZ module, can't start the engine!!!");
@@ -489,7 +483,7 @@ exit:
     return status;
 }
 
-int32_t ASREngine::StopEngine(Stream *s)
+int32_t ASREngine::StopEngine(StreamASR *s)
 {
     int32_t status = 0;
 
@@ -661,9 +655,7 @@ void ASREngine::ParseEventAndNotifyStream(void* eventData) {
         }
     }
 
-
-    sAsr = dynamic_cast<StreamASR *>(streamHandle);
-    sAsr->HandleEventData(eventToStream);
+    streamHandle->HandleEventData(eventToStream);
 
 cleanup:
     if (eventToStream.payload) {
@@ -783,8 +775,7 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
 
     PAL_INFO(LOG_TAG, "Total number of speakers : %d",numSpeakers)
 
-    sAsr =  dynamic_cast<StreamASR *>(streamHandle);
-    sAsr->HandleEventData(eventToStream);
+    streamHandle->HandleEventData(eventToStream);
 
 cleanup:
     if (eventToStream.payload) {
@@ -884,7 +875,7 @@ void ASREngine::HandleSessionCallBack(uint64_t hdl, uint32_t eventId,
     return;
 }
 
-int32_t ASREngine::setECRef(Stream *s, std::shared_ptr<Device> dev, bool isEnable,
+int32_t ASREngine::setECRef(StreamASR *s, std::shared_ptr<Device> dev, bool isEnable,
                                         bool setECForFirstTime) {
     int32_t status = 0;
     bool forceEnable = false;
@@ -914,7 +905,7 @@ int32_t ASREngine::setECRef(Stream *s, std::shared_ptr<Device> dev, bool isEnabl
         }
         if (setECForFirstTime) {
             ecRefCount++;
-        } else if (rxEcDev != dev ){
+        } else if (rxEcDev != dev) {
             forceEnable = true;
         } else {
             return status;
@@ -961,7 +952,7 @@ int32_t ASREngine::setECRef(Stream *s, std::shared_ptr<Device> dev, bool isEnabl
 }
 
 int32_t ASREngine::ConnectSessionDevice(
-    Stream* streamHandle, pal_stream_type_t streamType,
+    StreamASR *streamHandle, pal_stream_type_t streamType,
     std::shared_ptr<Device> deviceToConnect)
 {
     PAL_DBG(LOG_TAG, "Enter, devDisconnectCount: %d", devDisconnectCount);
@@ -983,7 +974,7 @@ int32_t ASREngine::ConnectSessionDevice(
 }
 
 int32_t ASREngine::DisconnectSessionDevice(
-    Stream* streamHandle, pal_stream_type_t streamType,
+    StreamASR *streamHandle, pal_stream_type_t streamType,
     std::shared_ptr<Device> deviceToDisconnect)
 {
     PAL_DBG(LOG_TAG, "Enter, devDisconnectCount: %d", devDisconnectCount);
@@ -1004,7 +995,7 @@ int32_t ASREngine::DisconnectSessionDevice(
 }
 
 int32_t ASREngine::SetupSessionDevice(
-    Stream* streamHandle, pal_stream_type_t streamType,
+    StreamASR *streamHandle, pal_stream_type_t streamType,
     std::shared_ptr<Device> deviceToDisconnect)
 {
     PAL_DBG(LOG_TAG, "Enter, devDisconnectCount: %d", devDisconnectCount);

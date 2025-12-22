@@ -37,7 +37,6 @@
 #include <map>
 
 #include "ASRPlatformInfo.h"
-#include "StreamASR.h"
 #include "PayloadBuilder.h"
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
@@ -49,33 +48,33 @@ typedef enum {
 } asr_eng_state_t;
 
 class Session;
-class Stream;
+class StreamASR;
 
 class ASREngine
 {
 public:
-    ASREngine(Stream *s, std::shared_ptr<ASRStreamConfig> smCfg);
+    ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg);
     ~ASREngine();
 
-    static std::shared_ptr<ASREngine> GetInstance(Stream *s,
+    static std::shared_ptr<ASREngine> GetInstance(StreamASR *s,
                           std::shared_ptr<ASRStreamConfig> smCfg);
-    int32_t StartEngine(Stream *s);
-    int32_t StopEngine(Stream *s);
+    int32_t StartEngine(StreamASR *s);
+    int32_t StopEngine(StreamASR *s);
     int32_t ConnectSessionDevice(
-        Stream* stream_handle,
+        StreamASR *stream_handle,
         pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToConnect);
     int32_t DisconnectSessionDevice(
-        Stream* streamHandle,
+        StreamASR *streamHandle,
         pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToDisconnect);
     int32_t SetupSessionDevice(
-        Stream* streamHandle,
+        StreamASR *streamHandle,
         pal_stream_type_t streamType,
         std::shared_ptr<Device> deviceToDisconnect);
-    int32_t setECRef(Stream *s, std::shared_ptr<Device> dev,
+    int32_t setECRef(StreamASR *s, std::shared_ptr<Device> dev,
                      bool is_enable, bool setECForFirstTime = false);
-    int32_t setParameters(Stream *s, asr_param_id_type_t pid, void* paramPayload = nullptr);
+    int32_t setParameters(StreamASR *s, asr_param_id_type_t pid, void* paramPayload = nullptr);
     uint32_t GetNumOutput() { return numOutput; }
     uint32_t GetOutputToken() { return outputToken; }
     uint32_t GetPayloadSize() { return payloadSize; }
@@ -126,7 +125,7 @@ private:
     std::condition_variable cv;
 
     Session *session;
-    Stream *streamHandle;
+    StreamASR *streamHandle;
     PayloadBuilder *builder;
 };
 #endif  // ASRENGINE_H

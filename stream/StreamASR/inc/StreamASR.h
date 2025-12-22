@@ -40,7 +40,6 @@
 #include "Stream.h"
 #include "ASRPlatformInfo.h"
 #include "ResourceManager.h"
-#include "ASREngine.h"
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
 

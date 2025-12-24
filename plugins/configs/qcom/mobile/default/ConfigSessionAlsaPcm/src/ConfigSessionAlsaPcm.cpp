@@ -1654,8 +1654,7 @@ int32_t configureCallTranslationRxDeviceMFC(PayloadBuilder* builder, struct mixe
         }
         if (dAttr.id > PAL_DEVICE_IN_MIN && dAttr.id < PAL_DEVICE_IN_MAX) {
             PAL_DBG(LOG_TAG,"Input device, skip\n");
-            status = 0;
-            goto exit;
+            continue;
         }
         deviceData.bitWidth = dAttr.config.bit_width;
         deviceData.sampleRate = dAttr.config.sample_rate;

@@ -5,7 +5,7 @@
 set -ex
 echo "Running build script..."
 # Build/Compile audioreach-pal
-source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-poky-linux
+source ${GITHUB_WORKSPACE}/install/environment-setup-armv8-2a-qcom-linux
 
 # make sure we are in the right directory
 cd ${GITHUB_WORKSPACE}

@@ -87,8 +87,8 @@ library_includedir = $(includedir)/pal
 lib_LTLIBRARIES     = libpal.la
 libpal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT
-libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lar-spfhdrs -lexpat -ltinycompress -lagmclientwrapper
-libpal_la_LIBADD   += -lar-gsl -lacdbdata
+libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress -lagmclientwrapper
+libpal_la_LIBADD   += -lar-gsl
 libpal_la_CPPFLAGS  = -DFEATURE_IPQ_OPENWRT
 else
 libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress

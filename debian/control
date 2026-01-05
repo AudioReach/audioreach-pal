@@ -1,0 +1,31 @@
+Source: audioreach-pal
+Section: misc
+Priority: optional
+Maintainer: Radhika Garg <radhgarg@qti.qualcomm.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ git,
+ libssl-dev,
+ ca-certificates,
+ pkg-config,
+ autotools-dev,
+ libglib2.0-0,
+ libglib2.0-dev,
+ libtinyalsa2,
+ libtinyalsa-dev,
+ audioreach-graphmgr,
+ audioreach-graphservice, 
+ audioreach-conf,
+ audioreach-audio-utils,
+ audioreach-pal-headers
+Standards-Version: 4.6.2
+
+Package: audioreach-pal
+Architecture: arm64
+Depends:
+ ${misc:Depends},libtinyalsa2,
+ audioreach-graphmgr,
+Description: Qualcomm pal audio stack development headers
+
+

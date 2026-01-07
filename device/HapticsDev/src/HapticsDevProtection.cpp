@@ -1088,6 +1088,7 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
         if (isHapticsDevInUse(&sec)) {
             PAL_DBG(LOG_TAG, "HapticsDev in use. Wait for proper time");
             HapticsDevCalibrateWait();
+            retry--;
             PAL_DBG(LOG_TAG, "Waiting done");
             continue;
         } else {
@@ -1115,8 +1116,8 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
                 retry--;
             }
         } else {
-            continue;
             retry--;
+            continue;
         }
     }
     isDynamicCalTriggered = false;

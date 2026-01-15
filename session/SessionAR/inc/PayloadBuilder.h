@@ -41,6 +41,7 @@
 #include <map>
 #include <regex>
 #include <sstream>
+#include <mutex>
 #include "PalDefs.h"
 #include "kvh2xml.h"
 #include "PalCommon.h"
@@ -196,6 +197,7 @@ protected:
    static bool isInitialized;
    void *customPayload;
    size_t customPayloadSize;
+   static std::mutex mInitMutex;
 
 public:
     void payloadWNRModuleEnableDisable(uint8_t** payload, size_t* size,

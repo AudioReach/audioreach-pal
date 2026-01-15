@@ -346,6 +346,7 @@ std::vector<allKVs> PayloadBuilder::all_streampps;
 std::vector<allKVs> PayloadBuilder::all_devices;
 std::vector<allKVs> PayloadBuilder::all_devicepps;
 bool PayloadBuilder::isInitialized = false;
+std::mutex PayloadBuilder::mInitMutex;
 
 template <typename T>
 void PayloadBuilder::populateChannelMixerCoeff(T pcmChannel, uint8_t numChannel,
@@ -1395,6 +1396,7 @@ int PayloadBuilder::init()
     void *buf = NULL;
     struct user_xml_data tag_data;
 
+    std::lock_guard<std::mutex> lck(mInitMutex);
     if (!isInitialized) {
         memset(&tag_data, 0, sizeof(tag_data));
         all_streams.clear();

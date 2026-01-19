@@ -3265,6 +3265,15 @@ int PayloadBuilder::populateStreamKV(Stream* s,
             std::make_pair(CUSTOM_CONFIG_SEL,
             "deep_buffer_mmap"));
         PAL_INFO(LOG_TAG, "Deep buffer playback in mmap mode");
+    } else if (sattr->type == PAL_STREAM_SPATIAL_AUDIO) {
+        PAL_DBG(LOG_TAG, "Spatial Audio playback usecase channel count: %d",
+                            sattr->out_media_config.ch_info.channels);
+        if (sattr->out_media_config.ch_info.channels > 2) {
+            filled_selector_pairs.push_back(
+                std::make_pair(CUSTOM_CONFIG_SEL,
+                "spatial_audio_offload"));
+            PAL_INFO(LOG_TAG, "spatial audio playback usecase Kv configured");
+        }
     }
 
     retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVector);

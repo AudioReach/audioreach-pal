@@ -4008,3 +4008,55 @@ exit:
     PAL_DBG(LOG_TAG, "%s: Exit", __func__);
     return status;
 }
+
+int32_t SessionAlsaPcm::enableDisableSpatialAudioModule(Stream *s, bool enable)
+{
+    int status = 0;
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+    uint32_t miid = 0;
+    int device = 0;
+
+    PAL_DBG(LOG_TAG, "%s: Enter", __func__);
+    status = s->getAssociatedDevices(associatedDevices);
+    if ((0 != status) || (associatedDevices.size() == 0)) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
+        goto exit;
+    }
+
+    rm->getBackEndNames(associatedDevices, rxAifBackEnds, txAifBackEnds);
+    if (rxAifBackEnds.empty()) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "no backend specified for this stream");
+        goto exit;
+    }
+
+    if (pcmDevIds.size() > 0) {
+        device = pcmDevIds.at(0);
+        status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
+                                                    rxAifBackEnds[0].second.data(),
+                                                    MODULE_SPATIAL_AUDIO, &miid);
+        if (status != 0) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG,"getModule-spatialMod failed status: %d at line %d", status, __LINE__);
+            goto exit;
+        }
+    }
+    // calling payloadWNRModuleEnableDisable here by passing spatial audio module id
+    // make payloadWNRModuleEnableDisable generic as it can take miid and enable/disable
+    builder->payloadWNRModuleEnableDisable(&payload, &payloadSize, miid, enable);
+    if (payload && payloadSize) {
+        status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                    payload, payloadSize);
+        PAL_INFO(LOG_TAG, "mixer set spatial audio module status=%d", status);
+    }
+
+exit:
+    if (payload) {
+        builder->freeCustomPayload(&payload, &payloadSize);
+    }
+    PAL_DBG(LOG_TAG, "%s: Exit", __func__);
+    return status;
+}

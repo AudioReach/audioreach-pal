@@ -1284,6 +1284,30 @@ silence_det_setup_done:
                 }
             }
         }
+
+        if (sAttr.type == PAL_STREAM_SPATIAL_AUDIO) {
+            status = s->getAssociatedDevices(associatedDevices);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,"getAssociatedDevices Failed\n");
+                status = 0;
+                goto exit;
+            }
+            for (int i = 0; i < associatedDevices.size();i++) {
+                status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG,"get Device Attributes Failed\n");
+                    status = 0;
+                    goto exit;
+                }
+                if ((dAttr.id == PAL_DEVICE_OUT_BLUETOOTH_BLE)) {
+                     PAL_DBG(LOG_TAG, "Enabling spatial audio module for BLE device in offload mode");
+                     // Not checking status, as it can fail in SW spatial audio case
+                     // where spatial algo module will not be present.
+                     status = session->enableDisableSpatialAudioModule(s, true);
+                }
+            }
+        }
+
         break;
     case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
         std::vector<int> pcmDevRxIds;

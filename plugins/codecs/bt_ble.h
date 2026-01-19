@@ -189,10 +189,9 @@ static lc3_stream_map_t def_stream_map_out[DEF_STREAM_MAP_SZ] = {
     {1, 1, 0},
 };
 
-#define DEF_STREAM_MAP_IN_SZ 2
+#define DEF_STREAM_MAP_IN_SZ 1
 static lc3_stream_map_t def_stream_map_in[DEF_STREAM_MAP_IN_SZ] = {
     {2, 0, 1},
-    {1, 1, 1},
 };
 static lc3_cfg_t def_toair_cfg = {
     33,

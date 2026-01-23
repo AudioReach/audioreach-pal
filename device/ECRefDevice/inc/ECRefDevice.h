@@ -1,4 +1,4 @@
-/* * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved. *
+/* * Copyright (c) 2022 Qualcomm Technologies, Inc. and/or its subsidiaries. *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
  * disclaimer below) provided that the following conditions are met:
@@ -30,7 +30,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef ECREFDEVICE_H

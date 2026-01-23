@@ -8,4 +8,4 @@ To be available soon.
 
 ## License:
 
-Audioreach-pal (source files are licensed under the BSD-3-Clause-Clear. Check out the LICENSE for more details
+Audioreach-pal (source files are licensed under the BSD-3-Clause. Check out the LICENSE for more details

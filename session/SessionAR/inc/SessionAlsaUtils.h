@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- *  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *  Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
- *  SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries. 
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef SESSION_ALSAUTILS_H
@@ -190,7 +190,9 @@ public:
                                         void *payload, int size);
    static int flush(std::shared_ptr<ResourceManager> rm, uint32_t id);
    static int getScoDevCount(void);
-
+#ifndef UVVOICECUE_FEATURES_DISABLED
+   static int checkAndSetUvVoiceCue(Stream *s, struct mixer *mixer, int device, uint32_t miid, const std::shared_ptr<ResourceManager>& rm, PayloadBuilder* builder, uint32_t usecaseMask);
+#endif
 };
 
 #endif //SESSION_ALSA_UTILS

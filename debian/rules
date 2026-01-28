@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	git clone https://github.com/AudioReach/audioreach-pal.git audioreach-pal
+	cd audioreach-pal && git checkout master
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- --with-glib --with-syslog --with-no-ipc

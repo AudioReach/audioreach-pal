@@ -1,0 +1,22 @@
+Source: audioreach-pal-headers
+Section: misc
+Priority: optional
+Maintainer: Radhika Garg <radhgarg@qti.qualcomm.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ git,
+ libssl-dev,
+ ca-certificates,
+ pkg-config,
+ autotools-dev
+Standards-Version: 4.6.2
+
+Package: audioreach-pal-headers
+Section: libdevel
+Architecture: arm64
+Depends:
+ ${misc:Depends},
+Description: Qualcomm pal audio stack development headers
+ Headers-only package
+

@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	git clone https://github.com/AudioReach/audioreach-pal.git audioreach-pal
+	cd audioreach-pal/inc && git checkout master

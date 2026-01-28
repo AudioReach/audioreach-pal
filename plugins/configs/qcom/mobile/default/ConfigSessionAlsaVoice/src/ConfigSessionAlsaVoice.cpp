@@ -61,6 +61,10 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
 #include "ConfigSessionUtils.h"
 #include "ConfigSessionAlsaVoice.h"
 
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
+
 #define POP_SUPPRESSOR_RAMP_DELAY (1*1000)
 
 /*interface implementation*/
@@ -318,6 +322,10 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     std::vector<std::shared_ptr<Device>> associatedDevices;
     std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
     ReconfigPluginPayload ppld;
+#ifndef UVVOICECUE_FEATURES_DISABLED
+    uint32_t miid = 0;
+    uint32_t currentValues;
+#endif
 
     PAL_DBG(LOG_TAG,"Enter");
     rm = ResourceManager::getInstance();
@@ -416,6 +424,24 @@ int32_t voicePluginConfigSetConfigStart(Stream* s, void* pluginPayload)
 silence_det_setup_done:
         status = 0;
     }
+#ifndef UVVOICECUE_FEATURES_DISABLED
+    currentValues = getUvMaskUseCaseValues();
+    if ((currentValues & UV_FLUENCE_TELEPHONY_BIT) &&
+        (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
+        status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+            goto exit;
+        } else {
+            PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
+            status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_TELEPHONY_BIT);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+            }
+        }
+    }
+#endif
 exit:
     if (builder)
         delete builder;

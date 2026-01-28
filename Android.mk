@@ -189,6 +189,12 @@ else
 LOCAL_SRC_FILES     += utils/src/BTUtils.cpp
 endif
 
+ifeq ($(TARGET_DISABLE_PAL_UVVOICECUE),true)
+LOCAL_CFLAGS        += -DUVVOICECUE_FEATURES_DISABLED
+else
+LOCAL_SRC_FILES     += utils/src/UvVoiceCueUtils.cpp
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 #-------------------------------------------

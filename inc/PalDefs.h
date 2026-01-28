@@ -60,7 +60,7 @@ extern "C" {
 #define PAL_MAX_LATENCY_MODES 8
 #define PAL_CUSTOM_PARAM_MAX_STRING_LENGTH 64
 
-#define PAL_VERSION "2.1"
+#define PAL_VERSION "2.2"
 #define PAL_MAX_SOUND_DOSE_VALUES 10
 #define SEND_MSG_PARAM "sendMsg"
 
@@ -903,6 +903,8 @@ typedef enum {
     PAL_PARAM_ID_MULTI_CLIENT_ASR_OUTPUT = 107,
     PAL_PARAM_ID_MULTI_CLIENT_SDZ_OUTPUT = 108,
     PAL_PARAM_ID_VOICE_NS_RX_CFG = 109,
+    PAL_PARAM_ID_UV_VOICE_CUE_ENABLE = 110,
+    PAL_PARAM_ID_UV_VOICE_CUE_DATA_BYTE = 111,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1541,9 +1543,28 @@ struct call_translation_config {
     bool enable;
     pal_call_translation_direction call_translation_dir;        /** Direction for the call_translation usecase */
     struct pal_tts_config tts_module_config;        /** TTS module config */
-    struct pal_nmt_config nmt_module_config;	    /** NMT module config */
+    struct pal_nmt_config nmt_module_config;        /** NMT module config */
     struct pal_asr_config asr_module_config;        /** ASR module config */
 };
+
+enum {
+    UV_FLUENCE_TELEPHONY_BIT = 0x1,       // (1 << 0) = 1   -> voice
+    UV_FLUENCE_AUDIO_BIT     = 0x1 << 1,  // (1 << 1) = 2   -> audio
+    UV_FLUENCE_VOIP_BIT      = 0x1 << 2,  // (1 << 2) = 4   -> voip
+    UV_FLUENCE_SVA_BIT       = 0x1 << 3,  // (1 << 3) = 8   -> sva
+
+    // Union of all defined bits
+    UV_FLUENCE_BIT_ALL       = UV_FLUENCE_TELEPHONY_BIT |
+                               UV_FLUENCE_AUDIO_BIT |
+                               UV_FLUENCE_VOIP_BIT |
+                               UV_FLUENCE_SVA_BIT,
+};
+
+typedef struct uv_fluence_config {
+    uint32_t usecase_mask;    /**< Bit mask indicating which use case(s) are to be updated. */
+    size_t param_size;        /**< Size of voice cue payload in bytes. */
+    uint8_t *voice_cue_param; /**< Pointer to voice cue payload. */
+} uv_fluence_config_t;
 
 #define MAX_TRANSCRIPTION_CHAR_SIZE 1024
 #define MAX_JSON_CHAR_SIZE 4096

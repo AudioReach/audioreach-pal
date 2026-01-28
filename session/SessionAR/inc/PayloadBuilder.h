@@ -293,7 +293,10 @@ public:
                     pal_param_dtmf_gen_tone_cfg_t *dtmf_payload);
 
     int payloadSoundDoseInfo(uint8_t **payload, size_t *size, uint32_t moduleId);
-
+#ifndef UVVOICECUE_FEATURES_DISABLED
+    void payloadUvVoiceCueData(uint8_t** payload, size_t* size,
+                          uint32_t miid, void *cueData, uint32_t usecaseMask);
+#endif
     int populateStreamKV(Stream* s, std::vector <std::pair<int,int>> &keyVector);
     int populateStreamKV(Stream* s, std::vector <std::pair<int,int>> &keyVectorRx,
         std::vector <std::pair<int,int>> &keyVectorTx ,struct vsid_info vsidinfo);

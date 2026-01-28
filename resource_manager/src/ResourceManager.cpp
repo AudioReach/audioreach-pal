@@ -64,6 +64,10 @@
 #include "BTUtils.h"
 #endif
 
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
+
 
 
 #ifdef PAL_CUTILS_SUPPORTED
@@ -985,6 +989,10 @@ ResourceManager::ResourceManager()
         throw std::runtime_error("Failed to allocate ContextManager");
 
     }
+    #ifndef UVVOICECUE_FEATURES_DISABLED
+        PAL_DBG(LOG_TAG, "Retrieve the Cue Data from bin file if it already exists.");
+        retrieveVoiceCueFromFile();
+    #endif
 
 #ifdef SOC_PERIPHERAL_PROT
     socPerithread = std::thread(loadSocPeripheralLib);
@@ -7693,6 +7701,24 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
             PAL_DBG(LOG_TAG, "wnr module enable state updated to %d", rm->wnrEnableStatus);
         }
         break;
+        case PAL_PARAM_ID_UV_VOICE_CUE_ENABLE:
+        {
+            #ifndef UVVOICECUE_FEATURES_DISABLED
+                status = handleUvVoiceCueEnable(param_payload, payload_size);
+                if (status)
+                    PAL_ERR(LOG_TAG, "handleUvVoiceCueEnable failed, status %d", status);
+            #endif
+            break;
+        }
+        case PAL_PARAM_ID_UV_VOICE_CUE_DATA_BYTE:
+        {
+            #ifndef UVVOICECUE_FEATURES_DISABLED
+                status = handleUvVoiceCueData(param_payload, payload_size);
+                if (status)
+                    PAL_ERR(LOG_TAG, "handleUvVoiceCueData failed, status %d", status);
+            #endif
+            break;
+        }
         default:
     #ifndef SOUND_TRIGGER_FEATURES_DISABLED
             mResourceManagerMutex.unlock();

@@ -51,9 +51,7 @@ libstreamsensorpcmdata_headers_la_CPPFLAGS += -D__unused=__attribute__\(\(__unus
 
 if BUILDSYSTEM_OPENWRT
 libstreamsensorpcmdata_headers_la_LIBADD += -lglib-2.0 -llog
-endif
-
-if BUILDSYSTEM_QLI
+else
 libstreamsensorpcmdata_headers_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 

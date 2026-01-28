@@ -53,13 +53,13 @@ public:
         listen_model_indicator_enum type,
         std::shared_ptr<VUIStreamConfig> sm_cfg);
     ~SoundTriggerEngineCapi();
-    int32_t LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                           uint32_t data_size) override;
+    int32_t LoadSoundModel(StreamSoundTrigger *s,
+                           sound_model_data_t *sm_data) override;
     int32_t UnloadSoundModel(StreamSoundTrigger *s) override;
     int32_t StartRecognition(StreamSoundTrigger *s) override;
     int32_t RestartRecognition(StreamSoundTrigger *s __unused) override;
     int32_t StopRecognition(StreamSoundTrigger *s) override;
-    void SetDetected(bool detected) override;
+    void SetDetected(int32_t detection_state) override;
 
     int32_t GetParameters(uint32_t param_id __unused, void **payload __unused) {
         return 0;
@@ -106,7 +106,7 @@ private:
     int32_t StartSoundEngine();
     int32_t StopSoundEngine();
     int32_t StartKeywordDetection();
-    int32_t StartUserVerification();
+    int32_t StartUserVerification(std::unique_lock<std::mutex> &lck);
     int32_t StartTIUserVerification();
     int32_t UpdateConfThreshold(StreamSoundTrigger *s);
     int32_t UpdateUVScratchParam();
@@ -129,10 +129,10 @@ private:
     uint32_t kw_end_tolerance_;
     uint32_t data_before_kw_start_;
     uint32_t data_after_kw_end_;
-    int32_t det_conf_score_;
     int32_t detection_state_;
     stage2_uv_wrapper_scratch_param_t in_model_buffer_param_;
     stage2_uv_wrapper_scratch_param_t scratch_param_;
+    int32_t sec_kw_detect_state_;
 };
 #endif  // SOUNDTRIGGERENGINECAPI_H
 

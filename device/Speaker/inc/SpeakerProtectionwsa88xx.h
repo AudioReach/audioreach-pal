@@ -79,6 +79,7 @@ protected :
 
 private :
     int i2sChannels;
+    int wsaTemp;
 
 public:
     static std::thread viTxSetupThread;

@@ -82,9 +82,11 @@ public:
     }
     int32_t GetIndex(std::string param_name);
     int32_t GetModuleType(std::string tag);
+    bool GetEnableLPILabEC() const { return enable_lpi_lab_ec_; }
 
 private:
     bool lpi_supported_;
+    bool enable_lpi_lab_ec_;
     st_module_type_t module_type_;
     std::string module_name_;
     uint32_t module_tag_ids_[MAX_PARAM_IDS];
@@ -124,7 +126,6 @@ public:
     uint32_t GetSupportedEngineCount() const {
                         return supported_first_stage_engine_count_; }
     bool GetEnableIntraConcurrentDetection() const { return enable_intra_concurrent_detection_; }
-    bool GetEnableBufferingEC() const { return enable_buffering_ec_; }
     int32_t GetOperatingMode(std::string tag);
     st_module_type_t GetVUIModuleType();
     std::shared_ptr<VUISecondStageConfig> GetVUISecondStageConfig(
@@ -144,6 +145,8 @@ public:
     bool IsDetPropSupported(uint32_t prop) const;
     bool GetStreamLPIFlag() const { return lpi_enable_; }
     uint32_t GetBatchSizeInMs() const { return batch_size_in_ms_; }
+    bool IsClientHandleSSR() const { return client_handling_ssr_; }
+    bool GetEnableLPILabEC(st_module_type_t type);
 
 private:
     std::string name_;
@@ -164,7 +167,6 @@ private:
     uint32_t out_channels_;
     uint32_t supported_first_stage_engine_count_;
     bool enable_intra_concurrent_detection_;
-    bool enable_buffering_ec_;
     bool lpi_enable_;
     uint32_t batch_size_in_ms_;
     st_op_modes_t vui_op_modes_;
@@ -173,6 +175,7 @@ private:
     std::map<uint32_t, std::shared_ptr<VUIFirstStageConfig>> vui_1st_stage_cfg_list_;
     std::map<UUID, std::shared_ptr<VUIFirstStageConfig>> vui_uuid_1st_stage_cfg_list_;
     std::vector<uint32_t> ext_det_prop_list_;
+    bool client_handling_ssr_;
 };
 
 class VoiceUIPlatformInfo : public SoundTriggerPlatformInfo

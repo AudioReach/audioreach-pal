@@ -106,7 +106,8 @@ void VUISecondStageConfig::HandleStartTag(const std::string& tag, const char **a
 VUIFirstStageConfig::VUIFirstStageConfig() :
     module_type_(ST_MODULE_TYPE_GMM),
     module_name_("GMM"),
-    lpi_supported_(true)
+    lpi_supported_(true),
+    enable_lpi_lab_ec_(false)
 {
     for (int i = 0; i < MAX_PARAM_IDS; i++) {
         module_tag_ids_[i] = 0;
@@ -189,6 +190,8 @@ void VUIFirstStageConfig::HandleStartTag(const std::string& tag, const char **at
                     module_name_.c_str(), module_type_);
         } else if (key == "lpi_supported") {
             lpi_supported_ = (value == "true");
+        } else if (key == "enable_lpi_lab_ec") {
+            enable_lpi_lab_ec_ = (value == "true");
         } else {
             uint32_t index = GetIndex(key);
             if (index == -1) {
@@ -214,10 +217,10 @@ VUIStreamConfig::VUIStreamConfig() :
     pre_roll_duration_(0),
     supported_first_stage_engine_count_(1),
     enable_intra_concurrent_detection_(false),
-    enable_buffering_ec_(false),
     curr_child_(nullptr),
     lpi_enable_(true),
-    batch_size_in_ms_(0)
+    batch_size_in_ms_(0),
+    client_handling_ssr_(false)
 {
     ext_det_prop_list_.clear();
 }
@@ -322,6 +325,7 @@ bool VUIStreamConfig::IsDetPropSupported(uint32_t prop) const {
 
     return iter != ext_det_prop_list_.end();
 }
+
 int32_t VUIStreamConfig::GetOperatingMode(std::string tag) {
 
     int32_t mode = -1;
@@ -338,6 +342,14 @@ int32_t VUIStreamConfig::GetOperatingMode(std::string tag) {
 
     return mode;
 }
+
+bool VUIStreamConfig::GetEnableLPILabEC(st_module_type_t type) {
+    if (GetVUIFirstStageConfig(type))
+        return GetVUIFirstStageConfig(type)->GetEnableLPILabEC();
+    else
+        return false;
+}
+
 void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attribs)
 {
     /* Delegate to child element if currently active */
@@ -411,8 +423,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             ReadDetectionPropertyList(value.c_str());
         } else if (key == "batch_size_in_ms") {
             batch_size_in_ms_ = std::stoi(value);
-        } else if (key == "enable_buffering_ec") {
-            enable_buffering_ec_ = (value == "true");
+        } else if (key == "client_handling_ssr") {
+            client_handling_ssr_ = (value == "true");
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

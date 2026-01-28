@@ -251,7 +251,8 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         }
 
         // make sure history data is drained when LPI EC is setup
-        if (ftrt_size == 0 && sm_cfg_->GetEnableBufferingEC() && use_lpi_) {
+        if (ftrt_size == 0 && use_lpi_ &&
+            sm_cfg_->GetEnableLPILabEC(module_type_)) {
             ftrt_size = UsToBytes(buffer_config_.hist_buffer_duration_in_ms * 1000);
         }
 
@@ -755,14 +756,14 @@ exit:
     return status;
 }
 
-int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                                              uint32_t data_size) {
+int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
+                                              sound_model_data_t *sm_data) {
     int32_t status = 0;
     vui_intf_param_t param {};
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
 
     PAL_DBG(LOG_TAG, "Enter");
-    if (!data) {
+    if (!sm_data || !sm_data->data) {
         PAL_ERR(LOG_TAG, "Invalid sound model data status %d", status);
         status = -EINVAL;
         return status;
@@ -772,7 +773,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
     std::unique_lock<std::mutex> lck(mutex_);
     /* Check whether any stream is already attached to this engine */
     if (CheckIfOtherStreamsAttached(s)) {
-        status = HandleMultiStreamLoad(s, data, data_size);
+        status = HandleMultiStreamLoad(s, sm_data->data, sm_data->size);
         goto exit;
     }
 
@@ -784,8 +785,8 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s, uint8_t *da
 
     /* Update interface with sound model to be added*/
     param.stream = (void *)s;
-    param.data = data;
-    param.size = data_size;
+    param.data = sm_data->data;
+    param.size = sm_data->size;
     status = vui_intf_->SetParameter(PARAM_FSTAGE_SOUND_MODEL_ADD, &param);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to update engine model, status = %d", status);
@@ -1818,7 +1819,7 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             return status;
         }
         if (force_enable || ec_ref_count_ == 1) {
-            if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+            if (sm_cfg_->GetEnableLPILabEC(module_type_) && use_lpi_)
                 session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, true);
             status = session_->setECRef(s, dev, is_enable);
             if (status) {
@@ -1840,7 +1841,7 @@ int32_t SoundTriggerEngineGsl::setECRef(StreamSoundTrigger *s, std::shared_ptr<D
             if (ec_ref_count_ > 0) {
                 ec_ref_count_--;
                 if (ec_ref_count_ == 0) {
-                    if (sm_cfg_->GetEnableBufferingEC() && use_lpi_)
+                    if (sm_cfg_->GetEnableLPILabEC(module_type_) && use_lpi_)
                         session_->addRemoveEffect(s, PAL_AUDIO_EFFECT_ECNS, false);
                     status = session_->setECRef(s, dev, is_enable);
                     if (status == -ENETRESET) {

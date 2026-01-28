@@ -3,17 +3,18 @@ pkgconfig_DATA = dev_ec_ref.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 if BUILDSYSTEM_OPENWRT
-AM_CPPFLAGS := -I ./inc
-AM_CPPFLAGS += -I ../../inc
-AM_CPPFLAGS += -I ../../
-AM_CPPFLAGS += -I ../../utils/inc
-AM_CPPFLAGS += -I ../../device/inc
-AM_CPPFLAGS += -I ../../session/inc
-AM_CPPFLAGS += -I ../../stream/inc
-AM_CPPFLAGS += -I ../../session/SessionAR/inc
-AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
-AM_CPPFLAGS += -I ../../resource_manager/inc
-AM_CPPFLAGS += -I ../../context_manager/inc
+AM_CPPFLAGS := -I $(top_srcdir)/device/ECRefDevice/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)/
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 dev_ec_ref_sources = ./src/ECRefDevice.cpp
 else
@@ -52,15 +53,13 @@ libdev_ec_ref_la_LDFLAGS   = -shared -avoid-version
 
 libdev_ec_ref_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
-if BUILDSYSTEM_QLI
-libdev_ec_ref_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
-endif
-
 libdev_ec_ref_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libdev_ec_ref_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if BUILDSYSTEM_OPENWRT
 libdev_ec_ref_la_LIBADD += -lglib-2.0 -llog
+else
+libdev_ec_ref_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED

@@ -64,8 +64,8 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
                           listen_model_indicator_enum type,
                           st_module_type_t module_type,
                           std::shared_ptr<VUIStreamConfig> sm_cfg);
-    int32_t LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                           uint32_t data_size) override;
+    int32_t LoadSoundModel(StreamSoundTrigger *s,
+                           sound_model_data_t *sm_data) override;
     int32_t UnloadSoundModel(StreamSoundTrigger *s) override;
     int32_t StartRecognition(StreamSoundTrigger *s) override;
     int32_t RestartRecognition(StreamSoundTrigger *s) override;
@@ -74,7 +74,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
                             uint32_t pre_roll_duration) override;
     void GetUpdatedBufConfig(uint32_t *hist_buffer_duration,
                             uint32_t *pre_roll_duration) override;
-     void SetDetected(bool detected __unused) {};
+     void SetDetected(int32_t detection_state __unused) {};
     int32_t GetParameters(uint32_t param_id, void **payload) override;
     int32_t ConnectSessionDevice(
         StreamSoundTrigger* stream_handle,

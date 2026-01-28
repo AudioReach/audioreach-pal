@@ -7555,16 +7555,28 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
         {
             std::list<Stream*>::iterator sIter;
             pal_stream_attributes st_attr;
+            mResourceManagerMutex.unlock();
+            lockActiveStream();
             for(sIter = mActiveStreams.begin(); sIter != mActiveStreams.end(); sIter++) {
+                if (increaseStreamUserCounter(*sIter) < 0) {
+                    continue;
+                }
                 (*sIter)->getStreamAttributes(&st_attr);
                 if (st_attr.type == PAL_STREAM_HAPTICS) {
+                    unlockActiveStream();
                     status = (*sIter)->setVolume((struct pal_volume_data *)param_payload);
+                    lockActiveStream();
                     if (status) {
+                        decreaseStreamUserCounter(*sIter);
+                        unlockActiveStream();
                         PAL_ERR(LOG_TAG, "Failed to set volume for haptics");
-                        goto exit;
+                        goto exit_no_unlock;
                     }
                 }
+                decreaseStreamUserCounter(*sIter);
             }
+            unlockActiveStream();
+            mResourceManagerMutex.lock();
         }
         break;
         case PAL_PARAM_ID_MSPP_LINEAR_GAIN:
@@ -9629,6 +9641,7 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     std::vector <std::tuple<Stream *, struct pal_device *>> streamDevConnect;
     std::vector <Stream *> streamsToSwitch;
     std::vector <Stream*>::iterator sIter;
+    std::vector <Stream *> tempMutedStreams;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -9701,6 +9714,11 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
                  sharedStream = std::get<0>(elem);
                  streamDevDisconnect.push_back({sharedStream,dev->getSndDeviceId()});
                  streamDevConnect.push_back({sharedStream,&curDevAttr});
+                 if (!rm->increaseStreamUserCounter(sharedStream)) {
+                    PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", sharedStream);
+                    sharedStream->mute(true);
+                    tempMutedStreams.push_back(sharedStream);
+                 }
             }
         }
 
@@ -9734,6 +9752,16 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     if (!streamDevDisconnect.empty() && !IsI2sDualMonoEnabled())
         streamDevSwitch(streamDevDisconnect, streamDevConnect);
 exit:
+    if (!tempMutedStreams.empty()) {
+        mActiveStreamMutex.lock();
+        for(sIter = tempMutedStreams.begin(); sIter != tempMutedStreams.end(); sIter++) {
+            (*sIter)->mute(false);
+            rm->decreaseStreamUserCounter(*sIter);
+            PAL_DBG(LOG_TAG, "unmute stream %pk during restoreDevice", *sIter);
+        }
+        mActiveStreamMutex.unlock();
+    }
+    tempMutedStreams.clear();
     PAL_DBG(LOG_TAG, "Exit");
     return;
 }

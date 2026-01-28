@@ -346,6 +346,7 @@ std::vector<allKVs> PayloadBuilder::all_streampps;
 std::vector<allKVs> PayloadBuilder::all_devices;
 std::vector<allKVs> PayloadBuilder::all_devicepps;
 bool PayloadBuilder::isInitialized = false;
+std::mutex PayloadBuilder::mInitMutex;
 
 template <typename T>
 void PayloadBuilder::populateChannelMixerCoeff(T pcmChannel, uint8_t numChannel,
@@ -572,7 +573,7 @@ void PayloadBuilder::payloadDpAudioConfig(uint8_t** payload, size_t* size,
     *payload = payloadInfo;
     PAL_DBG(LOG_TAG, "Exit:");
 }
-
+#ifndef SOUNDDOSE_UNSUPPORTED
 int PayloadBuilder::payloadSoundDoseInfo(uint8_t **payload, size_t *size, uint32_t moduleId)
 {
     struct apm_module_param_data_t* header;
@@ -600,6 +601,7 @@ int PayloadBuilder::payloadSoundDoseInfo(uint8_t **payload, size_t *size, uint32
     PAL_DBG(LOG_TAG, "payload %pK size %zu", *payload, *size);
     return 0;
 }
+#endif
 
 #define PLAYBACK_VOLUME_MAX 0x2000
 void PayloadBuilder::payloadVolumeConfig(uint8_t** payload, size_t* size,
@@ -1394,6 +1396,7 @@ int PayloadBuilder::init()
     void *buf = NULL;
     struct user_xml_data tag_data;
 
+    std::lock_guard<std::mutex> lck(mInitMutex);
     if (!isInitialized) {
         memset(&tag_data, 0, sizeof(tag_data));
         all_streams.clear();

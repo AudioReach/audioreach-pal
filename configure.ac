@@ -82,12 +82,6 @@ AC_SUBST([SPF_CFLAGS])
 AC_CHECK_FUNCS([strlcpy])
 AM_CONDITIONAL(USE_G_STR_FUNC, ! test "x$ac_cv_func_strlcpy" = "xyes")
 
-PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
-AC_SUBST([PALHEADERS_CFLAGS])
-
-PKG_CHECK_MODULES([CAPIV2HEADERS], [capiv2-api-headers])
-AC_SUBST([CAPIV2HEADERS_CFLAGS])
-
 AC_ARG_WITH([acdbdata],
       AC_HELP_STRING([--with-acdbdata],
          [enable acdbdata, Build against acdbdata. Use this when building for HLOS systems which use acdbdata]))
@@ -97,11 +91,23 @@ AS_IF([test "x$with_acdbdata" != "xno"], [ACDBDATA_CFLAGS="-I$with_acdbdata"])
 
 AC_SUBST(ACDBDATA_CFLAGS)
 
+if (test "x${with_openwrt}" = "xno"); then
+
+PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
+AC_SUBST([PALHEADERS_CFLAGS])
+
+PKG_CHECK_MODULES([CAPIV2HEADERS], [capiv2-api-headers], [have_capiv2_headers=yes], [have_capiv2_headers=no])
+AM_CONDITIONAL([HAVE_CAPIV2HEADERS], [test "x$have_capiv2_headers" = "xyes"])
+AC_SUBST([CAPIV2HEADERS_CFLAGS])
+
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
 
 PKG_CHECK_MODULES([AROUTE], [audioroute])
 AC_SUBST([AROUTE_CFLAGS])
+
+fi
+
 
 AC_ARG_WITH([qli],
     AS_HELP_STRING([use qli (default is no)]),
@@ -216,8 +222,23 @@ plugins/configs/qcom/mobile/default/ConfigSessionAlsaCompress/Makefile \
 plugins/configs/qcom/mobile/default/ConfigSessionAlsaCompress/session_compress_config.pc \
 plugins/configs/qcom/mobile/default/ConfigSessionAlsaVoice/Makefile \
 plugins/configs/qcom/mobile/default/ConfigSessionAlsaVoice/session_voice_config.pc \
+plugins/configs/qcom/mbb/default/ConfigSessionUtils/Makefile \
+plugins/configs/qcom/mbb/default/ConfigSessionUtils/session_utils_config.pc \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaPcm/Makefile \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaPcm/session_pcm_config.pc \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaCompress/Makefile \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaCompress/session_compress_config.pc \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaVoice/Makefile \
+plugins/configs/qcom/mbb/default/ConfigSessionAlsaVoice/session_voice_config.pc \
 plugins/PluginManager/Makefile \
 plugins/PluginManager/plugin_manager.pc \
 plugins/codecs/Makefile \
 plugins/codecs/codecs.pc ])
+
+AC_ARG_WITH([adsprpcd],
+    AS_HELP_STRING([compile adsprpcd (default is no)]),
+    [with_adsprpcd=$withval],
+    [with_adsprpcd=no])
+AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
+
 AC_OUTPUT

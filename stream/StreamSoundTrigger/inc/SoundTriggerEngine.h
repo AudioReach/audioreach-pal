@@ -66,8 +66,8 @@ public:
 
     virtual ~SoundTriggerEngine() {}
 
-    virtual int32_t LoadSoundModel(StreamSoundTrigger *s, uint8_t *data,
-                                   uint32_t data_size) = 0;
+    virtual int32_t LoadSoundModel(StreamSoundTrigger *s,
+                                   sound_model_data_t *sm_data) = 0;
     virtual int32_t UnloadSoundModel(StreamSoundTrigger *s) = 0;
     virtual int32_t StartRecognition(StreamSoundTrigger *s) = 0;
     virtual int32_t RestartRecognition(StreamSoundTrigger *s) = 0;
@@ -76,7 +76,7 @@ public:
                           uint32_t pre_roll_duration) = 0;
     virtual void GetUpdatedBufConfig(uint32_t *hist_buffer_duration,
                                     uint32_t *pre_roll_duration) = 0;
-    virtual void SetDetected(bool detected) = 0;
+    virtual void SetDetected(int32_t detection_state) = 0;
     virtual int32_t GetParameters(uint32_t param_id, void **payload) = 0;
     virtual int32_t ConnectSessionDevice(
         StreamSoundTrigger* stream_handle,

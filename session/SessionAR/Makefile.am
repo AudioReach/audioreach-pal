@@ -3,20 +3,21 @@ pkgconfig_DATA = session_ar.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 if BUILDSYSTEM_OPENWRT
-AM_CPPFLAGS := -I ./inc
-AM_CPPFLAGS += -I ../../inc
-AM_CPPFLAGS += -I ../../
-AM_CPPFLAGS += -I ../../utils/inc
-AM_CPPFLAGS += -I ../../device/inc
-AM_CPPFLAGS += -I ../../session/inc
-AM_CPPFLAGS += -I ../../stream/inc
-AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
-AM_CPPFLAGS += -I ../../resource_manager/inc
-AM_CPPFLAGS += -I ../../context_manager/inc
+AM_CPPFLAGS := -I ${top_srcdir}/session/SessionAR/inc
+AM_CPPFLAGS += -I ${top_srcdir}/inc
+AM_CPPFLAGS += -I ${top_srcdir}/
+AM_CPPFLAGS += -I ${top_srcdir}/utils/inc
+AM_CPPFLAGS += -I ${top_srcdir}/device/inc
+AM_CPPFLAGS += -I ${top_srcdir}/session/inc
+AM_CPPFLAGS += -I ${top_srcdir}/stream/inc
+AM_CPPFLAGS += -I ${top_srcdir}/plugins/PluginManager/inc
+AM_CPPFLAGS += -I ${top_srcdir}/resource_manager/inc
+AM_CPPFLAGS += -I ${top_srcdir}/context_manager/inc
+AM_CPPFLAGS += -I ${top_srcdir}/plugins/vui_interface/api/vui-interface
 
-session_ar_sources = ./src/SessionAR.cpp \
-                     ./src/SessionAlsaUtils.cpp \
-                     ./src/PayloadBuilder.cpp
+session_ar_sources = ${top_srcdir}/session/SessionAR/src/SessionAR.cpp \
+                     ${top_srcdir}/session/SessionAR/src/SessionAlsaUtils.cpp \
+                     ${top_srcdir}/session/SessionAR/src/PayloadBuilder.cpp
 else
 AM_CPPFLAGS := -I ${top_srcdir}/session/SessionAR/inc
 AM_CPPFLAGS += -I ${top_srcdir}/inc
@@ -49,11 +50,6 @@ libsession_ar_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_ar_la_CPPFLAGS += -std=c++14
 libsession_ar_la_LDFLAGS   = -shared -avoid-version
 libsession_ar_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
-
-if BUILDSYSTEM_QLI
-libsession_ar_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
-endif
-
 libsession_ar_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_ar_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
@@ -61,9 +57,10 @@ if USE_SYSLOG
 libsession_ar_la_CPPFLAGS += -DPAL_USE_SYSLOG
 endif
 
-
 if BUILDSYSTEM_OPENWRT
 libsession_ar_la_LIBADD += -lglib-2.0 -lagmclientwrapper -llog
+else
+libsession_ar_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED

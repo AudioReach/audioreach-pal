@@ -41,6 +41,7 @@
 #include <map>
 #include <regex>
 #include <sstream>
+#include <mutex>
 #include "PalDefs.h"
 #include "kvh2xml.h"
 #include "PalCommon.h"
@@ -52,8 +53,9 @@
 #include "jitter_buf_api.h"
 #include "AudioHapticsInterface.h"
 #include "us_tone_renderer_api.h"
+#ifndef SOUNDDOSE_UNSUPPORTED
 #include "sound_dose_api.h"
-
+#endif
 #define PAL_ALIGN_8BYTE(x) (((x) + 7) & (~7))
 #define PAL_PADDING_8BYTE_ALIGN(x)  ((((x) + 7) & 7) ^ 7)
 
@@ -195,6 +197,7 @@ protected:
    static bool isInitialized;
    void *customPayload;
    size_t customPayloadSize;
+   static std::mutex mInitMutex;
 
 public:
     void payloadWNRModuleEnableDisable(uint8_t** payload, size_t* size,

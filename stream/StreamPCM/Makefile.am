@@ -3,17 +3,18 @@ pkgconfig_DATA = stream_pcm.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 if BUILDSYSTEM_OPENWRT
-AM_CPPFLAGS := -I ./inc
-AM_CPPFLAGS += -I ../../inc
-AM_CPPFLAGS += -I ../../
-AM_CPPFLAGS += -I ../../utils/inc
-AM_CPPFLAGS += -I ../../device/inc
-AM_CPPFLAGS += -I ../../session/inc
-AM_CPPFLAGS += -I ../../stream/inc
-AM_CPPFLAGS += -I ../../session/SessionAR/inc
-AM_CPPFLAGS += -I ../../plugins/PluginManager/inc
-AM_CPPFLAGS += -I ../../resource_manager/inc
-AM_CPPFLAGS += -I ../../context_manager/inc
+AM_CPPFLAGS := -I $(top_srcdir)/stream/StreamPCM/inc
+AM_CPPFLAGS += -I $(top_srcdir)/inc
+AM_CPPFLAGS += -I $(top_srcdir)/
+AM_CPPFLAGS += -I $(top_srcdir)/utils/inc
+AM_CPPFLAGS += -I $(top_srcdir)/device/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/inc
+AM_CPPFLAGS += -I $(top_srcdir)/stream/inc
+AM_CPPFLAGS += -I $(top_srcdir)/session/SessionAR/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/PluginManager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
+AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 stream_pcm_sources = ./src/StreamPCM.cpp
 else
@@ -53,9 +54,7 @@ libstream_pcm_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_
 
 if BUILDSYSTEM_OPENWRT
 libstream_pcm_la_LIBADD += -lglib-2.0 -llog
-endif
-
-if BUILDSYSTEM_QLI
+else
 libstream_pcm_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 

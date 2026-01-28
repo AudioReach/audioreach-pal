@@ -748,7 +748,8 @@ int32_t StreamSoundTrigger::setECRef(std::shared_ptr<Device> dev, bool is_enable
     int32_t status = 0;
 
     std::lock_guard<std::mutex> lck(mStreamMutex);
-    if (getLPIUsage() && ConfigSupportLPI() && !sm_cfg_->GetEnableBufferingEC()) {
+    if (getLPIUsage() && ConfigSupportLPI() &&
+        !sm_cfg_->GetEnableLPILabEC(model_type_)) {
         PAL_DBG(LOG_TAG, "EC ref will be handled in LPI/NLPI switch");
         return status;
     }
@@ -767,7 +768,8 @@ int32_t StreamSoundTrigger::setECRef_l(std::shared_ptr<Device> dev, bool is_enab
             dev ? dev->getPALDeviceName().c_str() : "Null");
 
     if (!cap_prof_ ||
-        (!cap_prof_->isECRequired() && !sm_cfg_->GetEnableBufferingEC())) {
+        (!cap_prof_->isECRequired() &&
+         !sm_cfg_->GetEnableLPILabEC(model_type_))) {
         PAL_DBG(LOG_TAG, "No need to set ec ref");
         goto exit;
     }
@@ -1076,6 +1078,16 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
             reader_->updateState(READER_PREPARED);
     }
 
+    // notify 2nd stage UV engine of 2nd stage KW result
+    if (det_type == KEYWORD_DETECTION_SUCCESS ||
+        det_type == KEYWORD_DETECTION_REJECT) {
+        for (auto &eng : engines_) {
+            if (eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_USER) {
+                eng->GetEngine()->SetDetected(det_type);
+            }
+        }
+    }
+
     std::shared_ptr<StEventConfig> ev_cfg(
        new StDetectedEventConfig(det_type));
     status = cur_state_->ProcessEvent(ev_cfg);
@@ -1157,15 +1169,15 @@ void StreamSoundTrigger::CancelDelayedStop() {
 }
 
 std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
-    uint8_t *sm_data,
-    int32_t sm_size,
-    listen_model_indicator_enum type,
+    sound_model_data_t *sm_data,
     st_module_type_t module_type) {
 
     int status = 0;
+    listen_model_indicator_enum type;
     std::shared_ptr<SoundTriggerEngine> engine = nullptr;
     vui_intf_param_t param {};
 
+    type = sm_data->type;
     engine = SoundTriggerEngine::Create(this, type, module_type, sm_cfg_);
     if (!engine) {
         status = -ENOMEM;
@@ -1176,7 +1188,6 @@ std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
     // cache 1st stage model for concurrency handling
     if (type == ST_SM_ID_SVA_F_STAGE_GMM) {
         gsl_engine_model_ = sm_data;
-        gsl_engine_model_size_ = sm_size;
         // Create Voice UI Interface object and update to engines
         if (engine->GetVoiceUIInterface() &&
             engine->GetVoiceUIInterface() != vui_intf_) {
@@ -1198,7 +1209,7 @@ std::shared_ptr<SoundTriggerEngine> StreamSoundTrigger::HandleEngineLoad(
     if (!engine->GetVoiceUIInterface())
         engine->SetVoiceUIInterface(this, vui_intf_);
 
-    status = engine->LoadSoundModel(this, sm_data, sm_size);
+    status = engine->LoadSoundModel(this, sm_data);
     if (status) {
         PAL_ERR(LOG_TAG, "big_sm: gsl engine loading model"
                "failed, status %d", status);
@@ -1431,7 +1442,7 @@ int32_t StreamSoundTrigger::LoadSoundModel(
     for (int i = 0; i < model_list.sm_list.size(); i++) {
         sm_data = model_list.sm_list[i];
         engine_id = sm_data->type;
-        engine = HandleEngineLoad(sm_data->data, sm_data->size, sm_data->type, model_type_);
+        engine = HandleEngineLoad(sm_data, model_type_);
         if (!engine) {
             PAL_ERR(LOG_TAG, "Failed to create engine");
             status = -EINVAL;
@@ -1468,11 +1479,22 @@ error_exit:
         vui_intf_->DetachStream(this);
         vui_intf_ = nullptr;
     }
+exit:
     if (sm_config_) {
         free(sm_config_);
         sm_config_ = nullptr;
     }
-exit:
+
+    /* Free memory for non-persistent models */
+    for (int i = 0; i < model_list.sm_list.size(); i++) {
+        sm_data = model_list.sm_list[i];
+        if (sm_data) {
+            if (sm_data->is_persistent == false && sm_data->data) {
+                free(sm_data->data);
+                sm_data->data = nullptr;
+            }
+        }
+    }
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
     return status;
 }
@@ -2027,17 +2049,17 @@ exit:
     return status;
 }
 
-void StreamSoundTrigger::SetDetectedToEngines(bool detected) {
+void StreamSoundTrigger::SetDetectedToEngines() {
     for (auto& eng: engines_) {
         if (eng->GetEngineId() != ST_SM_ID_SVA_F_STAGE_GMM) {
-            PAL_VERBOSE(LOG_TAG, "Notify detection event %d to engine %d",
-                    detected, eng->GetEngineId());
-            eng->GetEngine()->SetDetected(detected);
+            PAL_VERBOSE(LOG_TAG, "Notify detection event to engine %d",
+                eng->GetEngineId());
+            eng->GetEngine()->SetDetected(GMM_DETECTED);
         }
     }
 }
 
-pal_device_id_t StreamSoundTrigger::GetAvailCaptureDevice(){
+pal_device_id_t StreamSoundTrigger::GetAvailCaptureDevice() {
     if (vui_ptfm_info_->GetSupportDevSwitch() &&
         rm->isDeviceAvailable(PAL_DEVICE_IN_WIRED_HEADSET))
         return PAL_DEVICE_IN_HEADSET_VA_MIC;
@@ -2298,8 +2320,10 @@ int32_t StreamSoundTrigger::StIdle::ProcessEvent(
         }
         case ST_EV_CONCURRENT_STREAM: {
             // Avoid handling concurrency before sound model loaded
-            if (!st_stream_.sm_config_)
+            if (!st_stream_.gsl_engine_model_) {
+                PAL_ERR(LOG_TAG, "Avoid handling concurrency as no sound model is Loaded");
                 break;
+            }
             std::shared_ptr<CaptureProfile> new_cap_prof = nullptr;
             bool active = false;
 
@@ -2829,7 +2853,7 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
                 if (st_stream_.engines_.size() > 1)
                     st_stream_.second_stage_processing_ = true;
                 TransitTo(ST_STATE_BUFFERING);
-                st_stream_.SetDetectedToEngines(true);
+                st_stream_.SetDetectedToEngines();
             }
             if (st_stream_.engines_.size() == 1) {
                 st_stream_.notifyClient(PAL_RECOGNITION_STATUS_SUCCESS);
@@ -3724,12 +3748,12 @@ int32_t StreamSoundTrigger::StSSR::ProcessEvent(
         case ST_EV_SSR_ONLINE: {
             TransitTo(ST_STATE_IDLE);
             /*
-             * sm_config_ can be NULL if load sound model is failed in
+             * gsl_engine_model_ can be NULL if load sound model is failed in
              * previous SSR online event. This scenario can occur if
              * back to back SSR happens in less than 1 sec.
              */
-            if (!st_stream_.sm_config_) {
-                PAL_ERR(LOG_TAG, "sound model config is NULL");
+            if (!st_stream_.gsl_engine_model_) {
+                PAL_ERR(LOG_TAG, "No sound model loaded");
                 break;
             }
             PAL_INFO(LOG_TAG, "stream state for restore %d", st_stream_.state_for_restore_);
@@ -4146,6 +4170,14 @@ bool StreamSoundTrigger::isLPIProfile() {
     }
 }
 
+bool StreamSoundTrigger::isModelLoaded(listen_model_indicator_enum type) {
+    for (auto& eng: engines_) {
+        if (eng->GetEngineId() == type)
+            return true;
+    }
+    return false;
+}
+
 int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_param_t *model) {
 
     int32_t status = 0;
@@ -4267,7 +4299,7 @@ int32_t StreamSoundTrigger::FstageLoad() {
     updateStreamAttributes();
 
     status = gsl_engine_->LoadSoundModel(this,
-        gsl_engine_model_, gsl_engine_model_size_);
+        gsl_engine_model_);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to load sound model, status %d",
             status);

@@ -66,10 +66,11 @@ enum {
     KEYWORD_DETECTION_REJECT = 0x4,
     USER_VERIFICATION_SUCCESS = 0x8,
     USER_VERIFICATION_REJECT = 0x10,
-    KEYWORD_DETECTION_PENDING = 0x20,
-    USER_VERIFICATION_PENDING = 0x40,
     DETECTION_TYPE_SS = 0x1E,
     DETECTION_TYPE_ALL = 0x1F,
+    KEYWORD_DETECTION_PENDING = 0x20,
+    USER_VERIFICATION_PENDING = 0x40,
+    SSTAGE_SUBSYSTEM_RESTART = 0x80,
 };
 
 typedef enum {
@@ -177,7 +178,7 @@ public:
         return -ENOSYS;
     }
     bool isActive() override;
-    void SetDetectedToEngines(bool detected);
+    void SetDetectedToEngines();
     int32_t SetEngineDetectionState(int32_t state);
 
     int32_t isSampleRateSupported(uint32_t sampleRate) override;
@@ -225,6 +226,7 @@ public:
     bool isLPIProfile();
     vote_type_t getVoteType() override { return vote_type_; };
     void setVoteType(vote_type_t type) { vote_type_ = type; };
+    bool isModelLoaded(listen_model_indicator_enum type);
 
     std::vector<PalRingBufferReader *> GetReaders() { return reader_list_;}
 
@@ -569,8 +571,8 @@ private:
 
     std::vector<std::pair<std::string, InstanceListNode_t>> STInstancesLists;
     pal_device_id_t GetAvailCaptureDevice();
-    std::shared_ptr<SoundTriggerEngine> HandleEngineLoad(uint8_t *sm_data,
-                         int32_t sm_size, listen_model_indicator_enum type,
+    std::shared_ptr<SoundTriggerEngine> HandleEngineLoad(
+                         sound_model_data_t *sm_data,
                          st_module_type_t module_type);
     void AddEngine(std::shared_ptr<EngineCfg> engine_cfg);
     void updateStreamAttributes();
@@ -635,8 +637,7 @@ private:
     pal_stream_callback callback_;
     uint64_t cookie_;
     PalRingBufferReader *reader_;
-    uint8_t *gsl_engine_model_;
-    uint32_t gsl_engine_model_size_;
+    sound_model_data_t *gsl_engine_model_;
     uint8_t *gsl_conf_levels_;
     uint32_t gsl_conf_levels_size_;
 

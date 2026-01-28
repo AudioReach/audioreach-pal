@@ -33,7 +33,7 @@
 
 <mixer>
 <!-- Common File Contents  -->
-    <ctl name="Rx Slot Mask" value="0" />
+    <ctl name="Rx Slot Mask" value="3" />
     <ctl name="OT23 Usage Mode" value="0" />
     <ctl name="SA1 FU21 Stereo Gain Offset dB" value="72" />
 

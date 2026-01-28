@@ -121,7 +121,9 @@ std::shared_ptr<Device> USB::getInstance(struct pal_device *device,
 USB::USB(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)
 {
+#ifndef SOUNDDOSE_UNSUPPORTED
     mSoundDose = std::make_unique<SoundDoseUtility>(this, *device);
+#endif
 }
 
 USB::~USB()
@@ -144,7 +146,7 @@ int USB::start()
         PAL_ERR(LOG_TAG,"USB Endpoint Configuration Failed");
         return status;
     }
-
+#ifndef SOUNDDOSE_UNSUPPORTED
     mDeviceMutex.lock();
 
     // start computation for first start instance
@@ -154,13 +156,14 @@ int USB::start()
 
     status = start_l();
     mDeviceMutex.unlock();
+#endif
     return status;
 }
 
 int USB::stop()
 {
     int status = 0;
-
+#ifndef SOUNDDOSE_UNSUPPORTED
     mDeviceMutex.lock();
 
     // stop computation only when 1 instance is left
@@ -170,7 +173,7 @@ int USB::stop()
 
     status = stop_l();
     mDeviceMutex.unlock();
-
+#endif
     return status;
 }
 

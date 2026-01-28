@@ -52,12 +52,7 @@ std::mutex Stream::mBaseStreamMutex;
 std::mutex Stream::pauseMutex;
 
 Stream::Stream() {
-    rm = ResourceManager::getInstance();
-    if (PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
-        PAL_ERR(LOG_TAG, "Error:Sound card offline/standby, can not create stream");
-        usleep(SSR_RECOVERY);
-        throw std::runtime_error("Sound card offline/standby");
-    }
+
 }
 
  Stream::~Stream(){
@@ -111,6 +106,13 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
         }
     }
     PAL_VERBOSE(LOG_TAG,"get RM instance success and noOfDevices %d \n", noOfDevices);
+
+    /* check sound card status */
+    if (PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
+        PAL_ERR(LOG_TAG, "Error:Sound card offline/standby, can not create stream");
+        usleep(SSR_RECOVERY);
+        goto exit;
+    }
 
     palDevsAttr = (pal_device *)calloc(noOfDevices, sizeof(struct pal_device));
     if (!palDevsAttr) {

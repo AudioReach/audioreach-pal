@@ -49,12 +49,15 @@ extern "C" Stream* CreatePCMStream(const struct pal_stream_attributes *sattr, st
                                const uint32_t no_of_modifiers, const std::shared_ptr<ResourceManager> rm) {
     StreamPCM* stream = new(std::nothrow) StreamPCM(sattr, dattr, no_of_devices,
                         modifiers, no_of_modifiers, rm);
-    if (stream && stream->isInitialized()) {
-        return stream;
+    if (stream) {
+        if (stream->isInitialized()) {
+            return stream;
+        } else {
+            delete stream;
+        }
     }
     PAL_ERR(LOG_TAG, "Stream create failed for stream type %s:",
                     streamNameLUT.at(sattr->type).c_str());
-    delete stream;
     return nullptr;
 }
 

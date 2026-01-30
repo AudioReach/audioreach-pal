@@ -161,6 +161,8 @@ libpal_la_list      = ./configs/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcm6490/usecaseKvManager.xml \
                       ./configs/qcm6490/mixer_paths_qcm6490_rb3_ia.xml \
                       ./configs/qcm6490/resourcemanager_qcm6490_rb3_ia.xml \
+                      ./configs/qcs615/mixer_paths_TALOS_EVK.xml \
+                      ./configs/qcs615/resourcemanager_TALOS_EVK.xml \
                       ./configs/qcs8300/mixer_paths_MONACO_EVK.xml \
                       ./configs/qcs8300/resourcemanager_MONACO_EVK.xml \
                       ./configs/qcs9100/mixer_paths_qcs9100_ridesx.xml \
@@ -198,6 +200,8 @@ root_etc_SCRIPTS = $(libpal_la_list)
 install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_MONACO_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MONACO_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_TALOS_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_TALOS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcs9100_ridesx.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_qcs9100_ridesx.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_qcm6490_idp.xml

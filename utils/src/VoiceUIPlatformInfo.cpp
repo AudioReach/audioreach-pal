@@ -104,9 +104,9 @@ void VUISecondStageConfig::HandleStartTag(const std::string& tag, const char **a
 }
 
 VUIFirstStageConfig::VUIFirstStageConfig() :
+    lpi_supported_(true),
     module_type_(ST_MODULE_TYPE_GMM),
     module_name_("GMM"),
-    lpi_supported_(true),
     enable_lpi_lab_ec_(false)
 {
     for (int i = 0; i < MAX_PARAM_IDS; i++) {
@@ -217,9 +217,9 @@ VUIStreamConfig::VUIStreamConfig() :
     pre_roll_duration_(0),
     supported_first_stage_engine_count_(1),
     enable_intra_concurrent_detection_(false),
-    curr_child_(nullptr),
     lpi_enable_(true),
     batch_size_in_ms_(0),
+    curr_child_(nullptr),
     client_handling_ssr_(false),
     mmap_buffer_duration_(0),
     mmap_frame_length_(0),
@@ -305,7 +305,7 @@ void VUIStreamConfig::ReadDetectionPropertyList(const char *prop_string)
 {
     int ret = 0;
     char *token = nullptr;
-    char *delims = ",";
+    const char *delims = ",";
     char *save = nullptr;
 
     PAL_VERBOSE(LOG_TAG, "Detection property list %s", prop_string);

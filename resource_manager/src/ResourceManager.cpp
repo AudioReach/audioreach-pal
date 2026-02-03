@@ -2640,7 +2640,7 @@ bool ResourceManager::isStreamSupported(Stream *s, struct pal_device *devices, i
         }
 
         if (cur_sessions - 1 == max_sessions) {
-            PAL_DBG(LOG_TAG, "current sessions is %d, maximum sessions is %d", cur_sessions, max_sessions);
+            PAL_DBG(LOG_TAG, "current sessions is %zu, maximum sessions is %zu", cur_sessions, max_sessions);
             PAL_ERR(LOG_TAG, "no new session allowed for stream %d", attributes.type);
             goto exit;
         }
@@ -5555,7 +5555,7 @@ int ResourceManager::findActiveStreamsNotInDisconnectList(
 
     rm->getActiveStream_l(activeStreams, devObj);
 
-    PAL_DBG(LOG_TAG, "activeStreams size = %d, device: %s", activeStreams.size(),
+    PAL_DBG(LOG_TAG, "activeStreams size = %zu, device: %s", activeStreams.size(),
             deviceNameLUT.at((pal_device_id_t)devObj->getSndDeviceId()).c_str());
 
     for (sIter = activeStreams.begin(); sIter != activeStreams.end(); sIter++) {
@@ -10031,7 +10031,7 @@ void ResourceManager::WbSpeechConfig(pal_device_id_t devId,
         dev->getDeviceAttributes(&curDevAttr);
         status = dev->setDeviceParameter(param_id, param_payload);
         if (status)
-            PAL_ERR(LOG_TAG, "set device param %d, status: ", param_id, status);
+            PAL_ERR(LOG_TAG, "set device param %d, status: %d", param_id, status);
         // check and force device switch if SCO is connected.
         if (!dev->isDeviceReady(devId))
             return;
@@ -10324,7 +10324,7 @@ int ResourceManager::setUltrasoundGain(pal_ultrasound_gain_t gain, Stream *s)
     } else {
         status = getActiveStream_l(activeStreams, NULL);
         if ((0 != status) || (activeStreams.size() == 0)) {
-            PAL_DBG(LOG_TAG, "No active stream available, status = %d, nStream = %d",
+            PAL_DBG(LOG_TAG, "No active stream available, status = %d, nStream = %zu",
                     status, activeStreams.size());
             return -ENOENT;
         }

@@ -56,7 +56,7 @@ int palStateQueueBuilder(pal_state_queue &que, Stream *s, pal_state_queue_state 
     que.state = state;
     que.error = error;
 
-    PAL_DBG(LOG_TAG, "Stream handle = " "%" PRId64 "\n", s);
+    PAL_DBG(LOG_TAG, "Stream handle = %p\n", s);
 
     memset(que.device_attr, 0, sizeof(que.device_attr));
 

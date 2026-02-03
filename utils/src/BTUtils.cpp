@@ -2120,7 +2120,7 @@ void reconfigureScoStreams() {
         dattr = nullptr;
     }
 
-    PAL_DBG(LOG_TAG, "streamDevDisconnect size=%d and streamDevConnect size=%d",
+    PAL_DBG(LOG_TAG, "streamDevDisconnect size=%zu and streamDevConnect size=%zu",
             streamDevDisconnect.size(), streamDevConnect.size());
     status = rm->streamDevSwitch(streamDevDisconnect, streamDevConnect);
     if (status) {

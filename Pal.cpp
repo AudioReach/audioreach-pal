@@ -299,6 +299,7 @@ int32_t pal_stream_open(struct pal_stream_attributes *attributes,
         if (s->close() != 0) {
             PAL_ERR(LOG_TAG, "stream closed failed.");
         }
+        Stream::handleStreamCreateFailure(attributes, cb, cookie);
         Stream::destroy(s);
         goto exit;
     }

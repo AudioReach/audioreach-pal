@@ -535,9 +535,6 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
         throw std::runtime_error("No sound model config present");
     }
 
-    // get lpi state from stream side
-    use_lpi_ = s->isLPIProfile();
-
     // Create session
     rm = ResourceManager::getInstance();
     if (!rm) {
@@ -771,6 +768,9 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
 
     exit_buffering_ = true;
     std::unique_lock<std::mutex> lck(mutex_);
+    // get lpi state from stream side
+    use_lpi_ = s->isLPIProfile();
+
     /* Check whether any stream is already attached to this engine */
     if (CheckIfOtherStreamsAttached(s)) {
         status = HandleMultiStreamLoad(s, sm_data->data, sm_data->size);
@@ -1203,7 +1203,6 @@ int32_t SoundTriggerEngineGsl::ReconfigureDetectionGraph(StreamSoundTrigger *s) 
             mmap_buffer_.fd = -1;
             mmap_buffer_.buffer = nullptr;
         }
-        use_lpi_ = getLPIUsage();
     }
 
     /* Delete sound model of stream s from merged sound model */

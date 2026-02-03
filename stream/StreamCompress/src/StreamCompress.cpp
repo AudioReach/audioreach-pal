@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 
  * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -98,7 +98,7 @@ StreamCompress::StreamCompress(const struct pal_stream_attributes *sattr, struct
     std::ignore = modifiers;
     std::ignore = no_of_modifiers;
     currentState = STREAM_IDLE;
-
+    streamCb = NULL;
     // Setting default volume to unity
     mVolumeData = (struct pal_volume_data *)calloc(1, sizeof(struct pal_volume_data)
                           + sizeof(struct pal_channel_vol_kv));
@@ -724,8 +724,13 @@ int32_t StreamCompress::registerCallBack(pal_stream_callback cb, uint64_t cookie
 
 int32_t StreamCompress::getCallBack(pal_stream_callback *cb)
 {
-    *cb = streamCb;
-    return 0;
+    if (streamCb) {
+        *cb = streamCb;
+        return 0;
+    } else {
+        PAL_INFO(LOG_TAG, "cb is not registered yet");
+        return -EINVAL;
+    }
 }
 
 int32_t StreamCompress::getParameters(uint32_t /*param_id*/, void ** /*payload*/)

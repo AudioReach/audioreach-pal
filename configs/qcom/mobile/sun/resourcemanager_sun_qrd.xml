@@ -770,6 +770,7 @@
                          ADSP control mode: 2
             -->
             <cps_mode>1</cps_mode>
+            <sp_op_mode>5</sp_op_mode>
             <vbat_enabled>1</vbat_enabled>
             <!--specify the supported bit format on speaker end point -->
             <!--this should be in the form of pal_audio_fmt_id-->

@@ -1921,14 +1921,20 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
     vui_intf_param_t param {};
 
     if (detection == PAL_RECOGNITION_STATUS_ABORT) {
-        phrase_rec_event = (struct pal_st_phrase_recognition_event*)calloc(1,
-            sizeof(struct pal_st_phrase_recognition_event));
-        if (phrase_rec_event == nullptr) {
+        if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
+            phrase_rec_event = (struct pal_st_phrase_recognition_event*)calloc(1,
+                sizeof(struct pal_st_phrase_recognition_event));
+            rec_event = (struct pal_st_recognition_event *)phrase_rec_event;
+        } else if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_GENERIC) {
+            rec_event = (struct pal_st_recognition_event *)calloc(1,
+                sizeof(struct pal_st_recognition_event));
+        }
+        if (rec_event == nullptr) {
             PAL_ERR(LOG_TAG, "abort event allocation failed");
             return -ENOMEM;
         }
         // abort event doesn't require any associated payload params.
-        phrase_rec_event->common.status = PAL_RECOGNITION_STATUS_ABORT;
+        rec_event->status = PAL_RECOGNITION_STATUS_ABORT;
         if (callback_) {
             currentState = STREAM_STOPPED;
             PAL_INFO(LOG_TAG, "Notify abort event to client");
@@ -1941,14 +1947,14 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
              * unlock active stream mutex until event is notified.
              */
             rm->unlockActiveStream();
-            callback_((pal_stream_handle_t *)this, 0, (uint32_t *)&phrase_rec_event->common,
+            callback_((pal_stream_handle_t *)this, 0, (uint32_t *)rec_event,
                        event_size, cookie_);
             rm->lockActiveStream();
             mStreamMutex.lock();
             is_abort_event_notifying_ = false;
             abort_event_cond_.notify_all();
         }
-        free(phrase_rec_event);
+        free(rec_event);
         goto exit;
     } else {
         PostDelayedStop();

@@ -669,6 +669,12 @@ int32_t reconfigureInCallMusicStream(struct pal_media_config config, PayloadBuil
                 status = -EINVAL;
                 goto exit;
             }
+            session = static_cast<SessionAlsaPcm*>(sess);
+            if (!session) {
+                PAL_ERR(LOG_TAG, "Session Cast Failed");
+                status = -EINVAL;
+                goto exit;
+            }
             deviceData.bitWidth = config.bit_width;
             deviceData.sampleRate = config.sample_rate;
             deviceData.numChannel = config.ch_info.channels;

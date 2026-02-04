@@ -1965,6 +1965,7 @@ void SessionAlsaVoice::freeFrontEndIds(const struct pal_stream_attributes &sAttr
         else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
                  sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
             rm->freeFrontEndIds(VOICE2_PLAYBACK_HOSTLESS, pcmDevRxIds);
+        pcmDevRxIds.clear();
     } else {
         if (sAttr.info.voice_call_info.VSID == VOICEMMODE1 ||
             sAttr.info.voice_call_info.VSID == VOICELBMMODE1)
@@ -1972,6 +1973,7 @@ void SessionAlsaVoice::freeFrontEndIds(const struct pal_stream_attributes &sAttr
         else if (sAttr.info.voice_call_info.VSID == VOICEMMODE2 ||
                  sAttr.info.voice_call_info.VSID == VOICELBMMODE2)
             rm->freeFrontEndIds(VOICE2_RECORD_HOSTLESS, pcmDevTxIds);
+        pcmDevTxIds.clear();
     }
     return;
 }

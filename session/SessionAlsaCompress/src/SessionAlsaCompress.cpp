@@ -844,6 +844,7 @@ int SessionAlsaCompress::open(Stream * s)
                 PAL_ERR(LOG_TAG, "session alsa utils open failed with %d",
                         status);
                 rm->freeFrontEndIds(COMPRESS_PLAYBACK, compressDevIds);
+                compressDevIds.clear();
                 frontEndIdAllocated = false;
             }
             audio_fmt = sAttr.out_media_config.aud_fmt_id;
@@ -868,6 +869,7 @@ int SessionAlsaCompress::open(Stream * s)
                 PAL_ERR(LOG_TAG, "session alsa utils open failed with %d",
                         status);
                 rm->freeFrontEndIds(COMPRESS_RECORD, compressDevIds);
+                compressDevIds.clear();
                 frontEndIdAllocated = false;
             }
             audio_fmt = sAttr.in_media_config.aud_fmt_id;
@@ -1661,6 +1663,7 @@ int SessionAlsaCompress::close(Stream * s)
             }
 
             rm->freeFrontEndIds(COMPRESS_PLAYBACK, compressDevIds);
+            compressDevIds.clear();
             compress = NULL;
             builder->freeCustomPayload();
             break;
@@ -1689,6 +1692,7 @@ int SessionAlsaCompress::close(Stream * s)
                 compress_close(compress);
 
             rm->freeFrontEndIds(COMPRESS_RECORD, compressDevIds);
+            compressDevIds.clear();
             compress = NULL;
             break;
 

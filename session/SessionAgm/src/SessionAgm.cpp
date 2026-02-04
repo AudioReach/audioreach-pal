@@ -397,6 +397,7 @@ int SessionAgm::close(Stream * s)
     PAL_DBG(LOG_TAG, "out of agmSessHandle close");
 
     rm->freeFrontEndIds(NONTUNNEL, sessionIds);
+    sessionIds.clear();
 
     return 0;
 }

@@ -17,7 +17,11 @@ AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 dev_speaker_sources = ./src/Speaker.cpp \
-                      ./src/SpeakerProtection.cpp
+                      ./src/SpeakerProtection.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa883x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa884x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa885x.cpp \
+                      $(top_srcdir)/device/Speaker/src/SpeakerProtectionwsa885xI2s.cpp
 else
 AM_CPPFLAGS := -I $(top_srcdir)/device/Speaker/inc
 AM_CPPFLAGS += -I $(top_srcdir)/inc

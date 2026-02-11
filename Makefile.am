@@ -170,7 +170,11 @@ libpal_la_list      = ./configs/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/qcs6490/mixer_paths_QCS6490_RB3Gen2.xml \
                       ./configs/qcs6490/resourcemanager_QCS6490_RB3Gen2.xml \
                       ./configs/qcs9075/mixer_paths_LEMANS_EVK.xml \
-                      ./configs/qcs9075/resourcemanager_LEMANS_EVK.xml
+                      ./configs/qcs9075/resourcemanager_LEMANS_EVK.xml \
+                      ./configs/x1e80100/mixer_paths_X1E80100_CRD.xml \
+                      ./configs/x1e80100/resourcemanager_X1E80100_CRD.xml \
+                      ./configs/x1e80100/mixer_paths_X1E80100_EVK.xml \
+                      ./configs/x1e80100/resourcemanager_X1E80100_EVK.xml
 
 lib_LTLIBRARIES     += lib_bt_bundle.la
 lib_bt_bundle_la_SOURCES   = $(btbundle_plugin_sources)
@@ -219,6 +223,10 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_QCS6490_RB3Gen2.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_LEMANS_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_X1E80100_CRD.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_X1E80100_CRD.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_X1E80100_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_X1E80100_EVK.xml
 
 if COMPILE_ADSPRPCD
 adsprpc_sources = adsprpcd/adsprpcd.c

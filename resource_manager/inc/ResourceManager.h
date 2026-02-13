@@ -127,10 +127,6 @@ extern "C" {
 }
 #endif
 
-#ifndef VENDOR_SKU
-    #define VENDOR_SKU "invalid"
-#endif
-
 #define PCM_PLAYBACK "PcmPlayback"
 #define PCM_PLAYBACK_HOSTLESS "PcmPlaybackHostless"
 #define PCM_RECORD "PcmRecord"

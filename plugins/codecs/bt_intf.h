@@ -61,6 +61,7 @@ typedef enum {
     CODEC_TYPE_PCM            = 0x1u,
     CODEC_TYPE_APTX_AD_QLEA   = 0x30000000u,
     CODEC_TYPE_APTX_AD_R4     = 0x31000000u,
+    CODEC_TYPE_APTX_PLUS      = 0x35000000u,
 } codec_format_t;
 
 /*
@@ -84,7 +85,8 @@ const std::map<uint32_t, std::string> btCodecFormatLUT {
     {CODEC_TYPE_LC3,              std::string{ "CODEC_TYPE_LC3"} },
     {CODEC_TYPE_PCM,              std::string{ "CODEC_TYPE_PCM"} },
     {CODEC_TYPE_APTX_AD_QLEA,     std::string{ "CODEC_TYPE_APTX_AD_QLEA"} },
-    {CODEC_TYPE_APTX_AD_R4,     std::string{ "CODEC_TYPE_APTX_AD_R4"} },
+    {CODEC_TYPE_APTX_AD_R4,       std::string{ "CODEC_TYPE_APTX_AD_R4"} },
+    {CODEC_TYPE_APTX_PLUS,        std::string{ "CODEC_TYPE_APTX_PLUS"} },
 };
 #endif
 

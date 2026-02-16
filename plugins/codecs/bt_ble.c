@@ -353,6 +353,7 @@ static int bt_ble_populate_payload(bt_codec_t *codec, void *src, void **dst)
     switch (codec->codecFmt) {
         case CODEC_TYPE_LC3:
         case CODEC_TYPE_APTX_AD_R4:
+        case CODEC_TYPE_APTX_PLUS:
             config_fn = ((codec->direction == ENC) ? &ble_pack_enc_config :
                                                      &ble_pack_dec_config);
             break;
@@ -395,6 +396,7 @@ static uint64_t bt_ble_get_encoder_latency(bt_codec_t *codec)
         case CODEC_TYPE_LC3:
         case CODEC_TYPE_APTX_AD_QLEA:
         case CODEC_TYPE_APTX_AD_R4:
+        case CODEC_TYPE_APTX_PLUS:
             /* for BLE, the latency depends on the mode (HQ/LL) and
              * BT IPC will take care of accomodating the mode factor and return latency
              */

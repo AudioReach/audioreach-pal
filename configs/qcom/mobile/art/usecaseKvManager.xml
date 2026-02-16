@@ -815,6 +815,22 @@
                 <!-- BT_FORMAT - APTX_AD_R4 -->
                 <graph_kv key="0xB5000000" value="0xB5000008"/>
             </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="TRUE">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="FALSE">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
+            </keys_and_values>
         </device>
         <!-- BT BLE BROADCAST OUT Device -->
         <device id="PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST">
@@ -841,6 +857,22 @@
                 <graph_kv key="0xB4000000" value="0xB4000003"/>
                 <!-- BT_FORMAT - APTX_AD_R4 -->
                 <graph_kv key="0xB5000000" value="0xB5000008"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="TRUE">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="FALSE">
+                <!-- DEVICERX - BT_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000003"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
             </keys_and_values>
         </device>
         <!-- BT A2DP IN Device -->
@@ -905,6 +937,22 @@
                 <graph_kv key="0xB4000000" value="0xB4000003"/>
                 <!-- BT_FORMAT - APTX_AD_R4 -->
                 <graph_kv key="0xB5000000" value="0xB5000008"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="TRUE">
+                <!-- DEVICERX - BT_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000002"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
+            </keys_and_values>
+            <keys_and_values CodecFormat="CODEC_TYPE_APTX_PLUS" AbrEnabled="TRUE,FALSE" Hostless="FALSE">
+                <!-- DEVICERX - BT_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000002"/>
+                <!-- BT_PROFILE - BLE -->
+                <graph_kv key="0xB4000000" value="0xB4000003"/>
+                <!-- BT_FORMAT - APTX_AD_R4 -->
+                <graph_kv key="0xB5000000" value="0xB500000A"/>
             </keys_and_values>
         </device>
         <!-- BT SCO OUT Device -->

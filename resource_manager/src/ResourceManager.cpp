@@ -1560,6 +1560,7 @@ int ResourceManager::init_audio()
                     strstr(snd_card_name, "TALOS") ||
                     strstr(snd_card_name, "qcs8300") ||
                     strstr(snd_card_name, "qcs9100") ||
+                    strstr(snd_card_name, "X1E80100") ||
                     strstr(snd_card_name, "monaco")) {
                     PAL_VERBOSE(LOG_TAG, "Found Codec sound card");
                     snd_card_found = true;

@@ -40,7 +40,9 @@ AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
+if HAVE_CAPIV2HEADERS
 AM_CPPFLAGS += @CAPIV2HEADERS_CFLAGS@
+endif
 
 stream_soundtrigger_sources = $(top_srcdir)/stream/StreamSoundTrigger/src/StreamSoundTrigger.cpp \
                               $(top_srcdir)/stream/StreamSoundTrigger/src/SoundTriggerEngineGsl.cpp \
@@ -66,7 +68,7 @@ libstream_soundtrigger_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
 if BUILDSYSTEM_OPENWRT
 libstream_soundtrigger_la_LIBADD += -lglib-2.0 -llog
 else
-libstream_soundtrigger_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libstream_soundtrigger_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED

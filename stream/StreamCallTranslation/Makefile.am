@@ -61,7 +61,7 @@ libstream_calltranslation_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\
 if BUILDSYSTEM_OPENWRT
 libstream_calltranslation_la_LIBADD += -lglib-2.0
 else
-libstream_calltranslation_la_CPPFLAGS +=  -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libstream_calltranslation_la_CPPFLAGS +=  -DAUDIO_FEATURE_STATS_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED
 endif
 
 if USE_SYSLOG

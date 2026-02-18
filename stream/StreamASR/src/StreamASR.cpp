@@ -36,8 +36,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#ifndef ANDROID_ASHMEM_UNSUPPORTED
+#if defined(PAL_CUTILS_SUPPORTED) && !defined(MUSL_SYS_LIBRARIES)
 #include <cutils/ashmem.h>
+#endif
+#if defined(MUSL_SYS_LIBRARIES)
+#ifdef __unused
+#undef __unused
+#endif
+#define __unused
 #endif
 #include <fstream>
 
@@ -336,6 +342,7 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
             PAL_ERR(LOG_TAG, "Invalid fd and size, and no existing model to use");
             return -EINVAL;
         }
+#if defined(PAL_CUTILS_SUPPORTED) && !defined(MUSL_SYS_LIBRARIES)
     } else if(!ashmem_valid(fd)) {
         PAL_ERR(LOG_TAG, "ashmem_valid(fd) validation failed");
         return -EINVAL;
@@ -343,6 +350,7 @@ int32_t StreamASR::storeModelToFile(int32_t fd, uint32_t size) {
         PAL_ERR(LOG_TAG, "Size passed not same as memory region, passed size: %d, memory size: %d",
                size, ashmem_get_size_region(fd));
         return -EINVAL;
+#endif
     }
 
     if (stat(ASR_MODEL_FILE_NAME, &stats) == 0) {

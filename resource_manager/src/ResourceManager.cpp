@@ -82,8 +82,10 @@
 
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
 #define SNDPARSER "/etc/card-defs.xml"
+#define SNDPARSER_NATIVE "/etc/card-defs-native.xml"
 #else
 #define SNDPARSER "/vendor/etc/card-defs.xml"
+#define SNDPARSER_NATIVE "/vendor/etc/card-defs-native.xml"
 #endif
 
 #if defined(ADSP_SLEEP_MONITOR)
@@ -890,9 +892,18 @@ ResourceManager::ResourceManager()
         PAL_ERR(LOG_TAG, "error in initializing KPI queue %d", ret);
     }
 #endif
-    ret = ResourceManager::XmlParser(SNDPARSER);
+    ret = ResourceManager::XmlParser(SNDPARSER_NATIVE);
     if (ret) {
-        PAL_ERR(LOG_TAG, "error in snd xml parsing ret %d", ret);
+        if (ret == -ENOENT) {
+            PAL_INFO(LOG_TAG, "native xml file %s not exist", SNDPARSER_NATIVE);
+            PAL_INFO(LOG_TAG, "retry origin xml file %s", SNDPARSER);
+            ret = ResourceManager::XmlParser(SNDPARSER);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "error in snd xml parsing ret %d", ret);
+            }
+        } else {
+            PAL_ERR(LOG_TAG, "error in snd xml parsing ret %d", ret);
+        }
     }
 
     ret = ResourceManager::init_audio();

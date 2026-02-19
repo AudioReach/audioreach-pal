@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -147,6 +147,37 @@ class ClientInfo : public IStreamOps {
     static std::unordered_map<uint64_t, std::weak_ptr<CallbackInfo>> sCallbackRegistry;
 };
 
+class PalCshmClientInfo {
+
+    std::vector<std::shared_ptr<CallbackInfo>> mCshmCallbackInfo;
+    using FdPair = std::pair<int, int>;
+    std::vector<FdPair> mFdPairs;
+    int mPid = 0;
+    std::mutex mCshmCallbackLock;
+    ::ndk::ScopedAIBinder_DeathRecipient mDeathRecipient;
+    static PalServerWrapper *sPalCshmServerWrapper;
+
+  public:
+    PalCshmClientInfo(int pid) : mPid(pid) {
+        mDeathRecipient = ndk::ScopedAIBinder_DeathRecipient(
+                AIBinder_DeathRecipient_new(PalCshmClientInfo::onDeath));
+    }
+
+    static void setPalServerWrapper(PalServerWrapper *wrapper);
+    int getPid() { return mPid; }
+    // this could only happen when client goes out of scope
+    virtual ~PalCshmClientInfo() { cleanup(); }
+    void cleanup();
+    void addSharedMemoryFdPairs(int input, int dupFd);
+    void registerCallback(int64_t handle, const std::shared_ptr<IPALCallback> &callback,
+                          std::shared_ptr<CallbackInfo> callBackInfo);
+    void unregisterCallback(int64_t handle);
+    static void onDeath(void *cookie);
+    void onDeath();
+    std::map<pal_cshm_id_t, std::vector<std::tuple<uint64_t, uint32_t>>> active_mem_ids;
+
+};
+
 class PalServerWrapper : public BnPAL, public IStreamOps {
   public:
     virtual ~PalServerWrapper() {}
@@ -214,6 +245,12 @@ class PalServerWrapper : public BnPAL, public IStreamOps {
                                               std::vector<uint8_t> *aidlReturn) override;
     ::ndk::ScopedAStatus ipc_pal_stream_get_tags_with_module_info(
             const int64_t handle, int32_t size, std::vector<uint8_t> *aidlReturn) override;
+
+    ::ndk::ScopedAStatus ipc_pal_cshm_dealloc(int64_t memID) override;
+
+    ::ndk::ScopedAStatus ipc_pal_cshm_alloc(int32_t size,const PalCShmInfo &memInfo,
+                                 PalCShmInfo *aidlReturn) override;
+
     void addStreamHandle(int64_t handle) override;
     void removeStreamHandle(int64_t handle) override;
 
@@ -224,10 +261,12 @@ class PalServerWrapper : public BnPAL, public IStreamOps {
 
     // it returns the client as per caller pid, must be called with lock held
     std::shared_ptr<ClientInfo> getClient_l();
+    std::shared_ptr<PalCshmClientInfo> getCshmClient();
     void removeClient(int pid);
+    void removeCshmClient(int pid);
     void removeClient_l(int pid);
     void removeClientInfoData(int64_t handle);
-
+    void printCShmClientInfo(void);
   ::ndk::ScopedAStatus ipc_pal_stream_get_custom_param(int64_t in_handle,
                                                       const std::vector<char16_t>& in_paramId,
                                                       int32_t in_size, std::vector<uint8_t>* _aidl_return) override;
@@ -247,5 +286,7 @@ class PalServerWrapper : public BnPAL, public IStreamOps {
     std::mutex mLock;
     // pid vs clientInfo
     std::unordered_map<int /*pid */, std::shared_ptr<ClientInfo>> mClients;
+    std::mutex mPalCShmClientLock;
+    std::unordered_map<int /*pid */, std::shared_ptr<PalCshmClientInfo>> mPalCShmClients;
 };
 }

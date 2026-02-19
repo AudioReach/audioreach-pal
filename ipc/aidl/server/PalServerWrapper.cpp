@@ -402,6 +402,47 @@ int32_t ClientInfo::onCallback(pal_stream_handle_t *handle, uint32_t eventId, ui
     return 0;
 }
 
+PalServerWrapper *PalCshmClientInfo::sPalCshmServerWrapper = nullptr;
+void PalCshmClientInfo::setPalServerWrapper(PalServerWrapper *wrapper) {
+    sPalCshmServerWrapper = wrapper;
+}
+
+void PalCshmClientInfo::onDeath() {
+    sPalCshmServerWrapper->removeCshmClient(mPid);
+}
+
+void PalCshmClientInfo::addSharedMemoryFdPairs(int inputFd, int dupFd) {
+    std::lock_guard<std::mutex> guard(mCshmCallbackLock);
+     ALOGV("%s Fds[input %d - dup %d] size %d", __func__, inputFd, dupFd,
+           mFdPairs.size());
+     mFdPairs.push_back(std::make_pair(inputFd, dupFd));
+}
+
+void PalCshmClientInfo::onDeath(void *cookie) {
+    PalCshmClientInfo *client = static_cast<PalCshmClientInfo *>(cookie);
+    ALOGI("Client died (pid): %llu", client->getPid());
+    client->onDeath();
+}
+
+
+void PalCshmClientInfo::cleanup() {
+
+    std::lock_guard<std::mutex> guard(mCshmCallbackLock);
+    ALOGV("client going out of scope clear callback of size %d", mCshmCallbackInfo.size());
+    mCshmCallbackInfo.clear();
+
+}
+
+std::shared_ptr<PalCshmClientInfo> PalServerWrapper::getCshmClient() {
+    int pid = AIBinder_getCallingPid();
+    if (mPalCShmClients.count(pid) == 0) {
+        ALOGV("%s new client pid %d, total clients %d ", __func__, pid, mPalCShmClients.size());
+        mPalCShmClients[pid] = std::make_shared<PalCshmClientInfo>(pid);
+        PalCshmClientInfo::setPalServerWrapper(this);
+    }
+    return mPalCShmClients[pid];
+}
+
 int32_t CallbackInfo::prepareMQForTransfer(int64_t handle, int64_t cookie) {
     std::unique_ptr<DataMQ> tempDataMQ;
     std::unique_ptr<CommandMQ> tempCommandMQ;
@@ -518,6 +559,18 @@ void PalServerWrapper::removeClient(int pid) {
     if (mClients.count(pid) != 0) {
         ALOGI("%s removing client %d", __func__, pid);
         mClients.erase(pid);
+    } else {
+        /*
+        * client is already gone, nothing to do.
+        */
+    }
+}
+
+void PalServerWrapper::removeCshmClient(int pid) {
+    std::lock_guard<std::mutex> guard(mPalCShmClientLock);
+    if (mPalCShmClients.count(pid) != 0) {
+        ALOGI("%s removing client sharedmemory client %d", __func__, pid);
+        mPalCShmClients.erase(pid);
     } else {
         /*
         * client is already gone, nothing to do.
@@ -1024,6 +1077,72 @@ std::shared_ptr<ClientInfo> PalServerWrapper::getClient_l() {
         memcpy(aidlReturn->data(), palPayload, payloadSize);
     }
     free(palPayload);
+    return status_tToBinderResult(ret);
+}
+
+::ndk::ScopedAStatus PalServerWrapper::ipc_pal_cshm_alloc(int32_t size, const PalCShmInfo &memInfo,
+                             PalCShmInfo *aidlReturn) {
+    int32_t ret = -EINVAL;
+    bool isNewClient = true;
+    pal_cshm_info_t palInfo;
+    auto palClient = getCshmClient();
+    int pid = palClient->getPid();
+    palInfo.type = (pal_cshm_type) memInfo.type;
+    palInfo.flags = memInfo.flags;
+    ret = pal_cshm_alloc(size, &palInfo);
+    aidlReturn->fdMemory = LegacyToAidl::convertfdToAidl(palInfo.fd);
+    aidlReturn->memID = palInfo.memID;
+    palClient->addSharedMemoryFdPairs(palInfo.fd, palInfo.fd);
+    aidlReturn->memID = palInfo.memID;
+    mPalCShmClientLock.lock();
+    for(auto& client: mPalCShmClients) {
+        if (client.second->getPid() == pid) {
+            ALOGI("%s: Client with pid %d already registered, add new memID", __func__, pid);
+            isNewClient = false;
+            client.second->active_mem_ids.insert({palInfo.memID, std::vector<std::tuple<uint64_t, uint32_t>>()});
+            break;
+        }
+    }
+
+    if (isNewClient) {
+        auto client = getCshmClient();
+        int pid = client->getPid();
+        client->active_mem_ids.insert({memInfo.memID, std::vector<std::tuple<uint64_t, uint32_t>>()});
+        mPalCShmClients.insert(std::make_pair(pid, client));
+    }
+
+    mPalCShmClientLock.unlock();
+
+    return status_tToBinderResult(ret);
+}
+
+::ndk::ScopedAStatus PalServerWrapper::ipc_pal_cshm_dealloc(int64_t memID) {
+    int ret = 0;
+    std::lock_guard<std::mutex> lock(mPalCShmClientLock);
+
+    ret = pal_cshm_dealloc(memID);
+    if (ret) {
+        ALOGE("%s: Dealloc failed, not removing memID 0x%x", __func__, memID);
+    } else {
+        int pid = AIBinder_getCallingPid();
+        for(auto itr = mPalCShmClients.begin(); itr != mPalCShmClients.end(); itr++) {
+            auto &client = *itr;
+            if (client.second->getPid() == pid) {
+                auto mItr = client.second->active_mem_ids.find(memID);
+                if (mItr != client.second->active_mem_ids.end()) {
+                    client.second->active_mem_ids.erase(mItr);
+                }
+                else {
+                    ALOGE("%s: memID 0x%x does not belong to client with pid %d", __func__, memID, pid);
+                    ret = -EINVAL;
+                }
+                /* If client has no active memID's, remove it from list */
+                if (client.second->active_mem_ids.size() == 0)
+                    itr = mPalCShmClients.erase(itr);
+                break;
+            }
+        }
+    }
     return status_tToBinderResult(ret);
 }
 

@@ -60,14 +60,23 @@ extern "C" {
 #define PAL_MAX_LATENCY_MODES 8
 #define PAL_CUSTOM_PARAM_MAX_STRING_LENGTH 64
 
-#define PAL_VERSION "1.0"
+#define PAL_VERSION "2.1"
 #define PAL_MAX_SOUND_DOSE_VALUES 10
+#define SEND_MSG_PARAM "sendMsg"
+
+/** Client Shared memory ID */
+typedef uint32_t pal_cshm_id_t;
 
 /** Audio stream handle */
 typedef uint64_t pal_stream_handle_t;
 
 /** Sound Trigger handle */
 typedef uint64_t pal_st_handle_t;
+
+typedef enum {
+    PAL_CSHM_CACHED = 1,
+    PAL_CSHM_UNCACHED,
+} pal_cshm_type;
 
 /** PAL Audio format enumeration */
 typedef enum {
@@ -1733,6 +1742,21 @@ typedef struct pal_buffer_config {
     size_t max_metadata_size; /** < max metadata size associated with each buffer*/
 } pal_buffer_config_t;
 
+typedef struct pal_cshm_info {
+    pal_cshm_id_t memID;
+    pal_cshm_type type;
+    int64_t fd;
+    uint32_t flags;
+} pal_cshm_info_t;
+
+typedef struct pal_cshm_msg_payload {
+    pal_cshm_id_t memID;
+    uint32_t offset;
+    uint32_t length;
+    uint32_t destID;
+    uint32_t flags;
+} pal_cshm_msg_payload_t;
+
 #define PAL_GENERIC_PLATFORM_DELAY     (29*1000LL)
 #define PAL_DEEP_BUFFER_PLATFORM_DELAY (29*1000LL)
 #define PAL_SPATIAL_AUDIO_PLATFORM_DELAY (13*1000LL)
@@ -1766,6 +1790,7 @@ typedef struct custom_payload_uc_info_s {
     uint32_t instance_id;              /**< instance id of the stream */
     bool streamless;                   /**< set to true to create a dummy stream to send command directly to framework */
     char* address;                    /**< address */
+    pal_stream_direction_t direction; /**< direction of stream, used in case of sharedmemory */
 
 }custom_payload_uc_info_t;
 

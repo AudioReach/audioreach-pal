@@ -50,6 +50,8 @@ struct LegacyToAidl {
 
     static PalMmapPosition convertPalMmapPositionToAidl(struct pal_mmap_position *palMmapPosition);
 
+    static aidl::android::hardware::common::NativeHandle convertfdToAidl(int fd);
+
     static PalVolumeData convertPalVolDataToAidl(pal_volume_data *palVolData);
 
     static PalSessionTime convertPalSessionTimeToAidl(struct pal_session_time *palSessTime);

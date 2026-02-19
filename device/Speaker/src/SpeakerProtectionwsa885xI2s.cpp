@@ -425,14 +425,6 @@ int SpeakerProtectionwsa885xI2s::spkrStartCalibration()
 
     enableDevice(audioRoute, mSndDeviceName_vi);
 
-    PAL_DBG(LOG_TAG, "pcm start for TX path");
-    if (pcm_start(txPcm) < 0) {
-        PAL_ERR(LOG_TAG, "pcm start failed for TX path");
-        ret = -ENOSYS;
-        goto err_pcm_open;
-    }
-    isTxStarted = true;
-
     // Setup RX path
     deviceRx.id = PAL_DEVICE_OUT_SPEAKER;
     rm->getDeviceInfo(deviceRx.id, PAL_STREAM_PROXY, "", &deviceRxSpkr);
@@ -615,6 +607,18 @@ int SpeakerProtectionwsa885xI2s::spkrStartCalibration()
         ret = -ENOSYS;
         goto err_pcm_open;
     }
+
+    /* For i2s mode we need to start both the graphs (rx and vi) together
+     * Moving it just before rx helps removing all the delay between the
+     * graph_starts of rx and vi
+     */
+    PAL_DBG(LOG_TAG, "pcm start for TX path");
+    if (pcm_start(txPcm) < 0) {
+        PAL_ERR(LOG_TAG, "pcm start failed for TX path");
+        ret = -ENOSYS;
+        goto err_pcm_open;
+    }
+    isTxStarted = true;
 
 
     enableDevice(audioRoute, mSndDeviceName_rx);

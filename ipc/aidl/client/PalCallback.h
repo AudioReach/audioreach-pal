@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -38,6 +38,8 @@ class PalCallback : public BnPALCallback {
             int64_t cookie) override;
     ::ndk::ScopedAStatus prepareMQForTransfer(int64_t handle, int64_t cookie,
                                               PalCallbackReturnData* aidlReturn) override;
+
+    ::ndk::ScopedAStatus ssrEvent(int32_t ssrState, int32_t subsystem, int64_t cookie) override;
 
     PalCallback(pal_stream_callback callBack) {
         if (callBack) {

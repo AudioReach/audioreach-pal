@@ -40,6 +40,9 @@ using ::aidl::vendor::qti::hardware::pal::PalStreamAttributes;
 using ::aidl::vendor::qti::hardware::pal::PalStreamType;
 using ::aidl::vendor::qti::hardware::pal::SharedMemoryWrapper;
 using ::ndk::ScopedFileDescriptor;
+using ::aidl::vendor::qti::hardware::pal::PalCustomPayloadInfo;
+using ::aidl::vendor::qti::hardware::pal::PalCShmInfo;
+using ::aidl::vendor::qti::hardware::pal::PalCShmType;
 
 static std::shared_ptr<IPAL> gPalClient = nullptr;
 static bool gPalServiceDied = false;
@@ -64,6 +67,7 @@ std::shared_ptr<IPAL> getPal() {
     std::lock_guard<std::mutex> guard(gLock);
     if (gPalClient == nullptr) {
         const std::string instance = std::string() + IPAL::descriptor + "/default";
+
         auto binder = ::ndk::SpAIBinder(AServiceManager_waitForService(instance.c_str()));
         ALOGV("got binder %p", binder.get());
 
@@ -720,4 +724,33 @@ int32_t pal_get_custom_param(custom_payload_uc_info_t *uc_info,
         }
     }
     return statusTFromBinderStatus(status, __func__);
+}
+
+int32_t pal_cshm_alloc(uint32_t size, pal_cshm_info_t *memInfo) {
+
+    const native_handle *memFdHandle = nullptr;
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+    PalCShmInfo cshmInfo;
+    PalCShmInfo infoAidlResult;
+
+    if(memInfo) {
+        return -EINVAL;
+    }
+    cshmInfo.flags = memInfo->flags;
+    cshmInfo.type = (PalCShmType)(memInfo->type);
+    auto status = client->ipc_pal_cshm_alloc(size,cshmInfo, &infoAidlResult);
+    auto fdInfo = AidlToLegacy::getFdIntFromNativeHandle(infoAidlResult.fdMemory);
+    memInfo->memID = infoAidlResult.memID;
+    memInfo->fd = fdInfo.first;
+
+    return statusTFromBinderStatus(status);
+}
+
+int32_t pal_cshm_dealloc(pal_cshm_id_t memID) {
+
+    auto client = getPal();
+    RETURN_IF_PAL_SERVICE_NOT_REGISTERED(client);
+
+    return statusTFromBinderStatus(client->ipc_pal_cshm_dealloc(memID));
 }

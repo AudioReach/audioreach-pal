@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,4 +26,5 @@ interface IPALCallback {
   void eventCallback(in long handle, in int eventId, in int eventDataSize, in byte[] eventData, in long cookie);
   oneway void eventCallbackRWDone(in long handle, in int eventId, in int eventDataSize, in vendor.qti.hardware.pal.PalCallbackBuffer[] rwDonePayload, in long cookie);
   vendor.qti.hardware.pal.PalCallbackReturnData prepareMQForTransfer(in long handle, in long cookie);
+  oneway void ssrEvent(in int ssrState, in int subsystem, in long cookie);
 }

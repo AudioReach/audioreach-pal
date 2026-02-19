@@ -3299,12 +3299,15 @@ int SessionAlsaPcm::getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info,
 
     }
 
-    if (uc_info->pal_stream_type == PAL_STREAM_SENSOR_PCM_RENDERER)
+    if (uc_info->direction == PAL_AUDIO_INPUT) {
         status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
-                                      rxAifBackEnds[0].second.data(), payload);
-    else
+                                                         txAifBackEnds[0].second.data(), payload);
+    } else if (uc_info->direction == PAL_AUDIO_OUTPUT) {
         status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
-                                      txAifBackEnds[0].second.data(), payload);
+                                                         rxAifBackEnds[0].second.data(), payload);
+    } else {
+        return -EINVAL;
+    }
     if (0 != status)
         PAL_ERR(LOG_TAG, "get tags failed = %d", status);
 

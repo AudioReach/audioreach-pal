@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -23,6 +23,7 @@ import vendor.qti.hardware.pal.PalVolumeData;
 import vendor.qti.hardware.pal.PalReadReturnData;
 import vendor.qti.hardware.pal.PalParamPayloadShmem;
 import vendor.qti.hardware.pal.PalCustomPayloadInfo;
+import vendor.qti.hardware.pal.PalCShmInfo;
 
 @VintfStability
 interface IPAL {
@@ -104,4 +105,9 @@ interface IPAL {
     byte[] ipc_pal_get_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] paramPayload);
 
     void ipc_pal_set_custom_param(in PalCustomPayloadInfo ucInfo, in char[] paramId, in byte[] payload, in int size);
+
+    PalCShmInfo ipc_pal_cshm_alloc(in int size, in PalCShmInfo memInfo);
+
+    void ipc_pal_cshm_dealloc(in long mem_id);
+
 }

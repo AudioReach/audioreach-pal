@@ -18,6 +18,7 @@ aidl_interface {
             enabled: true,
         },
     },
+    frozen: true,
     versions_with_info: [
         {
             version: "1",
@@ -27,6 +28,5 @@ aidl_interface {
             ],
         },
     ],
-    frozen: true,
 
 }

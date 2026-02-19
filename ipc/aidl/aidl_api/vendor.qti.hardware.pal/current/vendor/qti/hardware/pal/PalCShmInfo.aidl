@@ -22,9 +22,9 @@
 
 package vendor.qti.hardware.pal;
 @VintfStability
-interface IPALCallback {
-  void eventCallback(in long handle, in int eventId, in int eventDataSize, in byte[] eventData, in long cookie);
-  oneway void eventCallbackRWDone(in long handle, in int eventId, in int eventDataSize, in vendor.qti.hardware.pal.PalCallbackBuffer[] rwDonePayload, in long cookie);
-  vendor.qti.hardware.pal.PalCallbackReturnData prepareMQForTransfer(in long handle, in long cookie);
-  oneway void ssrEvent(in int ssrState, in int subsystem, in long cookie);
+parcelable PalCShmInfo {
+  long memID;
+  vendor.qti.hardware.pal.PalCShmType type;
+  android.hardware.common.NativeHandle fdMemory;
+  int flags;
 }

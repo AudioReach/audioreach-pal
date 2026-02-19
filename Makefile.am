@@ -178,7 +178,9 @@ libpal_la_list      = ./configs/qcm6490/mixer_paths_qcm6490_idp.xml \
                       ./configs/sm8750/mixer_paths_SM8750_MTP.xml \
                       ./configs/sm8750/resourcemanager_SM8750_MTP.xml \
                       ./configs/GLYMUR/mixer_paths_GLYMUR_CRD.xml \
-                      ./configs/GLYMUR/resourcemanager_GLYMUR_CRD.xml
+                      ./configs/GLYMUR/resourcemanager_GLYMUR_CRD.xml \
+                      ./configs/Kaanapali/mixer_paths_Kaanapali_MTP.xml \
+                      ./configs/Kaanapali/resourcemanager_Kaanapali_MTP.xml
 
 lib_LTLIBRARIES     += lib_bt_bundle.la
 lib_bt_bundle_la_SOURCES   = $(btbundle_plugin_sources)
@@ -235,6 +237,8 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_SM8750_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_GLYMUR_CRD.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_GLYMUR_CRD.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Kaanapali_MTP.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Kaanapali_MTP.xml
 
 if COMPILE_ADSPRPCD
 adsprpc_sources = adsprpcd/adsprpcd.c

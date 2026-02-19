@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -128,6 +128,8 @@ public:
     virtual int GetMmapPosition(Stream *s __unused, struct pal_mmap_position *position __unused) {return -EINVAL;}
     virtual int ResetMmapBuffer(Stream *s __unused) {return -EINVAL;}
     virtual int openGraph(Stream *s __unused) { return 0; }
+    virtual int sendMsg(pal_cshm_id_t memID, uint32_t offset, uint32_t length,
+                        uint32_t destID, uint32_t flags, Stream* s) {return -EINVAL;};
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
     typedef struct eventPayload {
         uint32_t eventId;

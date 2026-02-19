@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -177,6 +177,8 @@ public:
     std::vector<std::pair<int32_t, std::string>>& getTxBEVecRef() { return txAifBackEnds; };
     bool getIsPauseRegistrationDone() { return isPauseRegistrationDone; };
     void setIsPauseRegistrationDone(bool isDone) { isPauseRegistrationDone = isDone; };
+    int sendMsg(pal_cshm_id_t memID, uint32_t offset, uint32_t length,
+                 uint32_t destID, uint32_t flags, Stream *s);
 private:
     uint32_t getModuleInfo(const char *control, uint32_t tagId, uint32_t *miid, struct mixer_ctl **ctl, int *device);
     int setEffectParametersTKV(Stream *s, effect_pal_payload_t *effectPayload);

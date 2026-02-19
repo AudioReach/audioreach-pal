@@ -35,7 +35,8 @@ LOCAL_HEADER_LIBRARIES := \
     libarvui_intf_headers \
     libarmemlog_headers \
     libarpal_internalheaders \
-    libagm_headers
+    libagm_headers \
+    libsession_pcm_headers
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \

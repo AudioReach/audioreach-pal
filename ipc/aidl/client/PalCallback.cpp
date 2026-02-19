@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #include "PalCallback.h"
@@ -112,6 +112,10 @@ bool DataTransferThread::threadLoop() {
     callbackData->ret = PalReadWriteDoneResult::OK;
     callbackData->mqDataDesc = mDataMQ->dupeDesc();
     callbackData->mqCommandDesc = mCommandMQ->dupeDesc();
+    return ::ndk::ScopedAStatus::ok();
+}
+
+::ndk::ScopedAStatus PalCallback::ssrEvent(int32_t ssrState, int32_t subsystem, int64_t cookie) {
     return ::ndk::ScopedAStatus::ok();
 }
 

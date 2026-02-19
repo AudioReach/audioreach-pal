@@ -1556,6 +1556,7 @@ int ResourceManager::init_audio()
                     strstr(snd_card_name, "bengal") ||
                     strstr(snd_card_name, "GLYMUR") ||
                     strstr(snd_card_name, "QCS6490") ||
+                    strstr(snd_card_name, "Kaanapali") ||
                     strstr(snd_card_name, "LEMANS") ||
                     strstr(snd_card_name, "MAHUA") ||
                     strstr(snd_card_name, "MONACO") ||

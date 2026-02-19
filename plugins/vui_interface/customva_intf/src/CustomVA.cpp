@@ -159,6 +159,38 @@ CustomVA::~CustomVA() {
     ALOGD("%s: %d: Exit", __func__, __LINE__);
 }
 
+inline int32_t AllocateSMData(
+    int32_t sm_size, uint8_t *ptr,
+    sound_model_data_t **model_data) {
+
+    uint8_t *sm_data = nullptr;
+    int32_t status = 0;
+
+    *model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
+    if (!(*model_data)) {
+        status = -ENOMEM;
+        ALOGE("%s: %d: model_data allocation failed, status %d",
+            __func__, __LINE__, status);
+        return status;
+    }
+
+    sm_data = (uint8_t *)calloc(1, sm_size);
+    if (!sm_data) {
+        status = -ENOMEM;
+        ALOGE("%s: %d: sm_data allocation failed, status %d",
+            __func__, __LINE__, status);
+        free(*model_data);
+        *model_data = nullptr;
+        return status;
+    }
+
+    ar_mem_cpy(sm_data, sm_size, ptr, sm_size);
+    (*model_data)->data = sm_data;
+    (*model_data)->size = sm_size;
+    (*model_data)->is_persistent = true;
+    return status;
+}
+
 void CustomVA::DetachStream(void *stream) {
     DeregisterModel(stream);
 }
@@ -351,6 +383,7 @@ int32_t CustomVA::ParseSoundModel(
     SML_BigSoundModelTypeV3 *big_sm = nullptr;
     uint32_t offset = 0;
     sound_model_data_t *model_data = nullptr;
+    uint8_t *ptr = nullptr;
 
     ALOGD("%s: %d: Enter", __func__, __LINE__);
 
@@ -374,22 +407,16 @@ int32_t CustomVA::ParseSoundModel(
                     big_sm->versionMajor, big_sm->versionMinor);
                 if (big_sm->type == ST_SM_ID_SVA_F_STAGE_GMM) {
                     sm_size = big_sm->size;
-                    sm_data = (uint8_t *)sm_payload +
+                    ptr = (uint8_t *)sm_payload +
                         sizeof(SML_GlobalHeaderType) +
                         sizeof(SML_HeaderTypeV3) +
                         (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                         big_sm->offset;
 
-                    model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-                    if (!model_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: model_data allocation failed, status %d",
-                            __func__, __LINE__, status);
+                    status = AllocateSMData(sm_size, ptr, &model_data);
+                    if (status)
                         goto error_exit;
-                    }
                     model_data->type = big_sm->type;
-                    model_data->data = sm_data;
-                    model_data->size = sm_size;
                     model_list.push_back(model_data);
                 } else if (big_sm->type != SML_ID_SVA_S_STAGE_UBM) {
                     if (big_sm->type == SML_ID_SVA_F_STAGE_INTERNAL ||
@@ -398,58 +425,42 @@ int32_t CustomVA::ParseSoundModel(
                          PAL_RECOGNITION_MODE_USER_IDENTIFICATION)))
                         continue;
                     sm_size = big_sm->size;
-                    sm_data = (uint8_t *)sm_payload +
+                    ptr = (uint8_t *)sm_payload +
                         sizeof(SML_GlobalHeaderType) +
                         sizeof(SML_HeaderTypeV3) +
                         (hdr_v3->numModels * sizeof(SML_BigSoundModelTypeV3)) +
                         big_sm->offset;
 
-                    model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-                    if (!model_data) {
-                        status = -ENOMEM;
-                        ALOGE("%s: %d: model_data allocation failed, status %d",
-                            __func__, __LINE__, status);
+                    status = AllocateSMData(sm_size, ptr, &model_data);
+                    if (status)
                         goto error_exit;
-                    }
                     model_data->type = big_sm->type;
-                    model_data->data = sm_data;
-                    model_data->size = sm_size;
                     model_list.push_back(model_data);
                 }
             }
         } else {
             // Parse sound model 2.0
             sm_size = phrase_sm->common.data_size;
-            sm_data = (uint8_t*)phrase_sm + phrase_sm->common.data_offset;
+            ptr = (uint8_t*)phrase_sm + phrase_sm->common.data_offset;
 
-            model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-            if (!model_data) {
-                status = -ENOMEM;
-                ALOGE("%s: %d: model_data allocation failed, status %d",
-                    __func__, __LINE__, status);
+            status = AllocateSMData(sm_size, ptr, &model_data);
+            if (status)
                 goto error_exit;
-            }
+
             model_data->type = ST_SM_ID_SVA_F_STAGE_GMM;
-            model_data->data = sm_data;
-            model_data->size = sm_size;
             model_list.push_back(model_data);
         }
     } else {
         // handle for generic sound model
         common_sm = sound_model;
         sm_size = common_sm->data_size;
-        sm_data = (uint8_t*)common_sm + common_sm->data_offset;
+        ptr = (uint8_t*)common_sm + common_sm->data_offset;
 
-        model_data = (sound_model_data_t *)calloc(1, sizeof(sound_model_data_t));
-        if (!model_data) {
-            status = -ENOMEM;
-            ALOGE("%s: %d: model_data allocation failed, status %d",
-                __func__, __LINE__, status);
+        status = AllocateSMData(sm_size, ptr, &model_data);
+        if (status)
             goto error_exit;
-        }
+
         model_data->type = ST_SM_ID_SVA_F_STAGE_GMM;
-        model_data->data = sm_data;
-        model_data->size = sm_size;
         model_list.push_back(model_data);
     }
     ALOGD("%s: %d: Exit, status %d", __func__, __LINE__, status);
@@ -460,6 +471,9 @@ error_exit:
     for (int i = 0; i < model_list.size(); i++) {
         model_data = model_list[i];
         if (model_data) {
+            if (model_data->is_persistent && model_data->data) {
+                free(model_data->data);
+            }
             free(model_data);
         }
     }
@@ -2281,7 +2295,7 @@ exit:
 }
 
 void CustomVA::DeregisterModel(void *s) {
-    sound_model_data_t *sm_data = nullptr;
+    sound_model_data_t *model_data = nullptr;
 
     auto iter = sm_info_map_.find(s);
     if (iter != sm_info_map_.end() && sm_info_map_[s]) {
@@ -2294,9 +2308,12 @@ void CustomVA::DeregisterModel(void *s) {
         sm_info_map_[s]->sec_det_level.shrink_to_fit();
 
         for (int i = 0; i < sm_info_map_[s]->model_list.size(); i++) {
-            sm_data = sm_info_map_[s]->model_list[i];
-            if (sm_data) {
-                free(sm_data);
+            model_data = sm_info_map_[s]->model_list[i];
+            if (model_data) {
+                if (model_data->is_persistent && model_data->data) {
+                    free(model_data->data);
+                }
+                free(model_data);
             }
         }
         sm_info_map_[s]->model_list.clear();

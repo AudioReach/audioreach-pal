@@ -335,7 +335,9 @@ int Device::open()
                     PAL_ERR(LOG_TAG, "Failed to set QMP hdr config");
             }
         }
+        rm->voteSleepMonitor(nullptr, true);
         enableDevice(audioRoute, mSndDeviceName);
+        rm->voteSleepMonitor(nullptr, false);
     }
     ++deviceCount;
 

@@ -1755,6 +1755,14 @@ int32_t ResourceManager::voteSleepMonitor(Stream *str, bool vote, bool force_nlp
             PAL_INFO(LOG_TAG, "Avoiding vote/unvote for stream type : %d", type);
             return ret;
         }
+    } else {
+        // Using Dummy stream type when called without stream object, as its done during
+        // Haptics calibration mode or mixer controls enablement during device open.
+        // As we use stream object only to get type, so that type of vote can be decided,
+        // and all the low power streams will always call using stream object,
+        // hence using any NLPI stream type will work here.
+        type = PAL_STREAM_DUMMY;
+        PAL_VERBOSE(LOG_TAG, "Stream object was null using stream type %d", type);
     }
 
     PAL_VERBOSE(LOG_TAG, "Enter for stream type %d", type);

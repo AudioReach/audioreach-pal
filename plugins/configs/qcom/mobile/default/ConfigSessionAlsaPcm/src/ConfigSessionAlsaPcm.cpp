@@ -716,6 +716,7 @@ set_mixer:
                 {
                     status = session->enableDisableWnrModule(s);
                     PAL_DBG(LOG_TAG, "Enabling WNR module status: %d", status);
+                    status = 0;
                 }
             }
         }

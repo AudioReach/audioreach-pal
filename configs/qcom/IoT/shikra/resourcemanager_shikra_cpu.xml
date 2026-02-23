@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<resource_manager_info>
+    <version>2.0</version>
+    <config_params>
+        <param key="logging_level" value ="3" />
+    </config_params>
+    <config_max_sessions>
+        <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
+        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="3" />
+        <stream name="PAL_STREAM_GENERIC" max_size="2" />
+        <stream name="PAL_STREAM_RAW" max_size="1" />
+        <stream name="PAL_STREAM_PCM_OFFLOAD" max_size="2" />
+        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" max_size="8" />
+    </config_max_sessions>
+    <device_profile>
+        <in-device>
+            <id>PAL_DEVICE_IN_HANDSET_MIC</id>
+            <back_end_name>PCM_RT_PROXY-TX-2</back_end_name>
+            <max_channels>4</max_channels>
+            <channels>1</channels>
+            <samplerate>48000</samplerate>
+            <snd_device_name>handset-mic</snd_device_name>
+            <ec_enable>0</ec_enable>
+            <usecase>
+                <name>PAL_STREAM_LOW_LATENCY</name>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_DEEP_BUFFER</name>
+                <ec_enable>1</ec_enable>
+                <custom-config key="unprocessed-hdr-mic-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
+                </custom-config>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
+                <custom-config key="dual-mic">
+                    <channels>2</channels>
+                    <snd_device_name>handset-dmic-endfire</snd_device_name>
+                </custom-config>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_RAW</name>
+                <snd_device_name>handset-mic-unprocessed</snd_device_name>
+                <custom-config key="unprocessed-hdr-mic-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
+                </custom-config>
+            </usecase>
+            <ec_rx_device>
+                <id>PAL_DEVICE_OUT_HANDSET</id>
+                <id>PAL_DEVICE_OUT_SPEAKER</id>
+            </ec_rx_device>
+        </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_SPEAKER_MIC</id>
+            <back_end_name>PCM_RT_PROXY-TX-2</back_end_name>
+            <max_channels>4</max_channels>
+            <samplerate>48000</samplerate>
+            <channels>1</channels>
+            <ec_enable>0</ec_enable>
+            <snd_device_name>speaker-mic</snd_device_name>
+            <usecase>
+                <name>PAL_STREAM_LOW_LATENCY</name>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_DEEP_BUFFER</name>
+                <ec_enable>1</ec_enable>
+                <custom-config key="unprocessed-hdr-mic-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-portrait</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-landscape">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-landscape</snd_device_name>
+                </custom-config>
+                <custom-config key="unprocessed-hdr-mic-inverted-portrait">
+                    <channels>4</channels>
+                    <snd_device_name>unprocessed-hdr-mic-inverted-portrait</snd_device_name>
+                </custom-config>
+            </usecase>
+           <usecase>
+                <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
+                <custom-config key="dual-mic">
+                    <channels>2</channels>
+                    <snd_device_name>speaker-dmic-endfire</snd_device_name>
+                </custom-config>
+            </usecase>
+            <ec_rx_device>
+                <id>PAL_DEVICE_OUT_SPEAKER</id>
+            </ec_rx_device>
+        </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_WIRED_HEADSET</id>
+            <back_end_name>PCM_RT_PROXY-TX-2</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>1</channels>
+            <snd_device_name>headset-mic</snd_device_name>
+            <ec_enable>0</ec_enable>
+            <usecase>
+                <name>PAL_STREAM_LOW_LATENCY</name>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_DEEP_BUFFER</name>
+                <ec_enable>1</ec_enable>
+                <custom-config key="headset-single-amic-dual-adc-hdr">
+                    <channels>2</channels>
+                    <snd_device_name>headset-single-amic-dual-adc-hdr</snd_device_name>
+                </custom-config>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
+            </usecase>
+            <ec_rx_device>
+                <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
+                <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
+            </ec_rx_device>
+        </in-device>
+        <out-device>
+            <id>PAL_DEVICE_NONE</id>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>1</channels>
+            <snd_device_name>none</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+        </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_SPEAKER</id>
+            <back_end_name>PCM_RT_PROXY-RX-2</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <samplerate>48000</samplerate>
+            <snd_device_name>speaker</snd_device_name>
+            <speaker_protection_enabled>0</speaker_protection_enabled>
+            <fractional_sr>0</fractional_sr>
+            <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
+            <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
+            <!--specify the WSA supported on the platform
+                Values: Kareyenda    : 1
+                        Kundu        : 2
+                        Pandeiro     : 3
+                        Pandeiro I2S : 4
+            -->
+            <wsa_used>4</wsa_used>
+            <bit_width>16</bit_width>
+            <!-- Flag to specify cps mode which is applicable
+                 Values: disable CPS: 0
+                         CPS streaming: 1
+                         ADSP control mode : 2
+            -->
+            <cps_mode>1</cps_mode>
+            <vbat_enabled>0</vbat_enabled>
+            <!--specify the supported bit format on speaker end point -->
+            <!--this should be in the form of pal_audio_fmt_id-->
+            <!--e.g <supported_bit_format >PAL_AUDIO_FMT_PCM_S24_LE</supported_bit_format>-->
+            <!--We support 24 bit for speaker as of now, as some module in ADSP does not support Q31 format-->
+            <!--This can be changed to PAL_AUDIO_FMT_PCM_S32_LE if 32 bit e2e support is required-->
+            <supported_bit_format>PAL_AUDIO_FMT_PCM_S24_LE</supported_bit_format>
+            <!-- RAS should be enabled with speaker protection always -->
+            <ras_enabled>0</ras_enabled>
+            <!-- Flag to specify speaker in case Voice call is switched from
+                 handset to speaker with only 1 speaker.
+                 Values: Both speaker : 0
+                         Right speaker: 1
+                         Left speaker : 2
+            -->
+            <speaker_mono_right>0</speaker_mono_right>
+            <!-- Time in seconds for Quick cal. Set 0 to disable -->
+            <quick_cal_time>0</quick_cal_time>
+        </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_HANDSET</id>
+            <back_end_name>PCM_RT_PROXY-RX-2</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>1</channels>
+            <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
+            <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
+            <samplerate>48000</samplerate>
+            <fractional_sr>0</fractional_sr>
+            <snd_device_name>handset-wsa</snd_device_name>
+            <handset_protection_enabled>0</handset_protection_enabled>
+        </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
+            <back_end_name>PCM_RT_PROXY-RX-2</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <fractional_sr>1</fractional_sr>
+            <snd_device_name>headphones</snd_device_name>
+        </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
+            <back_end_name>PCM_RT_PROXY-RX-2</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <fractional_sr>1</fractional_sr>
+            <snd_device_name>headphones</snd_device_name>
+         </out-device>
+    </device_profile>
+    <in_streams>
+        <in_stream>
+            <name>PAL_STREAM_DEEP_BUFFER</name>
+                <policies>
+                    <ec_ref>
+                        <disabled_stream>PAL_STREAM_ULTRA_LOW_LATENCY</disabled_stream>
+                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
+                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
+                    </ec_ref>
+                </policies>
+        </in_stream>
+        <in_stream>
+            <name>PAL_STREAM_RAW</name>
+                <policies>
+                    <ec_ref>
+                        <disabled_stream>PAL_STREAM_LOW_LATENCY</disabled_stream>
+                        <disabled_stream>PAL_STREAM_GENERIC</disabled_stream>
+                    </ec_ref>
+                </policies>
+        </in_stream>
+    </in_streams>
+</resource_manager_info>

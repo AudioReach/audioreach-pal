@@ -26,6 +26,7 @@
         <param key="i2s_dual_mono" value ="false" />
         <param key="haptics_priority" value ="touch_haptics" />
         <param key="haptics_through_wsa" value ="true" />
+        <param key="haptics_cshm_support" value="true"/>
         <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_gapless key="gapless_supported" value="1"/>
@@ -1095,7 +1096,7 @@
             <channels>1</channels>
             <bit_width>32</bit_width>
             <snd_device_name>haptics-dev</snd_device_name>
-            <haptics_protection_enabled>0</haptics_protection_enabled>
+            <haptics_protection_enabled>1</haptics_protection_enabled>
             <usecase>
                 <name>PAL_STREAM_HAPTICS</name>
                 <custom-config key="haptics-over-wsa">

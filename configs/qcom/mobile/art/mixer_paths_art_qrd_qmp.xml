@@ -166,6 +166,9 @@
     <ctl name="VA_DEC2 Volume" value="84" />
     <ctl name="VA_DEC3 Volume" value="84" />
 
+    <ctl name="DEC_GAIN_BYPASS Enable" value="0" />
+    <ctl name="DEC_HPF_ADAPT_BYPASS Enable" value="0"/>
+
     <!-- Compander controls -->
     <ctl name="WSA_COMP1 Switch" value="0" />
     <ctl name="WSA_COMP2 Switch" value="0" />
@@ -1301,6 +1304,8 @@
         <ctl name="TX WSA MUX7" value="NO_WSA"/>
         <ctl name="TX PORT SEL MUX6" value="PORT0"/>
         <ctl name="TX PORT SEL MUX7" value="PORT0"/>
+        <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
+        <ctl name="DEC_HPF_ADAPT_BYPASS Enable" value="1"/>
     </path>
 
     <path name="haptics-vi-feedback">

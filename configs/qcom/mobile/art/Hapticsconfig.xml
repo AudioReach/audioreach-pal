@@ -218,7 +218,7 @@
             <channel_mask>1</channel_mask>
             <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>1</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
+            <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
             <pmic_autobrake_en>0</pmic_autobrake_en>
             <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
@@ -231,7 +231,7 @@
             <repetition_period_ms>50</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
-            <mid_pulse_intensity>55</mid_pulse_intensity>
+            <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>90</high_pulse_intensity>
             <pulse_width_ms>10</pulse_width_ms>
             <pulse_sharpness>0</pulse_sharpness>
@@ -255,7 +255,7 @@
             <repetition_period_ms>50</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
-            <mid_pulse_intensity>60</mid_pulse_intensity>
+            <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>100</high_pulse_intensity>
             <pulse_width_ms>3</pulse_width_ms>
             <pulse_sharpness>100</pulse_sharpness>
@@ -279,7 +279,7 @@
             <repetition_period_ms>50</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
-            <mid_pulse_intensity>60</mid_pulse_intensity>
+            <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>90</high_pulse_intensity>
             <pulse_width_ms>0</pulse_width_ms>
             <pulse_sharpness>0</pulse_sharpness>
@@ -293,7 +293,7 @@
             <channel_mask>1</channel_mask>
             <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
+            <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
             <pmic_autobrake_en>0</pmic_autobrake_en>
             <f0_tracking_param_reset_flag>1</f0_tracking_param_reset_flag>
@@ -306,7 +306,7 @@
             <repetition_period_ms>50</repetition_period_ms>
             <pilot_tone_en>0</pilot_tone_en>
             <low_pulse_intensity>30</low_pulse_intensity>
-            <mid_pulse_intensity>70</mid_pulse_intensity>
+            <mid_pulse_intensity>100</mid_pulse_intensity>
             <high_pulse_intensity>100</high_pulse_intensity>
             <pulse_width_ms>10</pulse_width_ms>
         </Hapticseffect>
@@ -391,7 +391,7 @@
             <channel_mask>1</channel_mask>
             <wave_design_mode>2</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
+            <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
             <pmic_autobrake_en>0</pmic_autobrake_en>
             <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
@@ -414,7 +414,7 @@
             <channel_mask>1</channel_mask>
             <wave_design_mode>3</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
+            <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
             <pmic_autobrake_en>0</pmic_autobrake_en>
             <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>
@@ -425,7 +425,7 @@
             <channel_mask>1</channel_mask>
             <wave_design_mode>5</wave_design_mode>
             <auto_overdrive_brake_en>0</auto_overdrive_brake_en>
-            <f0_tracking_en>1</f0_tracking_en>
+            <f0_tracking_en>0</f0_tracking_en>
             <rtcl_mode>0</rtcl_mode>
             <pmic_autobrake_en>0</pmic_autobrake_en>
             <f0_tracking_param_reset_flag>0</f0_tracking_param_reset_flag>

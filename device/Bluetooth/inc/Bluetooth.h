@@ -304,14 +304,26 @@ protected:
     static bool sIsSwbLc3Enabled;
     static audio_lc3_codec_cfg_t sLc3CodecInfo;
     static bool sIsNrecEnabled;
+    /**
+     * This configuration is maintained for backward compatibility.
+     * In future releases, this support will be removed, and HFP sync
+     * will be considered mandatory.
+     */
+    static bool sIsHFPSyncEnabled;
     int startSwb();
+    int openBTHost();
+    int closeBTHost();
+    int startBTHost();
+    int stopBTHost();
+    int getCodecConfigFromBTHost();
+    void prepareLC3Config();
 
 public:
     int start();
     int stop();
     bool isDeviceReady(pal_device_id_t id) override;
     int32_t setDeviceParameter(uint32_t param_id, void *param) override;
-    void convertCodecInfo(audio_lc3_codec_cfg_t &lc3CodecInfo, btsco_lc3_cfg_t &lc3Cfg);
+    void convertCodecInfo(audio_lc3_codec_cfg_t& lc3CodecInfo, const btsco_lc3_cfg_t& lc3Cfg);
     bool isScoNbWbActive() override;
     bool isHFPRunning();
     int32_t checkAndUpdateSampleRate(uint32_t *sampleRate) override;

@@ -104,7 +104,7 @@
         <id>105</id>
         <name>COMPRESS105</name>
         <compress_plugin>
-            <so-name>libagm_compress_plugin.so</so-name>
+            <so-name>libtinycompress_module_agm.so</so-name>
         </compress_plugin>
         <props>
             <playback>1</playback>
@@ -349,7 +349,7 @@
         <id>124</id>
         <name>COMPRESS124</name>
         <compress_plugin>
-            <so-name>libagm_compress_plugin.so</so-name>
+            <so-name>libtinycompress_module_agm.so</so-name>
         </compress_plugin>
         <props>
             <playback>0</playback>

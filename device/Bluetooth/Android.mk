@@ -21,10 +21,13 @@ endif
 LOCAL_CPPFLAGS      += -DPAL_CUTILS_SUPPORTED
 
 LOCAL_SRC_FILES := \
-    src/Bluetooth.cpp
+    src/Bluetooth.cpp \
+    internal/BTHostAndroidWrapper.cpp \
+    internal/HFPProfile.cpp
 
 LOCAL_C_INCLUDES += \
-    $(LOCAL_PATH)/inc
+    $(LOCAL_PATH)/inc \
+    $(LOCAL_PATH)/internal
 
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio/include

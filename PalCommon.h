@@ -32,8 +32,10 @@
  */
 
 #define LOG_NDEBUG 0
+
 #include "ar_osal_mem_op.h"
 #include <stdlib.h>
+#include <chrono>
 #include <string.h>
 #include <stdio.h>
 #ifdef PAL_USE_SYSLOG
@@ -73,3 +75,53 @@ extern uint32_t pal_log_lvl;
     if (pal_log_lvl & PAL_LOG_VERBOSE) {                          \
         ALOGV("%s: %d: "  arg, __func__, __LINE__, ##__VA_ARGS__);\
     }
+
+/**
+ * @brief CHECK macro for runtime assertions with fatal logging.
+ *
+ * This macro is intended to improve debugging by validating assumptions
+ * during development or critical runtime checks. If the condition fails,
+ * it logs a fatal error message and typically terminates the program.
+ *
+ * **Important Notes:**
+ * - CHECK should NOT be used for business logic or control flow decisions.
+ * - It is strictly for debugging and validation purposes.
+ * Release builds may disable this macro.
+ *
+ * Usage:
+ *     CHECK(ptr != nullptr); // Ensures pointer is not null
+ *
+ * @param expected_condition The condition to check. If false, triggers fatal log.
+ */
+#define CHECK_MSG(expected_condition, crash_message) \
+    LOG_FATAL_IF(!(expected_condition),              \
+                 "💥 at line:%d " #expected_condition " failed! " #crash_message, __LINE__)
+
+#define CHECK(expected_condition) CHECK_MSG(expected_condition, "")
+
+/**
+ * TIME_LOG(expr)
+ * ----------------
+ * Measures the execution time of any expression.
+ * Usage:
+ * ------
+ * auto ret = TIME_LOG(a->callOperation(x, y, z));
+ *
+ * This will:
+ * - Execute a->callOperation(x, y, z)
+ * - Log: "<function>: <line>: Time taken for a->callOperation(x, y, z): <duration> ms"
+ * - Store the return value in 'ret'
+ *
+ */
+
+#define TIME_LOG(expr)                                                                      \
+    ([&]() {                                                                                \
+        auto start = std::chrono::steady_clock::now();                                      \
+        auto result = (expr);                                                               \
+        auto end = std::chrono::steady_clock::now();                                        \
+        auto duration =                                                                     \
+                std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); \
+        ALOGI("%s: %d: Time taken for %s: %lld ms", __func__, __LINE__, #expr,              \
+              static_cast<long long>(duration));                                            \
+        return result;                                                                      \
+    }())

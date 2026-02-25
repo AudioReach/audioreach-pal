@@ -2137,6 +2137,18 @@ int setBTParameter(uint32_t param_id, void *param_payload,
 
     PAL_DBG(LOG_TAG, "Enter param id: %d", param_id);
     switch (param_id) {
+        case PAL_PARAM_ID_DISABLE_HFP_SYNC: {
+            /**
+             * anyone of the SCO/HFP devices either OUT or IN is fine
+             */
+            dattr.id = PAL_DEVICE_OUT_BLUETOOTH_SCO;
+            dev = Device::getInstance(&dattr, rm);
+            CHECK(dev != nullptr);
+            rm->unlockResourceManagerMutex();
+            dev->setDeviceParameter(param_id, param_payload);
+            rm->lockResourceManagerMutex();
+            break;
+        }
         case PAL_PARAM_ID_BT_SCO:
         {
             pal_param_btsco_t* param_bt_sco = nullptr;

@@ -899,6 +899,7 @@ typedef enum {
     PAL_PARAM_NMT_GET_NUM_EVENT = 103,
     PAL_PARAM_NMT_GET_OUTPUT_TOKEN = 104,
     PAL_PARAM_NMT_GET_PAYLOAD_SIZE = 105,
+    PAL_PARAM_ID_DISABLE_HFP_SYNC = 106,
 } pal_param_id_type_t;
 
 /** HDMI/DP */

@@ -51,6 +51,8 @@
 #include <regex>
 #include <system/audio.h>
 
+#include "HFPProfile.h"
+
 #define PARAM_ID_RESET_PLACEHOLDER_MODULE 0x08001173
 #define BT_IPC_SOURCE_LIB                 "btaudio_offload_if.so"
 #define BT_IPC_SOURCE_LIB2_NAME           "libbthost_if.so"
@@ -58,6 +60,8 @@
 #define MIXER_SET_FEEDBACK_CHANNEL        "BT set feedback channel"
 #define MIXER_SET_CODEC_TYPE              "BT codec type"
 #define BT_SLIMBUS_CLK_STR                "BT SLIMBUS CLK SRC"
+
+static device::bt::HFPProfile* sHFPProfile = nullptr;
 
 extern "C" void CreateBtDevice(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
@@ -2648,10 +2652,12 @@ audio_lc3_codec_cfg_t BtSco::sLc3CodecInfo = {};
 bool BtSco::sIsNrecEnabled = false;
 std::shared_ptr<Device> BtSco::sObjHfpRx = nullptr;
 std::shared_ptr<Device> BtSco::sObjHfpTx = nullptr;
+bool BtSco::sIsHFPSyncEnabled = true;
 
 BtSco::BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
     : Bluetooth(device, Rm)
 {
+    sHFPProfile = device::bt::HFPProfile::getInstance();
     mCodecType = (device->id == PAL_DEVICE_OUT_BLUETOOTH_SCO) ? ENC : DEC;
     mPluginHandler = NULL;
     mPluginCodec = NULL;
@@ -2694,8 +2700,33 @@ int32_t BtSco::checkAndUpdateSampleRate(uint32_t *sampleRate)
     return 0;
 }
 
+int BtSco::openBTHost() {
+    if(!sIsHFPSyncEnabled) {
+        /* HFP sync disabled. Hence, return success.*/
+        return 0;
+    }
+    if(sHFPProfile->open() != Status::OK) {
+        return -1;
+    }
+    mIsScoOn = mIsHfpOn = true;
+    return 0;
+}
+
+int BtSco::closeBTHost() {
+    if (!sIsHFPSyncEnabled) {
+        /* HFP sync disabled. Hence, return success.*/
+        return 0;
+    }
+    if (sHFPProfile->close() != Status::OK) {
+        return -1;
+    }
+    mIsScoOn = mIsHfpOn = false;
+    return 0;
+}
+
 int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
 {
+    int status = 0;
     pal_param_btsco_t* param_bt_sco = (pal_param_btsco_t *)param;
 
     switch (param_id) {
@@ -2723,11 +2754,27 @@ int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
         sIsNrecEnabled = param_bt_sco->bt_sco_nrec;
         PAL_DBG(LOG_TAG, "sIsNrecEnabled = %d", sIsNrecEnabled);
         break;
+    case PAL_PARAM_ID_DEVICE_CONNECTION: {
+        auto* device_connection = reinterpret_cast<pal_param_device_connection_t*>(param);
+        if (device_connection->connection_state) {
+            // open BTHOST with HFP
+            status = openBTHost();
+        } else {
+            // close BTHost with HFP
+            status = closeBTHost();
+        }
+        break;
+    }
+    case PAL_PARAM_ID_DISABLE_HFP_SYNC: {
+        sIsHFPSyncEnabled = false;
+        PAL_INFO(LOG_TAG, "HFP sync with BT Host disabled");
+        break;
+    }
     default:
         return -EINVAL;
     }
 
-    return 0;
+    return status;
 }
 
 bool BtSco::isScoNbWbActive()
@@ -2736,7 +2783,7 @@ bool BtSco::isScoNbWbActive()
 }
 
 void BtSco::convertCodecInfo(audio_lc3_codec_cfg_t &lc3CodecInfo,
-                             btsco_lc3_cfg_t &lc3Cfg)
+                             const btsco_lc3_cfg_t &lc3Cfg)
 {
     std::vector<lc3_stream_map_t> steamMapIn;
     std::vector<lc3_stream_map_t> steamMapOut;
@@ -2874,6 +2921,56 @@ int BtSco::startSwb()
     return ret;
 }
 
+void BtSco::prepareLC3Config() {
+    const btsco_lc3_cfg cfg = {.fields_map = 0,
+                               .rxconfig_index = 4,
+                               .txconfig_index = 4,
+                               .api_version = 21,
+                               .frame_duration = 0,
+                               .num_blocks = 1,
+                               .mode = 3,
+                               .streamMap = "(0, 0, M, 0, 1, M)",
+                               .vendor = "00,00,00,00,00,00,00,00,00,02,00,00,00,0A,00,00"};
+    convertCodecInfo(sLc3CodecInfo, cfg);
+}
+
+int BtSco::getCodecConfigFromBTHost() {
+    if (!sIsHFPSyncEnabled) {
+        /* HFP sync disabled. Hence, return success.*/
+        return 0;
+    }
+    auto codec = sHFPProfile->getCodec();
+    if (!codec) {
+        PAL_ERR(LOG_TAG, "failed!!");
+        return -1;
+    }
+    if (codec->mType == ::device::bt::HFPProfile::Codec::Type::LC3) {
+        sIsSwbLc3Enabled = true;
+        prepareLC3Config();
+    } else if (codec->mType == ::device::bt::HFPProfile::Codec::Type::MSBC) {
+        sIsWbSpeechEnabled = true;
+    } else if (codec->mType == ::device::bt::HFPProfile::Codec::Type::CVSD) {
+    } else if (codec->mType == ::device::bt::HFPProfile::Codec::Type::APTX_SPEECH) {
+        sSwbSpeechMode = 0;
+    } else {
+        PAL_ERR(LOG_TAG, "failed!!");
+        return -1;
+    }
+    sIsNrecEnabled = codec->mIsNRECEnabled;
+    return 0;
+}
+
+int BtSco::startBTHost() {
+    if (!sIsHFPSyncEnabled) {
+        /* HFP sync disabled. Hence, return success.*/
+        return 0;
+    }
+    if(sHFPProfile->start() != Status::OK) {
+        return -1;
+    }
+    return 0;
+}
+
 int BtSco::start()
 {
     int status = 0;
@@ -2884,6 +2981,23 @@ int BtSco::start()
 
     customPayload = NULL;
     customPayloadSize = 0;
+
+    if(status != 0) {
+        goto exit;
+    }
+
+    status = startBTHost();
+    if(status != 0) {
+        PAL_ERR(LOG_TAG, "BTHost start failed!!");
+        goto exit;
+    }
+
+    status = getCodecConfigFromBTHost();
+    if (status != 0) {
+        stopBTHost();
+        goto exit;
+    }
+    checkAndUpdateSampleRate(&deviceAttr.config.sample_rate);
 
     if (sSwbSpeechMode != SPEECH_MODE_INVALID) {
         mCodecFormat = CODEC_TYPE_APTX_AD_SPEECH;
@@ -2942,10 +3056,34 @@ exit:
     return status;
 }
 
+int BtSco::stopBTHost() {
+    if (!sIsHFPSyncEnabled) {
+        /* HFP sync disabled. Hence, return success.*/
+        return 0;
+    }
+    if(sHFPProfile->stop() != Status::OK) {
+        return -1;
+    }
+    if (!sHFPProfile->isActive()) {
+        /* HFP profile stopped*/
+        sIsSwbLc3Enabled = false;
+        sIsWbSpeechEnabled = false;
+        sSwbSpeechMode = SPEECH_MODE_INVALID;
+        sIsNrecEnabled = false;
+        PAL_INFO(LOG_TAG, " reset SCO parameters");
+    }
+    return 0;
+}
+
 int BtSco::stop()
 {
     int status = 0;
     mDeviceMutex.lock();
+
+    status = stopBTHost();
+    if(status != 0) {
+        PAL_ERR(LOG_TAG, "BTHost stop failed!!");
+    }
 
     if (mIsAbrEnabled)
         stopAbr();

@@ -7408,7 +7408,11 @@ int ResourceManager::setParameter(uint32_t param_id, void *param_payload,
                     device_connection->id == PAL_DEVICE_IN_BLUETOOTH_A2DP ||
                     device_connection->id == PAL_DEVICE_OUT_BLUETOOTH_BLE ||
                     device_connection->id == PAL_DEVICE_IN_BLUETOOTH_BLE ||
-                    device_connection->id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST)) {
+                    device_connection->id == PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST ||
+                    device_connection->id == PAL_DEVICE_OUT_BLUETOOTH_SCO ||
+                    device_connection->id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET ||
+                    device_connection->id == PAL_DEVICE_OUT_BLUETOOTH_HFP ||
+                    device_connection->id == PAL_DEVICE_IN_BLUETOOTH_HFP)) {
                     dattr.id = device_connection->id;
                     dattr.addressV1 = device_connection->device.addressV1;
                     dev = Device::getInstance(&dattr, rm);
@@ -9342,7 +9346,6 @@ void ResourceManager::startTag(void *userdata, const XML_Char *tag_name,
     static std::shared_ptr<SoundTriggerPlatformInfo> st_info = nullptr;
 
     if (st_info && data->is_parsing_sound_trigger) {
-        PAL_INFO(LOG_TAG, "Parsing sound trigger tags");
         st_info->HandleStartTag((const std::string)tag_name, (const char **)attr);
         snd_reset_data_buf(data);
         return;

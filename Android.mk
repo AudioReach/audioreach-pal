@@ -81,7 +81,8 @@ LOCAL_SRC_FILES := \
     utils/src/AudioHapticsInterface.cpp \
     utils/src/MetadataParser.cpp \
     utils/src/MemLogBuilder.cpp \
-    utils/src/PerfLock.cpp
+    utils/src/PerfLock.cpp \
+    utils/src/Status.cpp
 
 LOCAL_HEADER_LIBRARIES := \
     libarpal_headers \

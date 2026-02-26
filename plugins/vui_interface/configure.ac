@@ -7,7 +7,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.61)
 # Initialize the audio-effects package version 1.0.0
-AC_INIT([vui_interface],1.0.0)
+AC_INIT([vui_interface],1.1.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign])
 # Disables auto rebuilding of configure, Makefile.ins
@@ -29,6 +29,13 @@ AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 AC_PROG_RANLIB
 AM_PROG_AR
+
+m4_define([LT_MAJOR], [1])
+m4_define([LT_MINOR], [1])
+m4_define([LT_PATCH], [0])
+
+AC_SUBST([LT_VERSION], LT_MAJOR.LT_MINOR.LT_PATCH)
+AC_SUBST([LT_VERSION_NUMBER], LT_MAJOR:LT_MINOR:LT_PATCH)
 
 AC_ARG_WITH([glib],
       AS_HELP_STRING([--with-glib],

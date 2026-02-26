@@ -1018,10 +1018,61 @@ int SessionAR::setVolume(Stream *s)
     return status;
 }
 
+int SessionAR::sendMsg(pal_cshm_id_t memID, uint32_t offset,
+        uint32_t length, uint32_t destID, uint32_t flags, Stream *s)
+{
+    int status = -EINVAL;
+    pal_stream_type_t streamType;
+    char const *stream = "PCM";
+    std::ostringstream tagCntrlName;
+    const char *control = SEND_MSG_PARAM;
+    Session *session = nullptr;
+    struct mixer_ctl *ctl = nullptr;
+    agm_msg_config *msgConfig = nullptr;
+    std::vector<int> pcmDevIds;
+
+    s->getAssociatedSession(&session);
+    status = session->getFrontEndIds(pcmDevIds, RX_HOSTLESS/*unused*/);
+    s->getStreamType(&streamType);
+    if(streamType == PAL_STREAM_COMPRESSED)
+        stream = "COMPRESS";
+
+    if (pcmDevIds.size() > 0) {
+        tagCntrlName << stream << pcmDevIds.at(0) << " " << control;
+   } else {
+        PAL_ERR(LOG_TAG, "pcmDevIds not found.");
+        status = -EINVAL;
+        goto exit;
+    }
+    ctl = mixer_get_ctl_by_name(mixer, tagCntrlName.str().data());
+    if (!ctl) {
+        PAL_ERR(LOG_TAG, "Invalid mixer control: %s\n", tagCntrlName.str().data());
+        status = -ENOENT;
+        goto exit;
+    }
+    msgConfig = (agm_msg_config *)calloc(1, sizeof(agm_msg_config));
+    if (msgConfig == nullptr) {
+        status = -ENOMEM;
+        goto exit;
+    }
+    msgConfig->mem_id = memID;
+    msgConfig->offset = offset;
+    msgConfig->length = length;
+    msgConfig->miid = destID;
+    msgConfig->flags = flags;
+    status = mixer_ctl_set_array(ctl, msgConfig, sizeof(agm_msg_config));
+    ctl = NULL;
+exit:
+    if (msgConfig)
+        free(msgConfig);
+    return status;
+}
+
 int32_t SessionAR::setCustomParam(custom_payload_uc_info_t* uc_info, std::string param_str,
                                     void* param_payload, size_t payload_size, Stream *s)
 {
     int32_t status = 0;
+    Stream *str = s;
     if(param_str == PAL_CUSTOM_PARAM_AR_UI_EFFECT) {
         if(uc_info->streamless) {
             status = rwACDBParamTunnel(uc_info, param_payload, s, true);
@@ -1030,6 +1081,10 @@ int32_t SessionAR::setCustomParam(custom_payload_uc_info_t* uc_info, std::string
             effect_pal_payload_t *effectPayload = (effect_pal_payload_t *)pal_param->payload;
             status = setEffectParameters(s,effectPayload);
         }
+    } else if (param_str == SEND_MSG_PARAM) {
+        pal_cshm_msg_payload_t *payload = (pal_cshm_msg_payload_t *)param_payload;
+        status = sendMsg(payload->memID, payload->offset, payload->length,
+                            payload->destID, payload->flags, str);
     } else {
         PAL_ERR(LOG_TAG,"unsupported set param %s", param_str.c_str());
     }

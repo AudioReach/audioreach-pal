@@ -515,6 +515,29 @@ int32_t pal_stream_get_mmap_position(pal_stream_handle_t *stream_handle,
 int32_t pal_register_global_callback(pal_global_callback cb, uint64_t cookie);
 
 /**
+  * \brief Request for shared memory allocation.
+  *
+  * \param[in] size - Size of the shared memeory required
+  *
+  * \param[out] pal_cshm_info_t - Info regarding the allocated shared memory
+  *
+  * \return 0 on success, error code otherwise
+  */
+
+int32_t pal_cshm_alloc(uint32_t size, pal_cshm_info_t *memInfo);
+
+/**
+  * \brief Request for deallocate the shared memory allocated via
+  *        pal_cshm_alloc.
+  *
+  * \param[in] mem_id - mem_id of the shared memory block to be deallocated
+  *
+  * \return 0 on success, error code otherwise
+  */
+
+int32_t pal_cshm_dealloc(pal_cshm_id_t memID);
+
+/**
   * \brief Stream set parameters for generic/custom param
   *
   * \param[in] handle - stream handle to which the param is set/get.

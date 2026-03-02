@@ -684,11 +684,11 @@ int SessionAlsaVoice::start(Stream * s)
         /*call will cache the volume but not apply it as stream has not moved to start state*/
         s->setVolume(volume);
     };
-    /*call to apply volume*/
+    /* call to apply volume CKV along with all other CKVs */
+    setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
+    /* call to apply CRS volume */
     if (rm->IsCRSCallEnabled()) {
         setConfig(s, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-    } else {
-        setConfig(s, CALIBRATION, TAG_STREAM_VOLUME, RX_HOSTLESS);
     }
 
     if (ResourceManager::isLpiLoggingEnabled()) {

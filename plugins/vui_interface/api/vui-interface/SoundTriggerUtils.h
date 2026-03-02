@@ -212,6 +212,9 @@ enum st_param_key {
     // For key payload, use param_id_history_buffer_mode_t
     ST_PARAM_KEY_HIST_CAPTURE_MODE = 0xC,
 
+    //For key payload, use st_mmap_index_info
+    ST_PARAM_KEY_MMAP_READ_INDEX = 0xD,
+
     // Below Keys are for optional detection payload information
 
     // For key payload, use pcm data
@@ -361,6 +364,12 @@ struct __attribute__((__packed__)) st_channel_index_info
 {
     uint32_t version; /* value: 0x01 */
     uint32_t channel_index; /* range: {0..15} */
+};
+
+struct __attribute__((__packed__)) st_mmap_index_info
+{
+    uint32_t start_position;
+    uint32_t bytes_to_read;
 };
 
 typedef enum st_sound_model_type {

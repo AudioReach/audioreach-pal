@@ -113,6 +113,7 @@ public:
     }
     bool isSingleInstanceStage1() const { return supported_first_stage_engine_count_ == 1; }
     bool isQCVAUUID() const { return is_qcva_uuid_; }
+    bool GetMmapEnable() const { return mmap_enable_; }
     uint32_t GetKwDuration() const { return capture_keyword_; }
     uint32_t GetCaptureReadDelay() const { return client_capture_read_delay_; }
     uint32_t GetPreRollDuration() const { return pre_roll_duration_; }
@@ -125,6 +126,8 @@ public:
     uint32_t GetOutChannels() const { return out_channels_; }
     uint32_t GetSupportedEngineCount() const {
                         return supported_first_stage_engine_count_; }
+    uint32_t GetMmapBufferDuration() const { return mmap_buffer_duration_; }
+    uint32_t GetMmapFrameLength() const { return mmap_frame_length_; }
     bool GetEnableIntraConcurrentDetection() const { return enable_intra_concurrent_detection_; }
     int32_t GetOperatingMode(std::string tag);
     st_module_type_t GetVUIModuleType();
@@ -155,6 +158,7 @@ private:
     bool is_qcva_uuid_;
     bool get_module_version_supported_;
     bool merge_first_stage_sound_models_;
+    bool mmap_enable_;
     uint32_t capture_keyword_;
     uint32_t client_capture_read_delay_;
     uint32_t pre_roll_duration_;
@@ -166,6 +170,8 @@ private:
     uint32_t bit_width_;
     uint32_t out_channels_;
     uint32_t supported_first_stage_engine_count_;
+    uint32_t mmap_buffer_duration_;
+    uint32_t mmap_frame_length_;
     bool enable_intra_concurrent_detection_;
     bool lpi_enable_;
     uint32_t batch_size_in_ms_;
@@ -194,12 +200,9 @@ public:
     bool GetTransitToNonLpiOnCharging() const {
         return transit_to_non_lpi_on_charging_;
     }
-    bool GetMmapEnable() const { return mmap_enable_; }
     bool GetNotifySecondStageFailure() { return notify_second_stage_failure_; }
     bool GetEnableInterConcurrentDetection() const { return enable_inter_concurrent_detection_; }
     uint32_t GetVersion() const { return vui_version_; }
-    uint32_t GetMmapBufferDuration() const { return mmap_buffer_duration_; }
-    uint32_t GetMmapFrameLength() const { return mmap_frame_length_; }
     std::shared_ptr<VUIStreamConfig> GetStreamConfig(const UUID& uuid) const;
     void GetStreamConfigForVersionQuery(std::vector<std::shared_ptr<VUIStreamConfig>> &sm_cfg_list) const;
 
@@ -210,9 +213,6 @@ private:
     bool transit_to_non_lpi_on_charging_;
     bool notify_second_stage_failure_;
     bool enable_inter_concurrent_detection_;
-    bool mmap_enable_;
-    uint32_t mmap_buffer_duration_;
-    uint32_t mmap_frame_length_;
     std::string sound_model_lib_;
     std::map<UUID, std::shared_ptr<VUIStreamConfig>> stream_cfg_list_;
     std::shared_ptr<SoundTriggerXml> curr_child_;

@@ -39,6 +39,7 @@
 #include "SoundTriggerEngineGsl.h"
 #ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/trace.h>
+#include <cutils/properties.h>
 #endif
 #include <cstring>
 
@@ -48,6 +49,7 @@
 #include "SoundTriggerPlatformInfo.h"
 #include "VoiceUIInterface.h"
 #include "sh_mem_pull_push_mode_api.h"
+#include "history_buffer_api.h"
 #include "STUtils.h"
 
 // TODO: find another way to print debug logs by default
@@ -105,6 +107,11 @@ void SoundTriggerEngineGsl::ProcessEventTask() {
 
         StreamSoundTrigger * str = det_streams_q_.front();
         det_streams_q_.pop();
+        if (str == nullptr) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid stream object, status %d", status);
+            return;
+        }
 
         // skip detection handling if it is stopped/restarted.
         state_mutex_.lock();
@@ -116,38 +123,175 @@ void SoundTriggerEngineGsl::ProcessEventTask() {
         }
         state_mutex_.unlock();
 
-        if (str) {
-            if (capture_requested_) {
-                status = StartBuffering(str);
-                if (status < 0) {
-                    PAL_ERR(LOG_TAG, "buffering failed, status %d", status);
-                }
-            } else {
-                status = UpdateSessionPayload(str, ENGINE_RESET);
-                lck.unlock();
-                status = str->SetEngineDetectionState(GMM_DETECTED);
-                lck.lock();
-                if (status < 0)
+        if (capture_requested_) {
+            if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+                vui_intf_param_t param {};
+                param.data = &mmap_write_position_;
+                vui_intf_->SetParameter(PARAM_MMAP_START_POSITION, &param);
+
+                if (batch_mode_) {
+                    size_t bytes_to_read = 0;
+                    status = BytesToRead(str, bytes_to_read);
+                    if (status) {
+                        RestartRecognition_l(str);
+                        continue;
+                    }
+                    param.data = &bytes_to_read;
+                    vui_intf_->SetParameter(PARAM_MMAP_BYTES_TO_READ, &param);
+                    if (status < 0) {
+                        RestartRecognition_l(str);
+                        continue;
+                    }
+                    lck.unlock();
+                    status = str->SetEngineDetectionState(THRESHOLD_REACHED);
+                    lck.lock();
                     RestartRecognition_l(str);
-                else
-                    UpdateSessionPayload(nullptr, ENGINE_RESET);
+                    continue;
+                }
             }
-            /*
-             * After detection is handled, update the state to Active
-             * if other streams are attached to engine and active
-             */
-            if (GetOtherActiveStream(str) && det_streams_q_.empty()) {
-                UpdateState(ENG_ACTIVE);
+            status = StartBuffering(str);
+            if (status < 0) {
+                PAL_ERR(LOG_TAG, "buffering failed, status %d", status);
             }
+        } else {
+            status = UpdateSessionPayload(str, ENGINE_RESET);
+            lck.unlock();
+            status = str->SetEngineDetectionState(GMM_DETECTED);
+            lck.lock();
+            if (status < 0)
+                RestartRecognition_l(str);
+            else
+                UpdateSessionPayload(nullptr, ENGINE_RESET);
+        }
+        /*
+         * After detection is handled, update the state to Active
+         * if other streams are attached to engine and active
+         */
+        if (GetOtherActiveStream(str) && det_streams_q_.empty()) {
+            UpdateState(ENG_ACTIVE);
         }
         rm->releaseWakeLock();
     }
     PAL_DBG(LOG_TAG, "Exit");
 }
 
+void SoundTriggerEngineGsl::PushFakeDetection(StreamSoundTrigger *s) {
+
+    PAL_DBG(LOG_TAG, "Enter.");
+    std::unique_lock<std::mutex> lck(mutex_);
+    det_streams_q_.push(s);
+    UpdateState(ENG_DETECTED);
+    cv_.notify_one();
+    PAL_DBG(LOG_TAG, "Exit");
+}
+
+int32_t SoundTriggerEngineGsl::ReadIfBatchMode() {
+
+    int32_t status = 0;
+    size_t bytes_to_read;
+    size_t offset = 0;
+    FILE *dsp_output_fd = nullptr;
+    vui_intf_param_t param {};
+
+    if (!batch_mode_ || mmap_buffer_size_ == 0)
+        return -EINVAL;
+
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_OPEN_WR(dsp_output_fd, ST_DEBUG_DUMP_LOCATION,
+            "dsp_output", "bin", dsp_output_cnt);
+        PAL_DBG(LOG_TAG, "DSP output data stored in: dsp_output_%d.bin",
+            dsp_output_cnt);
+        dsp_output_cnt++;
+     }
+
+    offset = FrameToBytes(mmap_write_position_);
+    offset %= mmap_buffer_size_;
+    param.data = &bytes_to_read;
+    vui_intf_->GetParameter(PARAM_MMAP_BYTES_TO_READ, &param);
+    ReadMmapBufWriteToRingBuf(offset, bytes_to_read, dsp_output_fd);
+
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_CLOSE(dsp_output_fd);
+    }
+
+    return status;
+}
+
+int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t size_to_read,
+                                                         FILE* dsp_output_fd) {
+    size_t size = 0;
+
+    PAL_DBG(LOG_TAG, "Bytes to read and write in ring buffer is : %d", size_to_read);
+    if (offset + size_to_read <= mmap_buffer_size_) {
+        size = buffer_->write((void *)((uint8_t *)mmap_buffer_.buffer + offset), size_to_read);
+        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+            ST_DBG_FILE_WRITE(dsp_output_fd, (void *)((uint8_t *)mmap_buffer_.buffer + offset),
+                              size_to_read);
+        }
+        offset += size_to_read;
+    } else {
+        size = buffer_->write((void *)((uint8_t *)mmap_buffer_.buffer + offset),
+                             mmap_buffer_size_ - offset);
+        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+            ST_DBG_FILE_WRITE(dsp_output_fd, (void *)((uint8_t *)mmap_buffer_.buffer + offset),
+                              size_to_read);
+        }
+        size += buffer_->write((void *)mmap_buffer_.buffer,
+                             size_to_read + offset - mmap_buffer_size_);
+        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+            ST_DBG_FILE_WRITE(dsp_output_fd, (void *)mmap_buffer_.buffer,
+                              size_to_read + offset - mmap_buffer_size_);
+        }
+        offset = size_to_read + offset - mmap_buffer_size_;
+    }
+    mmap_write_position_ += BytesToFrames(size_to_read);
+    PAL_DBG(LOG_TAG, "%d written to ring buffer", size);
+    return 0;
+}
+
+int32_t SoundTriggerEngineGsl::BytesToRead(StreamSoundTrigger* s, size_t& bytes_to_read) {
+
+    int32_t status = 0;
+    struct pal_mmap_position mmap_pos;
+    vui_intf_param_t param {};
+
+    /*
+     * GetMmapPosition returns total frames written for this session
+     * which will be accumulated during back to back detections, so
+     * we get mmap position in SVA start and compute the difference
+     * after detection, in this way we can get info for bytes written
+     * and read after each detection.
+     */
+
+    status = session_->GetMmapPosition(s, &mmap_pos);
+    if (!status) {
+        if (mmap_pos.position_frames >= mmap_write_position_) {
+            bytes_to_read = FrameToBytes(mmap_pos.position_frames -
+                                         mmap_write_position_);
+            if (bytes_to_read == UINT32_MAX) {
+                PAL_ERR(LOG_TAG, "invalid frame value");
+                status = -EINVAL;
+                goto exit;
+            }
+        } else {
+            PAL_ERR(LOG_TAG, "invalid mmap position value");
+            PAL_ERR(LOG_TAG, "position frames : %d, mmap write position : %d",
+            mmap_pos.position_frames, mmap_write_position_);
+            status = -EINVAL;
+        }
+    } else {
+        PAL_ERR(LOG_TAG, "Failed to get read position");
+        status = -ENOMEM;
+    }
+    PAL_DBG(LOG_TAG, "Bytes to read : %d", bytes_to_read);
+exit:
+    return status;
+}
+
 int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
     int32_t status = 0;
     int32_t size = 0;
+    bool batch_mode = false;
     struct pal_buffer buf;
     size_t input_buf_size = 0;
     size_t input_buf_num = 0;
@@ -182,6 +326,7 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
     s->getBufInfo(&input_buf_size, &input_buf_num, nullptr, nullptr);
     if (mmap_buffer_size_ != 0)
         input_buf_num = NO_OF_BUF;
+
     sleep_ms = (input_buf_size * input_buf_num) *
         BITS_PER_BYTE * MS_PER_SEC / (sample_rate_ * bit_width_ * channels_);
 
@@ -220,6 +365,7 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
 
     if (mmap_buffer_size_ != 0) {
         read_offset = FrameToBytes(mmap_write_position_);
+        read_offset %= mmap_buffer_size_;
         PAL_DBG(LOG_TAG, "Start lab reading from offset %zu", read_offset);
     }
     buffer_->getIndices(s, &start_index, &end_index, &ftrt_size);
@@ -227,7 +373,9 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
     ATRACE_ASYNC_BEGIN("stEngine: read FTRT data", (int32_t)module_type_);
 #endif
     kw_transfer_begin = std::chrono::steady_clock::now();
-    while (!exit_buffering_) {
+    client_read_from_mmap_buffer_ = false;
+
+    while (!exit_buffering_ && !client_read_from_mmap_buffer_) {
         /*
          * When RestartRecognition is called during buffering thread
          * unlocking mutex, buffering loop may not exit properly as
@@ -262,86 +410,46 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         ATRACE_ASYNC_BEGIN("stEngine: lab read", (int32_t)module_type_);
 #endif
         if (mmap_buffer_size_ != 0) {
-            /*
-             * GetMmapPosition returns total frames written for this session
-             * which will be accumulated during back to back detections, so
-             * we get mmap position in SVA start and compute the difference
-             * after detection, in this way we can get info for bytes written
-             * and read after each detection.
-             */
-            status = session_->GetMmapPosition(s, &mmap_pos);
-            if (!status) {
-                if (mmap_pos.position_frames >= mmap_write_position_) {
-                    bytes_written = FrameToBytes(mmap_pos.position_frames -
-                        mmap_write_position_);
-                    if (bytes_written == UINT32_MAX) {
-                        PAL_ERR(LOG_TAG, "invalid frame value");
-                        status = -EINVAL;
-                        goto exit;
-                    }
-                } else {
-                    PAL_ERR(LOG_TAG, "invalid mmap position value");
-                    PAL_ERR(LOG_TAG, "position frames : %d, mmap write position : %d",
-                         mmap_pos.position_frames, mmap_write_position_);
-                    status = -EINVAL;
-                    goto exit;
-                }
-                if (bytes_written > total_read_size) {
-                    size_to_read = bytes_written - total_read_size;
-                    retry_cnt = 0;
-                } else {
-                    retry_cnt++;
-                    if (retry_cnt > MAX_MMAP_POSITION_QUERY_RETRY_CNT) {
-                        status = -EIO;
-                        goto exit;
-                    }
-                    mutex_.unlock();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-                    mutex_.lock();
-                    continue;
-                }
-                if (size_to_read > (2 * mmap_buffer_size_) - read_offset) {
-                    PAL_ERR(LOG_TAG, "Bytes written is exceeding mmap buffer size");
-                    status = -EINVAL;
-                    goto exit;
-                }
-                PAL_VERBOSE(LOG_TAG, "Mmap write offset %zu, available bytes %zu",
-                    bytes_written, size_to_read);
-            } else {
-                PAL_ERR(LOG_TAG, "Failed to get read position");
-                status = -ENOMEM;
+            status = BytesToRead(s, size_to_read);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to get bytes to read");
+                status = -EINVAL;
                 goto exit;
             }
-
-            if (size_to_read != buf.size) {
-                buf.buffer = (uint8_t *)realloc(buf.buffer, size_to_read);
-                if (!buf.buffer) {
-                    PAL_ERR(LOG_TAG, "buf.buffer allocation failed");
-                    status = -ENOMEM;
+            if (size_to_read == 0) {
+                retry_cnt++;
+                if (retry_cnt > MAX_MMAP_POSITION_QUERY_RETRY_CNT) {
+                    status = -EIO;
                     goto exit;
                 }
-                buf.size = size_to_read;
-            }
-
-            // TODO: directly write to PalRingBuffer with shared buffer pointer
-            if (read_offset + size_to_read <= mmap_buffer_size_) {
-                ar_mem_cpy(buf.buffer, size_to_read,
-                    (uint8_t *)mmap_buffer_.buffer + read_offset,
-                    size_to_read);
-                read_offset += size_to_read;
+                mutex_.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+                mutex_.lock();
+                continue;
             } else {
-                ar_mem_cpy(buf.buffer, mmap_buffer_size_ - read_offset,
-                    (uint8_t *)mmap_buffer_.buffer + read_offset,
-                    mmap_buffer_size_ - read_offset);
-                ar_mem_cpy(buf.buffer + mmap_buffer_size_ - read_offset,
-                    size_to_read + read_offset - mmap_buffer_size_,
-                    (uint8_t *)mmap_buffer_.buffer,
-                    size_to_read + read_offset - mmap_buffer_size_);
-                read_offset = size_to_read + read_offset - mmap_buffer_size_;
+                retry_cnt = 0;
             }
-            size = size_to_read;
-            PAL_VERBOSE(LOG_TAG, "read %d bytes from shared buffer", size);
-            total_read_size += size;
+            if (size_to_read > (2 * mmap_buffer_size_) - read_offset) {
+                PAL_ERR(LOG_TAG, "Bytes written is exceeding mmap buffer size");
+                status = -EINVAL;
+                goto exit;
+            }
+            if (bytes_to_drop >= size_to_read) {
+                bytes_to_drop -= size_to_read;
+                read_offset += size_to_read;
+                continue;
+            } else {
+                read_offset += bytes_to_drop;
+                bytes_to_drop = 0;
+            }
+            PAL_VERBOSE(LOG_TAG, "Mmap write offset %zu, available bytes %zu",
+                 size_to_read, size_to_read);
+            PAL_VERBOSE(LOG_TAG, "size_to_read : %d, read offset : %d", size_to_read,
+                        read_offset);
+
+            ReadMmapBufWriteToRingBuf(read_offset, size_to_read, dsp_output_fd);
+            PAL_VERBOSE(LOG_TAG, "read %d bytes from shared buffer", size_to_read);
+            total_read_size += size_to_read;
         } else if (buffer_->getFreeSize() >= buf.size) {
             if (total_read_size < ftrt_size &&
                 ftrt_size - total_read_size < buf.size) {
@@ -356,34 +464,32 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
             }
             PAL_VERBOSE(LOG_TAG, "requested %zu, read %d", buf.size, size);
             total_read_size += size;
+            if (size) {
+                size_t ret = 0;
+                if (bytes_to_drop) {
+                    if (size < bytes_to_drop) {
+                        bytes_to_drop -= size;
+                    } else {
+                        ret = buffer_->write((void*)(buf.buffer + bytes_to_drop),
+                            size - bytes_to_drop);
+                        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+                            ST_DBG_FILE_WRITE(dsp_output_fd,
+                                buf.buffer + bytes_to_drop, size - bytes_to_drop);
+                        }
+                        bytes_to_drop = 0;
+                    }
+                } else {
+                    ret = buffer_->write(buf.buffer, size);
+                    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+                        ST_DBG_FILE_WRITE(dsp_output_fd, buf.buffer, size);
+                    }
+                }
+                PAL_VERBOSE(LOG_TAG, "%zu written to ring buffer", ret);
+            }
         }
 #ifndef ATRACE_UNSUPPORTED
         ATRACE_ASYNC_END("stEngine: lab read", (int32_t)module_type_);
 #endif
-        // write data to ring buffer
-        if (size) {
-            size_t ret = 0;
-            if (bytes_to_drop) {
-                if (size < bytes_to_drop) {
-                    bytes_to_drop -= size;
-                } else {
-                    ret = buffer_->write((void*)(buf.buffer + bytes_to_drop),
-                        size - bytes_to_drop);
-                    if (vui_ptfm_info_->GetEnableDebugDumps()) {
-                        ST_DBG_FILE_WRITE(dsp_output_fd,
-                            buf.buffer + bytes_to_drop, size - bytes_to_drop);
-                    }
-                    bytes_to_drop = 0;
-                }
-            } else {
-                ret = buffer_->write(buf.buffer, size);
-                if (vui_ptfm_info_->GetEnableDebugDumps()) {
-                    ST_DBG_FILE_WRITE(dsp_output_fd, buf.buffer, size);
-                }
-            }
-            PAL_VERBOSE(LOG_TAG, "%zu written to ring buffer", ret);
-        }
-
         // notify client until ftrt data read
         if (total_read_size >= ftrt_size) {
             if (!event_notified) {
@@ -467,6 +573,8 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
     exit_thread_ = false;
     exit_buffering_ = false;
     capture_requested_ = false;
+    client_read_from_mmap_buffer_ = false;
+    batch_mode_ = false;
     stream_handle_ = s;
     sm_data_ = nullptr;
     reader_ = nullptr;
@@ -483,6 +591,8 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
     is_crr_dev_using_ext_ec_ = false;
     device_switch_stream_ = nullptr;
     mma_mode_bit_ = 0;
+    return_real_mmap_position_ = 2;
+    mmap_position_time_ = 0;
 
     UpdateState(ENG_IDLE);
 
@@ -520,8 +630,8 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
             param_ids_[i] = sm_module_info->GetParamId((st_param_id_type_t)i);
         }
 
-        if (vui_ptfm_info_->GetMmapEnable()) {
-            mmap_buffer_size_ = (vui_ptfm_info_->GetMmapBufferDuration() / MS_PER_SEC) *
+        if (sm_cfg_->GetMmapEnable()) {
+            mmap_buffer_size_ = (sm_cfg_->GetMmapBufferDuration() / MS_PER_SEC) *
                                  sample_rate_ * bit_width_ * channels_ / BITS_PER_BYTE;
             if (mmap_buffer_size_ == 0) {
                 PAL_ERR(LOG_TAG, "Mmap buffer duration not set");
@@ -980,6 +1090,7 @@ exit:
 int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
 
     int32_t status = 0;
+    vui_intf_param_t param {};
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
     struct pal_mmap_position mmap_pos;
     uint32_t hist_buffer_size_in_bytes = 0;
@@ -993,6 +1104,11 @@ int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
             status);
         goto exit;
     }
+
+    dynamic_cast<SessionAR*>(session_)->setEventPayload(s->getCallbackEventId(),
+                                                       nullptr, 0);
+    dynamic_cast<SessionAR*>(session_)->setEventPayload(EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER,
+                                                       nullptr, 0);
 
     status = session_->prepare(s);
     if (0 != status) {
@@ -1019,6 +1135,34 @@ int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
             (uint32_t)mmap_buffer_size_);
     }
 
+    if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+
+        vui_intf_->GetParameter(PARAM_BUFFERING_MODE_CONFIG, &param);
+        struct param_id_history_buffer_mode_t* mode = nullptr;
+        mode = (struct param_id_history_buffer_mode_t *)param.data;
+        batch_mode_ = mode->data_flow_mode == HISTORY_BUFFER_BATCHING;
+        PAL_DBG(LOG_TAG, "batch_mode %d", batch_mode_);
+
+        if (batch_mode_) {
+            struct event_cfg_sh_mem_pull_push_mode_watermark_t *watermark_payload = nullptr;
+            watermark_payload = (struct event_cfg_sh_mem_pull_push_mode_watermark_t *)calloc(1,
+                                 2 * sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t) + sizeof(uint32_t));
+            watermark_payload->num_water_mark_levels = 2;
+            struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *levels = nullptr;
+            levels = (struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *)
+                      ((uint8_t *)watermark_payload + sizeof(uint32_t));
+            levels->watermark_level_bytes = (mmap_buffer_size_) / 2;
+            PAL_DBG(LOG_TAG, "First watermark level : %d", levels->watermark_level_bytes);
+            levels += 1;
+            levels->watermark_level_bytes = mmap_buffer_size_ - 1;
+            PAL_DBG(LOG_TAG, "Second watermark level : %d", levels->watermark_level_bytes);
+            dynamic_cast<SessionAR*>(session_)->setEventPayload(EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK,
+                                        watermark_payload, sizeof(uint32_t) +
+                                        2 * sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t));
+            free(watermark_payload);
+        }
+    }
+
     status = session_->start(s);
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to start session, status = %d", status);
@@ -1028,10 +1172,20 @@ int32_t SoundTriggerEngineGsl::ProcessStartRecognition(StreamSoundTrigger *s) {
     // Update mmap write position after start
     if (mmap_buffer_size_) {
         mmap_write_position_ = 0;
+        mmap_position_time_ = 0;
+        if (buffer_) {
+            buffer_->resizeRingBuffer(mmap_buffer_size_);
+            buffer_->reset();
+        }
         // reset wall clk in agm pcm plugin
         status = session_->ResetMmapBuffer(s);
-        if (status)
+        if (status) {
             PAL_ERR(LOG_TAG, "Failed to reset mmap buffer, status %d", status);
+        } else {
+            status = session_->GetMmapPosition(s, &mmap_pos);
+            mmap_write_position_ = mmap_pos.position_frames;
+            mmap_position_time_ = mmap_pos.time_nanoseconds;
+        }
     }
     exit_buffering_ = false;
     UpdateState(ENG_ACTIVE);
@@ -1122,6 +1276,12 @@ int32_t SoundTriggerEngineGsl::RestartRecognition_l(StreamSoundTrigger *s) {
         return RESTART_IGNORED;
     }
 
+    if (batch_mode_) {
+        exit_buffering_ = false;
+        UpdateState(ENG_ACTIVE);
+        return status;
+    }
+
     if (sm_cfg_->GetEnableIntraConcurrentDetection() &&
         (!det_streams_q_.empty() || CheckIfOtherStreamsBuffering(s))) {
         /*
@@ -1150,9 +1310,10 @@ int32_t SoundTriggerEngineGsl::RestartRecognition_l(StreamSoundTrigger *s) {
     // Update mmap write position after engine reset
     if (mmap_buffer_size_) {
         status = session_->GetMmapPosition(s, &mmap_pos);
-        if (!status)
+        if (!status) {
             mmap_write_position_ = mmap_pos.position_frames;
-        else
+            mmap_position_time_ = mmap_pos.time_nanoseconds;
+        } else
             PAL_ERR(LOG_TAG, "Failed to get mmap position, status %d", status);
 
         // reset wall clk in agm pcm plugin
@@ -1459,7 +1620,8 @@ void SoundTriggerEngineGsl::HandleSessionEvent(uint32_t event_id __unused,
         UpdateSessionPayload(nullptr, ENGINE_RESET);
         return;
     }
-    if (eng_state != ENG_ACTIVE) {
+    if (eng_state != ENG_ACTIVE && !(module_type_ == ST_MODULE_TYPE_HIST_CAP &&
+                                     eng_state == ENG_DETECTED)) {
         if (sm_cfg_->GetEnableIntraConcurrentDetection()) {
             if (eng_state != ENG_BUFFERING && eng_state != ENG_DETECTED) {
                 PAL_DBG(LOG_TAG, "Unhandled state %d ignore event", eng_state);
@@ -1535,7 +1697,8 @@ void SoundTriggerEngineGsl::HandleSessionEvent(uint32_t event_id __unused,
         }
         return;
     }
-    if (eng_state == ENG_ACTIVE) {
+    if (eng_state == ENG_ACTIVE || (module_type_ == ST_MODULE_TYPE_HIST_CAP &&
+                                    eng_state == ENG_DETECTED)) {
         std::queue<StreamSoundTrigger *> empty_q;
         std::swap(det_streams_q_, empty_q);
         det_streams_q_.push(s);
@@ -1647,7 +1810,8 @@ void SoundTriggerEngineGsl::HandleSessionCallBack(uint64_t hdl, uint32_t event_i
     // Possible that AGM_EVENT_EOS_RENDERED could be sent during spf stop.
     // Check and handle only required detection event.
     if (event_id != EVENT_ID_DETECTION_ENGINE_GENERIC_INFO &&
-        event_id != EVENT_ID_MMA_DETECTION_EVENT) {
+        event_id != EVENT_ID_MMA_DETECTION_EVENT &&
+        event_id != EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK) {
         if (event_id == EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER) {
             PAL_DBG(LOG_TAG,
             "Received event for EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER");
@@ -1988,7 +2152,16 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
             break;
         case BUFFERING_MODE_CONFIG:
             intf_param.size = sm_cfg_->GetBatchSizeInMs();
+            status = vui_intf_->SetParameter(PARAM_BUFFERING_MODE_CONFIG, &intf_param);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to set buffering mode config");
+                return -EINVAL;
+            }
             status = vui_intf_->GetParameter(PARAM_BUFFERING_MODE_CONFIG, &intf_param);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to get buffering mode config");
+                return -EINVAL;
+            }
             ses_param_id = PAL_PARAM_ID_BUFFERING_MODE;
             break;
         default:
@@ -2146,11 +2319,63 @@ int32_t SoundTriggerEngineGsl::ForceRecognition(StreamSoundTrigger *s) {
     int32_t status = 0;
 
     PAL_DBG(LOG_TAG, "Enter");
+    if (batch_mode_) {
+        PushFakeDetection(s);
+        return status;
+    }
     std::unique_lock<std::mutex> lck(mutex_);
 
     status = UpdateSessionPayload(s, TRIGGER_DETECTION_CONFIG);
     if (0!= status)
         PAL_ERR(LOG_TAG, "Failed to trigger detection event");
 
+    return status;
+}
+
+int32_t SoundTriggerEngineGsl::fillMmapBufInfo(struct pal_mmap_buffer *info) {
+
+    int32_t status = 0;
+    std::lock_guard<std::mutex> lck(mutex_);
+    if (mmap_buffer_size_ && mmap_buffer_.buffer) {
+        info->buffer = mmap_buffer_.buffer;
+        info->fd = mmap_buffer_.fd;
+        info->buffer_size_frames = BytesToFrames(mmap_buffer_size_);
+        info->burst_size_frames = mmap_buffer_size_ / info->buffer_size_frames;
+        info->flags = mmap_buffer_.flags;
+        client_read_from_mmap_buffer_ = true;
+        return_real_mmap_position_ = 7;
+        PAL_ERR(LOG_TAG, "Returned MMAP buffer details!!!");
+    } else {
+        PAL_ERR(LOG_TAG, "MMAP buffer is not initialized!!!");
+        status =-EINVAL;
+    }
+    return status;
+}
+
+int32_t SoundTriggerEngineGsl::GetMmapPosition(StreamSoundTrigger* s,
+                                            struct pal_mmap_position *position) {
+
+    int32_t status = 0;
+    std::lock_guard<std::mutex> lck(mutex_);
+    if (mmap_buffer_size_ && mmap_buffer_.buffer) {
+        if (return_real_mmap_position_ > 0) {
+            return_real_mmap_position_--;
+            vui_intf_param_t param;
+            vui_intf_->GetParameter(PARAM_MMAP_START_POSITION, &param);
+            position->position_frames = *(uint32_t *)(param.data);
+            position->time_nanoseconds = mmap_position_time_;
+            PAL_ERR(LOG_TAG, "GetMmapPosition returned cached data!!!");
+        } else {
+            status = session_->GetMmapPosition(s, position);
+        }
+        if (status) {
+            PAL_ERR(LOG_TAG, "GetMmapPosition failed with status = %d", status);
+            return status;
+        }
+        PAL_ERR(LOG_TAG, "GetMmapPosition returned!!!");
+    } else {
+        PAL_ERR(LOG_TAG, "MMAP buffer is not initialized!!!");
+        status = -EINVAL;
+    }
     return status;
 }

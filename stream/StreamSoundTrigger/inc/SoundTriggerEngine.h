@@ -109,6 +109,11 @@ public:
     virtual int32_t ResetBufferReaders(std::vector<PalRingBufferReader *> &reader_list) = 0;
     virtual bool CheckForStartRecognition() { return false; }
     virtual int32_t ForceRecognition(StreamSoundTrigger* s) { return 0; }
+    virtual int32_t fillMmapBufInfo(struct pal_mmap_buffer *info) { return 0; }
+    virtual int32_t GetMmapPosition(StreamSoundTrigger* s, struct pal_mmap_position *position) { return 0; }
+    virtual void PushFakeDetection(StreamSoundTrigger *s) { return; };
+    virtual bool IsBatchMode() { return false; }
+    virtual int32_t ReadIfBatchMode() { return 0; }
 
     uint32_t UsToBytes(uint64_t input_us);
     uint32_t FrameToBytes(uint32_t frames);

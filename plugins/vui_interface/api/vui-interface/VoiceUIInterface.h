@@ -158,7 +158,9 @@ typedef enum {
     PARAM_TIUV_THRESHOLD_CONFIG = 37,
     PARAM_TIUV_DETECTION_RESULT = 38,
     PARAM_BUFFERING_MODE_CONFIG = 39,
-    PARAM_ID_MAX = 40,
+    PARAM_MMAP_START_POSITION = 40,
+    PARAM_MMAP_BYTES_TO_READ = 41,
+    PARAM_ID_MAX = 42,
     // custom param id should be in format like
     // PARAM_ID_MAX + x
 } intf_param_id_t;

@@ -131,6 +131,7 @@ class SVAInterface: public VoiceUIInterface {
     int32_t GetMMAModeBitPayload(vui_intf_param_t *param);
     int32_t GetTIUVThresholdConfig(vui_intf_param_t *param);
     int32_t GetBufferingModeConfig(vui_intf_param_t *param);
+    int32_t SetBufferingModeConfig(vui_intf_param_t *param);
 
     int32_t SetModelState(void *s, bool state);
     void SetStreamAttributes(struct pal_stream_attributes *attr);
@@ -172,7 +173,8 @@ class SVAInterface: public VoiceUIInterface {
     uint32_t wakeup_payload_size_;
     uint8_t *ftrt_data_;
     uint32_t ftrt_data_size_;
-
+    uint32_t start_position_;
+    uint32_t bytes_to_read_;
     bool sm_merged_;
     struct detection_event {
         union {

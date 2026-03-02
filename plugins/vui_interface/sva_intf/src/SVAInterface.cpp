@@ -394,6 +394,18 @@ int32_t SVAInterface::SetParameter(intf_param_id_t param_id,
                 ST_SM_ID_SVA_S_STAGE_USER, param->data, 0);
             break;
         }
+        case PARAM_BUFFERING_MODE_CONFIG: {
+            status = SetBufferingModeConfig(param);
+            break;
+        }
+        case PARAM_MMAP_START_POSITION: {
+            start_position_ = *(uint32_t *)param->data;
+            break;
+        }
+        case PARAM_MMAP_BYTES_TO_READ: {
+            bytes_to_read_ = *(uint32_t *)param->data;
+            break;
+        }
         default:
             ALOGE("%s: %d: Unsupported param id %d",
                 __func__, __LINE__, param_id);
@@ -518,6 +530,12 @@ int32_t SVAInterface::GetParameter(intf_param_id_t param_id,
             break;
         case PARAM_BUFFERING_MODE_CONFIG:
             status = GetBufferingModeConfig(param);
+            break;
+        case PARAM_MMAP_BYTES_TO_READ:
+            *((size_t *)param->data) = bytes_to_read_;
+            break;
+        case PARAM_MMAP_START_POSITION:
+            param->data = &start_position_;
             break;
         default:
             ALOGE("%s: %d: Unsupported param id %d",
@@ -1535,6 +1553,8 @@ int32_t SVAInterface::GenerateCallbackEvent(void *s,
             opaque_size = sizeof(struct st_param_header) +
                 sizeof(struct event_id_mma_detection_event_t) +
                 ext_payload_size;
+        } else if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+            opaque_size = sizeof(struct st_param_header) + sizeof(struct st_mmap_index_info);
         }
         event_size = sizeof(struct pal_st_generic_recognition_event) + opaque_size;
         generic_event = (struct pal_st_generic_recognition_event *)
@@ -1616,6 +1636,15 @@ int32_t SVAInterface::PackDetectionOpaqueData(void *s,
             opaque_data += sizeof(struct event_id_mma_detection_event_t);
             FillExtendedDetectionPayload(s, opaque_data, ext_payload_size);
         }
+        return 0;
+    } else if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+        param_hdr = (struct st_param_header *)opaque_data;
+        param_hdr->key_id = ST_PARAM_KEY_MMAP_READ_INDEX;
+        param_hdr->payload_size = sizeof(struct st_mmap_index_info);
+        opaque_data += sizeof(struct st_param_header);
+        struct st_mmap_index_info *index_info = (struct st_mmap_index_info *)opaque_data;
+        index_info->bytes_to_read = bytes_to_read_;
+        index_info->start_position = start_position_;
         return 0;
     }
 
@@ -3842,6 +3871,21 @@ int32_t SVAInterface::GetBufferingModeConfig(vui_intf_param_t *param) {
         return -EINVAL;
     }
 
+    param->data = (void *)&hist_cap_mode_config_;
+    param->size = sizeof(param_id_history_buffer_mode_t);
+
+    ALOGE("%s: %d: Returning mode %d", __func__, __LINE__, hist_cap_mode_config_.data_flow_mode);
+
+    return 0;
+}
+
+int32_t SVAInterface::SetBufferingModeConfig(vui_intf_param_t *param) {
+    int32_t status = 0;
+    if (!param) {
+        ALOGE("%s: %d: Invalid param", __func__, __LINE__);
+        return -EINVAL;
+    }
+
     if (hist_cap_mode_config_.data_flow_mode) {
         if (param->size == 0) {
             ALOGE("%s: %d: Invalid batch size for batching mode",
@@ -3851,10 +3895,7 @@ int32_t SVAInterface::GetBufferingModeConfig(vui_intf_param_t *param) {
             hist_cap_mode_config_.batch_size_ms = param->size;
         }
     }
-    param->data = (void *)&hist_cap_mode_config_;
-    param->size = sizeof(param_id_history_buffer_mode_t);
-
-    return 0;
+   return status;
 }
 
 int32_t SVAInterface::SetModelState(void *s, bool state) {
@@ -4009,8 +4050,9 @@ int32_t SVAInterface::RegisterModel(void *s,
                     if (module_type_ == ST_MODULE_TYPE_MMA) {
                         mma_mode_bit_config_ = *(uint32_t *)(*iter).data;
                     } else if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
-                        hist_cap_mode_config_.data_flow_mode =
-                            *(uint32_t *)(*iter).data;
+                        hist_cap_mode_config_.data_flow_mode = *(uint32_t *)(*iter).data;
+                        ALOGI("%s: %d: data flow mode updated to flag as %d",
+                              __func__, __LINE__, hist_cap_mode_config_.data_flow_mode);
                     }
                 }
             }

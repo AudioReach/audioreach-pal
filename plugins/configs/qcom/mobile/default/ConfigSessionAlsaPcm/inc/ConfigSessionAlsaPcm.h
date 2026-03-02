@@ -23,5 +23,9 @@ int32_t configureInCallRxMFC(SessionAlsaPcm* session, std::shared_ptr<ResourceMa
 int reconfigureModule(SessionAlsaPcm* session, PayloadBuilder* builder, uint32_t tagID,
                         const char* BE, struct sessionToPayloadParam *data);
 int32_t reconfigureInCallMusicStream(struct pal_media_config config, PayloadBuilder* builder);
+int32_t handleEventRegistration(SessionAlsaPcm* session, int isRegister, mixer* mxr,
+                                std::vector<std::pair<int32_t, std::string>> txAifBackEnds, std::vector<int> pcmDevIds);
+uint32_t getMiid(SessionAlsaPcm* session, uint64_t eventId,
+                 std::vector<std::pair<int32_t, std::string>> txAifBackEnds, std::vector<int> pcmDevIds);
 
 #endif

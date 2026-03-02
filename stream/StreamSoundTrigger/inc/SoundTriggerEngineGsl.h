@@ -74,7 +74,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
                             uint32_t pre_roll_duration) override;
     void GetUpdatedBufConfig(uint32_t *hist_buffer_duration,
                             uint32_t *pre_roll_duration) override;
-     void SetDetected(int32_t detection_state __unused) {};
+    void SetDetected(int32_t detection_state __unused) {};
     int32_t GetParameters(uint32_t param_id, void **payload) override;
     int32_t ConnectSessionDevice(
         StreamSoundTrigger* stream_handle,
@@ -108,7 +108,11 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     int32_t ResetBufferReaders(std::vector<PalRingBufferReader *> &reader_list) override;
     bool CheckForStartRecognition() override;
     int32_t ForceRecognition(StreamSoundTrigger* s) override;
-
+    int32_t fillMmapBufInfo(struct pal_mmap_buffer *info) override;
+    int32_t GetMmapPosition(StreamSoundTrigger* s, struct pal_mmap_position *position) override;
+    void PushFakeDetection(StreamSoundTrigger *s) override;
+    bool IsBatchMode() override { return batch_mode_; }
+    int32_t ReadIfBatchMode() override;
  private:
     static void EventProcessingThread(SoundTriggerEngineGsl *gsl_engine);
     static void HandleSessionCallBack(uint64_t hdl, uint32_t event_id, void *data,
@@ -131,6 +135,8 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     int32_t UpdateEngineConfigOnStart(StreamSoundTrigger *s);
     int32_t UpdateConfigPDK(uint32_t model_id);
     int32_t UpdateConfigsToSession(StreamSoundTrigger *s);
+    int32_t BytesToRead(StreamSoundTrigger *s, size_t& byte_to_read);
+    int32_t ReadMmapBufWriteToRingBuf(size_t& offset, size_t size_to_read, FILE* dsp_output_fd);
     void UpdateState(eng_state_t state);
     bool IsEngineActive();
     std::vector<StreamSoundTrigger *> GetBufferingStreams();
@@ -163,6 +169,9 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     bool is_multi_model_supported_;
     bool is_qc_wakeup_config_;
     bool is_crr_dev_using_ext_ec_;
+    bool client_read_from_mmap_buffer_;
+    bool batch_mode_;
+    uint32_t return_real_mmap_position_;
     uint32_t lpi_miid_;
     uint32_t nlpi_miid_;
     bool use_lpi_;
@@ -173,6 +182,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     uint32_t mmap_write_position_;
     uint64_t kw_transfer_latency_;
     int32_t ec_ref_count_;
+    int64_t mmap_position_time_;
     std::map<StreamSoundTrigger*, ChronoSteadyClock_t> detection_time_map_;
     std::mutex state_mutex_;
     std::mutex eos_mutex_;

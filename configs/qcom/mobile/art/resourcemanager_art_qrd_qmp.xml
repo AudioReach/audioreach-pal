@@ -1897,10 +1897,6 @@
                 <param version="0x0103" />
                 <param enable_failure_detection="false" />
                 <param notify_second_stage_failure="false" />
-                <param mmap_enable="true" />
-                <param mmap_buffer_duration="5000" />
-                <!-- 5ms duration of data -->
-                <param mmap_frame_length="5" />
                 <!-- Move this flag to common_config if ACD/Sensor PCM Data support car mode in the future -->
                 <param transit_to_non_lpi_on_charging="false" />
                 <!-- whether concurrent detection is supported across different VoiceUI sessions(SVA/Hotword/MMA)-->
@@ -1914,6 +1910,10 @@
                 <param vendor_uuid="68ab2d40-e860-11e3-95ef-0002a5d5c51b" />
                 <param interface_plugin_lib="sva_plugin.so" />
                 <param merge_first_stage_sound_models="false" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <!-- Property for extended detection payload, disabled by default -->
                 <!-- OEM can enable this by adding properties defined in SoundTriggerUtils.h-->
                 <!-- Example: param detection_property_list="0x10001,0x10002,0x10003,0x10004"-->
@@ -2011,6 +2011,10 @@
                 <param interface_plugin_lib="hotword_plugin.so" />
                 <param get_module_version="false" />
                 <param merge_first_stage_sound_models="false" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <param capture_keyword="2000" />
                 <param client_capture_read_delay="2000" />
                 <param kw_start_tolerance="100" />
@@ -2044,6 +2048,10 @@
                 <param vendor_uuid="c51c508a-ee1b-11ec-8ea0-0242ac120002" />
                 <param interface_plugin_lib="customva_plugin.so" />
                 <param merge_first_stage_sound_models="false" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->
@@ -2079,6 +2087,10 @@
                 <name>QC_MMA</name>
                 <param vendor_uuid="018f8585-3890-7419-b0f3-e5b6ec961d9c" />
                 <param interface_plugin_lib="sva_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->
@@ -2119,6 +2131,10 @@
                 <name>QC_HIST_CAP</name>
                 <param vendor_uuid="1b9cabd9-4eb9-4012-9766-2ce6597a9658" />
                 <param interface_plugin_lib="sva_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="120000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <!-- batch size (in ms) for BATCHING buffer mode -->
                 <param batch_size_in_ms="5000" />
                 <param capture_keyword="10000" /> <!-- Default history buffer length -->

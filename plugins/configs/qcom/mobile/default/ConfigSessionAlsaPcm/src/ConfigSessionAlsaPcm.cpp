@@ -69,6 +69,7 @@
 #include "sh_mem_pull_push_mode_api.h"
 #include "us_detect_api.h"
 #include "rx_haptics_api.h"
+#include "mma_api.h"
 #include "PayloadBuilder.h"
 #include "SessionAR.h"
 #include "ConfigSessionAlsaPcm.h"
@@ -131,6 +132,92 @@ int32_t pcmPluginPreReconfig(Stream* s, void* pluginPayload) {
     return status;
 }
 
+uint32_t getMiid(SessionAlsaPcm* session, uint64_t eventId, mixer* mxr,
+                 std::vector<std::pair<int32_t, std::string>> txAifBackEnds, std::vector<int> pcmDevIds) {
+
+    uint32_t miid = 0;
+    int tagId = 0;
+    int status = 0;
+
+    switch (eventId) {
+        case EVENT_ID_MMA_DETECTION_EVENT:
+        case EVENT_ID_DETECTION_ENGINE_GENERIC_INFO:
+            miid = session->getsvaMiid();
+            break;
+        case EVENT_ID_NMT_STATUS:
+            miid = session->getNmtMiid();
+            break;
+        case EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER:
+            tagId = SHMEM_ENDPOINT;
+            break;
+        case EVENT_ID_ACD_DETECTION_EVENT :
+            tagId = CONTEXT_DETECTION_ENGINE;
+            break;
+        case EVENT_ID_ASR_OUTPUT :
+            tagId = TAG_MODULE_ASR;
+            break;
+        case EVENT_ID_SDZ_OUTPUT:
+            tagId = TAG_MODULE_SDZ;
+            break;
+        case EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK:
+            tagId = SHMEM_ENDPOINT;
+            break;
+        default :
+            PAL_ERR(LOG_TAG, "Event id %x not handled!!!", eventId);
+    }
+
+    if (miid == 0 && tagId != 0) {
+        status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                        txAifBackEnds[0].second.data(), tagId, &miid);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
+        }
+    }
+    return miid;
+}
+
+int32_t handleEventRegistration(SessionAlsaPcm* session, int isRegister, mixer* mxr,
+                                std::vector<std::pair<int32_t, std::string>> txAifBackEnds, std::vector<int> pcmDevIds) {
+
+    int32_t status = 0;
+    uint32_t miid = 0;
+    struct agm_event_reg_cfg *vai_event_cfg = nullptr;
+    int payload_size = 0;
+    std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
+
+    session->getEventPayload(payloadListParam);
+    for (int i = 0; i < payloadListParam.size(); i++) {
+        payload_size = sizeof(struct agm_event_reg_cfg) +
+                        payloadListParam[i]->payloadSize;
+        vai_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+        if (!vai_event_cfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for acd event config");
+            status = -EINVAL;
+            goto exit;
+        }
+        miid = getMiid(session, payloadListParam[i]->eventId, mxr, txAifBackEnds, pcmDevIds);
+        if (miid == 0) {
+            PAL_ERR(LOG_TAG, "Failed to get miid!!!");
+            return -EINVAL;
+        }
+        vai_event_cfg->event_config_payload_size = payloadListParam[i]->payloadSize;
+        vai_event_cfg->is_register = isRegister;
+        vai_event_cfg->event_id = payloadListParam[i]->eventId;
+        vai_event_cfg->module_instance_id = miid;
+        if (payloadListParam[i]->payloadSize > 0) {
+            memcpy(vai_event_cfg->event_config_payload,
+                    payloadListParam[i]->payload,
+                    payloadListParam[i]->payloadSize);
+        }
+        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
+                                (void *)vai_event_cfg, payload_size);
+        free(vai_event_cfg);
+        miid = 0;
+    }
+exit:
+    return status;
+}
+
 int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
 {
     int32_t status = 0;
@@ -151,9 +238,6 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     PluginPayload* ppld = nullptr;
     struct agm_event_reg_cfg event_cfg = {};
     struct pal_media_config codecConfig = {};
-    struct agm_event_reg_cfg *acd_event_cfg = nullptr;
-    struct agm_event_reg_cfg *asr_event_cfg = nullptr;
-    struct agm_event_reg_cfg *nmt_event_cfg = nullptr;
     std::vector<int> pcmDevIds;
     int DeviceId = 0;
     int tagId = 0;
@@ -192,25 +276,11 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         goto exit;
     }
 
-    if (sAttr.type == PAL_STREAM_VOICE_UI) {
-        uint32_t svaMiid;
-        payload_size = sizeof(struct agm_event_reg_cfg);
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        event_cfg.event_config_payload_size = 0;
-        event_cfg.is_register = 1;
-        event_cfg.event_id = s->getCallbackEventId();
-        svaMiid = session->getsvaMiid();
-        event_cfg.module_instance_id = svaMiid;
-        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-            (void *)&event_cfg, payload_size);
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        event_cfg.event_config_payload_size = 0;
-        event_cfg.is_register = 1;
-        event_cfg.event_id = EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER;
-        tagId = SHMEM_ENDPOINT;
-        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-            txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
-            payload_size);
+    if (sAttr.type == PAL_STREAM_VOICE_UI ||
+        sAttr.type == PAL_STREAM_ACD ||
+        sAttr.type == PAL_STREAM_ASR ||
+        sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+        handleEventRegistration(session, 1, mxr, txAifBackEnds, pcmDevIds);
     } else if (sAttr.type == PAL_STREAM_ULTRASOUND && session->getRegisterForEvents()) {
         payload_size = sizeof(struct agm_event_reg_cfg);
         std::vector<int> pcmDevTxIds;
@@ -228,33 +298,6 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         SessionAlsaUtils::registerMixerEvent(mxr, DeviceId,
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
-    } else if (sAttr.type == PAL_STREAM_ACD) {
-        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
-        session->getEventPayload(payloadListParam);
-        for (int i = 0; i < payloadListParam.size(); i++) {
-            payload_size = sizeof(struct agm_event_reg_cfg) +
-                           payloadListParam[i]->payloadSize;
-            acd_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
-            if (!acd_event_cfg) {
-                PAL_ERR(LOG_TAG, "Failed to allocate memory for acd event config");
-                status = -EINVAL;
-                goto exit;
-            }
-            memset(&event_cfg, 0, sizeof(event_cfg));
-            acd_event_cfg->event_config_payload_size =
-                                     payloadListParam[i]->payloadSize;
-            acd_event_cfg->is_register = 1;
-            acd_event_cfg->event_id = payloadListParam[i]->eventId;
-            memcpy(acd_event_cfg->event_config_payload,
-                   payloadListParam[i]->payload,
-                   payloadListParam[i]->payloadSize);
-            SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                                                 txAifBackEnds[0].second.data(),
-                                                 CONTEXT_DETECTION_ENGINE,
-                                                 (void *)acd_event_cfg,
-                                                  payload_size);
-            free(acd_event_cfg);
-        }
     } else if (sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
         status = register_asps_event(1, session, mxr);
     } else if (sAttr.type == PAL_STREAM_HAPTICS &&
@@ -267,74 +310,9 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
                 rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, (void *)&event_cfg,
                 payload_size);
-    } else if (sAttr.type == PAL_STREAM_ASR) {
-        uint32_t asrMiid = session->getAsrMiid();
-        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
-        session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty()) {
-            PAL_ERR(LOG_TAG, "payload list is empty!!!");
-            status = -EINVAL;
-            goto exit;
-        }
-        for (int i = 0; i < payloadListParam.size(); i++) {
-            payload_size = sizeof(struct agm_event_reg_cfg) +
-                           payloadListParam[i]->payloadSize;
-            asr_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
-            if (!asr_event_cfg) {
-                PAL_ERR(LOG_TAG, "Failed to allocate memory for asr event config");
-                status = -EINVAL;
-                goto exit;
-            }
-            memset(&event_cfg, 0, sizeof(event_cfg));
-            asr_event_cfg->event_config_payload_size =
-                                     payloadListParam[i]->payloadSize;
-            asr_event_cfg->is_register = 1;
-            asr_event_cfg->event_id = payloadListParam[i]->eventId;
-            asr_event_cfg->module_instance_id = asr_event_cfg->event_id == EVENT_ID_SDZ_OUTPUT ?
-                                                session->getSdzMiid() : session->getAsrMiid();
-            memcpy(asr_event_cfg->event_config_payload,
-                   payloadListParam[i]->payload,
-                   payloadListParam[i]->payloadSize);
-            SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                   (void *)asr_event_cfg, payload_size);
-            free(asr_event_cfg);
-        }
     } else if (sAttr.info.opt_stream_info.isBitPerfect) {
         PAL_DBG(LOG_TAG, "Config not needed for BitPerfect Playback");
         goto exit;
-    } else if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
-        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
-        session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty()) {
-            PAL_ERR(LOG_TAG, "payload list is empty!!!");
-            status = -EINVAL;
-            goto exit;
-        }
-        s->setParameters(PAL_PARAM_ID_NMT_OUTPUT, (void*)payload);
-        for (int i = 0; i < payloadListParam.size(); i++) {
-            if (payloadListParam[i]->eventId == EVENT_ID_NMT_STATUS) {
-                payload_size = sizeof(struct agm_event_reg_cfg) +
-                               payloadListParam[i]->payloadSize;
-                nmt_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
-                if (!nmt_event_cfg) {
-                    PAL_ERR(LOG_TAG, "Failed to allocate memory for nmt event config");
-                    status = -EINVAL;
-                    goto exit;
-                }
-                memset(&event_cfg, 0, sizeof(event_cfg));
-                nmt_event_cfg->event_config_payload_size =
-                                            payloadListParam[i]->payloadSize;
-                nmt_event_cfg->is_register = 1;
-                nmt_event_cfg->event_id = payloadListParam[i]->eventId;
-                nmt_event_cfg->module_instance_id = session->getNmtMiid();
-                memcpy(nmt_event_cfg->event_config_payload,
-                       payloadListParam[i]->payload,
-                       payloadListParam[i]->payloadSize);
-                SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                                       (void *)nmt_event_cfg, payload_size);
-                free(nmt_event_cfg);
-            }
-        }
     }
 
     switch (sAttr.direction) {
@@ -1351,32 +1329,11 @@ silence_det_setup_done:
             break;
     }
 
-    if (sAttr.type == PAL_STREAM_VOICE_UI) {
-        payload_size = sizeof(struct agm_event_reg_cfg);
-        uint32_t svaMiid;
-        svaMiid = session->getsvaMiid();
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        event_cfg.event_config_payload_size = 0;
-        event_cfg.is_register = 0;
-        event_cfg.event_id = s->getCallbackEventId();
-        event_cfg.module_instance_id = svaMiid;
-        if (!pcmDevIds.size()) {
-            PAL_ERR(LOG_TAG, "pcmDevIds not found.");
-            status = -EINVAL;
-            goto exit;
-        }
-        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-            (void *)&event_cfg, payload_size);
-
-        memset(&event_cfg, 0, sizeof(event_cfg));
-        event_cfg.event_config_payload_size = 0;
-        event_cfg.is_register = 0;
-        event_cfg.event_id = EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER;
-        tagId = SHMEM_ENDPOINT;
-        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-            txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
-            payload_size);
-
+    if (sAttr.type == PAL_STREAM_VOICE_UI ||
+        sAttr.type == PAL_STREAM_ACD ||
+        sAttr.type == PAL_STREAM_ASR ||
+        sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
+        handleEventRegistration(session, 0, mxr, txAifBackEnds, pcmDevIds);
     } else if (sAttr.type == PAL_STREAM_ULTRASOUND && session->getRegisterForEvents()) {
         payload_size = sizeof(struct agm_event_reg_cfg);
         std::vector<int> pcmDevTxIds;
@@ -1395,39 +1352,6 @@ silence_det_setup_done:
         SessionAlsaUtils::registerMixerEvent(mxr, DeviceId,
                 txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
                 payload_size);
-    } else if (sAttr.type == PAL_STREAM_ACD || sAttr.type == PAL_STREAM_ASR) {
-        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
-        session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty() && sAttr.type == PAL_STREAM_ASR) {
-            PAL_ERR(LOG_TAG, "payload list is empty!!!");
-            status = -EINVAL;
-            goto exit;
-        }
-        for (int i = 0; i < payloadListParam.size(); i++) {
-            payload_size = sizeof(struct agm_event_reg_cfg);
-            memset(&event_cfg, 0, sizeof(event_cfg));
-            event_cfg.event_config_payload_size =  0;
-            event_cfg.is_register = 0;
-            event_cfg.event_id = payloadListParam[i]->eventId;
-            if (sAttr.type == PAL_STREAM_ACD) {
-                tagId = CONTEXT_DETECTION_ENGINE;
-            } else if (payloadListParam[i]->eventId == EVENT_ID_SDZ_OUTPUT) {
-                tagId = TAG_MODULE_SDZ;
-            } else {
-                tagId = TAG_MODULE_ASR;
-            }
-            tagId = (sAttr.type == PAL_STREAM_ACD ? CONTEXT_DETECTION_ENGINE :
-                                        TAG_MODULE_ASR);
-            if (txAifBackEnds.empty() || !pcmDevIds.size()) {
-                    PAL_ERR(LOG_TAG, "pcmDevIds not found.");
-                    status = -EINVAL;
-                    goto exit;
-            }
-
-            SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                    txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
-                    payload_size);
-        }
     } else if(sAttr.type == PAL_STREAM_CONTEXT_PROXY) {
         status = register_asps_event(0, session, mxr);
     } else if(sAttr.type == PAL_STREAM_HAPTICS &&
@@ -1441,38 +1365,7 @@ silence_det_setup_done:
         SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
                 rxAifBackEnds[0].second.data(), MODULE_HAPTICS_GEN, (void *)&event_cfg,
                 payload_size);
-    }else if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
-        std::vector<SessionAlsaPcm::eventPayload *> payloadListParam;
-        session->getEventPayload(payloadListParam);
-        if (payloadListParam.empty()) {
-            PAL_ERR(LOG_TAG, "payload list is empty!!!");
-            status = -EINVAL;
-           goto exit;
-        }
-        for (int i = 0; i < payloadListParam.size(); i++) {
-             if (payloadListParam[i]->eventId == EVENT_ID_NMT_STATUS) {
-                 payload_size = sizeof(struct agm_event_reg_cfg);
-                 memset(&event_cfg, 0, sizeof(event_cfg));
-                 event_cfg.event_config_payload_size = 0;
-                 event_cfg.is_register = 0;
-                 event_cfg.event_id = payloadListParam[i]->eventId;
-                 tagId = TRANSLATION_NMT;
-                 if(sAttr.direction == PAL_AUDIO_INPUT) {
-                    if (!txAifBackEnds.empty() && pcmDevIds.size() > 0) {
-                       SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                                                   txAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
-                                                   payload_size);
-                     }
-                 } else if (sAttr.direction == PAL_AUDIO_OUTPUT) {
-                     if (!rxAifBackEnds.empty() && pcmDevIds.size() > 0) {
-                         SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
-                                                   rxAifBackEnds[0].second.data(), tagId, (void *)&event_cfg,
-                                                   payload_size);
-                     }
-                 }
-             }
-        }
-     }
+    }
 exit:
     PAL_DBG(LOG_TAG, "Exit status: %d", status);
     return status;

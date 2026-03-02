@@ -60,6 +60,7 @@
 #define ST_LAB_DEFERRED_STOP_DELAY_MS (10000)
 #define ST_MODEL_TYPE_SHIFT           (16)
 #define ST_MAX_FSTAGE_CONF_LEVEL      (100)
+#define HIST_BUF_INBUF_COUNT          (1920)
 
 ST_DBG_DECLARE(static int lab_cnt = 0);
 std::map<st_module_type_t, vui_intf_plugin_t *> vui_intf_plugin_map;
@@ -112,6 +113,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     second_stage_processing_ = false;
     is_backend_shared_ = false;
     is_abort_event_notifying_ = false;
+    batchModeReadDone_ = false;
     gsl_engine_model_ = nullptr;
     gsl_engine_ = nullptr;
     vui_intf_ = nullptr;
@@ -1062,7 +1064,7 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
     } while (!lock_status && (GetCurrentStateId() == ST_STATE_ACTIVE ||
         GetCurrentStateId() == ST_STATE_BUFFERING));
 
-    if ((det_type == GMM_DETECTED &&
+    if (((det_type == GMM_DETECTED || det_type == THRESHOLD_REACHED) &&
          GetCurrentStateId() != ST_STATE_ACTIVE) ||
         ((det_type & DETECTION_TYPE_SS) &&
          GetCurrentStateId() != ST_STATE_BUFFERING)) {
@@ -1072,7 +1074,7 @@ int32_t StreamSoundTrigger::SetEngineDetectionState(int32_t det_type) {
         return -EINVAL;
     }
 
-    if (det_type == GMM_DETECTED) {
+    if (det_type == GMM_DETECTED || det_type == THRESHOLD_REACHED) {
         rm->acquireWakeLock();
         if (reader_)
             reader_->updateState(READER_PREPARED);
@@ -1754,19 +1756,32 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
         hist_buffer_duration, pre_roll_duration);
 
     // update input buffer size for mmap usecase
-    if (vui_ptfm_info_->GetMmapEnable()) {
-        mmap_buf_len = vui_ptfm_info_->GetMmapBufferDuration();
-        mmap_frame_len = vui_ptfm_info_->GetMmapFrameLength();
-        inBufSize = mmap_frame_len *
-            ((hist_buffer_duration + mmap_buf_len - 1) / mmap_buf_len) *
-            sm_cfg_->GetSampleRate() * sm_cfg_->GetBitWidth() *
-            sm_cfg_->GetOutChannels() / (MS_PER_SEC * BITS_PER_BYTE);
-        if (!inBufSize) {
-            PAL_ERR(LOG_TAG, "Invalid frame size");
-            status = -EINVAL;
-            goto error_exit;
+    if (sm_cfg_->GetMmapEnable()) {
+        if (model_type_ == ST_MODULE_TYPE_HIST_CAP) {
+            mmap_buf_len = (sm_cfg_->GetMmapBufferDuration() / MS_PER_SEC) *
+                                  mStreamAttr->in_media_config.sample_rate *
+                                  mStreamAttr->in_media_config.bit_width *
+                                  mStreamAttr->in_media_config.ch_info.channels / BITS_PER_BYTE;
+            mmap_frame_len = sm_cfg_->GetMmapFrameLength();
+            inBufCount = HIST_BUF_INBUF_COUNT;
+            int rem = mmap_buf_len % inBufCount;
+            if (rem > 0) mmap_buf_len += (inBufCount - rem);
+            inBufSize = mmap_buf_len / inBufCount;
+            PAL_VERBOSE(LOG_TAG, "mmap_buf_len : %d, inBufCount : %d, inBufSize : %d", mmap_buf_len, inBufCount, inBufSize);
         } else {
-            inBufCount = (mmap_buf_len + mmap_frame_len - 1) / mmap_frame_len;
+            mmap_buf_len = sm_cfg_->GetMmapBufferDuration();
+            mmap_frame_len = sm_cfg_->GetMmapFrameLength();
+            inBufSize = mmap_frame_len *
+                ((hist_buffer_duration + mmap_buf_len - 1) / mmap_buf_len) *
+                sm_cfg_->GetSampleRate() * sm_cfg_->GetBitWidth() *
+                sm_cfg_->GetOutChannels() / (MS_PER_SEC * BITS_PER_BYTE);
+            if (!inBufSize) {
+                PAL_ERR(LOG_TAG, "Invalid frame size");
+                status = -EINVAL;
+                goto error_exit;
+            } else {
+                inBufCount = (mmap_buf_len + mmap_frame_len - 1) / mmap_frame_len;
+            }
         }
     }
 
@@ -2850,9 +2865,13 @@ int32_t StreamSoundTrigger::StActive::ProcessEvent(
         case ST_EV_DETECTED: {
             StDetectedEventConfigData *data =
                 (StDetectedEventConfigData *) ev_cfg->data_.get();
-            if (data->det_type_ != GMM_DETECTED)
+            if (data->det_type_ != GMM_DETECTED && data->det_type_ != THRESHOLD_REACHED)
                 break;
-            if (!st_stream_.rec_config_->capture_requested &&
+
+            if (data->det_type_ == THRESHOLD_REACHED) {
+                st_stream_.batchModeReadDone_ = false;
+                TransitTo(ST_STATE_BUFFERING);
+            } else if (!st_stream_.rec_config_->capture_requested &&
                 st_stream_.engines_.size() == 1) {
                 TransitTo(ST_STATE_DETECTED);
             } else {
@@ -3405,6 +3424,9 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
                 status = -EINVAL;
                 break;
             }
+            if (!st_stream_.batchModeReadDone_)
+                st_stream_.gsl_engine_->ReadIfBatchMode();
+            st_stream_.batchModeReadDone_ = true;
             status = st_stream_.reader_->read(buf->buffer, buf->size);
             if (st_stream_.vui_ptfm_info_->GetEnableDebugDumps() && status >= 0) {
                 ST_DBG_FILE_WRITE(st_stream_.lab_fd_, buf->buffer, status);
@@ -3423,6 +3445,7 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
             }
             if (st_stream_.reader_)
                 st_stream_.reader_->updateState(READER_DISABLED);
+            st_stream_.batchModeReadDone_ = false;
 
             // post delayed stop in case client does not send next start
             st_stream_.PostDelayedStop();
@@ -3734,6 +3757,14 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
                 PAL_ERR(LOG_TAG, "Failed to set EC Ref in gsl engine");
             }
             break;
+        }
+        case ST_EV_FORCE_RECOGNITION: {
+             if (st_stream_.gsl_engine_->IsBatchMode()) {
+                 st_stream_.gsl_engine_->ForceRecognition(&st_stream_);
+             } else {
+                 PAL_ERR(LOG_TAG, "Invalid state for force recognition, status %d", status);
+             }
+             break;
         }
         default: {
             PAL_DBG(LOG_TAG, "Unhandled event %d", ev_cfg->id_);
@@ -4340,6 +4371,49 @@ int32_t StreamSoundTrigger::FstageUnload() {
     if (0 != status) {
         PAL_ERR(LOG_TAG, "Failed to reconfigure gsl engine, status %d",
             status);
+    }
+    return status;
+}
+
+int32_t StreamSoundTrigger::createMmapBuffer(int32_t min_size_frames,
+                                             struct pal_mmap_buffer *info) {
+    int32_t status = 0;
+    std::unique_lock<std::mutex> lck(mStreamMutex);
+
+    if (GetCurrentStateId() != ST_STATE_BUFFERING) {
+        PAL_ERR(LOG_TAG, "Stream is not in buffering state!!!");
+        status = -EINVAL;
+    } else if (gsl_engine_) {
+        status = gsl_engine_->fillMmapBufInfo(info);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to get mmap buffer info!!!");
+            status = -EINVAL;
+        }
+    } else {
+        PAL_ERR(LOG_TAG, "No GSL engine associated!!!");
+        status = -EINVAL;
+    }
+
+    return status;
+}
+
+int32_t StreamSoundTrigger::GetMmapPosition(struct pal_mmap_position *position) {
+
+    int32_t status = 0;
+    std::unique_lock<std::mutex> lck(mStreamMutex);
+
+    if (GetCurrentStateId() != ST_STATE_BUFFERING) {
+        PAL_ERR(LOG_TAG, "Stream is not in buffering state!!!");
+        status = -EINVAL;
+    } else if (gsl_engine_) {
+        status = gsl_engine_->GetMmapPosition(this, position);
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to get mmap buffer position!!!");
+            status = -EINVAL;
+        }
+    } else {
+        PAL_ERR(LOG_TAG, "No GSL engine associated!!!");
+        status = -EINVAL;
     }
 
     return status;

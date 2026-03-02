@@ -67,10 +67,11 @@ enum {
     USER_VERIFICATION_SUCCESS = 0x8,
     USER_VERIFICATION_REJECT = 0x10,
     DETECTION_TYPE_SS = 0x1E,
-    DETECTION_TYPE_ALL = 0x1F,
+    DETECTION_TYPE_ALL = 0x11F,
     KEYWORD_DETECTION_PENDING = 0x20,
     USER_VERIFICATION_PENDING = 0x40,
     SSTAGE_SUBSYSTEM_RESTART = 0x80,
+    THRESHOLD_REACHED = 0x100,
 };
 
 typedef enum {
@@ -228,6 +229,9 @@ public:
     void setVoteType(vote_type_t type) { vote_type_ = type; };
     bool isModelLoaded(listen_model_indicator_enum type);
 
+    int32_t createMmapBuffer(int32_t min_size_frames,
+                               struct pal_mmap_buffer *info) override;
+    int32_t GetMmapPosition(struct pal_mmap_position *position) override;
     std::vector<PalRingBufferReader *> GetReaders() { return reader_list_;}
 
 private:
@@ -679,5 +683,6 @@ private:
      */
     struct pal_device *dattr_specified_;
     bool conc_notified_;
+    bool batchModeReadDone_;
 };
 #endif // STREAMSOUNDTRIGGER_H_

@@ -220,7 +220,10 @@ VUIStreamConfig::VUIStreamConfig() :
     curr_child_(nullptr),
     lpi_enable_(true),
     batch_size_in_ms_(0),
-    client_handling_ssr_(false)
+    client_handling_ssr_(false),
+    mmap_buffer_duration_(0),
+    mmap_frame_length_(0),
+    mmap_enable_(false)
 {
     ext_det_prop_list_.clear();
 }
@@ -425,6 +428,12 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             batch_size_in_ms_ = std::stoi(value);
         } else if (key == "client_handling_ssr") {
             client_handling_ssr_ = (value == "true");
+        } else if (key == "mmap_enable") {
+            mmap_enable_ = (value == "true");
+        } else if (key == "mmap_buffer_duration") {
+            mmap_buffer_duration_ = std::stoi(value);
+        } else if (key == "mmap_frame_length") {
+            mmap_frame_length_ = std::stoi(value);
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }
@@ -478,9 +487,6 @@ VoiceUIPlatformInfo::VoiceUIPlatformInfo() :
     transit_to_non_lpi_on_charging_(false),
     notify_second_stage_failure_(false),
     enable_inter_concurrent_detection_(true),
-    mmap_enable_(false),
-    mmap_buffer_duration_(0),
-    mmap_frame_length_(0),
     sound_model_lib_("liblistensoundmodel2vendor.so"),
     curr_child_(nullptr)
 {
@@ -552,12 +558,6 @@ void VoiceUIPlatformInfo::HandleStartTag(const std::string& tag, const char** at
             notify_second_stage_failure_ = (value == "true");
         } else if (key == "enable_inter_va_engine_concurrent_detection") {
             enable_inter_concurrent_detection_ = (value == "true");
-        } else if (key == "mmap_enable") {
-            mmap_enable_ = (value == "true");
-        } else if (key == "mmap_buffer_duration") {
-            mmap_buffer_duration_ = std::stoi(value);
-        } else if (key == "mmap_frame_length") {
-            mmap_frame_length_ = std::stoi(value);
         } else if (key == "sound_model_lib") {
             sound_model_lib_ = value;
         } else {

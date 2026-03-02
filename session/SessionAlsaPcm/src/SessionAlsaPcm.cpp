@@ -2115,14 +2115,15 @@ void SessionAlsaPcm::setEventPayload(uint32_t event_id, void *payload, size_t pa
 
     event->eventId = event_id;
     event->payloadSize = payload_size;
-    event->payload = calloc(1, payload_size);
-    if (!event->payload) {
-        PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload");
-        free(event);
-        return;
+    if (payload_size > 0) {
+        event->payload = calloc(1, payload_size);
+        if (!event->payload) {
+            PAL_ERR(LOG_TAG, "Memory alloc failed for eventPayload");
+            free(event);
+            return;
+        }
+        memcpy(event->payload, payload, payload_size);
     }
-
-    memcpy(event->payload, payload, payload_size);
     eventPayloadList.push_back(event);
 }
 

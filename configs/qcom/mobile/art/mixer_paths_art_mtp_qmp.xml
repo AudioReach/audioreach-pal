@@ -290,6 +290,30 @@
         <ctl name="ADC2 Volume" value="16"/>
     </path>
 
+   <path name="sidetone-iir">
+        <ctl name="IIR0 Enable Band1" value="1" />
+        <ctl name="IIR0 Enable Band2" value="1" />
+        <ctl name="IIR0 Enable Band3" value="1" />
+        <ctl name="IIR0 Enable Band4" value="1" />
+        <ctl name="IIR0 Enable Band5" value="1" />
+    </path>
+
+    <path name="sidetone-headphones">
+        <path name="sidetone-iir" />
+        <ctl name="IIR0 INP0 Volume" value="54" />
+        <ctl name="IIR0 INP0 MUX" value="DEC0" />
+        <ctl name="RX INT0 MIX2 INP" value="SRC0" />
+        <ctl name="RX INT1 MIX2 INP" value="SRC0" />
+    </path>
+
+    <path name="sidetone-headphone-handset-mic">
+        <path name="sidetone-iir" />
+        <ctl name="IIR0 INP0 Volume" value="0" />
+        <ctl name="IIR0 INP0 MUX" value="DEC2" />
+        <ctl name="RX INT0 MIX2 INP" value="SRC0" />
+        <ctl name="RX INT1 MIX2 INP" value="SRC0" />
+    </path>
+
     <!-- These are actual sound device specific mixer settings -->
     <path name="qmp1-normal">
         <ctl name="QMP_MIC01 FU1 IT11 Usage Mode" value="NORMAL_DIV_4" />
@@ -1024,8 +1048,10 @@
 
     <path name="voice-tty-hco-headset-mic">
         <ctl name="TX DEC6 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX6" value="SWR_MIC5" />
+        <ctl name="TX SMIC MUX6" value="SWR_MIC1" />
         <ctl name="TX_AIF1_CAP Mixer DEC6" value="1" />
+        <ctl name="TX WSA MUX6" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX6" value="PORT1"/>
         <ctl name="ADC2 MUX" value="CH2_AMIC2" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
         <ctl name="MBHC ChMap" value="SWRM_TX3_CH3" />

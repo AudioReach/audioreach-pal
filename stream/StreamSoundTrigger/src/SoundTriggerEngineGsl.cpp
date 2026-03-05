@@ -673,7 +673,10 @@ SoundTriggerEngineGsl::SoundTriggerEngineGsl(
 
 SoundTriggerEngineGsl::~SoundTriggerEngineGsl() {
     PAL_INFO(LOG_TAG, "Enter");
-    eng_det_stat_map_.erase(this);
+    {
+        std::lock_guard<std::mutex> g(global_det_mutex_);
+        eng_det_stat_map_.erase(this);
+    }
     {
         exit_buffering_ = true;
         std::unique_lock<std::mutex> lck(mutex_);

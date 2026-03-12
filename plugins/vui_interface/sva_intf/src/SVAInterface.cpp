@@ -411,6 +411,11 @@ int32_t SVAInterface::SetParameter(intf_param_id_t param_id,
             bytes_to_read_ = *(uint32_t *)param->data;
             break;
         }
+        case PARAM_SSTAGE_MMA_DETECTION_RESULT: {
+            SetSecondStageDetStats(param->stream,
+                ST_SM_ID_SVA_S_STAGE_KWD, param->data, 0);
+            break;
+        }
         default:
             ALOGE("%s: %d: Unsupported param id %d",
                 __func__, __LINE__, param_id);
@@ -932,8 +937,13 @@ void SVAInterface::SetSecondStageDetStats(void *s,
     if (sm_info_map_.find(s) != sm_info_map_.end() && sm_info_map_[s]) {
         if (info) {
             if (type == ST_SM_ID_SVA_S_STAGE_KWD) {
-                memcpy(&sm_info_map_[s]->sec_kw_det_info,
-                    info, sizeof(struct st_det_engine_stats));
+                if (module_type_ == ST_MODULE_TYPE_MMA) {
+                    memcpy(&mma2_detection_res_, info,
+                       sizeof(struct mma2_detection_res));
+                } else {
+                    memcpy(&sm_info_map_[s]->sec_kw_det_info,
+                        info, sizeof(struct st_det_engine_stats));
+                }
             } else if (type == ST_SM_ID_SVA_S_STAGE_USER) {
                 if (module_type_ == ST_MODULE_TYPE_MMA) {
                     memcpy(&tiuv_detection_result_, info,

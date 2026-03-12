@@ -104,6 +104,7 @@ std::shared_ptr<SoundTriggerEngine> SoundTriggerEngine::Create(
     case ST_SM_ID_SVA_S_STAGE_USER:
     case ST_SM_ID_SVA_S_STAGE_UDK:
     case ST_SM_ID_SVA_S_STAGE_CTIUV:
+    case ST_SM_ID_SVA_S_STAGE_MMA:
         st_engine = std::make_shared<SoundTriggerEngineCapi>(s, type,
                                                               sm_cfg);
         if (!st_engine)

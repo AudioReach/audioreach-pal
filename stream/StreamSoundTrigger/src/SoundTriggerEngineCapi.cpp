@@ -95,7 +95,11 @@ void SoundTriggerEngineCapi::BufferThreadLoop(
             capi_engine->sec_kw_detect_state_ = 0;
             if (capi_engine->detection_type_ ==
                 ST_SM_TYPE_KEYWORD_DETECTION) {
-                status = capi_engine->StartKeywordDetection();
+                if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_KWD) {
+                    status = capi_engine->StartKeywordDetection();
+                } else if (capi_engine->engine_type_ & ST_SM_ID_SVA_S_STAGE_MMA) {
+                    status = capi_engine->StartMMADetection();
+                }
                 /*
                  * StreamSoundTrigger may call stop recognition to second stage
                  * engines when one of the second stage engine reject detection.
@@ -398,6 +402,246 @@ exit:
     }
     if (result_cfg_ptr)
         free(result_cfg_ptr);
+
+    PAL_DBG(LOG_TAG, "Exit, status %d", status);
+
+    return status;
+}
+
+int32_t SoundTriggerEngineCapi::StartMMADetection()
+{
+    int32_t status = 0;
+    char *process_input_buff = nullptr;
+    capi_v2_err_t rc = CAPI_V2_EOK;
+    capi_v2_stream_data_t *stream_input = nullptr;
+    stage2_mma_detection_result_t *result_cfg_ptr = nullptr;
+    int32_t read_size = 0;
+    capi_v2_buf_t capi_result;
+    size_t lab_buffer_size = 0;
+    bool first_buffer_processed = false;
+    FILE *keyword_detection_fd = nullptr;
+    ChronoSteadyClock_t process_start;
+    ChronoSteadyClock_t process_end;
+    ChronoSteadyClock_t capi_call_start;
+    ChronoSteadyClock_t capi_call_end;
+    uint64_t process_duration = 0;
+    uint64_t total_capi_process_duration = 0;
+    uint64_t total_capi_get_param_duration = 0;
+    uint32_t hist_data_size = 0, min_hist_data_size = 0;
+    uint32_t frame_size = 0, proc_size = 0;
+    uint32_t processed_sz = 0;
+    vui_intf_param_t param = {};
+    struct buffer_config buf_config = {};
+    int32_t detection_status = 0;
+
+    PAL_DBG(LOG_TAG, "Enter");
+    if (!reader_) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid ring buffer reader");
+        goto exit;
+    }
+
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_OPEN_WR(keyword_detection_fd, ST_DEBUG_DUMP_LOCATION,
+            "keyword_detection", "bin", keyword_detection_cnt);
+        PAL_DBG(LOG_TAG, "keyword detection data stored in: keyword_detection_%d.bin",
+            keyword_detection_cnt);
+        keyword_detection_cnt++;
+    }
+
+    param.data = (void *)&buf_config;
+    param.size = sizeof(struct buffer_config);
+    status = vui_intf_->GetParameter(PARAM_FSTAGE_BUFFERING_CONFIG, &param);
+    if (status) {
+        PAL_ERR(LOG_TAG, "Failed to get buffering config, status %d", status);
+        goto exit;
+    }
+
+    hist_data_size = reader_->getUnreadSize() % reader_->getBufferSize();
+    min_hist_data_size = UsToBytes(
+        buf_config.hist_buffer_duration * US_PER_SEC / MS_PER_SEC);
+    if (hist_data_size < min_hist_data_size)
+        hist_data_size = min_hist_data_size;
+    frame_size = UsToBytes(
+        ss_cfg_->GetProcFrameSize() * US_PER_SEC / MS_PER_SEC);
+    proc_size = hist_data_size;
+
+    memset(&capi_result, 0, sizeof(capi_result));
+    process_input_buff = (char*)calloc(1, proc_size);
+    if (!process_input_buff) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "failed to allocate process input buff, status %d",
+                status);
+        goto exit;
+    }
+
+    stream_input = (capi_v2_stream_data_t *)
+                   calloc(1, sizeof(capi_v2_stream_data_t));
+    if (!stream_input) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "failed to allocate stream input, status %d", status);
+        goto exit;
+    }
+
+    stream_input->buf_ptr = (capi_v2_buf_t*)calloc(1, sizeof(capi_v2_buf_t));
+    if (!stream_input->buf_ptr) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "failed to allocate stream_input->buf_ptr, status %d",
+                status);
+        goto exit;
+    }
+
+    result_cfg_ptr = (stage2_mma_detection_result_t*)calloc(1, sizeof(stage2_mma_detection_result_t));
+    if (!result_cfg_ptr) {
+        status = -ENOMEM;
+        PAL_ERR(LOG_TAG, "failed to allocate result cfg ptr status %d", status);
+        goto exit;
+    }
+    result_cfg_ptr->det_config = (mma2_detection_result_t*)calloc(1, sizeof(mma2_detection_result_t));
+    if (!result_cfg_ptr->det_config) {
+        status = - ENOMEM;
+        PAL_ERR(LOG_TAG, "failed to allocate det config for result cfg ptr status %d", status);
+        goto exit;
+    }
+
+    process_start = std::chrono::steady_clock::now();
+    while (!exit_buffering_) {
+        if (!reader_->isEnabled()) {
+            status = -EINVAL;
+            goto exit;
+        }
+
+        if (!reader_->waitForBuffers(proc_size))
+            continue;
+
+        read_size = reader_->read((void*)process_input_buff, proc_size);
+        if (read_size == 0) {
+            continue;
+        } else if (read_size < 0) {
+            status = read_size;
+            PAL_ERR(LOG_TAG, "Failed to read from buffer, status %d", status);
+            goto exit;
+        }
+
+        stream_input->bufs_num = 1;
+        stream_input->buf_ptr->max_data_len = proc_size;
+        stream_input->buf_ptr->actual_data_len = read_size;
+        stream_input->buf_ptr->data_ptr = (int8_t *)process_input_buff;
+
+        if (vui_ptfm_info_->GetEnableDebugDumps()) {
+            ST_DBG_FILE_WRITE(keyword_detection_fd,
+                process_input_buff, read_size);
+        }
+
+        PAL_VERBOSE(LOG_TAG, "Calling Capi Process");
+        capi_call_start = std::chrono::steady_clock::now();
+#ifndef ATRACE_UNSUPPORTED
+        ATRACE_BEGIN("Second stage KW process");
+#endif
+        rc = capi_handle_->vtbl_ptr->process(capi_handle_,
+            &stream_input, nullptr);
+#ifndef ATRACE_UNSUPPORTED
+        ATRACE_END();
+#endif
+        capi_call_end = std::chrono::steady_clock::now();
+        total_capi_process_duration +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                capi_call_end - capi_call_start).count();
+        if (CAPI_V2_EFAILED == rc) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "capi process failed, status %d", status);
+            goto exit;
+        }
+
+        processed_sz += read_size;
+
+        capi_result.data_ptr = (int8_t*)result_cfg_ptr;
+        capi_result.actual_data_len = sizeof(stage2_mma_detection_result_t);
+        capi_result.max_data_len = sizeof(stage2_mma_detection_result_t);
+
+        PAL_VERBOSE(LOG_TAG, "Calling Capi get param for status");
+        capi_call_start = std::chrono::steady_clock::now();
+        rc = capi_handle_->vtbl_ptr->get_param(capi_handle_,
+            MMA2_DETECTION_RESULT, nullptr, &capi_result);
+        capi_call_end = std::chrono::steady_clock::now();
+        total_capi_get_param_duration +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                capi_call_end - capi_call_start).count();
+        if (CAPI_V2_EFAILED == rc) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "capi get param failed, status %d", status);
+            goto exit;
+        }
+
+        detection_status = result_cfg_ptr->detection_status;
+        if (detection_status == MMA2_DETECTED) {
+            exit_buffering_ = true;
+            detection_state_ = KEYWORD_DETECTION_SUCCESS;
+            PAL_INFO(LOG_TAG, "MMA Second Stage Detected");
+
+            param.stream = (void *)stream_handle_;
+            param.data = (void *)&result_cfg_ptr;
+            param.size = sizeof(int32_t);
+            vui_intf_->SetParameter(PARAM_SSTAGE_MMA_DETECTION_RESULT, &param);
+            goto exit;
+        }
+        if (detection_status == MMA2_REJECTED) {
+            exit_buffering_ = true;
+            detection_state_ = KEYWORD_DETECTION_REJECT;
+            PAL_INFO(LOG_TAG, "TI-UV Second Stage Rejected");
+            param.stream = (void *)stream_handle_;
+            param.data = (void *)&result_cfg_ptr;
+            param.size = sizeof(int32_t);
+            vui_intf_->SetParameter(PARAM_SSTAGE_MMA_DETECTION_RESULT, &param);
+        }
+        PAL_INFO(LOG_TAG, "MMA second stage processed %u bytes",
+            processed_sz);
+
+        if (proc_size == hist_data_size)
+            proc_size = frame_size;
+    }
+
+exit:
+
+    process_end = std::chrono::steady_clock::now();
+    process_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        process_end - process_start).count();
+    PAL_INFO(LOG_TAG, "MMA processing time: Bytes processed %u, Total processing "
+        "time %llums, Algo process time %llums, get result time %llums",
+        processed_sz, (long long)process_duration,
+        (long long)total_capi_process_duration,
+        (long long)total_capi_get_param_duration);
+    if (vui_ptfm_info_->GetEnableDebugDumps()) {
+        ST_DBG_FILE_CLOSE(keyword_detection_fd);
+    }
+
+    /* Reinit the MMA module */
+    PAL_INFO(LOG_TAG, "Issuing capi_set_param for param %d",
+                   MMA2_RESET);
+    rc = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                             MMA2_RESET, nullptr, nullptr);
+
+    if (CAPI_V2_EOK != rc) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "set param MMA2_RESET failed, status = %d",
+                rc);
+    }
+
+    if (reader_)
+        reader_->updateState(READER_DISABLED);
+
+    if (process_input_buff)
+        free(process_input_buff);
+    if (stream_input) {
+        if (stream_input->buf_ptr)
+            free(stream_input->buf_ptr);
+        free(stream_input);
+    }
+    if (result_cfg_ptr) {
+        if (result_cfg_ptr->det_config)
+            free(result_cfg_ptr->det_config);
+        free(result_cfg_ptr);
+    }
 
     PAL_DBG(LOG_TAG, "Exit, status %d", status);
 
@@ -1185,42 +1429,56 @@ int32_t SoundTriggerEngineCapi::StartSoundEngine()
 
     PAL_DBG(LOG_TAG, "Enter");
     if (detection_type_ == ST_SM_TYPE_KEYWORD_DETECTION) {
-        sva_threshold_config_t *threshold_cfg = nullptr;
-        threshold_cfg = (sva_threshold_config_t*)
-                        calloc(1, sizeof(sva_threshold_config_t));
-        if (!threshold_cfg) {
-            status = -ENOMEM;
-            PAL_ERR(LOG_TAG, "threshold cfg calloc failed, status %d", status);
-            return status;
-        }
-        capi_buf.data_ptr = (int8_t*) threshold_cfg;
-        capi_buf.actual_data_len = sizeof(sva_threshold_config_t);
-        capi_buf.max_data_len = sizeof(sva_threshold_config_t);
-        threshold_cfg->smm_threshold = confidence_threshold_;
+        if (engine_type_ & ST_SM_ID_SVA_S_STAGE_KWD) {
+            sva_threshold_config_t *threshold_cfg = nullptr;
+            threshold_cfg = (sva_threshold_config_t*)
+                            calloc(1, sizeof(sva_threshold_config_t));
+            if (!threshold_cfg) {
+                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "threshold cfg calloc failed, status %d", status);
+                return status;
+            }
+            capi_buf.data_ptr = (int8_t*) threshold_cfg;
+            capi_buf.actual_data_len = sizeof(sva_threshold_config_t);
+            capi_buf.max_data_len = sizeof(sva_threshold_config_t);
+            threshold_cfg->smm_threshold = confidence_threshold_;
 
-        PAL_DBG(LOG_TAG, "Keyword detection confidence level = %d",
-            threshold_cfg->smm_threshold);
+            PAL_DBG(LOG_TAG, "Keyword detection confidence level = %d",
+               threshold_cfg->smm_threshold);
 
-        status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-            SVA_ID_THRESHOLD_CONFIG, nullptr, &capi_buf);
-        free(threshold_cfg);
-        if (CAPI_V2_EOK != status) {
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "set param SVA_ID_THRESHOLD_CONFIG failed with %d",
-                    status);
-            return status;
-        }
+            status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+               SVA_ID_THRESHOLD_CONFIG, nullptr, &capi_buf);
+            free(threshold_cfg);
+            if (CAPI_V2_EOK != status) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param SVA_ID_THRESHOLD_CONFIG failed with %d",
+                        status);
+                return status;
+            }
 
-        PAL_VERBOSE(LOG_TAG, "Issuing capi_set_param for param %d",
-                    SVA_ID_REINIT_ALL);
-        status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
-            SVA_ID_REINIT_ALL, nullptr, nullptr);
+            PAL_VERBOSE(LOG_TAG, "Issuing capi_set_param for param %d",
+                       SVA_ID_REINIT_ALL);
+            status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                SVA_ID_REINIT_ALL, nullptr, nullptr);
 
-        if (CAPI_V2_EOK != status) {
-            status = -EINVAL;
-            PAL_ERR(LOG_TAG, "set param SVA_ID_REINIT_ALL failed, status = %d",
-                    status);
-            return status;
+            if (CAPI_V2_EOK != status) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param SVA_ID_REINIT_ALL failed, status = %d",
+                        status);
+                return status;
+            }
+        } else if (engine_type_ & ST_SM_ID_SVA_S_STAGE_MMA) {
+            PAL_VERBOSE(LOG_TAG, "Issuing capi_set_param for param %d",
+                        MMA2_RESET);
+            status = capi_handle_->vtbl_ptr->set_param(capi_handle_,
+                MMA2_RESET,nullptr, nullptr);
+
+            if (CAPI_V2_EOK != status) {
+                status = -EINVAL;
+                PAL_ERR(LOG_TAG, "set param SVA_ID_REINIT_ALL failed, status = %d",
+                       status);
+                return status;
+            }
         }
         detection_state_ = KEYWORD_DETECTION_PENDING;
     } else if (detection_type_ == ST_SM_TYPE_USER_VERIFICATION) {

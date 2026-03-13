@@ -259,10 +259,8 @@
 
 <!-- WCD File Contents  -->
 
-    <!-- WCD939x enable PCM path by default -->
-    <ctl name="RX_HPH PCM" value="1" />
-    <ctl name="HPH PCM Enable" value="1" />
     <!-- Headphone class-H mode  -->
+    <ctl name="RX_HPH_PWR_MODE" value="ULP" />
     <ctl name="RX HPH Mode" value="CLS_H_ULP" />
 
     <!-- These are actual sound device specific mixer settings -->

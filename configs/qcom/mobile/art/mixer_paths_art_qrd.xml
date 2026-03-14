@@ -216,7 +216,7 @@
     <path name="handset-wsa">
         <ctl name="Rx Slot Mask" value="1" />
         <ctl name="OT23 Usage Mode" value="8" />
-        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="66" />
+        <ctl name="SA1 FU21 Stereo Gain Offset dB" value="84" />
     </path>
 
     <path name="handset">
@@ -670,7 +670,7 @@
     </path>
 
     <path name="speaker-mic">
-        <path name="amic3" />
+        <path name="amic5" />
         <ctl name="TX_DEC3 Volume" value="96" />
     </path>
 

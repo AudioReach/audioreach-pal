@@ -590,12 +590,12 @@
     </path>
 
     <path name="amic6">
-        <ctl name="TX DEC3 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX3" value="SWR_MIC1" />
-        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="TX DEC4 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC1" />
+        <ctl name="TX_AIF2_CAP Mixer DEC4" value="1" />
         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
-        <ctl name="TX WSA MUX3" value="NO_WSA"/>
-        <ctl name="TX PORT SEL MUX3" value="PORT1"/>
+        <ctl name="TX WSA MUX4" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX4" value="PORT1"/>
         <ctl name="ADC2 MUX" value="CH2_AMIC3" />
         <ctl name="TX1 MODE" value="ADC_LP" />
         <ctl name="ADC2_BCS Disable" value="1" />

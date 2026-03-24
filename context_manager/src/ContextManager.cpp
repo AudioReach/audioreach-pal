@@ -130,7 +130,9 @@ exit:
     if (rc) {
         send_asps_basic_response(rc, EVENT_ID_ASPS_SENSOR_REGISTER_REQUEST, see_id);
     }
-    seeclient->unlock_see_client();
+    if (seeclient) {
+        seeclient->unlock_see_client();
+    }
     PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
     return rc;
 }
@@ -245,7 +247,9 @@ int32_t ContextManager::process_deregister_request(uint32_t see_id, uint32_t use
     }
 
 exit:
-    seeclient->unlock_see_client();
+    if (seeclient) {
+        seeclient->unlock_see_client();
+    }
     PAL_VERBOSE(LOG_TAG, "Exit rc:%d", rc);
     return rc;
 }

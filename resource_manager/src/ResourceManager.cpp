@@ -875,8 +875,10 @@ ResourceManager::ResourceManager()
     //Initialize class members in the construct
     bOverwriteFlag = false;
     cookie = 0;
-    memset(&this->linear_gain, 0, sizeof(pal_param_mspp_linear_gain_t));
-    memset(&this->mSpkrProtModeValue, 0, sizeof(pal_spkr_prot_payload));
+    linear_gain = {};
+    mSpkrProtModeValue = {};
+    mHapticsModeValue = {};
+    rotation_type_ = PAL_SPEAKER_ROTATION_LR;
     mHighestPriorityActiveStream = nullptr;
     mPriorityHighestPriorityActiveStream = 0;
 #ifndef PAL_MEMLOG_UNSUPPORTED

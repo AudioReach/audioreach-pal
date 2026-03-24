@@ -570,6 +570,9 @@ SpeakerProtection::SpeakerProtection(struct pal_device *device,
     viCustomPayloadSize = 0;
     viCustomPayload = NULL;
 
+    pcmDevIdTx.clear();
+    pcmDevIdCPS.clear();
+
     spkerTempList = new int [numberOfChannels];
     // Get current time
     clock_gettime(CLOCK_BOOTTIME, &spkrLastTimeUsed);

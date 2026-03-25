@@ -1222,17 +1222,17 @@
         <ctl name="ADC1_MIXER Switch" value="1" />
         <ctl name="AMIC1_MIXER Switch" value="1" />
         <ctl name="AMIC5_MIXER Switch" value="1" />
-        <!--  AMIC4 back MIC -->
+        <!--  AMIC3 top right MIC -->
         <ctl name="TX DEC5 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX5" value="SWR_MIC0" />
+        <ctl name="TX SMIC MUX5" value="SWR_MIC1" />
         <ctl name="TX_AIF1_CAP Mixer DEC5" value="1" />
         <ctl name="TX WSA MUX5" value="NO_WSA"/>
-        <ctl name="TX PORT SEL MUX5" value="PORT2"/>
-        <ctl name="ADC3 MUX" value="CH3_AMIC4" />
-        <ctl name="TX2 MODE" value="ADC_LP" />
-        <ctl name="ADC3 ChMap" value="SWRM_TX3_CH1" />
-        <ctl name="ADC3_MIXER Switch" value="1" />
-        <ctl name="AMIC4_MIXER Switch" value="1" />
+        <ctl name="TX PORT SEL MUX5" value="PORT1"/>
+        <ctl name="ADC2 MUX" value="CH2_AMIC3" />
+        <ctl name="TX1 MODE" value="ADC_LP" />
+        <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
+        <ctl name="ADC2_MIXER Switch" value="1" />
+        <ctl name="AMIC3_MIXER Switch" value="1" />
     </path>
 
     <path name="voice-speaker-tmic">

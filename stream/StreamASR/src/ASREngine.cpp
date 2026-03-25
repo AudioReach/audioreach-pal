@@ -849,6 +849,10 @@ int32_t ASREngine::StopEngine(StreamASR *s)
 
     DetachStream(s);
 
+    // clear event payload list when stopping hlos client
+    if (s->GetClientId() == ASR_CLIENT_HLOS)
+        dynamic_cast<SessionAR*>(session)->clearEventPayloadList();
+
     if (streamList.size()) {
         status = UpdateASRConfiguration(streamList[0]);
         if (status) {

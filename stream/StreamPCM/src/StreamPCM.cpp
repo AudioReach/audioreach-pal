@@ -396,6 +396,29 @@ int32_t StreamPCM::start()
     }
 
     if (currentState == STREAM_INIT || currentState == STREAM_STOPPED) {
+        /* Post-start shared-BE convergence for PCM playback:
+        * iterate over active devices and re-run RM device evaluation
+        * after stream start, to resolve routing mismatches caused by
+        * concurrent route decisions and incomplete first-pass convergence.
+        */
+        if (!mDevices.empty()) {
+            for (int32_t i = 0; i < mDevices.size(); ++i) {
+                std::shared_ptr<Device> dev = mDevices[i];
+                struct pal_device devAttr = {};
+
+                if (dev->getDeviceAttributes(&devAttr, this)) {
+                    PAL_INFO(LOG_TAG, "post-start convergence: failed to get attr for dev %d",
+                             dev->getSndDeviceId());
+                    continue;
+                }
+                mStreamMutex.unlock();
+                if (rm->updateDeviceConfig(&dev, &devAttr, mStreamAttr)) {
+                    PAL_INFO(LOG_TAG, "post-start convergence triggered for dev %d",
+                             dev->getSndDeviceId());
+                }
+                mStreamMutex.lock();
+            }
+        }
         switch (mStreamAttr->direction) {
         case PAL_AUDIO_OUTPUT:
             PAL_VERBOSE(LOG_TAG, "Inside PAL_AUDIO_OUTPUT device count - %zu",

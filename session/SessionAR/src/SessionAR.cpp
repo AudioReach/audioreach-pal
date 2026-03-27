@@ -983,6 +983,14 @@ int SessionAR::setParameters(Stream *s, uint32_t param_id, void *payload)
             PAL_ERR(LOG_TAG, "Exit Detection case");
             break;
         }
+        case PAL_PARAM_ID_VOICE_NS_RX_CFG:
+        {
+            status = this->setParamWithTag(s, TAG_VOICE_NS_RX_CONFIG, param_id, payload);
+            if (status)
+                PAL_ERR(LOG_TAG, "setParamWithTag for FNN dyn transition failed with %d",
+                        status);
+            break;
+        }
         default:
             status = this->setParamWithTag(s, INVALID_TAG, param_id, payload);
             break;

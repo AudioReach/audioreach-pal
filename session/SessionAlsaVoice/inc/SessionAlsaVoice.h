@@ -130,6 +130,7 @@ private:
                                           void *data, uint32_t event_size);
     static void HandleTxDtmfCallBack(uint64_t hdl, uint32_t event_id,
                                           void *data, uint32_t event_size);
+    int32_t enableDisableVoiceNsRxConfig(Stream *s, bool enable);
 };
 
 #endif //SESSION_ALSAVOICE_H

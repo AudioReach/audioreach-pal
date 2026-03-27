@@ -285,6 +285,11 @@ int SessionAR::setEffectParametersNonTKV(Stream *s __unused, effect_pal_payload_
 
     /* Now we got the miid, build set param payload */
     effectCustomPayload = (pal_effect_custom_payload_t *)effectPayload->payload;
+    if (effectCustomPayload == nullptr) {
+        PAL_ERR(LOG_TAG, "effectCustomPayload is null");
+        status = -EINVAL;
+        goto exit;
+    }
     status = builder.payloadCustomParam(&payloadData, &payloadSize,
             effectCustomPayload->data,
             effectPayload->payloadSize - sizeof(uint32_t),

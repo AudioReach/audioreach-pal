@@ -885,6 +885,8 @@ ResourceManager::ResourceManager()
     rotation_type_ = PAL_SPEAKER_ROTATION_LR;
     mHighestPriorityActiveStream = nullptr;
     mPriorityHighestPriorityActiveStream = 0;
+    mActiveStreamUserCounter = {};
+    mActiveStreams = {};
 #ifndef PAL_MEMLOG_UNSUPPORTED
     ret = memLoggerInitQ(PAL_STATE_Q, MEMLOG_CFG_FILE); //initializes the queue for the debug logger
 

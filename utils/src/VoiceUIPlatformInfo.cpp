@@ -223,7 +223,8 @@ VUIStreamConfig::VUIStreamConfig() :
     client_handling_ssr_(false),
     mmap_buffer_duration_(0),
     mmap_frame_length_(0),
-    mmap_enable_(false)
+    mmap_enable_(false),
+    enable_amd_(false)
 {
     ext_det_prop_list_.clear();
 }
@@ -434,6 +435,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             mmap_buffer_duration_ = std::stoi(value);
         } else if (key == "mmap_frame_length") {
             mmap_frame_length_ = std::stoi(value);
+        } else if (key == "enable_amd") {
+            enable_amd_ = (value == "true");
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

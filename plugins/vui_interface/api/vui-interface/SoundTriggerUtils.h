@@ -433,6 +433,7 @@ typedef enum mma_mode_bit_type {
     CAMERA_FACE = 4,
     CAMERA_GAZE = 5,
     ONOFFBODY_DETECTION = 6,
+    AMD = 7,
 } mma_mode_bit_type_t;
 
 typedef struct tiuv_threshold_config {

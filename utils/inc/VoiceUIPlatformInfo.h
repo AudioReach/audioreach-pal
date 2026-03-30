@@ -151,6 +151,7 @@ public:
     bool IsClientHandleSSR() const { return client_handling_ssr_; }
     bool GetEnableLPILabEC(st_module_type_t type);
     bool GetEnableAMD() const { return enable_amd_; }
+    uint32_t GetSyntheticDetDurationInMs() const { return synthetic_det_duration_in_ms_; }
 
 private:
     std::string name_;
@@ -184,6 +185,7 @@ private:
     std::vector<uint32_t> ext_det_prop_list_;
     bool client_handling_ssr_;
     bool enable_amd_;
+    uint32_t synthetic_det_duration_in_ms_;
 };
 
 class VoiceUIPlatformInfo : public SoundTriggerPlatformInfo

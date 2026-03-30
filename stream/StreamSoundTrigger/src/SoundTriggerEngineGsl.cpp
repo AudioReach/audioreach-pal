@@ -879,6 +879,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
     int32_t status = 0;
     vui_intf_param_t param {};
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    bool is_session_opened = false;
 
     PAL_DBG(LOG_TAG, "Enter");
     if (!sm_data || !sm_data->data) {
@@ -903,6 +904,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         PAL_ERR(LOG_TAG, "Failed to open session, status = %d", status);
         goto exit;
     }
+    is_session_opened = true;
 
     /* Update interface with sound model to be added*/
     param.stream = (void *)s;
@@ -911,7 +913,6 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
     status = vui_intf_->SetParameter(PARAM_FSTAGE_SOUND_MODEL_ADD, &param);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to update engine model, status = %d", status);
-        session_->close(s);
         goto exit;
     }
 
@@ -920,8 +921,15 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to set MMA mode bit config, status = %d",
                 status);
-            session_->close(s);
             goto exit;
+        }
+        if (sm_cfg_ && sm_cfg_->GetSyntheticDetDurationInMs()) {
+            status = UpdateSessionPayload(s, SYNTHETIC_MMA_DET_CONFIG);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,
+                    "Failed to set synthetic det config, status = %d", status);
+                goto exit;
+            }
         }
         /*
          * If mode bit is set, mma model is loaded from acdb calibration,
@@ -931,7 +939,6 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
             status = UpdateSessionPayload(s, LOAD_SOUND_MODEL);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "Failed to update session payload, status = %d", status);
-                session_->close(s);
                 goto exit;
             }
         }
@@ -939,13 +946,16 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         status = UpdateSessionPayload(s, LOAD_SOUND_MODEL);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to update session payload, status = %d", status);
-            session_->close(s);
             goto exit;
         }
     }
 
     UpdateState(ENG_LOADED);
+
 exit:
+    if (is_session_opened && status)
+        session_->close(s);
+
     if (!status)
         eng_streams_.push_back(s);
 
@@ -2051,6 +2061,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
     uint32_t detection_miid = 0;
     vui_intf_param_t intf_param {};
     uint32_t mode_bit = 0;
+    uint32_t synthetic_mma_det_duration = 0;
 
     PAL_DBG(LOG_TAG, "Enter, param : %u", param);
 
@@ -2139,34 +2150,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 }
             }
             if (mma_mode_bit_) {
-                mode_bit = mma_mode_bit_;
-                /*
-                 * In HLOS side we need to differentiate mode bit NVD and
-                 * SPEECH to load different audio models. While in ADSP
-                 * side NVD and SPEECH are defined as same mode bit, hence
-                 * reset NVD bit and set SPEECH bit before set to ADSP.
-                 *
-                 * TODO: Remove this when mode bit defs are aligned within
-                 * HLOS and ADSP.
-                 */
-                if (mode_bit & (1 << NVD)) {
-                    mode_bit &= ~(1 << NVD);
-                    mode_bit |= (1 << SPEECH);
-                }
-                /*
-                 * Platforms not supporting TILT_TO_WAKE/INTENT2SPEAK_ACCEL
-                 * need to replace sensor modality with Any Motion Detect(AMD)
-                 */
-                if (sm_cfg_ && sm_cfg_->GetEnableAMD()) {
-                    if (mode_bit & (1 << TILT_TO_WAKE)) {
-                        mode_bit &= ~(1 << TILT_TO_WAKE);
-                        mode_bit |= (1 << AMD);
-                    }
-                    if (mode_bit & (1 << INTENT2SPEAK_ACCEL)) {
-                        mode_bit &= ~(1 << INTENT2SPEAK_ACCEL);
-                        mode_bit |= (1 << AMD);
-                    }
-                }
+                mode_bit = UpdateMMAModeBit();
                 intf_param.data = (void *)&mode_bit;
                 intf_param.size = sizeof(uint32_t);
             }
@@ -2188,6 +2172,14 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 return -EINVAL;
             }
             ses_param_id = PAL_PARAM_ID_BUFFERING_MODE;
+            break;
+        case SYNTHETIC_MMA_DET_CONFIG:
+            if (sm_cfg_) {
+                synthetic_mma_det_duration = sm_cfg_->GetSyntheticDetDurationInMs();
+                intf_param.data = &synthetic_mma_det_duration;
+                intf_param.size = sizeof(synthetic_mma_det_duration);
+            }
+            ses_param_id = PAL_PARAM_ID_VOICEUI_SET_PARAM;
             break;
         default:
             PAL_ERR(LOG_TAG, "Invalid param id %u", param);
@@ -2338,6 +2330,44 @@ bool SoundTriggerEngineGsl::UpdateGlobalDetectionStatus(bool is_active) {
     }
 
     return true;
+}
+
+uint32_t SoundTriggerEngineGsl::UpdateMMAModeBit() {
+    uint32_t mode_bit = mma_mode_bit_;
+
+    /*
+     * In HLOS side we need to differentiate mode bit NVD and
+      * SPEECH to load different audio models. While in ADSP
+     * side NVD and SPEECH are defined as same mode bit, hence
+     * reset NVD bit and set SPEECH bit before set to ADSP.
+     *
+     * TODO: Remove this when mode bit defs are aligned within
+     * HLOS and ADSP.
+     */
+    if (mode_bit & (1U << NVD)) {
+        mode_bit &= ~(1U << NVD);
+        mode_bit |= (1U << SPEECH);
+    }
+    /*
+     * Platforms not supporting TILT_TO_WAKE/INTENT2SPEAK_ACCEL
+     * need to replace sensor modality with Any Motion Detect(AMD)
+     */
+    if (sm_cfg_ && sm_cfg_->GetEnableAMD()) {
+        if (mode_bit & (1U << TILT_TO_WAKE)) {
+            mode_bit &= ~(1U << TILT_TO_WAKE);
+            mode_bit |= (1U << AMD);
+        }
+        if (mode_bit & (1U << INTENT2SPEAK_ACCEL)) {
+            mode_bit &= ~(1U << INTENT2SPEAK_ACCEL);
+            mode_bit |= (1U << AMD);
+        }
+    }
+
+    if (sm_cfg_ && sm_cfg_->GetSyntheticDetDurationInMs()) {
+        mode_bit |= (1U << SYNTHETIC_MODALITY_DETECTIONS_FEATURE);
+    }
+
+    return mode_bit;
 }
 
 int32_t SoundTriggerEngineGsl::ForceRecognition(StreamSoundTrigger *s) {

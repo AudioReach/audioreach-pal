@@ -141,6 +141,8 @@ int32_t VUIFirstStageConfig::GetIndex(std::string param_name) {
         index = TRIGGER_DETECTION_CONFIG;
     } else if (param_name == "buffering_mode_ids") {
         index = BUFFERING_MODE_CONFIG;
+    } else if (param_name == "synthetic_mma_det_ids") {
+        index = SYNTHETIC_MMA_DET_CONFIG;
     } else {
         PAL_ERR(LOG_TAG, "Invalid param name %s", param_name.c_str());
     }
@@ -224,7 +226,8 @@ VUIStreamConfig::VUIStreamConfig() :
     mmap_buffer_duration_(0),
     mmap_frame_length_(0),
     mmap_enable_(false),
-    enable_amd_(false)
+    enable_amd_(false),
+    synthetic_det_duration_in_ms_(0)
 {
     ext_det_prop_list_.clear();
 }
@@ -437,6 +440,8 @@ void VUIStreamConfig::HandleStartTag(const std::string& tag, const char** attrib
             mmap_frame_length_ = std::stoi(value);
         } else if (key == "enable_amd") {
             enable_amd_ = (value == "true");
+        } else if (key == "synthetic_det_duration_in_ms") {
+            synthetic_det_duration_in_ms_ = std::stoi(value);
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
        }

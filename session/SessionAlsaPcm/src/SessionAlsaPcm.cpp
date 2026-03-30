@@ -2199,6 +2199,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_FORCE_RECOGNITION:
         case PAL_PARAM_ID_BUFFERING_MODE:
         case PAL_PARAM_ID_NMT_OUTPUT:
+        case PAL_PARAM_ID_VOICEUI_SET_PARAM:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;

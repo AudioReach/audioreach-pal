@@ -392,6 +392,7 @@ typedef enum st_param_id_type {
     MMA_MODE_BIT_CONFIG,
     TRIGGER_DETECTION_CONFIG,
     BUFFERING_MODE_CONFIG,
+    SYNTHETIC_MMA_DET_CONFIG,
     MAX_PARAM_IDS
 } st_param_id_type_t;
 
@@ -434,6 +435,8 @@ typedef enum mma_mode_bit_type {
     CAMERA_GAZE = 5,
     ONOFFBODY_DETECTION = 6,
     AMD = 7,
+    /* bit 8-30 are reserved */
+    SYNTHETIC_MODALITY_DETECTIONS_FEATURE = 31,
 } mma_mode_bit_type_t;
 
 typedef struct tiuv_threshold_config {

@@ -150,19 +150,21 @@ uint32_t getMiid(SessionAlsaPcm* session, uint64_t eventId, mixer* mxr,
         case EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER:
             tagId = SHMEM_ENDPOINT;
             break;
-        case EVENT_ID_ACD_DETECTION_EVENT :
+        case EVENT_ID_ACD_DETECTION_EVENT:
             tagId = CONTEXT_DETECTION_ENGINE;
             break;
-        case EVENT_ID_ASR_OUTPUT :
+        case EVENT_ID_ASR_OUTPUT:
+        case EVENT_ID_ASR_OUTPUT_V2:
             tagId = TAG_MODULE_ASR;
             break;
         case EVENT_ID_SDZ_OUTPUT:
+        case EVENT_ID_SDZ_OUTPUT_V2:
             tagId = TAG_MODULE_SDZ;
             break;
         case EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK:
             tagId = SHMEM_ENDPOINT;
             break;
-        default :
+        default:
             PAL_ERR(LOG_TAG, "Event id %x not handled!!!", eventId);
     }
 

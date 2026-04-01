@@ -1852,7 +1852,7 @@
                 <!-- Output buffer size for speaker diarization in bytes -->
                 <param sdz_output_buffer_size="102400" />
                 <!-- Whether life logger is enabled -->
-                <param enable_life_logger="false"/>
+                <param enable_life_logger="true"/>
                 <!-- ASR input DAM buffer size for life logger usecase -->
                 <!-- Valid only when it is set to non-zero value -->
                 <!-- Config from ASPS is used when this is set to 0 -->

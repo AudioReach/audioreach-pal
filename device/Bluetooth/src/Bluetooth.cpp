@@ -2773,7 +2773,11 @@ int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
             status = openBTHost();
         } else {
             // close BTHost with HFP
-            status = closeBTHost();
+            /* ignore status;
+             * disconnection for OUTPUT may arrive later where a INPUT
+             * stream is still active or vice versa.
+             */
+            closeBTHost();
         }
         break;
     }

@@ -3323,7 +3323,11 @@ int SessionAlsaPcm::getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info,
 
     }
 
-    if (uc_info->direction == PAL_AUDIO_INPUT) {
+    if (uc_info->pal_stream_type == PAL_STREAM_SENSOR_PCM_RENDERER){
+        status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
+                                                         rxAifBackEnds[0].second.data(), payload);
+    } else if (uc_info->direction == PAL_AUDIO_INPUT ||
+               uc_info->direction == PAL_AUDIO_INPUT_OUTPUT ) {
         status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
                                                          txAifBackEnds[0].second.data(), payload);
     } else if (uc_info->direction == PAL_AUDIO_OUTPUT) {

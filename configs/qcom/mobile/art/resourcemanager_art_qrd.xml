@@ -1864,7 +1864,7 @@
                 <param output_language_code="0"/>
                 <param enable_language_detection="false"/>
                 <param enable_translation="false"/>
-                <param enable_continuous_mode="false"/>
+                <param enable_continuous_mode="true"/>
                 <param enable_partial_transcription="false"/>
                 <param enable_logger_mode="false"/>
                 <param enable_timestamp="true"/>

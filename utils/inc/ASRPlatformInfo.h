@@ -97,9 +97,6 @@ public:
     void HandleEndTag(struct xml_userdata *data, const std::string& tag);
 
     int32_t GetDefaultASRConfig(struct pal_asr_config *config);
-
-private:
-    struct pal_asr_config asr_config_;
 };
 
 class ASRStreamConfig : public SoundTriggerXml

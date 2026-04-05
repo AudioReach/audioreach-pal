@@ -279,13 +279,16 @@ error:
 }
 
 bool SessionAlsaUtils::isMmapUsecase(struct pal_stream_attributes &sAttr)
-{
-    return ((sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) &&
-            ((sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK)
-                        ||(sAttr.flags & PAL_STREAM_FLAG_MMAP_NO_IRQ_MASK))
-            );
+ {
+    bool isUllWithMmap = (sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) &&
+                         ((sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK) ||
+                          (sAttr.flags & PAL_STREAM_FLAG_MMAP_NO_IRQ_MASK));
 
-}
+    bool isDeepBufferWithMmap = (sAttr.type == PAL_STREAM_DEEP_BUFFER) &&
+                         (sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK);
+
+    return isUllWithMmap || isDeepBufferWithMmap;
+ }
 
 struct mixer_ctl *SessionAlsaUtils::getStaticMixerControl(struct mixer *am, std::string name)
 {

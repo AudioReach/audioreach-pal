@@ -3237,6 +3237,12 @@ int PayloadBuilder::populateStreamKV(Stream* s,
                 "bit_perfect"));
             PAL_INFO(LOG_TAG, "BitPerfect Playback, hence select PCM_IMMUTABLE KV");
         }
+    } else if (sattr->type == PAL_STREAM_DEEP_BUFFER &&
+              (sattr->flags & PAL_STREAM_FLAG_MMAP_MASK)) {
+        filled_selector_pairs.push_back(
+            std::make_pair(CUSTOM_CONFIG_SEL,
+            "deep_buffer_mmap"));
+        PAL_INFO(LOG_TAG, "Deep buffer playback in mmap mode");
     }
 
     retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVector);

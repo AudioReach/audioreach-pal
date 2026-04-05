@@ -83,6 +83,8 @@
 #include <sys/stat.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
 #include <time.h>
+#include "sh_mem_pull_push_mode_api.h"
+#include "history_buffer_api.h"
 
 /*interface implementation*/
 extern "C" int pcmPluginConfig(Stream* stream, plugin_config_name_t config,
@@ -283,6 +285,81 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
         handleEventRegistration(session, 1, mxr, txAifBackEnds, pcmDevIds);
+    } else if (sAttr.type == PAL_STREAM_DEEP_BUFFER &&
+      (sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK)) {
+        struct agm_event_reg_cfg *watermark_event_cfg = nullptr;
+        struct event_cfg_sh_mem_pull_push_mode_watermark_t *watermark_payload = nullptr;
+        struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *levels = nullptr;
+        size_t in_buf_size = 0, in_buf_count = 0, out_buf_size = 0, out_buf_count = 0;
+        uint32_t period_size = 0;
+        uint32_t period_count = 0;
+        constexpr uint32_t kWatermarkNumLevels = 10;
+        size_t watermark_payload_size = 0;
+
+         /* Total shared buffer with DSP = period_size * period_count.
+         * Register watermark at 10 equal levels
+         */
+        s->getBufInfo(&in_buf_size, &in_buf_count, &out_buf_size, &out_buf_count);
+        period_size = static_cast<uint32_t>(out_buf_size);
+        period_count = static_cast<uint32_t>(out_buf_count);
+        const uint32_t watermarkStepBytes =
+            (period_size * period_count) / kWatermarkNumLevels;
+
+        watermark_payload_size = sizeof(uint32_t) +
+        (kWatermarkNumLevels * sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t));
+
+        watermark_payload = (struct event_cfg_sh_mem_pull_push_mode_watermark_t *)calloc(1, watermark_payload_size);
+        if (!watermark_payload) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for watermark payload");
+            status = -ENOMEM;
+            goto exit;
+        }
+
+        watermark_payload->num_water_mark_levels = kWatermarkNumLevels;
+        levels = (struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *)
+            ((uint8_t *)watermark_payload + sizeof(uint32_t));
+
+        for (uint32_t i = 0; i < kWatermarkNumLevels; ++i) {
+            levels[i].watermark_level_bytes = (i + 1) * watermarkStepBytes;
+            PAL_DBG(LOG_TAG, "watermark registered at byte %d",levels[i].watermark_level_bytes);
+        }
+
+        tagId = SHMEM_ENDPOINT;
+        if (miid == 0 && tagId != 0) {
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                rxAifBackEnds[0].second.data(), tagId, &miid);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
+                free(watermark_payload);
+                goto exit;
+            }
+        }
+
+        payload_size = sizeof(struct agm_event_reg_cfg) + watermark_payload_size;
+        watermark_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+        if (!watermark_event_cfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for watermark event config");
+            status = -ENOMEM;
+            free(watermark_payload);
+            goto exit;
+        }
+
+        watermark_event_cfg->event_config_payload_size = watermark_payload_size;
+        watermark_event_cfg->is_register = 1;
+        watermark_event_cfg->event_id = EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK;
+        watermark_event_cfg->module_instance_id = miid;
+
+        memcpy(watermark_event_cfg->event_config_payload,
+               watermark_payload,
+               watermark_payload_size);
+
+        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
+                                            (void *)watermark_event_cfg, payload_size);
+
+        free(watermark_event_cfg);
+        free(watermark_payload);
+        miid = 0;
+        tagId = 0;
     } else if (sAttr.type == PAL_STREAM_ULTRASOUND && session->getRegisterForEvents()) {
         payload_size = sizeof(struct agm_event_reg_cfg);
         std::vector<int> pcmDevTxIds;

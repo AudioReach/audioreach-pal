@@ -42,6 +42,7 @@
 #include <agm/agm_api.h>
 #include "apm_api.h"
 #include <sstream>
+#include "sh_mem_pull_push_mode_api.h"
 
 struct pcm *SessionAR::pcmEcTx = NULL;
 std::vector<int> SessionAR::pcmDevEcTxIds = {0};
@@ -59,15 +60,26 @@ SessionAR::SessionAR() {
     }
 }
 
-void SessionAR::handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id,
-                                        void *data __unused,
-                                        uint32_t event_size __unused)
+void SessionAR::handleSessionCallback(uint64_t hdl, uint32_t event_id,
+                                      void *data,
+                                      uint32_t event_size)
 {
+    Stream *s = NULL;
+    pal_stream_callback cb;
+
     PAL_DBG(LOG_TAG,"Event id %x ", event_id);
 
     if (event_id == EVENT_ID_SOFT_PAUSE_PAUSE_COMPLETE) {
         PAL_DBG(LOG_TAG, "Pause done");
         pauseCV.notify_all();
+    }
+    if (event_id == EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK) {
+        PAL_DBG(LOG_TAG, "Watermark event received, notifying client");
+        s = reinterpret_cast<Stream *>(hdl);
+        if (s->getCallBack(&cb) == 0) {
+            cb(reinterpret_cast<pal_stream_handle_t *>(s), event_id, (uint32_t *)data,
+               event_size, s->cookie);
+        }
     }
 }
 

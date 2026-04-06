@@ -222,6 +222,7 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
     size_t size = 0;
 
     PAL_DBG(LOG_TAG, "Bytes to read and write in ring buffer is : %d", size_to_read);
+    PAL_DBG(LOG_TAG, "Offset : %d, mmap write position : %d", offset, mmap_write_position_);
     if (offset + size_to_read <= mmap_buffer_size_) {
         size = buffer_->write((void *)((uint8_t *)mmap_buffer_.buffer + offset), size_to_read);
         if (vui_ptfm_info_->GetEnableDebugDumps()) {
@@ -234,7 +235,7 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
                              mmap_buffer_size_ - offset);
         if (vui_ptfm_info_->GetEnableDebugDumps()) {
             ST_DBG_FILE_WRITE(dsp_output_fd, (void *)((uint8_t *)mmap_buffer_.buffer + offset),
-                              size_to_read);
+                              mmap_buffer_size_ - offset);
         }
         size += buffer_->write((void *)mmap_buffer_.buffer,
                              size_to_read + offset - mmap_buffer_size_);
@@ -245,7 +246,8 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
         offset = size_to_read + offset - mmap_buffer_size_;
     }
     mmap_write_position_ += BytesToFrames(size_to_read);
-    PAL_DBG(LOG_TAG, "%d written to ring buffer", size);
+    PAL_DBG(LOG_TAG, "Bytes written to ring buffer : %d, mmap write position : %d",
+            size, mmap_write_position_);
     return 0;
 }
 
@@ -410,11 +412,17 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         ATRACE_ASYNC_BEGIN("stEngine: lab read", (int32_t)module_type_);
 #endif
         if (mmap_buffer_size_ != 0) {
-            status = BytesToRead(s, size_to_read);
-            if (status) {
-                PAL_ERR(LOG_TAG, "Failed to get bytes to read");
-                status = -EINVAL;
-                goto exit;
+            if (batch_mode_) {
+                param.data = &size_to_read;
+                vui_intf_->GetParameter(PARAM_MMAP_BYTES_TO_READ, &param);
+                PAL_INFO(LOG_TAG, "Bytes to read : %d", size_to_read);
+            } else {
+                status = BytesToRead(s, size_to_read);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Failed to get bytes to read");
+                    status = -EINVAL;
+                    goto exit;
+                }
             }
             if (size_to_read == 0) {
                 retry_cnt++;

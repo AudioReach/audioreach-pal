@@ -77,6 +77,8 @@ extern "C" void CreateBtDevice(struct pal_device *device,
                 break;
             case PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET:
             case PAL_DEVICE_OUT_BLUETOOTH_SCO:
+                *dev = BtSco::getInstance(device, rm);
+                break;
             case PAL_DEVICE_IN_BLUETOOTH_HFP:
             case PAL_DEVICE_OUT_BLUETOOTH_HFP:
                 *dev = BtSco::getInstance(device, rm);
@@ -2666,9 +2668,8 @@ std::shared_ptr<Device> BtSco::sObjHfpRx = nullptr;
 std::shared_ptr<Device> BtSco::sObjHfpTx = nullptr;
 bool BtSco::sIsHFPSyncEnabled = true;
 
-BtSco::BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
-    : Bluetooth(device, Rm)
-{
+BtSco::BtSco(struct pal_device* device, std::shared_ptr<ResourceManager> Rm, const bool isActAsHFPDevice)
+    : Bluetooth(device, Rm), mIsActAsHFPDevice(isActAsHFPDevice) {
     sHFPProfile = device::bt::HFPProfile::getInstance();
     mCodecType = (device->id == PAL_DEVICE_OUT_BLUETOOTH_SCO) ? ENC : DEC;
     mPluginHandler = NULL;
@@ -2713,6 +2714,9 @@ int32_t BtSco::checkAndUpdateSampleRate(uint32_t *sampleRate)
 }
 
 int BtSco::openBTHost() {
+    if(mIsActAsHFPDevice) {
+        return 0;
+    }
     if(!sIsHFPSyncEnabled) {
         /* HFP sync disabled. Hence, return success.*/
         return 0;
@@ -2725,6 +2729,9 @@ int BtSco::openBTHost() {
 }
 
 int BtSco::closeBTHost() {
+    if(mIsActAsHFPDevice) {
+        return 0;
+    }
     if (!sIsHFPSyncEnabled) {
         /* HFP sync disabled. Hence, return success.*/
         return 0;
@@ -2977,6 +2984,9 @@ int BtSco::getCodecConfigFromBTHost() {
 }
 
 int BtSco::startBTHost() {
+    if(mIsActAsHFPDevice) {
+        return 0;
+    }
     if (!sIsHFPSyncEnabled) {
         /* HFP sync disabled. Hence, return success.*/
         return 0;
@@ -3073,6 +3083,9 @@ exit:
 }
 
 int BtSco::stopBTHost() {
+    if(mIsActAsHFPDevice) {
+        return 0;
+    }
     if (!sIsHFPSyncEnabled) {
         /* HFP sync disabled. Hence, return success.*/
         return 0;
@@ -3150,7 +3163,7 @@ std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
             if (!sObjHfpRx) {
                 PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
-                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                std::shared_ptr<Device> sp(new BtSco(device, Rm, true));
                 sObjHfpRx = sp;
             }
         }
@@ -3160,7 +3173,7 @@ std::shared_ptr<Device> BtSco::getInstance(struct pal_device *device,
             std::lock_guard<std::mutex> lock(Device::mInstMutex);
             if (!sObjHfpTx) {
                 PAL_DBG(LOG_TAG, "creating instance for  %d", device->id);
-                std::shared_ptr<Device> sp(new BtSco(device, Rm));
+                std::shared_ptr<Device> sp(new BtSco(device, Rm, true));
                 sObjHfpTx = sp;
             }
         }

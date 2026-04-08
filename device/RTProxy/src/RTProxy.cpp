@@ -208,6 +208,8 @@ int32_t RTProxyIn::getDeviceConfig(struct pal_device *deviceattr,
    }
 
    struct pal_media_config *candidateConfig = &sAttr->in_media_config;
+   struct pal_device proxyOut_dattr = {};
+
    PAL_DBG(LOG_TAG, "sattr chn=0x%x fmt id=0x%x rate = 0x%x width=0x%x",
        sAttr->in_media_config.ch_info.channels,
        sAttr->in_media_config.aud_fmt_id,
@@ -217,7 +219,6 @@ int32_t RTProxyIn::getDeviceConfig(struct pal_device *deviceattr,
    if (!rm->ifVoiceorVoipCall(sAttr->type) && rm->isDeviceAvailable(PAL_DEVICE_OUT_PROXY)) {
        PAL_DBG(LOG_TAG, "This is NOT voice call. out proxy is available");
        std::shared_ptr<Device> devOut = nullptr;
-       struct pal_device proxyOut_dattr;
        proxyOut_dattr.id = PAL_DEVICE_OUT_PROXY;
        devOut = Device::getInstance(&proxyOut_dattr, rm);
        if (devOut) {

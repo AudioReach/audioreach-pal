@@ -60,6 +60,12 @@
                 <!-- INSTANCE - INSTANCE_1 -->
                 <graph_kv key="0xAB000000" value="0x1"/>
             </keys_and_values>
+            <keys_and_values Direction="RX" Instance="1" CustomConfig="deep_buffer_mmap">
+                <!-- STREAMRX - PCM_DEEP_BUFFER_MMAP -->
+                <graph_kv key="0xA1000000" value="0xA100001D"/>
+                <!-- INSTANCE - INSTANCE_1 -->
+                <graph_kv key="0xAB000000" value="0x1"/>
+            </keys_and_values>
             <keys_and_values Direction="RX" Instance="2">
                 <!-- STREAMRX - PCM_DEEP_BUFFER -->
                 <graph_kv key="0xA1000000" value="0xA1000001"/>

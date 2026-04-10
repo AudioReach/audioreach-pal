@@ -26,6 +26,7 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 * Changes from Qualcomm Technologies, Inc. are provided under the following license:
 * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
@@ -663,6 +664,13 @@
             <keys_and_values>
                 <!-- DEVICETX - CPS_TX -->
                 <graph_kv key="0xA3000000" value="0xA300000E"/>
+            </keys_and_values>
+        </device>
+        <!-- In CPS2 feedback Device -->
+        <device id="PAL_DEVICE_IN_CPS2_FEEDBACK">
+            <keys_and_values>
+                <!-- DEVICETX - CPS2_TX -->
+                <graph_kv key="0xA3000000" value="0xA300000F"/>
             </keys_and_values>
         </device>
         <!-- In Haptics VI feedback Device -->

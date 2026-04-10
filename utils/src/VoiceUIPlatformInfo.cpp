@@ -143,6 +143,8 @@ int32_t VUIFirstStageConfig::GetIndex(std::string param_name) {
         index = BUFFERING_MODE_CONFIG;
     } else if (param_name == "synthetic_mma_det_ids") {
         index = SYNTHETIC_MMA_DET_CONFIG;
+    } else if (param_name == "sh_mem_ts_config_ids") {
+        index = HIST_CAP_ENABLE_TS;
     } else {
         PAL_ERR(LOG_TAG, "Invalid param name %s", param_name.c_str());
     }

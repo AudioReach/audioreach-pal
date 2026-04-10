@@ -484,6 +484,12 @@
                 <graph_kv key="0xAF000000" value="0xAF000001"/>
             </keys_and_values>
         </streampp>
+        <streampp type="PAL_STREAM_VOICE_UI">
+            <keys_and_values VUIStreamPPType="HIST_CAP_VAD">
+                <!-- STREAMPP_TX - STREAMPP_TX_VAD -->
+                <graph_kv key="0xB0000000" value="0xB0000002"/>
+            </keys_and_values>
+        </streampp>
     </streampps>
     <devices>
         <!-- Speaker Device -->

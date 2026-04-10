@@ -67,6 +67,8 @@
 #define ST_MAX_FSTAGE_CONF_LEVEL  (100)
 #define CUSTOM_CONFIG_OPAQUE_DATA_SIZE 12
 #define CONF_LEVELS_INTF_VERSION_0002 0x02
+#define HIST_CAP_DATA_FLOW_BIT 1 << 0
+#define HIST_CAP_VAD_ENABLE_BIT 1 << 1
 
 std::map<st_module_type_t, std::vector<std::shared_ptr<VoiceUIInterface>>>
     SVAInterface::intf_map_;
@@ -215,6 +217,7 @@ SVAInterface::SVAInterface(st_module_type_t module_type) {
     wakeup_payload_ = nullptr;
     sound_model_info_ = new SoundModelInfo();
     mma_mode_bit_config_ = 0;
+    hist_buffer_vad_ = 0;
     memset(&default_buf_config_, 0, sizeof(default_buf_config_));
     std::memset(&deregister_model_, 0, sizeof(deregister_model_));
     std::memset(&buffering_config_, 0, sizeof(buffering_config_));
@@ -538,6 +541,9 @@ int32_t SVAInterface::GetParameter(intf_param_id_t param_id,
             break;
         case PARAM_MMAP_START_POSITION:
             param->data = &start_position_;
+            break;
+        case PARAM_HIST_BUFFER_VAD:
+            param->data = &hist_buffer_vad_;
             break;
         default:
             ALOGE("%s: %d: Unsupported param id %d",
@@ -4042,19 +4048,25 @@ int32_t SVAInterface::RegisterModel(void *s,
     }
     sm_info_map_[s]->model = model;
     sm_info_map_[s]->type = model->type;
+    ALOGI("%s: %d: Module type : %d", __func__, __LINE__, module_type_);
 
     // update mma mode bit config
     if (module_type_ == ST_MODULE_TYPE_MMA ||
         module_type_ == ST_MODULE_TYPE_HIST_CAP) {
         for (auto iter: model_list) {
             if ((*iter).type == ST_SM_ID_SVA_F_STAGE_GMM) {
+                ALOGD("%s: %d: size of mode payload : %d", __func__, __LINE__, (*iter).size);
                 if ((*iter).size == sizeof(uint32_t)) {
                     if (module_type_ == ST_MODULE_TYPE_MMA) {
                         mma_mode_bit_config_ = *(uint32_t *)(*iter).data;
                     } else if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
-                        hist_cap_mode_config_.data_flow_mode = *(uint32_t *)(*iter).data;
-                        ALOGI("%s: %d: data flow mode updated to flag as %d",
-                              __func__, __LINE__, hist_cap_mode_config_.data_flow_mode);
+                        hist_cap_mode_config_.data_flow_mode = (*(uint32_t *)(*iter).data &
+                                                               HIST_CAP_DATA_FLOW_BIT);
+                        hist_buffer_vad_ = (*(uint32_t *)(*iter).data &
+                                           HIST_CAP_VAD_ENABLE_BIT) ? 1 : 0;
+                        ALOGI("%s: %d: data flow mode updated to flag as %d, vad: %d",
+                              __func__, __LINE__, hist_cap_mode_config_.data_flow_mode,
+                              hist_buffer_vad_);
                     }
                 }
             }

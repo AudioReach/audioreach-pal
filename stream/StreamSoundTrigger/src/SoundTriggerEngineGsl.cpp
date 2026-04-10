@@ -60,6 +60,7 @@
 
 #define TIMEOUT_FOR_EOS 100000
 #define MAX_MMAP_POSITION_QUERY_RETRY_CNT 5
+#define SHMEM_UTC_TIME_STAMP 1
 
 ST_DBG_DECLARE(static int dsp_output_cnt = 0);
 
@@ -1079,13 +1080,26 @@ int32_t SoundTriggerEngineGsl::UpdateConfigsToSession(StreamSoundTrigger *s) {
     if (is_qc_wakeup_config_) {
         if (module_type_ != ST_MODULE_TYPE_HIST_CAP) {
             status = UpdateSessionPayload(s, WAKEUP_CONFIG);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to set payload for %d param, status = %d",
+                        WAKEUP_CONFIG, status);
+                goto exit;
+            }
         } else {
             status = UpdateSessionPayload(s, BUFFERING_MODE_CONFIG);
-        }
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "Failed to set VA module config, status = %d",
-                status);
-            goto exit;
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to set payload for %d param status = %d",
+                        BUFFERING_MODE_CONFIG, status);
+                goto exit;
+            }
+            if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+                status = UpdateSessionPayload(s, HIST_CAP_ENABLE_TS);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "Failed to set payload for %d, status = %d",
+                        HIST_CAP_ENABLE_TS, status);
+                    goto exit;
+                }
+            }
         }
     } else if (module_tag_ids_[CUSTOM_CONFIG] && param_ids_[CUSTOM_CONFIG]) {
         status = UpdateSessionPayload(s, CUSTOM_CONFIG);
@@ -2062,6 +2076,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
     vui_intf_param_t intf_param {};
     uint32_t mode_bit = 0;
     uint32_t synthetic_mma_det_duration = 0;
+    struct sh_mem_push_mode_header_cfg_t sh_mem_param {};
 
     PAL_DBG(LOG_TAG, "Enter, param : %u", param);
 
@@ -2087,7 +2102,9 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
         return -EINVAL;
     }
 
-    if (use_lpi_) {
+    if (param == HIST_CAP_ENABLE_TS) {
+        status = dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &detection_miid);
+    } else if (use_lpi_) {
         if (lpi_miid_ == 0)
             status =dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &lpi_miid_);
         detection_miid = lpi_miid_;
@@ -2180,6 +2197,20 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 intf_param.size = sizeof(synthetic_mma_det_duration);
             }
             ses_param_id = PAL_PARAM_ID_VOICEUI_SET_PARAM;
+            break;
+        case HIST_CAP_ENABLE_TS:
+            vui_intf_->GetParameter(PARAM_HIST_BUFFER_VAD, &intf_param);
+            if (intf_param.data == nullptr) {
+                PAL_ERR(LOG_TAG, "Failed to get vad enable/disable param");
+                return -EINVAL;
+            } else if (*(uint32_t *)intf_param.data == 0) {
+                PAL_ERR(LOG_TAG, "VAD is not enabled no need to configure sh_mem module");
+                return status;
+            }
+            sh_mem_param.header_type = SHMEM_UTC_TIME_STAMP;
+            intf_param.data = (uint8_t *)&sh_mem_param;
+            intf_param.size = sizeof(struct sh_mem_push_mode_header_cfg_t);
+            ses_param_id = PAL_PARAM_ID_SH_ENABLE_TS;
             break;
         default:
             PAL_ERR(LOG_TAG, "Invalid param id %u", param);

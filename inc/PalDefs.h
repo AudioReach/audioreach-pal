@@ -909,6 +909,7 @@ typedef enum {
     PAL_PARAM_ID_SDZ_USER_CUE_ENABLE = 113,
     PAL_PARAM_ID_SDZ_USER_CUE_DISABLE = 114,
     PAL_PARAM_ID_VOICEUI_SET_PARAM = 115,
+    PAL_PARAM_ID_SH_ENABLE_TS = 116,
 } pal_param_id_type_t;
 
 /** HDMI/DP */

@@ -2200,6 +2200,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_BUFFERING_MODE:
         case PAL_PARAM_ID_NMT_OUTPUT:
         case PAL_PARAM_ID_VOICEUI_SET_PARAM:
+        case PAL_PARAM_ID_SH_ENABLE_TS:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;
@@ -2215,7 +2216,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                 sdzMiid = header->module_instance_id;
             } else if (param_id == PAL_PARAM_ID_NMT_OUTPUT) {
                 nmtMiid = header->module_instance_id;
-            } else {
+            } else if (param_id != PAL_PARAM_ID_SH_ENABLE_TS) {
                 svaMiid = header->module_instance_id;
             }
             paramData = (uint8_t *)payload;

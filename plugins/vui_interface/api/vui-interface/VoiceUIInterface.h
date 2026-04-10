@@ -160,7 +160,8 @@ typedef enum {
     PARAM_BUFFERING_MODE_CONFIG = 39,
     PARAM_MMAP_START_POSITION = 40,
     PARAM_MMAP_BYTES_TO_READ = 41,
-    PARAM_ID_MAX = 42,
+    PARAM_HIST_BUFFER_VAD = 42,
+    PARAM_ID_MAX = 43,
     // custom param id should be in format like
     // PARAM_ID_MAX + x
 } intf_param_id_t;

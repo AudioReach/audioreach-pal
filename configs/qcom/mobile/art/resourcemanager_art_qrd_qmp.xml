@@ -2200,6 +2200,7 @@
                         <param trigger_detection_ids="0xC0000008, 0x08001B7E" />
                         <param buffering_config_ids="0xC0000008, 0x08001044" />
                         <param engine_reset_ids="0xC0000008, 0x08001051" />
+                        <param sh_mem_ts_config_ids="0xC0000001, 0x08001BDF" />
                     </first_stage_module_params>
                 </sound_model_info>
             </stream_config>

@@ -393,6 +393,7 @@ typedef enum st_param_id_type {
     TRIGGER_DETECTION_CONFIG,
     BUFFERING_MODE_CONFIG,
     SYNTHETIC_MMA_DET_CONFIG,
+    HIST_CAP_ENABLE_TS,
     MAX_PARAM_IDS
 } st_param_id_type_t;
 

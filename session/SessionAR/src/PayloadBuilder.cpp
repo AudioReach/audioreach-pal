@@ -2819,7 +2819,7 @@ exit:
 
 /** Used for Loopback stream types only */
 int PayloadBuilder::populateStreamPPKV(Stream* s, std::vector <std::pair<int,int>> &keyVectorRx,
-        std::vector <std::pair<int,int>> &keyVectorTx __unused)
+        std::vector <std::pair<int,int>> &keyVectorTx)
 {
     int status = 0;
     struct pal_stream_attributes *sattr = NULL;
@@ -2847,6 +2847,11 @@ int PayloadBuilder::populateStreamPPKV(Stream* s, std::vector <std::pair<int,int
         if (selectors.empty() != true)
             filled_selector_pairs = getSelectorValues(selectors, s, NULL);
         retrieveKVs(filled_selector_pairs ,sattr->type, all_streampps, keyVectorRx);
+    } else if (sattr->type == PAL_STREAM_VOICE_UI) {
+        selectors = retrieveSelectors(sattr->type, all_streampps);
+        if (selectors.size())
+            filled_selector_pairs = getSelectorValues(selectors, s, NULL);
+        retrieveKVs(filled_selector_pairs ,sattr->type, all_streampps, keyVectorTx);
     } else {
         PAL_DBG(LOG_TAG, "KVs not provided for stream type:%d", sattr->type);
     }
@@ -3066,6 +3071,18 @@ std::vector<std::pair<selector_type_t, std::string>> PayloadBuilder::getSelector
                     PAL_INFO(LOG_TAG, "Loopback type: %d",
                         sattr->info.opt_stream_info.loopback_type);
                 }
+                break;
+            case VUI_STREAMPP_TYPE_SEL:
+                if (!s) {
+                    PAL_ERR(LOG_TAG, "Invalid stream");
+                    goto free_sattr;
+                }
+
+                if (s->getStreamPPSelector().length() != 0)
+                    filled_selector_pairs.push_back(std::make_pair(selector_type,
+                        s->getStreamPPSelector()));
+
+                PAL_INFO(LOG_TAG, "VUI module type:%s", s->getStreamSelector().c_str());
                 break;
             case VUI_MODULE_TYPE_SEL:
                 if (!s) {

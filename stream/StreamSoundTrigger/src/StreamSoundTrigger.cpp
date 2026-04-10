@@ -1439,6 +1439,13 @@ int32_t StreamSoundTrigger::LoadSoundModel(
     }
     mInstanceID = rm->getStreamInstanceID(this);
 
+    if (model_type_ == ST_MODULE_TYPE_HIST_CAP) {
+        status = vui_intf_->GetParameter(PARAM_HIST_BUFFER_VAD, &param_model);
+        if (!status && param_model.data != nullptr && *(uint32_t *)param_model.data) {
+            mStreamPPSelector = "HIST_CAP_VAD";
+        }
+    }
+
     param_model.data = (void *)&model_list;
     status = vui_intf_->GetParameter(PARAM_SOUND_MODEL_LIST, &param_model);
     for (int i = 0; i < model_list.sm_list.size(); i++) {

@@ -303,6 +303,10 @@ const std::string& Stream::getStreamSelector() const {
     return mStreamSelector;
 }
 
+const std::string& Stream::getStreamPPSelector() const {
+    return mStreamPPSelector;
+}
+
 const std::string& Stream::getDevicePPSelector() const {
     return mDevPPSelector;
 }

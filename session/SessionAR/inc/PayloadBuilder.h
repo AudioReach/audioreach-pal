@@ -122,6 +122,7 @@ typedef enum {
     SIDETONE_MODE_SEL,
     STREAM_ADDRESS_SEL,
     BLE_ABR_SEL,
+    VUI_STREAMPP_TYPE_SEL,
 } selector_type_t;
 
 const std::map<std::string, selector_type_t> selectorstypeLUT {
@@ -143,6 +144,7 @@ const std::map<std::string, selector_type_t> selectorstypeLUT {
     {std::string{ "SidetoneMode" },          SIDETONE_MODE_SEL},
     {std::string{ "StreamAddress" },         STREAM_ADDRESS_SEL},
     {std::string{ "SAOffloadMode" },         BLE_ABR_SEL},
+    {std::string{ "VUIStreamPPType" },       VUI_STREAMPP_TYPE_SEL},
 };
 
 struct kvPairs {

@@ -400,6 +400,11 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
             PAL_ERR(LOG_TAG, "get stream KV failed %d", status);
             goto exit;
         }
+        //get streamPPKV
+        if ((status = builder->populateStreamPPKV(streamHandle, emptyKV, streamKV)) != 0) {
+            PAL_ERR(LOG_TAG, "get stream KV failed %d", status);
+            goto exit;
+        }
     }
 
     switch (sAttr.type) {

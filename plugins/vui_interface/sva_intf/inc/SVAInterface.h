@@ -169,6 +169,7 @@ class SVAInterface: public VoiceUIInterface {
     struct tiuv_detection_result tiuv_detection_result_;
     param_id_history_buffer_mode_t hist_cap_mode_config_;
     uint32_t mma_mode_bit_config_;
+    uint32_t hist_buffer_vad_;
     uint8_t *wakeup_payload_;
     uint32_t wakeup_payload_size_;
     uint8_t *ftrt_data_;

@@ -581,23 +581,6 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                         PAL_ERR(LOG_TAG, "Cannot set the mux-demux tag, as ongoing voice with Call Translation not found");
                         goto set_mixer;
                     }
-                #ifndef UVVOICECUE_FEATURES_DISABLED
-                    currentValues = getUvMaskUseCaseValues();
-                    if ((currentValues & UV_FLUENCE_VOIP_BIT) &&
-                        (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
-                        status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
-                                                txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
-                        if (status != 0) {
-                            PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
-                        } else {
-                            PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
-                            status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_VOIP_BIT);
-                            if (0 != status) {
-                                PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
-                            }
-                        }
-                    }
-                #endif
                 }
 configure_pspfmfc:
             status = s->getAssociatedDevices(associatedDevices);
@@ -621,6 +604,26 @@ configure_pspfmfc:
                     PAL_ERR(LOG_TAG, "build MFC payload failed");
                 }
             }
+            #ifndef UVVOICECUE_FEATURES_DISABLED
+                if (sAttr.type == PAL_STREAM_VOIP_TX) {
+                    currentValues = getUvMaskUseCaseValues();
+                    if ((currentValues & UV_FLUENCE_VOIP_BIT) &&
+                       (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
+                       status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                               txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
+                       if (status != 0) {
+                           PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                       } else {
+                           PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
+                           status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_VOIP_BIT);
+                           if (0 != status) {
+                               PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+                           }
+                           goto exit;
+                       }
+                    }
+                }
+            #endif
 set_mixer:
             builder->getCustomPayload(&payload, &payloadSize);
             status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),

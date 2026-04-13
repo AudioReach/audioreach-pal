@@ -58,6 +58,9 @@
 #include "SessionAlsaPcm.h"
 #include "SessionAlsaUtils.h"
 #include "ConfigSessionUtils.h"
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
 #include "apm_api.h"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -260,6 +263,13 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
         PAL_ERR(LOG_TAG, "setMixerParameter failed");
         goto exit;
     }
+    #ifndef UVVOICECUE_FEATURES_DISABLED
+    status = pcmPostReconfigSetUvVoiceCue(streamHandle, sess, mixerHandle, pcmDevIds);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "pcm post reconfig UV cue update failed %d", status);
+        goto exit;
+    }
+    #endif
 
 exit:
     if (builder) {
@@ -1137,3 +1147,94 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
 
     return;
 }
+#ifndef UVVOICECUE_FEATURES_DISABLED
+int32_t pcmPostReconfigSetUvVoiceCue(Stream *streamHandle,
+                                            Session *sess,
+                                            struct mixer *mixerHandle,
+                                            const std::vector<int> &pcmDevIds)
+{
+    int32_t status = 0;
+    uint32_t miid = 0;
+    uint32_t currentValues = 0;
+    uint32_t uvBit = 0;
+    pal_stream_attributes sAttr = {};
+    SessionAlsaPcm *session = nullptr;
+    std::shared_ptr<ResourceManager> rm = nullptr;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    PayloadBuilder *builder = nullptr;
+
+    if (!streamHandle || !sess || !mixerHandle) {
+        PAL_ERR(LOG_TAG, "Invalid input");
+        return -EINVAL;
+    }
+    if (pcmDevIds.empty()) {
+        PAL_ERR(LOG_TAG, "pcmDevIds is empty");
+        return -EINVAL;
+    }
+    if (getVoiceCueDataPtr() == nullptr || getVoiceCueDataSize() == 0) {
+        PAL_DBG(LOG_TAG, "No voice cue data present, skipping");
+        return 0;
+    }
+    status = streamHandle->getStreamAttributes(&sAttr);
+    if (status) {
+        PAL_ERR(LOG_TAG, "getStreamAttributes failed %d", status);
+        return status;
+    }
+    switch (sAttr.type) {
+    case PAL_STREAM_VOIP_TX:
+        uvBit = UV_FLUENCE_VOIP_BIT;
+        break;
+    case PAL_STREAM_VOICE_UI:
+    case PAL_STREAM_ASR:
+    case PAL_STREAM_ACD:
+        uvBit = UV_FLUENCE_SVA_BIT;
+        break;
+    case PAL_STREAM_DEEP_BUFFER:
+        uvBit = UV_FLUENCE_AUDIO_BIT;
+        break;
+    default:
+        PAL_DBG(LOG_TAG, "UV cue not needed for stream type %d", sAttr.type);
+        return 0;
+    }
+    currentValues = getUvMaskUseCaseValues();
+    if (!(currentValues & uvBit)) {
+        PAL_DBG(LOG_TAG, "UV mask not enabled for stream type %d", sAttr.type);
+        return 0;
+    }
+
+    rm = ResourceManager::getInstance();
+    session = static_cast<SessionAlsaPcm *>(sess);
+    txAifBackEnds = session->getTxBEVecRef();
+
+    if (txAifBackEnds.empty()) {
+        PAL_ERR(LOG_TAG, "txAifBackEnds is empty");
+        return -EINVAL;
+    }
+    builder = new PayloadBuilder();
+    status = SessionAlsaUtils::getModuleInstanceId(mixerHandle,
+                                                   pcmDevIds.at(0),
+                                                   txAifBackEnds[0].second.data(),
+                                                   TAG_UVCALL_VOICECUE,
+                                                   &miid);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
+        goto exit;
+    }
+    PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d",
+            miid, pcmDevIds.at(0));
+    status = SessionAlsaUtils::checkAndSetUvVoiceCue(streamHandle,
+                                                     mixerHandle,
+                                                     pcmDevIds.at(0),
+                                                     miid,
+                                                     rm,
+                                                     builder,
+                                                     uvBit);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+    }
+exit:
+    if (builder)
+        delete builder;
+    return status;
+}
+#endif

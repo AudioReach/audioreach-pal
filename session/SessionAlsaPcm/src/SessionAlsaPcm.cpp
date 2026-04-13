@@ -1538,7 +1538,6 @@ int SessionAlsaPcm::close(Stream * s)
                 sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
                 ldir = TX_HOSTLESS;
 
-            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_OUTPUT:
@@ -1609,7 +1608,6 @@ int SessionAlsaPcm::close(Stream * s)
                 (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
                 ldir = RX_HOSTLESS;
 
-            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
@@ -1659,23 +1657,17 @@ int SessionAlsaPcm::close(Stream * s)
                PAL_ERR(LOG_TAG, "pcm_close - tx failed %d", status);
             }
 
-            if (pcmDevRxIds.size())
-                freeFrontEndIds(sAttr, RX_HOSTLESS);
-            if (pcmDevTxIds.size())
-                freeFrontEndIds(sAttr, TX_HOSTLESS);
             pcmRx = NULL;
             pcmTx = NULL;
             break;
     }
-    frontEndIdAllocated = false;
-    mState = SESSION_IDLE;
 
     if (sAttr.type == PAL_STREAM_VOICE_UI ||
         sAttr.type == PAL_STREAM_ACD ||
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
-        sAttr.type ==PAL_STREAM_CALL_TRANSLATION ||
+        sAttr.type == PAL_STREAM_CALL_TRANSLATION ||
         (sAttr.type == PAL_STREAM_HAPTICS &&
         sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)) {
         switch (sAttr.type) {
@@ -1699,6 +1691,18 @@ int SessionAlsaPcm::close(Stream * s)
             PAL_ERR(LOG_TAG, "Failed to deregister callback to rm");
         }
     }
+
+    if (sAttr.direction == PAL_AUDIO_INPUT ||
+        sAttr.direction == PAL_AUDIO_OUTPUT) {
+        freeFrontEndIds(sAttr, ldir);
+    } else {
+        if (pcmDevRxIds.size())
+            freeFrontEndIds(sAttr, RX_HOSTLESS);
+        if (pcmDevTxIds.size())
+            freeFrontEndIds(sAttr, TX_HOSTLESS);
+    }
+    frontEndIdAllocated = false;
+    mState = SESSION_IDLE;
 
     builder->freeCustomPayload();
     if (eventPayloadList.size() > 0)

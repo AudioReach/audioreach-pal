@@ -9997,12 +9997,27 @@ bool ResourceManager::doDevAttrDiffer(struct pal_device *inDevAttr,
                     ResourceManager::currentGroupDevConfig.grp_dev_hwep_cfg.slot_mask);
             ret = true;
         }
-        if (strcmp(ResourceManager::activeGroupDevConfig->snd_dev_name.c_str(),
-                   ResourceManager::currentGroupDevConfig.snd_dev_name.c_str())) {
+
+        const bool useFallbackSndCmp =
+                ResourceManager::activeGroupDevConfig->snd_dev_name.empty() ||
+                ResourceManager::currentGroupDevConfig.snd_dev_name.empty();
+        const char *inSndName = inDevAttr->sndDevName;
+        const char *curSndName = curDevAttr->sndDevName;
+        const char *activeSndName = ResourceManager::activeGroupDevConfig->snd_dev_name.c_str();
+        const char *runningSndName = ResourceManager::currentGroupDevConfig.snd_dev_name.c_str();
+        const int sndCmp = useFallbackSndCmp ? strcmp(inSndName, curSndName) :
+                strcmp(activeSndName, runningSndName);
+        if (useFallbackSndCmp) {
+            PAL_DBG(LOG_TAG,
+                    "UPD group snd name invalid, fallback snd compare in=%s cur=%s sndCmp=%d",
+                    inSndName, curSndName, sndCmp);
+        }
+        if (sndCmp != 0) {
             PAL_DBG(LOG_TAG, "found new snd device %s, device switch needed",
-                    ResourceManager::activeGroupDevConfig->snd_dev_name.c_str());
+                    useFallbackSndCmp ? inSndName : activeSndName);
             ret = true;
         }
+
         /* special case when we are switching with shared BE
          * always switch all to incoming device
          */

@@ -60,6 +60,7 @@
             <usecase>
             <!-- PCM_RECORD   -->
                 <type>0xB1000001</type>
+                <ckv key="0xBF000000" value="0x02" />
             </usecase>
         </device>
         <device>

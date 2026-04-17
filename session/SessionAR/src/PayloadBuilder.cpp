@@ -3890,22 +3890,14 @@ int PayloadBuilder::populateCalKeyVector(Stream *s, std::vector <std::pair<int,i
                 return status;
             }
             if (dAttr.id == PAL_DEVICE_OUT_HAPTICS_DEVICE) {
-                switch (dAttr.config.ch_info.channels) {
-                    case 1:
-                        PAL_DBG(LOG_TAG, "Mono channel speaker");
-                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, RIGHT_SPKR));
-                        break;
-                    case 2:
-                        PAL_DBG(LOG_TAG, "Stereo channel speaker");
-                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, STEREO_SPKR));
-                        break;
-                    case 4:
-                        PAL_DBG(LOG_TAG, "QUAD channel speaker");
-                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, QUAD_SPKR));
-                        break;
-                    default:
-                        PAL_DBG(LOG_TAG, "Unsupport number of channels %d", dAttr.config.ch_info.channels);
-	        }
+                if (dAttr.config.ch_info.channels > 1) {
+                    PAL_DBG(LOG_TAG, "Multi channel Haptics Dev");
+                    ckv.push_back(std::make_pair(HAPTICS_PRO_DEV_MAP, HAPTICS_LEFT_RIGHT));
+                }
+                else {
+                    PAL_DBG(LOG_TAG, "Mono channel Haptics Dev");
+                    ckv.push_back(std::make_pair(HAPTICS_PRO_DEV_MAP, HAPTICS_LEFT_MONO));
+                }
                 break;
             }
         }

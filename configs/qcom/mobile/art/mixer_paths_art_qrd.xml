@@ -479,8 +479,8 @@
     <!-- TTY devices -->
 
     <path name="tty-headphones">
-        <ctl name="RX_MACRO RX0 MUX" value="AIF1_PB" />
-        <ctl name="RX INT0_1 MIX1 INP0" value="RX0" />
+        <ctl name="RX_MACRO RX2 MUX" value="AIF2_PB" />
+        <ctl name="RX INT0_2 MUX" value="RX2" />
         <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
         <ctl name="HPHL Compander" value="1" />
         <ctl name="HPHL XTALK" value="1" />

@@ -2551,6 +2551,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                         if (status)
                             PAL_ERR(LOG_TAG, "setMixerParam for haptics PCM Failed\n");
                     }
+                    if (paramData)
+                        builder->freeCustomPayload(&paramData, &paramSize);
                 }
                 builder->payloadHapticsDevPConfig(&paramData, &paramSize,
                            miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);
@@ -2560,6 +2562,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                     if (status)
                        PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
                 }
+                if (paramData)
+                    builder->freeCustomPayload(&paramData, &paramSize);
             }
             free(hpCnfg->buffer_ptr);
             hpCnfg->buffer_ptr = NULL;

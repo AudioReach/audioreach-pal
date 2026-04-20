@@ -22,12 +22,12 @@ AM_CPPFLAGS += -I ${top_srcdir}/plugins/vui_interface/api/vui-interface
 session_utils_sources = ./src/ConfigSessionUtils.cpp
 
 library_includedir = $(includedir)/session_utils_config
-lib_LTLIBRARIES     = libsession_utils_config.la
+noinst_LTLIBRARIES     = libsession_utils_config.la
 libsession_utils_config_la_SOURCES   = $(session_utils_sources)
 libsession_utils_config_la_LIBADD    = @GLIB_LIBS@ -llog -lexpat -ltinyalsa
 libsession_utils_config_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_utils_config_la_CPPFLAGS += -std=c++14
-libsession_utils_config_la_LDFLAGS   = --disable-shared -avoid-version
+libsession_utils_config_la_LDFLAGS   = -avoid-version
 libsession_utils_config_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libsession_utils_config_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_utils_config_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

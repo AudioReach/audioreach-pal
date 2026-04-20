@@ -17,9 +17,6 @@ AM_CPPFLAGS += -I $(top_srcdir)/inc
 AM_CPPFLAGS += -I $(top_srcdir)/
 
 AM_CPPFLAGS += $(SPF_CFLAGS)/
-AM_CPPFLAGS += $(ACDBDATA_CFLAGS)
-AM_CPPFLAGS += -I $(TOPDIR)/src/audio/mm-audio-headers/capiv2_api/
-AM_CPPFLAGS += -I $(TOPDIR)/system/media/audio_route/include/
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
 

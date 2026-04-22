@@ -28,6 +28,7 @@
         <param key="haptics_through_wsa" value ="true" />
         <param key="haptics_cshm_support" value="true"/>
         <param key="dummy_dev_enable" value ="true" />
+        <param key="spatialaudio_headtracking_enabled" value ="true" />
     </config_params>
     <config_gapless key="gapless_supported" value="1"/>
     <config_sound_dose key="sound_dose_enable" value ="false" />

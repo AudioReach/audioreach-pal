@@ -55,6 +55,7 @@
         <param key="haptics_through_wsa" value ="true" />
         <param key="haptics_cshm_support" value="true"/>
         <param key="dummy_dev_enable" value ="true" />
+        <param key="spatialaudio_headtracking_enabled" value ="true" />
     </config_params>
     <config_volume>
         <use_volume_set_param>0</use_volume_set_param>

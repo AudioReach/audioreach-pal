@@ -273,9 +273,6 @@
                     <channels>4</channels>
                     <snd_device_name>quad-mic</snd_device_name>
                 </custom-config>
-                <custom-config key="voicecue">
-                    <sidetone_mode>OFF</sidetone_mode>
-                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
@@ -422,9 +419,6 @@
                     <channels>4</channels>
                     <snd_device_name>quad-mic</snd_device_name>
                 </custom-config>
-                <custom-config key="voicecue">
-                    <sidetone_mode>OFF</sidetone_mode>
-                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_LOOPBACK</name>
@@ -490,9 +484,6 @@
                 <custom-config key="nn-sm">
                     <channels>1</channels>
                     <snd_device_name>headset-mic</snd_device_name>
-                </custom-config>
-                <custom-config key="voicecue">
-                    <sidetone_mode>OFF</sidetone_mode>
                 </custom-config>
             </usecase>
             <usecase>
@@ -612,9 +603,6 @@
                 <priority>1</priority>
                 <sidetone_mode>HW</sidetone_mode>
                 <ec_enable>1</ec_enable>
-                <custom-config key="voicecue">
-                    <sidetone_mode>OFF</sidetone_mode>
-                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>

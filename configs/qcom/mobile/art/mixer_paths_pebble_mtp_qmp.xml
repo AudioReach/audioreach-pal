@@ -1331,6 +1331,11 @@
         <path name="headphones" />
     </path>
 
+    <path name="headphones-hifi-filter">
+        <ctl name="RX_FIR Filter" value="ON" />
+        <path name="headphones" />
+    </path>
+
     <path name="voice-headphones">
         <path name="headphones" />
     </path>

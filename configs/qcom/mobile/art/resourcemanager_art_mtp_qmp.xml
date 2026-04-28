@@ -345,6 +345,12 @@
             <usecase>
                 <name>PAL_STREAM_COMPRESSED</name>
                 <ec_enable>1</ec_enable>
+                <custom-config key="audio-record-zoom-on">
+                    <ec_enable>0</ec_enable>
+                    <channels>4</channels>
+                    <bit_width>24</bit_width>
+                    <snd_device_name>quad-mic</snd_device_name>
+                </custom-config>
                 <custom-config key="unprocessed-hdr-mic-landscape">
                     <channels>4</channels>
                     <snd_device_name>unprocessed-hdr-mic-landscape</snd_device_name>

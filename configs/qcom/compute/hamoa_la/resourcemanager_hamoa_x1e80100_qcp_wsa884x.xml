@@ -833,7 +833,7 @@
             -->
             <speaker_mono_right>0</speaker_mono_right>
             <!-- Time in seconds for Quick cal. Set 0 to disable -->
-            <quick_cal_time>30</quick_cal_time>
+            <quick_cal_time>0</quick_cal_time>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
                 <priority>1</priority>

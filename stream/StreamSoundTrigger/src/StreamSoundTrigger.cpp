@@ -1944,11 +1944,11 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
     vui_intf_param_t param {};
 
     if (detection == PAL_RECOGNITION_STATUS_ABORT) {
-        if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
+        if (sound_model_type_ == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
             phrase_rec_event = (struct pal_st_phrase_recognition_event*)calloc(1,
                 sizeof(struct pal_st_phrase_recognition_event));
             rec_event = (struct pal_st_recognition_event *)phrase_rec_event;
-        } else if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_GENERIC) {
+        } else if (sound_model_type_ == PAL_SOUND_MODEL_TYPE_GENERIC) {
             rec_event = (struct pal_st_recognition_event *)calloc(1,
                 sizeof(struct pal_st_recognition_event));
         }

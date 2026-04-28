@@ -2737,7 +2737,31 @@ skip_ultrasound_gain:
             status = 0;
             goto exit;
         }
+        case PAL_PARAM_ID_TIMESTRETCH_PARAMS:
+        {
+            pal_param_payload* param_payload = (pal_param_payload*)payload;
+            pal_param_playback_rate_t* playbackRate =
+                    (pal_param_playback_rate_t*)(param_payload->payload);
+            PAL_DBG(LOG_TAG, "speed %f, pitch %f", playbackRate->speed, playbackRate->pitch);
+            status = SessionAlsaUtils::getModuleInstanceId(
+                    mixer, device, rxAifBackEnds[0].second.data(), TAG_MODULE_TSM, &miid);
 
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to get tag TAG_MODULE_TSM for playback rate, status = %d",
+                        status);
+                status = 0;
+                goto exit;
+            }
+
+            builder->payloadPlaybackRateParametersConfig(&paramData, &paramSize, miid,
+                                                         playbackRate);
+            if (paramSize) {
+                status = SessionAlsaUtils::setMixerParameter(mixer, device, paramData, paramSize);
+                PAL_INFO(LOG_TAG, "mixer set playbackRate parameters status=%d", status);
+                builder->freeCustomPayload(&paramData, &paramSize);
+            }
+            break;
+        }
         default:
             status = -EINVAL;
             PAL_ERR(LOG_TAG, "Unsupported param id %u status %d", param_id, status);

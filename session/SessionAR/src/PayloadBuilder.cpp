@@ -3259,6 +3259,10 @@ int PayloadBuilder::populateStreamKV(Stream* s,
                 "bit_perfect"));
             PAL_INFO(LOG_TAG, "BitPerfect Playback, hence select PCM_IMMUTABLE KV");
         }
+    } else if ((sattr->flags & PAL_STREAM_FLAG_MMAP_NO_IRQ) &&
+               (sattr->flags & PAL_STREAM_FLAG_OFFLOAD)) {
+        filled_selector_pairs.push_back(std::make_pair(CUSTOM_CONFIG_SEL, "offload_mmap"));
+        PAL_INFO(LOG_TAG, ":PCM_OFFLOAD_PLAYBACK_MMAP selected");
     } else if (sattr->type == PAL_STREAM_DEEP_BUFFER &&
               (sattr->flags & PAL_STREAM_FLAG_MMAP_MASK)) {
         filled_selector_pairs.push_back(

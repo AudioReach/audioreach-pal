@@ -634,6 +634,7 @@ typedef enum {
     PAL_STREAM_FLAG_EXTERN_MEM      = 0x10, /**< Shared memory buffers allocated by client*/
     PAL_STREAM_FLAG_SRCM_INBAND     = 0x20, /**< MediaFormat change event inband with data buffers*/
     PAL_STREAM_FLAG_EOF             = 0x40, /**< MediaFormat change event inband with data buffers*/
+    PAL_STREAM_FLAG_OFFLOAD         = 0x1 << 7, /* Stream Data is offloaded to DSP */
 } pal_stream_flags_t;
 
 #define PAL_STREAM_FLAG_NON_BLOCKING_MASK 0x2

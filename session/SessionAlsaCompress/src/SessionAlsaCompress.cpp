@@ -1757,8 +1757,7 @@ int SessionAlsaCompress::write(Stream *s __unused, struct pal_buffer *buf, int *
     int status;
     bool non_blocking = (!!ioMode);
     if (!buf || !(buf->buffer) || !(buf->size)) {
-        PAL_VERBOSE(LOG_TAG, "buf: %pK, size: %zu",
-                    buf, (buf ? buf->size : 0));
+        PAL_ERR(LOG_TAG, "buf is null or buf->size is 0");
         return -EINVAL;
     }
     if (!compress) {

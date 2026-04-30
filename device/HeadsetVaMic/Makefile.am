@@ -43,7 +43,7 @@ library_includedir = $(includedir)/dev_headset_va
 lib_LTLIBRARIES     = libdev_headset_va.la
 libdev_headset_va_la_SOURCES   = $(dev_headset_va_sources)
 libdev_headset_va_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libdev_headset_va_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_headset_va_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_headset_va_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_headset_va_la_CPPFLAGS += -std=c++14
 libdev_headset_va_la_LDFLAGS   = -shared -avoid-version

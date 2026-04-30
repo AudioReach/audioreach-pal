@@ -44,7 +44,7 @@ library_includedir = $(includedir)/session_compress
 lib_LTLIBRARIES     = libsession_compress.la
 libsession_compress_la_SOURCES   = $(session_compress_sources)
 libsession_compress_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libsession_compress_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar -L${abs_top_builddir}/.libs -lpal
+libsession_compress_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar -L${abs_top_builddir}/.libs -lar-pal
 libsession_compress_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_compress_la_CPPFLAGS += -std=c++14
 libsession_compress_la_LDFLAGS   = -shared -avoid-version

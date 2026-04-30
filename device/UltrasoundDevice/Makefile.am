@@ -42,7 +42,7 @@ library_includedir = $(includedir)/dev_ultrasound
 lib_LTLIBRARIES     = libdev_ultrasound.la
 libdev_ultrasound_la_SOURCES   = $(dev_ultrasound_sources)
 libdev_ultrasound_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libdev_ultrasound_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_ultrasound_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_ultrasound_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_ultrasound_la_CPPFLAGS += -std=c++14
 libdev_ultrasound_la_LDFLAGS   = -shared -avoid-version

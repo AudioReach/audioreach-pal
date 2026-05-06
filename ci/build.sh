@@ -18,6 +18,7 @@ make DESTDIR=$SDKTARGETSYSROOT  install
 
 cd ..
 
+
 autoreconf -Wcross --verbose --install --force --exclude=autopoint
 autoconf --force
 

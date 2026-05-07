@@ -1164,7 +1164,7 @@ int32_t StreamASR::SetRecognitionConfig(struct pal_asr_config *asrRecCfg)
     }
 
     if (engine && userCue && userCueEnabled) {
-        status = engine->setParameters(this, SDZ_SET_USER_CUE, userCue);
+        status = engine->setParameters(this, SDZ_USER_CUE_ENABLE, userCue);
         if (status)
             PAL_ERR(LOG_TAG, "Error: %d Failed to enable user cue", status);
     }

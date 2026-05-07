@@ -746,6 +746,16 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             break;
         }
         case SDZ_SET_USER_CUE: {
+            if (!userCuePayload || userCuePayloadSize == 0) {
+                PAL_ERR(LOG_TAG, "No valid user cue to be set");
+                goto exit;
+            }
+            data = (uint8_t *)userCuePayload;
+            dataSize = userCuePayloadSize;
+            sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
+            break;
+        }
+        case SDZ_USER_CUE_ENABLE: {
             if (!paramPayload) {
                 PAL_ERR(LOG_TAG, "Invalid param payload");
                 status = -EINVAL;
@@ -755,8 +765,7 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             userCuePayloadSize = userCuePayload->voiceprint_size +
                 sizeof(param_id_sdz_voice_profile_t);
             sdzUvEnabled = true;
-            sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
-            break;
+            goto exit;
         }
         default: {
             PAL_ERR(LOG_TAG, "Unexpected param ID is sent, not implemented yet");

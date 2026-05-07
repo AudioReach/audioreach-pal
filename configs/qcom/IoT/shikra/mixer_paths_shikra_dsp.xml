@@ -51,7 +51,7 @@
     <ctl name="VA_DEC0 MODE" value="ADC_DEFAULT" />
     <ctl name="ADC2_BCS Disable" value="0" />
     <ctl name="ADC1_MIXER Switch" value="0" />
-    <ctl name="ADC2_MIXER Switch" value="0" />
+    <ctl name="ADC2_MIXER Switch" value="1" />
     <ctl name="ADC3_MIXER Switch" value="0" />
     <ctl name="ADC4_MIXER Switch" value="0" />
     <ctl name="ADC2 MUX" value="INP2" />
@@ -474,20 +474,33 @@
     <ctl name="RX HPH Mode" value="CLS_H_ULP" />
 
     <!-- These are actual sound device specific mixer settings -->
+    <path name="amic1">
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+        <ctl name="VA SMIC MUX0" value="SWR_MIC0" />
+        <ctl name="ADC1 ChMap" value="SWRM_TX1_CH1" />
+        <ctl name="ADC1_MIXER Switch" value="1" />
+    </path>
+
     <path name="amic2">
-        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX0" value="SWR_MIC1" />
-        <ctl name="DEC0_BCS Switch" value="1" />
-        <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
-        <ctl name="TX WSA MUX0" value="NO_WSA"/>
-        <ctl name="TX PORT SEL MUX0" value="PORT1"/>
-        <ctl name="ADC2 MUX" value="CH2_AMIC2" />
-        <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
-        <ctl name="MBHC ChMap" value="SWRM_TX1_CH3" />
-        <ctl name="TX1 MODE" value="ADC_LP" />
-        <ctl name="BCS Channel" value="CH2" />
+         <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+         <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+         <ctl name="VA SMIC MUX0" value="SWR_MIC1" />
+         <ctl name="VA PORT SEL MUX0" value="PORT1"/>
+         <ctl name="VA_DEC0 MODE" value="ADC_LOW_PWR" />
+         <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
+         <ctl name="ADC2_MIXER Switch" value="1" />
+         <ctl name="ADC2 MUX" value="INP2" />
+         <ctl name="ADC2_BCS Disable" value="1" />
+    </path>
+
+    <path name="amic3">
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+        <ctl name="VA SMIC MUX0" value="SWR_MIC1" />
+        <ctl name="ADC2 ChMap" value="SWRM_TX1_CH2" />
         <ctl name="ADC2_MIXER Switch" value="1" />
-        <ctl name="AMIC2_MIXER Switch" value="1" />
+        <ctl name="ADC2 MUX" value="INP3" />
     </path>
 
     <path name="dmic1">
@@ -638,7 +651,6 @@
     </path>
 
     <path name="headset-mic">
-        <ctl name="TX_DEC0 Volume" value="84" />
         <path name="amic2" />
     </path>
 
@@ -816,14 +828,12 @@
          <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
          <ctl name="VA DEC0 MUX" value="SWR_MIC" />
          <ctl name="VA SMIC MUX0" value="SWR_MIC1" />
-         <ctl name="TX1 MODE" value="ADC_LP" />
-         <ctl name="ADC2 MUX" value="CH2_AMIC2" />
-         <ctl name="VA_DEC0 MODE" value="ADC_LOW_PWR" />
          <ctl name="VA PORT SEL MUX0" value="PORT1"/>
+         <ctl name="VA_DEC0 MODE" value="ADC_LOW_PWR" />
          <ctl name="ADC2 ChMap" value="SWRM_TX2_CH2" />
-         <ctl name="ADC2_BCS Disable" value="1" />
          <ctl name="ADC2_MIXER Switch" value="1" />
-         <ctl name="VA_AMIC2_MIXER Switch" value="1" />
+         <ctl name="ADC2 MUX" value="INP2" />
+         <ctl name="ADC2_BCS Disable" value="1" />
     </path>
 
     <!-- headset-single-amic-dual-adc-hdr -->

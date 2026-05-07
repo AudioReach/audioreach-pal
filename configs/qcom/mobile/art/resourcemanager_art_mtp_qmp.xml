@@ -1883,7 +1883,7 @@
                 <param enable_speaker_diarization="false"/>
                 <param threshold="50"/>
                 <param timeout_duration="0"/>
-                <param silence_detection_duration="5000"/>
+                <param silence_detection_duration="1000"/>
                 <param outputBufferMode="false"/>
             </default_config>
             <stream_config>

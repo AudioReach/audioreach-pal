@@ -175,10 +175,10 @@ install-data-hook:
 	ln -sf resourcemanager_QCS6490_RB3Gen2.xml $(DESTDIR)$(root_etcdir)/resourcemanager_QCM6490_IDP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_LEMANS_EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra-CQM-EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra-CQM-EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra-CQS-EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra-CQS-EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra_CQM_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra_CQM_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra_CQS_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra_CQS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/plugin_manager.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_X1E80100_CRD.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_X1E80100_CRD.xml

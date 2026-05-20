@@ -102,7 +102,7 @@ libpal_la_LIBADD    += -lagmclientwrapper
 endif
 libpal_la_CPPFLAGS += $(AM_CPPFLAGS)
 libpal_la_CPPFLAGS += -std=c++14
-libpal_la_LDFLAGS   = -shared -avoid-version
+libpal_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
 libpal_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libpal_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 

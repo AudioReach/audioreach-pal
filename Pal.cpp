@@ -395,6 +395,7 @@ exit:
         rm->setCRSCallEnabled(false);
     rm->eraseStreamUserCounter(s);
     status = Stream::destroy(s);
+    PAL_INFO(LOG_TAG, "Exit. status %d", status);
 #ifndef PAL_MEMLOG_UNSUPPORTED
     kpiEnqueue(__func__, false);
 #endif

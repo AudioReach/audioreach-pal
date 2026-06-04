@@ -40,7 +40,6 @@ pal_sources = $(top_srcdir)/stream/src/Stream.cpp \
               $(top_srcdir)/utils/src/ACDPlatformInfo.cpp \
               $(top_srcdir)/utils/src/ASRPlatformInfo.cpp \
               $(top_srcdir)/utils/src/STUtils.cpp
-              $(top_srcdir)/utils/src/UvVoiceCueUtils.cpp
 else
 AM_CPPFLAGS := -I $(top_srcdir)/stream/inc
 AM_CPPFLAGS += -I $(top_srcdir)/device/inc
@@ -79,11 +78,16 @@ pal_sources = $(top_srcdir)/stream/src/Stream.cpp \
               $(top_srcdir)/utils/src/ASRPlatformInfo.cpp \
               $(top_srcdir)/utils/src/STUtils.cpp \
               $(top_srcdir)/utils/src/BTUtils.cpp
-              $(top_srcdir)/utils/src/UvVoiceCueUtils.cpp
 
 endif
+
+if COMPILE_UVVOICECUE_FEATURES
+pal_sources += $(top_srcdir)/utils/src/UvVoiceCueUtils.cpp
+endif
+
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CPPFLAGS += -DCONFIG_GSL
+AM_CPPFLAGS += @UVVOICECUE_FEATURE_FLAGS@
 
 library_includedir = $(includedir)/pal
 lib_LTLIBRARIES     = libpal.la

@@ -52,6 +52,7 @@ libsession_ar_la_LDFLAGS   = -shared -avoid-version
 libsession_ar_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_ar_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_ar_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
+libsession_ar_la_CPPFLAGS += @UVVOICECUE_FEATURE_FLAGS@
 
 if USE_SYSLOG
 libsession_ar_la_CPPFLAGS += -DPAL_USE_SYSLOG

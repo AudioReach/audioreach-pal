@@ -203,4 +203,4 @@ audioadsprpcd_la_CFLAGS = -fPIC
 endif
 
 
-SUBDIRS =  plugins . session stream device plugins/configs
+SUBDIRS =  inc plugins . session stream device plugins/configs

@@ -138,6 +138,10 @@ AC_ARG_WITH([streamSoundTrigger],
     [with_streamSoundTrigger=no])
 AM_CONDITIONAL([COMPILE_STREAMSOUNDTRIGGER], [test "x${with_streamSoundTrigger}" = "xyes"])
 
+AC_CONFIG_SUBDIRS([
+        inc
+])
+
 AC_CONFIG_FILES([ Makefile \
 pal.pc \
 stream/Makefile \

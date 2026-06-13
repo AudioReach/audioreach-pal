@@ -19,7 +19,6 @@ AM_CPPFLAGS += -I ${top_srcdir}/plugins/codecs/
 AM_CPPFLAGS += -I ${top_srcdir}/plugins/configs/qcom/IoT/default/ConfigSessionUtils/inc
 AM_CPPFLAGS += -I ${top_srcdir}/plugins/configs/qcom/IoT/default/ConfigSessionAlsaPcm/inc
 AM_CPPFLAGS += @AGM_CFLAGS@
-AM_CPPFLAGS += @PALHEADERS_CFLAGS@
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@

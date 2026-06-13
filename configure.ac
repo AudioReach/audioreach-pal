@@ -104,9 +104,6 @@ AC_SUBST([CAPIV2HEADERS_CFLAGS])
 
 if (test "x${with_openwrt}" = "xno"); then
 
-PKG_CHECK_MODULES([PALHEADERS], [pal-headers])
-AC_SUBST([PALHEADERS_CFLAGS])
-
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
 

@@ -53,9 +53,6 @@ if (test "x${with_glib}" = "xyes"); then
         AC_SUBST(GLIB_LIBS)
 fi
 
-PKG_CHECK_MODULES([PALHEADERS],[pal-headers])
-AC_SUBST([PALHEADERS_CFLAGS])
-
 PKG_CHECK_MODULES([SPFHEADER],[spf])
 AC_SUBST([SPFHEADER_CFLAGS])
 

@@ -32,7 +32,6 @@ AM_CPPFLAGS += -I ${top_srcdir}/context_manager/inc
 AM_CPPFLAGS += -I ${top_srcdir}/plugins/vui_interface/api/vui-interface/
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
-AM_CPPFLAGS += @PALHEADERS_CFLAGS@
 
 plugin_manager_sources = ${top_srcdir}/plugins/PluginManager/src/PluginManager.cpp
 endif

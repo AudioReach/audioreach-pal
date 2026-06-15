@@ -15,9 +15,9 @@
 #include <agm/agm_api.h>
 #include "SessionAR.h"
 
-
 std::thread SpeakerProtectionwsa884x::viTxSetupThread;
 std::mutex SpeakerProtectionwsa884x::calibrationMutex;
+struct pcm * SpeakerProtectionwsa884x::cps2Pcm = NULL;
 bool SpeakerProtectionwsa884x::viTxSetupThrdCreated;
 
 SpeakerProtectionwsa884x::SpeakerProtectionwsa884x(struct pal_device *device,
@@ -112,6 +112,9 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
         case 2 :
             ch_info.channels = CHANNELS_2;
         break;
+        case 4 :
+            ch_info.channels = CHANNELS_4;
+        break;
         default:
             PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
             ch_info.channels = CHANNELS_2;
@@ -148,14 +151,21 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
 
     // Enable VI module
     switch(numberOfChannels) {
-        case 1 :
+        case 1:
             // TODO: check it from RM.xml for left or right configuration
             calVector.push_back(std::make_pair(SPK_PRO_VI_MAP, RIGHT_SPKR));
-        break;
-        case 2 :
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_1));
+            break;
+        case 2:
             calVector.push_back(std::make_pair(SPK_PRO_VI_MAP, STEREO_SPKR));
-        break;
-        default :
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_2));
+            break;
+        case 4:
+            //QUAD_SPKR needs to be added in kvh2xml.h
+            calVector.push_back(std::make_pair(SPK_PRO_VI_MAP, QUAD_SPKR));
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_4));
+            break;
+        default:
             PAL_ERR(LOG_TAG, "Unsupported channel");
             goto exit;
     }
@@ -244,6 +254,9 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
         case 2 :
             config.channels = CHANNELS_2;
         break;
+        case 4 :
+            config.channels = CHANNELS_4;
+        break;
         default:
             PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
             config.channels = CHANNELS_2;
@@ -269,9 +282,9 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
 
     ret = SessionAlsaUtils::getModuleInstanceId(virtMixer, pcmDevIdsTx.at(0),
                                                 backEndNameTx.c_str(),
-                                                MODULE_VI, &miid);
+                                                               MODULE_VI, &miid);
     if (0 != ret) {
-        PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", MODULE_VI, ret);
+            PAL_ERR(LOG_TAG, "Failed to get tag info status = %d", ret);
         goto free_fe;
     }
 
@@ -349,7 +362,7 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
     event_cfg.is_register = 1;
 
     ret = SessionAlsaUtils::registerMixerEvent(virtMixer, pcmDevIdsTx.at(0),
-                      backEndNameTx.c_str(), MODULE_VI, (void *)&event_cfg,
+                           backEndNameTx.c_str(), MODULE_VI, (void *)&event_cfg,
                       payload_size);
     if (ret) {
         PAL_ERR(LOG_TAG, "Unable to register event to DSP");
@@ -388,6 +401,9 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
         case 2 :
             deviceRx.config.ch_info.channels = CHANNELS_2;
         break;
+        case 4 :
+            deviceRx.config.ch_info.channels = CHANNELS_4;
+        break;
         default:
             PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
             deviceRx.config.ch_info.channels = CHANNELS_2;
@@ -418,9 +434,16 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
         case 1 :
             // TODO: Fetch the configuration from RM.xml
             calVector.push_back(std::make_pair(SPK_PRO_DEV_MAP, RIGHT_MONO));
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_1));
         break;
         case 2 :
             calVector.push_back(std::make_pair(SPK_PRO_DEV_MAP, LEFT_RIGHT));
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_2));
+        break;
+        case 4 :
+            //LEFT_RIGHT_QUAD needs to be added in kvh2xml.h
+            calVector.push_back(std::make_pair(SPK_PRO_DEV_MAP, LEFT_RIGHT_QUAD));
+            calVector.push_back(std::make_pair(CHANNELS, CHANNELS_4));
         break;
         default :
             PAL_ERR(LOG_TAG, "Unsupported channels for speaker");
@@ -491,10 +514,21 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
 
     config.rate = SAMPLINGRATE_48K;
     config.format = PCM_FORMAT_S16_LE;
-    if (numberOfChannels > 1)
-        config.channels = CHANNELS_2;
-    else
-        config.channels = CHANNELS_1;
+    switch (numberOfChannels) {
+        case 1:
+            config.channels = CHANNELS_1;
+        break;
+        case 2:
+            config.channels = CHANNELS_2;
+        break;
+        case 4:
+            config.channels = CHANNELS_4;
+        break;
+        default:
+            PAL_INFO(LOG_ERR, "Unsupported channels %d, setting to 1", numberOfChannels);
+            config.channels = CHANNELS_1;
+    }
+
     config.period_size = DEFAULT_PERIOD_SIZE;
     config.period_count = DEFAULT_PERIOD_COUNT;
     config.start_threshold = 0;
@@ -505,6 +539,12 @@ int SpeakerProtectionwsa884x::spkrStartCalibration()
 
     // Set the operation mode for SP module
     spModeConfg.operation_mode = CALIBRATION_MODE;
+    if (customPayloadSize) {
+        free(customPayload);
+        customPayloadSize = 0;
+        customPayload = NULL;
+    }
+
     ret = SessionAlsaUtils::getModuleInstanceId(virtMixer, pcmDevIdsRx.at(0),
                                                 backEndNameRx.c_str(),
                                                 MODULE_SP, &miid);
@@ -595,8 +635,9 @@ err_pcm_open :
     if (txPcm) {
         event_cfg.is_register = 0;
 
+        //Register for VI module callback
         status = SessionAlsaUtils::registerMixerEvent(virtMixer, pcmDevIdsTx.at(0),
-                        backEndNameTx.c_str(), MODULE_VI, (void *)&event_cfg,
+                            backEndNameTx.c_str(), MODULE_VI, (void *)&event_cfg,
                         payload_size);
         if (status) {
             PAL_ERR(LOG_TAG, "Unable to deregister event to DSP");
@@ -790,8 +831,16 @@ int SpeakerProtectionwsa884x::viTxSetupThreadLoop()
         ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
         config.channels = CHANNELS_2;
     break;
+    case 4:
+        ch_info.channels = CHANNELS_4;
+        ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+        ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
+        ch_info.ch_map[2] = PAL_CHMAP_CHANNEL_LB;
+        ch_info.ch_map[3] = PAL_CHMAP_CHANNEL_RB;
+        config.channels = CHANNELS_4;
+    break;
     default:
-        PAL_DBG(LOG_TAG, "Unsupported channel. Set defauly as 2");
+        PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
         ch_info.channels = CHANNELS_2;
         config.channels = CHANNELS_2;
     }
@@ -849,6 +898,10 @@ int SpeakerProtectionwsa884x::viTxSetupThreadLoop()
         break;
         case 2 :
             calVector.push_back(std::make_pair(SPK_PRO_VI_MAP, STEREO_SPKR));
+        break;
+        case 4 :
+            //QUAD_SPKR needs to be added in kvh2xml.h
+            calVector.push_back(std::make_pair(SPK_PRO_VI_MAP, QUAD_SPKR));
         break;
         default :
             PAL_ERR(LOG_TAG, "Unsupported channel");
@@ -1226,7 +1279,7 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
     char mSndDeviceName_SP[128] = {0};
     uint8_t* payload = NULL;
     uint32_t devicePropId[] = {0x08000010, 1, 0x2};
-    uint32_t miid = 0;
+    uint32_t miid = 0, deviceid = 0;
     uint32_t param_sp_op_mode = 0;
     uint32_t param_cps_ch_map = 0;
     bool isTxFeandBeConnected = true;
@@ -1244,7 +1297,7 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
     struct agmMetaData deviceMetaData(nullptr, 0);
     struct mixer_ctl *beMetaDataMixerCtrl = nullptr;
     FILE *fp;
-    std::string backEndName, backEndNameRx, backEndNameCPS;
+    std::string backEndName, backEndNameRx, backEndNameCPS, backEndNameCPS2;
     std::vector <std::pair<int, int>> keyVector;
     std::vector <std::pair<int, int>> calVector;
     std::shared_ptr<ResourceManager> rm;
@@ -1270,7 +1323,7 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
     struct agm_event_reg_cfg event_cfg;
     session_callback sessionCb;
     pal_spkr_prot_payload spkrProtPayload;
-    int id;
+    int id, id2;
     PAL_DBG(LOG_TAG, "Flag %d", flag);
     deviceMutex.lock();
 
@@ -1286,6 +1339,7 @@ int32_t SpeakerProtectionwsa884x::spkrProtProcessingMode(bool flag)
             txPcm = NULL;
             rxPcm = NULL;
             cpsPcm = NULL;
+            cps2Pcm = NULL;
             PAL_DBG(LOG_TAG, "Stopped calibration mode");
         }
         numberOfRequest++;
@@ -1442,216 +1496,292 @@ cps_dev_setup:
         dev = Device::getInstance(&mDeviceAttr, rm);
         dev->getCurrentSndDevName(mSndDeviceName_SP);
 
-        if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
-            rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &cps_device);
-        else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
-            rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_PROXY, "", &cps_device);
+        if(numberOfChannels != CHANNELS_4) {
+           if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
+               rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &cps_device);
+           else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
+               rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK, PAL_STREAM_PROXY, "", &cps_device);
+        }
+
 
         // Configure device attribute
-        if (cps_device.channels > 1) {
-            ch_info.channels = CHANNELS_2;
-            ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
-            ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
-        }
-        else {
-            ch_info.channels = CHANNELS_1;
-            if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET)
-                ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
-            else
-                ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FR;
-        }
-
-        deviceCPS.config.ch_info = ch_info;
-        deviceCPS.config.sample_rate = cps_device.samplerate;
-        deviceCPS.config.bit_width = cps_device.bit_width;
-        deviceCPS.config.aud_fmt_id = rm->getAudioFmt(cps_device.bit_width);
-
-        // Setup CPS path
-        deviceCPS.id = PAL_DEVICE_IN_CPS_FEEDBACK;
-
-        ret = rm->getAudioRoute(&audioRoute);
-        if (0 != ret) {
-            PAL_ERR(LOG_TAG, "Failed to get the audio_route address status %d", ret);
-            goto err_pcm_open;
-        }
-        strlcpy(mSndDeviceName_cps, cps_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
-
-        if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET) {
-          strlcat(mSndDeviceName_cps, FEEDBACK_MONO_1, DEVICE_NAME_MAX_SIZE);
-        }
-
-        PAL_DBG(LOG_TAG, "get the audio route %s", mSndDeviceName_cps);
-
-        rm->getBackendName(deviceCPS.id, backEndNameCPS);
-        if (!strlen(backEndNameCPS.c_str())) {
-            PAL_ERR(LOG_TAG, "Failed to obtain CPS backend name for %d", deviceCPS.id);
-            goto err_pcm_open;
-        }
-
-        PayloadBuilder::getDeviceKV(deviceCPS.id, keyVector);
-        if (0 != ret) {
-            PAL_ERR(LOG_TAG, "Failed to obtain device KV for %d", device.id);
-            goto err_pcm_open;
-        }
-
-        // Enable the CPS module
-        switch (cps_device.channels) {
-            case 1 :
-                if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET)
-                    calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, L_SPKR));
-                else
-                    calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, R_SPKR));
-            break;
-            case 2 :
-                calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, ST_SPKR));
-            break;
-            default :
-                PAL_ERR(LOG_TAG, "Unsupported channel");
-                goto err_pcm_open;
-        }
-
-        SessionAlsaUtils::getAgmMetaData(keyVector, calVector,
-                (struct prop_data *)devicePropId, deviceMetaData);
-        if (!deviceMetaData.size) {
-            PAL_ERR(LOG_TAG, "CPS device metadata is zero");
-            ret = -ENOMEM;
-            goto err_pcm_open;
-        }
-        connectCtrlNameBeCPS<< backEndNameCPS << " metadata";
-        beMetaDataMixerCtrl = mixer_get_ctl_by_name(virtMixer,
-                                    connectCtrlNameBeCPS.str().data());
-        if (!beMetaDataMixerCtrl) {
-            PAL_ERR(LOG_TAG, "invalid mixer control for CPS : %s", backEndNameCPS.c_str());
-            ret = -EINVAL;
-            goto err_pcm_open;
-        }
-
-        if (deviceMetaData.size) {
-            ret = mixer_ctl_set_array(beMetaDataMixerCtrl, (void *)deviceMetaData.buf,
-                        deviceMetaData.size);
-            free(deviceMetaData.buf);
-            deviceMetaData.buf = nullptr;
-        }
-        else {
-            PAL_ERR(LOG_TAG, "Device Metadata not set for CPS path");
-            ret = -EINVAL;
-            goto err_pcm_open;
-        }
-
-        ret = Device::setMediaConfig(rm, backEndNameCPS, &deviceCPS);
-        if (ret) {
-            PAL_ERR(LOG_TAG, "setMediaConfig for feedback device failed");
-            goto err_pcm_open;
-        }
-
-        /* Retrieve Hostless PCM device id */
-        sAttr.type = PAL_STREAM_LOW_LATENCY;
-        sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
-        dir = TX_HOSTLESS;
-        id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
-        if (id < 0) {
-            PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
-            ret = -ENOSYS;
-            goto err_pcm_open;
-        }
-        pcmDevIdCPS.push_back(id);
-
-        connectCtrlNameCPS << "PCM" << pcmDevIdCPS.at(0) << " connect";
-        connectCtrl2 = mixer_get_ctl_by_name(virtMixer, connectCtrlNameCPS.str().data());
-
-        if (!connectCtrl2) {
-            PAL_ERR(LOG_TAG, "invalid mixer control: %s", connectCtrlNameCPS.str().data());
-            goto free_fe;
-        }
-
-        ret = mixer_ctl_set_enum_by_string(connectCtrl2, backEndNameCPS.c_str());
-        if (ret) {
-            PAL_ERR(LOG_TAG, "Mixer control %s set with %s failed: %d",
-            connectCtrlNameCPS.str().data(), backEndNameCPS.c_str(), ret);
-            goto free_fe;
-        }
-
-        isCPSFeandBeConnected = true;
-
-        config.rate = cps_device.samplerate;
-        switch (cps_device.bit_width) {
-            case 32 :
-                config.format = PCM_FORMAT_S32_LE;
-            break;
-            default:
-                PAL_DBG(LOG_TAG, "Unsupported bit width. Set default as 16");
-                config.format = PCM_FORMAT_S16_LE;
-            break;
-        }
-
-        switch (cps_device.channels) {
-            case 1 :
-                config.channels = CHANNELS_1;
-            break;
-            case 2 :
-                config.channels = CHANNELS_2;
-            break;
-            default :
-                PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
-                config.channels = CHANNELS_2;
-            break;
-        }
-        config.period_size = DEFAULT_PERIOD_SIZE;
-        config.period_count = DEFAULT_PERIOD_COUNT;
-        config.start_threshold = 0;
-        config.stop_threshold = INT_MAX;
-        config.silence_threshold = 0;
-
-        flags = PCM_IN;
-
-        ret = SessionAlsaUtils::getModuleInstanceId(virtMixer, pcmDevIdCPS.at(0),
-                        backEndNameCPS.c_str(), TAG_MODULE_CPS, &miid);
-        if (0 != ret) {
-            PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", TAG_MODULE_CPS, ret);
-            goto free_fe;
-        }
-
-        // Setting Channel Map configuration for CPS module
-        // TODO: Move this to ACDB file
-        cpsChannelMapConfg.num_ch = cps_device.channels;
-        payloadSize = 0;
-        if (rm->GetSpeakerProtectionVersion() == SPV5)
-            param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP_V5;
-        else
-            param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP;
-
-        builder->payloadSPConfig(&payload, &payloadSize, miid,
-                param_cps_ch_map,(void *)&cpsChannelMapConfg);
-        if (payloadSize) {
-            ret = updateCustomPayload(payload, payloadSize);
-            free(payload);
-            if (0 != ret) {
-                PAL_ERR(LOG_TAG," updateCustomPayload Failed for CPS CHANNEL_MAP_CFG\n");
+        for (int ch = numberOfChannels; ch != 0; ch = ch >> 2) {
+            PAL_DBG(LOG_TAG, "Opening CPS for ch: %d \n", ch);
+            bool isFirstDevice = (ch == numberOfChannels);
+            if(numberOfChannels == CHANNELS_4) {
+                if(!isFirstDevice) {
+                   if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono")) {
+                       rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK,PAL_STREAM_VOICE_CALL,"",&cps_device);
+                   }
+                   else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER) {
+                       rm->getDeviceInfo(PAL_DEVICE_IN_CPS_FEEDBACK,PAL_STREAM_PROXY,"",&cps_device);
+                   }
+               }else {
+                   if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono")) {
+                      rm->getDeviceInfo(PAL_DEVICE_IN_CPS2_FEEDBACK,PAL_STREAM_VOICE_CALL,"",&cps_device);
+                   }
+                   else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER) {
+                      rm->getDeviceInfo(PAL_DEVICE_IN_CPS2_FEEDBACK,PAL_STREAM_PROXY,"",&cps_device);
+                   }
+               }
             }
-        }
+            // Configure device attribute
+            if (cps_device.channels > 1) {
+                ch_info.channels = CHANNELS_2;
+                ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+                ch_info.ch_map[1] = PAL_CHMAP_CHANNEL_FR;
+            }
+            else {
+                ch_info.channels = CHANNELS_1;
+                if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET)
+                    ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FL;
+                else
+                    ch_info.ch_map[0] = PAL_CHMAP_CHANNEL_FR;
+            }
 
-        cpsPcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdCPS.at(0), flags, &config);
-        if (!cpsPcm) {
-            PAL_ERR(LOG_TAG, "cpsPcm open failed");
-            goto free_fe;
-        }
+            deviceCPS.config.ch_info = ch_info;
+            deviceCPS.config.sample_rate = cps_device.samplerate;
+            deviceCPS.config.bit_width = cps_device.bit_width;
+            deviceCPS.config.aud_fmt_id = rm->getAudioFmt(cps_device.bit_width);
 
-        if (!pcm_is_ready(cpsPcm)) {
-            PAL_ERR(LOG_TAG, "cpsPcm open not ready");
-            goto err_pcm_open;
-        }
+            if (ch != CHANNELS_4)
+                deviceCPS.id = PAL_DEVICE_IN_CPS_FEEDBACK;
+            else
+                deviceCPS.id = PAL_DEVICE_IN_CPS2_FEEDBACK;
 
-        enableDevice(audioRoute, mSndDeviceName_cps);
-        PAL_DBG(LOG_TAG, "pcm start for CPS");
-        if (pcm_start(cpsPcm) < 0) {
-            PAL_ERR(LOG_TAG, "pcm start failed for CPS path");
-            goto err_pcm_open;
-        }
+            ret = rm->getAudioRoute(&audioRoute);
+            if (0 != ret) {
+                PAL_ERR(LOG_TAG, "Failed to get the audio_route address status %d", ret);
+                goto err_pcm_open;
+            }
+            strlcpy(mSndDeviceName_cps, cps_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
 
-        // Free up the local variables
-        goto exit;
-    }
-    else {
+            if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET) {
+              strlcat(mSndDeviceName_cps, FEEDBACK_MONO_1, DEVICE_NAME_MAX_SIZE);
+            }
+
+            PAL_DBG(LOG_TAG, "get the audio route %s", mSndDeviceName_cps);
+
+            rm->getBackendName(deviceCPS.id, backEndNameCPS);
+            if (!strlen(backEndNameCPS.c_str())) {
+                PAL_ERR(LOG_TAG, "Failed to obtain CPS backend name for %d", deviceCPS.id);
+                goto err_pcm_open;
+            }
+
+            PayloadBuilder::getDeviceKV(deviceCPS.id, keyVector);
+            if (0 != ret) {
+                PAL_ERR(LOG_TAG, "Failed to obtain device KV for %d", device.id);
+                goto err_pcm_open;
+            }
+
+            // Enable the CPS module
+            switch (cps_device.channels) {
+                case 1 :
+                    if (mDeviceAttr.id == PAL_DEVICE_OUT_HANDSET)
+                        calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, L_SPKR));
+                    else
+                        calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, R_SPKR));
+                break;
+                case 2 :
+                    calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, ST_SPKR));
+                break;
+                case 4 :
+                    calVector.push_back(std::make_pair(SPK_PRO_CPS_MAP, ST_SPKR)); // Nothing changes between any of these KVs
+                break;
+                default :
+                    PAL_ERR(LOG_TAG, "Unsupported channel");
+                    goto err_pcm_open;
+            }
+
+            SessionAlsaUtils::getAgmMetaData(keyVector, calVector,
+                    (struct prop_data *)devicePropId, deviceMetaData);
+            if (!deviceMetaData.size) {
+                PAL_ERR(LOG_TAG, "CPS device metadata is zero");
+                ret = -ENOMEM;
+                goto err_pcm_open;
+            }
+
+            // Reset stream before using it again
+            connectCtrlNameBeCPS.str("");
+            connectCtrlNameBeCPS.clear();
+
+            connectCtrlNameBeCPS<< backEndNameCPS << " metadata";
+
+            beMetaDataMixerCtrl = mixer_get_ctl_by_name(virtMixer,
+                                        connectCtrlNameBeCPS.str().data());
+            if (!beMetaDataMixerCtrl) {
+                PAL_ERR(LOG_TAG, "invalid mixer control for CPS : %s", backEndNameCPS.c_str());
+                ret = -EINVAL;
+                goto err_pcm_open;
+            }
+
+            if (deviceMetaData.size) {
+                ret = mixer_ctl_set_array(beMetaDataMixerCtrl, (void *)deviceMetaData.buf,
+                            deviceMetaData.size);
+                free(deviceMetaData.buf);
+                deviceMetaData.buf = nullptr;
+            }
+            else {
+                PAL_ERR(LOG_TAG, "Device Metadata not set for CPS path");
+                ret = -EINVAL;
+                goto err_pcm_open;
+            }
+
+            ret = Device::setMediaConfig(rm, backEndNameCPS, &deviceCPS);
+            if (ret) {
+                PAL_ERR(LOG_TAG, "setMediaConfig for feedback device failed");
+                goto err_pcm_open;
+            }
+
+            /* Retrieve Hostless PCM device id */
+            sAttr.type = PAL_STREAM_LOW_LATENCY;
+            sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
+            dir = TX_HOSTLESS;
+
+            // Reset stream before using it again
+            connectCtrlNameCPS.str("");
+            connectCtrlNameCPS.clear();
+
+            if (ch != CHANNELS_4) {
+               id = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+               if (pcmDevIdCPS.size() == 0) {
+                   PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                   ret = -ENOSYS;
+                   goto err_pcm_open;
+               }
+               pcmDevIdCPS.push_back(id);
+               connectCtrlNameCPS << "PCM" << pcmDevIdCPS.at(0) << " connect";
+            } else {
+               id2 = rm->allocateFrontEndIds(PCM_RECORD_HOSTLESS);
+
+               if (pcmDevIdCPS2.size() == 0) {
+                   PAL_ERR(LOG_TAG, "allocateFrontEndIds failed");
+                   ret = -ENOSYS;
+                   goto err_pcm_open;
+               }
+               pcmDevIdCPS.push_back(id2);
+               connectCtrlNameCPS << "PCM" << pcmDevIdCPS2.at(0) << " connect";
+            }
+            connectCtrl2 = mixer_get_ctl_by_name(virtMixer, connectCtrlNameCPS.str().data());
+
+            if (!connectCtrl2) {
+                PAL_ERR(LOG_TAG, "invalid mixer control: %s", connectCtrlNameCPS.str().data());
+                goto free_fe;
+            }
+
+            ret = mixer_ctl_set_enum_by_string(connectCtrl2, backEndNameCPS.c_str());
+            if (ret) {
+                PAL_ERR(LOG_TAG, "Mixer control %s set with %s failed: %d",
+                connectCtrlNameCPS.str().data(), backEndNameCPS.c_str(), ret);
+                goto free_fe;
+            }
+
+            isCPSFeandBeConnected = true;
+
+            config.rate = cps_device.samplerate;
+            switch (cps_device.bit_width) {
+                case 32 :
+                    config.format = PCM_FORMAT_S32_LE;
+                break;
+                default:
+                    PAL_DBG(LOG_TAG, "Unsupported bit width. Set default as 16");
+                    config.format = PCM_FORMAT_S16_LE;
+                break;
+            }
+
+            switch (cps_device.channels) {
+                case 1 :
+                    config.channels = CHANNELS_1;
+                break;
+                case 2 :
+                    config.channels = CHANNELS_2;
+                break;
+                case 4 :
+                    config.channels = CHANNELS_4;
+                break;
+                default :
+                    PAL_DBG(LOG_TAG, "Unsupported channel. Set default as 2");
+                    config.channels = CHANNELS_2;
+                break;
+            }
+            config.period_size = DEFAULT_PERIOD_SIZE;
+            config.period_count = DEFAULT_PERIOD_COUNT;
+            config.start_threshold = 0;
+            config.stop_threshold = INT_MAX;
+            config.silence_threshold = 0;
+
+            flags = PCM_IN;
+            if (ch != CHANNELS_4) {
+               deviceid = pcmDevIdCPS.at(0);
+            } else {
+               deviceid = pcmDevIdCPS2.at(0);
+            }
+            ret = SessionAlsaUtils::getModuleInstanceId(virtMixer, deviceid,
+                            backEndNameCPS.c_str(), TAG_MODULE_CPS, &miid);
+            if (0 != ret) {
+                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", TAG_MODULE_CPS, ret);
+                goto free_fe;
+            }
+
+            cpsChannelMapConfg.num_ch = cps_device.channels * 2;
+            payloadSize = 0;
+
+            if (rm->GetSpeakerProtectionVersion() == SPV5)
+                param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP_V5;
+            else
+                param_cps_ch_map = PARAM_ID_CPS_CHANNEL_MAP;
+
+            if(isFirstDevice) {
+                builder->payloadSPConfig(&payload, &payloadSize, miid,
+                        param_cps_ch_map,(void *)&cpsChannelMapConfg);
+                if (payloadSize) {
+                    ret = updateCustomPayload(payload, payloadSize);
+                    free(payload);
+                    if (0 != ret) {
+                        PAL_ERR(LOG_TAG," updateCustomPayload Failed for CPS CHANNEL_MAP_CFG\n");
+                    }
+                 }
+            }
+
+            if (ch != CHANNELS_4) {
+                cpsPcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdCPS.at(0), flags, &config);
+                if (!cpsPcm) {
+                   PAL_ERR(LOG_TAG, "cpsPcm open failed");
+                   goto free_fe;
+                }
+                if (!pcm_is_ready(cpsPcm)) {
+                    PAL_ERR(LOG_TAG, "cpsPcm open not ready");
+                    goto err_pcm_open;
+                }
+                enableDevice(audioRoute, mSndDeviceName_cps);
+                PAL_DBG(LOG_TAG, " pcm start for CPS");
+                if (pcm_start(cpsPcm) < 0) {
+                    PAL_ERR(LOG_TAG, "pcm start failed for CPS path");
+                    goto err_pcm_open;
+                }
+            } else {
+                cps2Pcm = pcm_open(rm->getVirtualSndCard(), pcmDevIdCPS2.at(0), flags, &config);
+                if (!cps2Pcm) {
+                    PAL_ERR(LOG_TAG, "cps2Pcm open failed");
+                    goto free_fe;
+                }
+                if (!pcm_is_ready(cps2Pcm)) {
+                    PAL_ERR(LOG_TAG, "cps2Pcm open not ready");
+                    goto err_pcm_open;
+                }
+                enableDevice(audioRoute, mSndDeviceName_cps);
+                PAL_DBG(LOG_TAG, "pcm start for CPS2");
+                if (pcm_start(cps2Pcm) < 0) {
+                    PAL_ERR(LOG_TAG, "pcm start failed for CPS path");
+                    goto err_pcm_open;
+                }
+            }
+            keyVector.clear();
+            calVector.clear();
+       }
+       // Free up the local variables
+       goto exit;
+    } else {
         if (numberOfRequest == 0) {
             PAL_ERR(LOG_TAG, "Device not started yet, Stop not expected");
             goto exit;
@@ -1703,9 +1833,13 @@ cps_dev_setup:
             txPcm = NULL;
         }
         PAL_DBG(LOG_TAG, "Closing CPS path");
-        if (cpsPcm) {
+        if(cpsPcm || cps2Pcm) {
             rm = ResourceManager::getInstance();
-            deviceCPS.id = PAL_DEVICE_IN_CPS_FEEDBACK;
+            for (int ch = numberOfChannels; ch != 0; ch = ch >> 2) {
+                if (ch != CHANNELS_4)
+                    deviceCPS.id = PAL_DEVICE_IN_CPS_FEEDBACK;
+                else
+                    deviceCPS.id = PAL_DEVICE_IN_CPS2_FEEDBACK;
 
             ret = rm->getAudioRoute(&audioRoute);
             if (0 != ret) {
@@ -1713,25 +1847,42 @@ cps_dev_setup:
                 goto exit;
             }
 
-            strlcpy(mSndDeviceName_cps, cps_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
-            rm->getBackendName(deviceCPS.id, backEndNameCPS);
-            if (!strlen(backEndNameCPS.c_str())) {
-                PAL_ERR(LOG_TAG, "Failed to obtain CPS backend name for %d", deviceCPS.id);
-                goto exit;
-            }
-            pcm_stop(cpsPcm);
-            if (pcmDevIdCPS.size() != 0) {
-                if (isCPSFeandBeConnected) {
-                    disconnectFeandBe(pcmDevIdCPS, backEndNameCPS);
+                strlcpy(mSndDeviceName_cps, cps_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
+                rm->getBackendName(deviceCPS.id, backEndNameCPS);
+                if (!strlen(backEndNameCPS.c_str())) {
+                    PAL_ERR(LOG_TAG, "Failed to obtain CPS backend name for %d", deviceCPS.id);
+                    goto exit;
                 }
-                sAttr.type = PAL_STREAM_LOW_LATENCY;
-                sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
-                rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS);
-                pcmDevIdCPS.clear();
+                if (ch != CHANNELS_4) {
+                    pcm_stop(cpsPcm);
+                    if (pcmDevIdCPS.size() != 0) {
+                        if (isCPSFeandBeConnected) {
+                            disconnectFeandBe(pcmDevIdCPS, backEndNameCPS);
+                        }
+                        sAttr.type = PAL_STREAM_LOW_LATENCY;
+                        sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
+                        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS);
+                        pcmDevIdCPS.clear();
+                    }
+                    pcm_close(cpsPcm);
+                    disableDevice(audioRoute, mSndDeviceName_cps);
+                    cpsPcm = NULL;
+                } else {
+                    pcm_stop(cps2Pcm);
+                    if (pcmDevIdCPS2.size() != 0) {
+                        if (isCPSFeandBeConnected) {
+                            disconnectFeandBe(pcmDevIdCPS2, backEndNameCPS);
+                        }
+                        sAttr.type = PAL_STREAM_LOW_LATENCY;
+                        sAttr.direction = PAL_AUDIO_INPUT_OUTPUT;
+                        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS2);
+                        pcmDevIdCPS2.clear();
+                    }
+                    pcm_close(cps2Pcm);
+                    disableDevice(audioRoute, mSndDeviceName_cps);
+                    cps2Pcm = NULL;
+                }
             }
-            pcm_close(cpsPcm);
-            disableDevice(audioRoute, mSndDeviceName_cps);
-            cpsPcm = NULL;
             goto exit;
         }
     }
@@ -1743,14 +1894,35 @@ err_pcm_open :
         cpsPcm = NULL;
     }
 
+    if (cps2Pcm) {
+        pcm_close(cps2Pcm);
+        disableDevice(audioRoute, mSndDeviceName_cps);
+        cps2Pcm = NULL;
+    }
+
 free_fe:
+
     if (pcmDevIdCPS.size() != 0) {
         if (isCPSFeandBeConnected) {
+            deviceCPS.id = PAL_DEVICE_IN_CPS_FEEDBACK;
+            ret = rm->getSndDeviceName(deviceCPS.id , mSndDeviceName_cps);
+            rm->getBackendName(deviceCPS.id, backEndNameCPS);
             disconnectFeandBe(pcmDevIdCPS, backEndNameCPS);
         }
         rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS);
         pcmDevIdCPS.clear();
     }
+    if (pcmDevIdCPS2.size() != 0) {
+        if (isCPSFeandBeConnected) {
+            deviceCPS.id = PAL_DEVICE_IN_CPS2_FEEDBACK;
+            ret = rm->getSndDeviceName(deviceCPS.id , mSndDeviceName_cps);
+            rm->getBackendName(deviceCPS.id, backEndNameCPS2);
+            disconnectFeandBe(pcmDevIdCPS2, backEndNameCPS2);
+        }
+        rm->freeFrontEndIds(PCM_RECORD_HOSTLESS, pcmDevIdCPS2);
+        pcmDevIdCPS2.clear();
+    }
+
 exit:
     deviceMutex.unlock();
     if(builder) {

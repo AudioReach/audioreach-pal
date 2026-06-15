@@ -72,18 +72,16 @@ Status HFPProfile::open() noexcept {
     std::lock_guard lock(mLock);
     PAL_INFO(LOG_TAG, "current state: %s, start count: %d", toString(mState).c_str(),
              mStreamCounter);
-    if (mState == State::OPENED) {
-        return Status::OK;
-    }
-    // CHECK(mState == State::CLOSED);
     if (mState == State::CLOSED) {
         auto ret = TIME_LOG(sBTHostAPI->audio_stream_open_api(HFP_HARDWARE_OFFLOAD_DATAPATH));
         // CHECK(ret == 0);
         mState = State::OPENED;
         mStreamCounter = 0;
         return Status::OK;
+    } else {
+        PAL_INFO(LOG_TAG, ": already opened");
+        return Status::OK;
     }
-    return Status::FAILED;
 }
 
 Status HFPProfile::start() noexcept {
@@ -144,8 +142,10 @@ Status HFPProfile::close() noexcept {
         mState = State::CLOSED;
         mStreamCounter = 0;
         return Status::OK;
+    } else {
+        PAL_ERR(LOG_TAG, ":HFP is still used");
+        return Status::FAILED;
     }
-    return Status::FAILED;
 }
 
 std::optional<HFPProfile::Codec> HFPProfile::getCodec() noexcept {

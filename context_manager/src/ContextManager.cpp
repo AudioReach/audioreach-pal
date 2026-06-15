@@ -195,7 +195,7 @@ int32_t ContextManager::build_and_send_register_ack(Usecase *uc, uint32_t see_id
 
     pal_param->payload_size = payload_size;
 
-    rc = send_asps_response(PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG, pal_param);
+    rc = send_asps_response(std::string(PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG), pal_param);
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d sending register ack opcode %x",
             rc, PARAM_ID_ASPS_SENSOR_REGISTER_ACK);
@@ -313,7 +313,7 @@ int32_t ContextManager::send_asps_basic_response(int32_t status, uint32_t event_
 
     pal_param->payload_size = PAL_ALIGN_8BYTE(sizeof(struct param_id_asps_basic_ack_t) + sizeof(struct apm_module_param_data_t));
 
-    rc = s->setCustomParam(nullptr, PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG, (void*)pal_param->payload, pal_param->payload_size);
+    rc = s->setCustomParam(nullptr, std::string(PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG), (void*)pal_param->payload, pal_param->payload_size);
     if (rc) {
         PAL_ERR(LOG_TAG, "Error:%d setting params on proxy stream for basick ack", rc);
     }
@@ -1080,12 +1080,12 @@ int32_t Usecase::GetModuleIIDs(std::vector<int32_t> tags,
 
     PAL_VERBOSE(LOG_TAG, "Enter usecase:0x%x", this->usecase_id);
     rc = pal_stream_get_custom_param(this->pal_stream,
-                                    PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
+                                    (char *)PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
                                     data, &tag_module_size);
     if (rc == ENODATA) {
         tag_module_info.resize(tag_module_size);
         rc = pal_stream_get_custom_param(this->pal_stream,
-                                        PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
+                                        (char *)PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO,
                                         data,
                                         &tag_module_size);
 
@@ -1170,7 +1170,7 @@ int32_t Usecase::GetAckDataOnSuccessfullStart(uint32_t *size, void *data)
     *size = (no_of_miid * sizeof(uint32_t));
 
 exit:
-    PAL_DBG(LOG_TAG, "Exit %d, number of MIID %d", rc, no_of_miid);
+    PAL_DBG(LOG_TAG, "Exit %d, number of MIID %zu", rc, no_of_miid);
     return rc;
 }
 
@@ -1273,7 +1273,7 @@ int32_t UsecaseACD::GetAckDataOnSuccessfullStart(uint32_t *size, void *data)
             sizeof(uint32_t) * requested_context_list->num_contexts);
     } else {
         rc = -ENODATA;
-        PAL_ERR(LOG_TAG, "size %d too small for ack data in UsecaseACD, need %d",
+        PAL_ERR(LOG_TAG, "size %d too small for ack data in UsecaseACD, need %lu",
             (int)(*size), sizeof(asps_acd_usecase_register_ack_payload_t)
             + sizeof(uint32_t) * requested_context_list->num_contexts);
     }

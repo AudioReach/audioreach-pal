@@ -15,6 +15,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <stream name="PAL_STREAM_PCM_OFFLOAD" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
         <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libstream_pcm.so" entryFunction="CreatePCMStream"/>
         <stream name="PAL_STREAM_VOICE_UI" lib="libstream_soundtrigger.so" entryFunction="CreateSoundTriggerStream"/>
+        <stream name="PAL_STREAM_COMPRESSED" lib="libstream_compress.so" entryFunction="CreateCompressStream"/>
     </streams>
     <sessions>
         <session name="PAL_STREAM_DEEP_BUFFER" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
@@ -25,6 +26,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <session name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
         <session name="PAL_STREAM_VOICE_UI" lib="libsession_pcm.so" entryFunction="CreatePcmSession"/>
+        <session name="PAL_STREAM_COMPRESSED" lib="libsession_compress.so" entryFunction="CreateCompressSession"/>
     </sessions>
     <devices>
         <!--Handset-->
@@ -55,5 +57,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <config name="PAL_STREAM_PCM_OFFLOAD" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_ULTRA_LOW_LATENCY" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
         <config name="PAL_STREAM_VOICE_UI" lib="libsession_pcm_config.so" entryFunction="pcmPluginConfig"/>
+        <!-- compress_config -->
+        <config name="PAL_STREAM_COMPRESSED" lib="libsession_compress_config.so" entryFunction="compressPluginConfig"/>
     </configs>
 </plugin_manager_info>

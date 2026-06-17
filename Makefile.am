@@ -56,7 +56,6 @@ AM_CPPFLAGS += -I $(top_srcdir)/plugins/codecs
 AM_CPPFLAGS += -I $(top_srcdir)/
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 AM_CPPFLAGS += @AGM_CFLAGS@
-AM_CPPFLAGS += @PALHEADERS_CFLAGS@
 AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
@@ -204,4 +203,4 @@ audioadsprpcd_la_CFLAGS = -fPIC
 endif
 
 
-SUBDIRS =  plugins . session stream device plugins/configs
+SUBDIRS =  inc plugins . session stream device plugins/configs

@@ -9,7 +9,6 @@ AM_CPPFLAGS := -DVUI_USE_SYSLOG @GLIB_CFLAGS@ -include glib.h
 AM_CPPFLAGS += -I $(top_srcdir)/utils/src/
 AM_CPPFLAGS += -I $(top_srcdir)/utils/inc/
 AM_CPPFLAGS += @VUIINTERFACEHEADERS_CFLAGS@
-AM_CPPFLAGS += @PALHEADERS_CFLAGS@
 
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/vui_interface_utils

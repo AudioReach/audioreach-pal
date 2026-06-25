@@ -453,8 +453,8 @@
         <ctl name="HPHR_RDAC Switch" value="1" />
         <ctl name="HPHL Switch" value="1" />
         <ctl name="HPHR Switch" value="1" />
-        <ctl name="HPHR_COMP Switch" value="1" />
-        <ctl name="HPHL_COMP Switch" value="1" />
+        <ctl name="HPHR_COMP Switch" value="0" />
+        <ctl name="HPHL_COMP Switch" value="0" />
         <ctl name="RX HPH Mode" value="CLS_H_HIFI" />
         <ctl name="RX_HPH PWR Mode" value="LOHIFI" />
         <ctl name="RX_MACRO RX0 MUX" value="AIF1_PB" />

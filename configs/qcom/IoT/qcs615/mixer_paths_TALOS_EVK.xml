@@ -52,13 +52,15 @@
 
     <!-- These are actual sound device specific mixer settings -->
     <path name="headset-mic">
+        <ctl name="Mic 2 Volume" value="4" />
+        <ctl name="Mixin PGA Volume" value="10,10" />
         <ctl name="DMIC Switch" value="0" />
         <ctl name="Mic 2 Amp Source MUX" value="MIC_P" />
         <ctl name="Mic 2 Switch" value="1" />
         <ctl name="Mixin Left Mic 2 Switch" value="1" />
         <ctl name="Mixin Right Mic 2 Switch" value="1" />
         <ctl name="Mixin PGA Switch" value="1" />
-	    <ctl name="ADC Switch" value="1" />
+        <ctl name="ADC Switch" value="1" />
         <ctl name="DAI Left Source MUX" value="ADC Left" />
         <ctl name="DAI Right Source MUX" value="ADC Right" />
         <ctl name="Headphone Volume" value="53, 53" />

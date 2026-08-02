@@ -140,11 +140,11 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/qcs6490/resourcemanager_QCS6490_RB3Gen2.xml \
                       ./configs/qcom/IoT/qcs9075/mixer_paths_LEMANS_EVK.xml \
                       ./configs/qcom/IoT/qcs9075/resourcemanager_LEMANS_EVK.xml \
-                      ./configs/qcom/IoT/shikra/mixer_paths_Shikra_CQM_EVK.xml \
-                      ./configs/qcom/IoT/shikra/resourcemanager_Shikra_CQM_EVK.xml \
-                      ./configs/qcom/IoT/shikra/mixer_paths_Shikra_CQS_EVK.xml \
-                      ./configs/qcom/IoT/shikra/resourcemanager_Shikra_CQS_EVK.xml\
-                      ./configs/qcom/IoT/shikra/plugin_manager.xml\
+                      ./configs/qcom/IoT/shikra/mixer_paths_shikra_cqs_evk.xml \
+                      ./configs/qcom/IoT/shikra/resourcemanager_shikra_cqs_evk.xml \
+                      ./configs/qcom/IoT/shikra/mixer_paths_shikra_iqs_evk.xml \
+                      ./configs/qcom/IoT/shikra/resourcemanager_shikra_iqs_evk.xml \
+                      ./configs/qcom/IoT/shikra/plugin_manager.xml \
                       ./configs/qcom/IoT/x1e80100/mixer_paths_X1E80100_CRD.xml \
                       ./configs/qcom/IoT/x1e80100/resourcemanager_X1E80100_CRD.xml \
                       ./configs/qcom/IoT/x1e80100/mixer_paths_X1E80100_EVK.xml \
@@ -174,10 +174,10 @@ install-data-hook:
 	ln -sf resourcemanager_QCS6490_RB3Gen2.xml $(DESTDIR)$(root_etcdir)/resourcemanager_QCM6490_IDP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_LEMANS_EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra_CQM_EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra_CQM_EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Shikra_CQS_EVK.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Shikra_CQS_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_shikra_cqs_evk.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_shikra_cqs_evk.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_shikra_iqs_evk.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_shikra_iqs_evk.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/plugin_manager.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_X1E80100_CRD.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_X1E80100_CRD.xml

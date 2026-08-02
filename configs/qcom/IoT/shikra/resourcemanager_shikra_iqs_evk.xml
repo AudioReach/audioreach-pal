@@ -7,6 +7,7 @@
     <version>2.0</version>
     <config_params>
         <param key="logging_level" value ="3" />
+        <param key="dummy_dev_enable" value ="true" />
     </config_params>
     <config_max_sessions>
         <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
@@ -137,7 +138,9 @@
             <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <snd_device_name>headset-mic</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+            <snd_device_name>headset-va-mic</snd_device_name>
             <ec_enable>0</ec_enable>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -201,6 +204,50 @@
                 <name>PAL_STREAM_RAW</name>
             </usecase>
         </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_DUMMY</id>
+            <back_end_name>PCM_DUMMY-TX-1</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <snd_device_name>dummy-dev</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+        </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_HANDSET_VA_MIC</id>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>1</channels>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+            <snd_device_name>handset-mic</snd_device_name>
+            <ec_enable>1</ec_enable>
+            <ec_rx_device>
+                <id>PAL_DEVICE_OUT_SPEAKER</id>
+                <id>PAL_DEVICE_OUT_HANDSET</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST</id>
+                <id>PAL_DEVICE_OUT_USB_HEADSET</id>
+            </ec_rx_device>
+        </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_HEADSET_VA_MIC</id>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>1</channels>
+            <snd_device_name>headset-va-mic</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+            <ec_enable>1</ec_enable>
+            <ec_rx_device>
+                <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
+                <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE</id>
+                <id>PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST</id>
+            </ec_rx_device>
+        </in-device>
         <out-device>
             <id>PAL_DEVICE_NONE</id>
             <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
@@ -212,7 +259,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -256,7 +303,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -268,20 +315,33 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
             <fractional_sr>1</fractional_sr>
             <snd_device_name>headphones</snd_device_name>
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
             <fractional_sr>1</fractional_sr>
             <snd_device_name>headphones</snd_device_name>
          </out-device>
+         <out-device>
+            <id>PAL_DEVICE_OUT_DUMMY</id>
+            <back_end_name>PCM_DUMMY-RX-0</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <snd_device_name>dummy-dev</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+        </out-device>
     </device_profile>
     <in_streams>
         <in_stream>
@@ -331,15 +391,7 @@
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
-                <param snd_name="headset-va-mic-lpi" />
-                <param ec_ref="false" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI_AAD">
-                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="headset-va-mic-lpi" />
+                <param snd_name="headset-va-mic" />
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFNS">
@@ -371,15 +423,7 @@
                 <param sample_rate="16000" />
                 <param channels="1" />
                 <param bit_width="16" />
-                <param snd_name="va-mic-mono-lpi" />
-                <param ec_ref="false" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD">
-                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="va-mic-mono-lpi" />
+                <param snd_name="handset-mic" />
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_FFNS">
@@ -405,76 +449,6 @@
                 <param bit_width="16" />
                 <param snd_name="va-mic-mono" />
                 <param ec_ref="true" />
-            </capture_profile>
-            <!-- ACD Specific Profiles -->
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI">
-                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="headset-va-mic-lpi" />
-                <param ec_ref="false" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_LPI">
-                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="va-mic-mono-lpi" />
-                <param ec_ref="false" />
-            </capture_profile>
-            <!-- Sensor PCM Data Specific Profiles -->
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFEC">
-                <param device_id="PAL_DEVICE_IN_HEADSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="headset-va-mic" />
-                <param ec_ref="true" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_16KHZ_16BIT_FFEC">
-                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="va-mic-mono" />
-                <param ec_ref="true" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_48KHZ_16BIT_RAW_LPI_TX_MACRO">
-                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
-                <param sample_rate="48000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="ultrasound-mic" />
-                <param ec_ref="false" />
-                <param backend="tx_macro" />
-            </capture_profile>
-            <capture_profile name="DUAL_MIC_48KHZ_16BIT_RAW_LPI_TX_MACRO">
-                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
-                <param sample_rate="48000" />
-                <param channels="2" />
-                <param bit_width="16" />
-                <param snd_name="ultrasound-dmic" />
-                <param ec_ref="false" />
-                <param backend="tx_macro" />
-            </capture_profile>
-            <capture_profile name="SINGLE_MIC_48KHZ_16BIT_RAW_LPI_NO_BUFFER_TX_MACRO">
-                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
-                <param sample_rate="48000" />
-                <param channels="1" />
-                <param bit_width="16" />
-                <param snd_name="ultrasound-mic" />
-                <param ec_ref="false" />
-                <param backend="tx_macro" />
-            </capture_profile>
-            <capture_profile name="DUAL_MIC_48KHZ_16BIT_RAW_LPI_NO_BUFFER_TX_MACRO">
-                <param device_id="PAL_DEVICE_IN_ULTRASOUND_MIC" />
-                <param sample_rate="48000" />
-                <param channels="2" />
-                <param bit_width="16" />
-                <param snd_name="ultrasound-dmic" />
-                <param ec_ref="false" />
-                <param backend="tx_macro" />
             </capture_profile>
             <!-- SVA/Hotword Specific Profiles -->
             <capture_profile name="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_NLPI">
@@ -510,14 +484,6 @@
                 <param ec_ref="false" />
             </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_RAW_LPI">
-                <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
-                <param sample_rate="16000" />
-                <param channels="2" />
-                <param bit_width="16" />
-                <param snd_name="va-mic-dmic-lpi" />
-                <param ec_ref="false" />
-            </capture_profile>
-            <capture_profile name="DUAL_MIC_16KHZ_16BIT_RAW_LPI_AAD">
                 <param device_id="PAL_DEVICE_IN_HANDSET_VA_MIC" />
                 <param sample_rate="16000" />
                 <param channels="2" />
@@ -750,159 +716,6 @@
                 <param ec_ref="true" />
             </capture_profile>
         </capture_profile_list>
-        <acd_platform_info>
-            <config>
-                <param acd_enable="true" />
-            </config>
-            <!-- ACD -->
-            <stream_config>
-                <name>QC_ACD</name>
-                <param vendor_uuid="4e93281b-296e-4d73-9833-2710c3c7c1db" />
-                <param sample_rate="16000" />
-                <param bit_width="16" />
-                <!-- Module output channels -->
-                <param out_channels="1" />
-                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!-- move stream container in ACDB to NLPI when this is uncommented -->
-                <!--param lpi_enable="false" /-->
-                <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI" />
-                    <high_performance capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                </operating_modes>
-                <sound_model_info>
-                    <sound_model>
-                        <name>ACD_SOUND_MODEL_ID_EVENT</name>
-                        <bin>event.eai</bin>
-                        <uuid>0x0B001007</uuid>
-                        <contexts>
-                            <context id="0x0800132D" /> <!-- EVENT_ALARM -->
-                            <context id="0x0800132E" /> <!-- EVENT_BABYCRYING -->
-                            <context id="0x0800132F" /> <!-- EVENT_DOGBARKING -->
-                            <context id="0x08001330" /> <!-- EVENT_DOORBELL -->
-                            <context id="0x08001331" /> <!-- EVENT_DOOROPENCLOSE -->
-                            <context id="0x08001332" /> <!-- EVENT_CRASH -->
-                            <context id="0x08001333" /> <!-- EVENT_GLASSBREAKING -->
-                            <context id="0x08001334" /> <!-- EVENT_SIREN -->
-                            <context id="0x080013CC" /> <!-- EVENT_CARHONK -->
-                            <context id="0x080013CD" /> <!-- EVENT_GUNSHOT -->
-                            <context id="0x080013CE" /> <!-- EVENT_PHONERING -->
-                            <context id="0x080013CF" /> <!-- EVENT_SLEEPAPNEA -->
-                            <context id="0x080013D0" /> <!-- EVENT_SNORING -->
-                            <context id="0x080013D1" /> <!-- EVENT_CATMEOW -->
-                            <context id="0x080013D2" /> <!-- EVENT_DOORKNOCK -->
-                            <context id="0x080013D3" /> <!-- EVENT_WATERFLOW -->
-                            <context id="0x080013D4" /> <!-- EVENT_FIREALARM -->
-                        </contexts>
-                    </sound_model>
-                    <sound_model>
-                        <name>ACD_SOUND_MODEL_ID_SPEECH</name>
-                        <bin>speech.eai</bin>
-                        <uuid>0x0B001008</uuid>
-                        <contexts>
-                            <context id="0x08001335" /> <!-- AMBIENCE_SPEECH -->
-                        </contexts>
-                    </sound_model>
-                    <sound_model>
-                        <name>ACD_SOUND_MODEL_ID_MUSIC</name>
-                        <bin>music.eai</bin>
-                        <uuid>0x0B001009</uuid>
-                        <contexts>
-                            <context id="0x08001336" /> <!-- AMBIENCE_MUSIC -->
-                        </contexts>
-                    </sound_model>
-                    <sound_model>
-                        <name>ACD_SOUND_MODEL_AMBIENCE_NOISE_SILENCE</name>
-                        <bin></bin> <!-- Following contexts dont have a model, hence empty bin -->
-                        <uuid>0xFFFFFFFF</uuid> <!-- Indicates no sound model -->
-                        <contexts>
-                            <context id="0x08001337" /> <!-- AMBIENCE_NOISY_SPL -->
-                            <context id="0x08001338" /> <!-- AMBIENCE_SILENT_SPL -->
-                            <context id="0x08001339" /> <!-- AMBIENCE_NOISY_SFLUX -->
-                            <context id="0x0800133A" /> <!-- AMBIENCE_SILENT_SFLUX -->
-                            <context id="0x08001AE2" /> <!-- AMBIENCE_SPL_METER -->
-                        </contexts>
-                    </sound_model>
-                    <sound_model>
-                        <name>ACD_SOUND_MODEL_ID_CONVERSATION</name>
-                        <bin>conv_detection.eai</bin>
-                        <uuid>0x0B00100F</uuid>
-                        <contexts>
-                            <context id="0x08001AF2" /> <!-- EVENT_CONVERSATION -->
-                        </contexts>
-                    </sound_model>
-                </sound_model_info>
-            </stream_config>
-            <!-- Sensor PCM Data -->
-            <stream_config>
-                <name>QC_SENSOR_PCM_DATA</name>
-                <param vendor_uuid="c88a2c89-7a55-498c-836f-5d7ec8582990" />
-                <param sample_rate="16000" />
-                <param bit_width="16" />
-                <!-- Module output channels -->
-                <param out_channels="1" />
-                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
-                <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
-                    <low_power_ns capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_FFNS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFNS" />
-                    <low_power_tx_macro capture_profile_handset="DUAL_MIC_48KHZ_16BIT_RAW_LPI_NO_BUFFER_TX_MACRO" />
-                    <high_performance capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_FFEC" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFEC" />
-                    <high_performance_ns capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                </operating_modes>
-            </stream_config>
-            <!-- SDZ -->
-            <stream_config>
-                <name>QC_SDZ</name>
-                <param vendor_uuid="38661a34-c17a-45c6-86ab-1bc3f2c079a1" />
-                <param sample_rate="16000" />
-                <param bit_width="16" />
-                <!-- Module output channels -->
-                <param out_channels="1" />
-                <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_LPI" />
-                    <high_performance capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                </operating_modes>
-            </stream_config>
-        </acd_platform_info>
-        <!-- ASR -->
-        <asr_platform_info>
-            <common_config>
-                <!-- ASR streams common params -->
-                <!-- Partial mode runs in NLPI by default, set this flag to run it in LPI -->
-                <param partial_mode_in_lpi="true"/>
-                <!-- ASR input DAM buffer size in millseconds for non-partial mode -->
-                <param asr_input_buffer_size="10000" />
-                <!-- ASR input DAM buffer size in millseconds for partial mode -->
-                <param asr_input_buffer_size_partial_mode="200" />
-                <!-- ASR output buffer size in bytes for continuous buffering mode -->
-                <param buffering_mode_out_buf_size="102400" />
-                <!-- Output buffer size for speaker diarization in bytes -->
-                <param sdz_output_buffer_size="102400" />
-            </common_config>
-            <stream_config>
-                <name>QC_ASR</name>
-                <param vendor_uuid = "018ebfb8-1364-7417-b92e-f6ab16b55431" />
-                <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
-                <module_Info>
-                    <!-- List the SPF module params Ids -->
-                    <param asr_input_config_id = "0xC0000057, 0x08001AA4" />
-                    <param asr_output_config_id ="0xC0000057, 0x08001AA7" />
-                    <param asr_input_buffer_duration_id = "0xC0000057, 0x08001AA5" />
-                    <param asr_output_id = "0xC0000057, 0x08001AAA" />
-                    <param asr_force_output_id = "0xC0000057, 0x08001AA6" />
-                    <param sdz_enable_id = "0xC0000064, 0x08001026" />
-                    <param sdz_input_buffer_duration_id = "0xC0000064, 0x08001B09" />
-                    <param sdz_output_config_id = "0xC0000064, 0x08001B0D" />
-                    <param sdz_force_output_id = "0xC0000064, 0x08001B0E" />
-                    <param sdz_output_id = "0xC0000064, 0x08001B0C" />
-                </module_Info>
-                <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
-                    <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                </operating_modes>
-            </stream_config>
-        </asr_platform_info>
         <!-- Voice UI -->
         <vui_platform_info>
             <config>
@@ -910,10 +723,6 @@
                 <param version="0x0103" />
                 <param enable_failure_detection="false" />
                 <param notify_second_stage_failure="false" />
-                <param mmap_enable="true" />
-                <param mmap_buffer_duration="5000" />
-                <!-- 5ms duration of data -->
-                <param mmap_frame_length="5" />
                 <!-- Move this flag to common_config if ACD/Sensor PCM Data support car mode in the future -->
                 <param transit_to_non_lpi_on_charging="false" />
                 <!-- whether concurrent detection is supported across different VoiceUI sessions(SVA/Hotword/MMA)-->
@@ -926,6 +735,10 @@
                 <name>QC_VOICE_UI</name>
                 <param vendor_uuid="68ab2d40-e860-11e3-95ef-0002a5d5c51b" />
                 <param interface_plugin_lib="sva_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <param merge_first_stage_sound_models="false" />
                 <!-- Property for extended detection payload, disabled by default -->
                 <!-- OEM can enable this by adding properties defined in SoundTriggerUtils.h-->
@@ -949,10 +762,10 @@
                 <!-- Module output channels -->
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
+                <!-- <param lpi_enable="false" /> -->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
-                    <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
+                    <high_performance capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance_and_charging capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
                 </operating_modes>
                 <sound_model_info>
@@ -1011,6 +824,10 @@
                 <name>HOTWORD_VOICE_UI</name>
                 <param vendor_uuid="7038ddc8-30f2-11e6-b0ac-40a8f03d3f15" />
                 <param interface_plugin_lib="hotword_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <param get_module_version="false" />
                 <param merge_first_stage_sound_models="false" />
                 <param capture_keyword="2000" />
@@ -1022,7 +839,7 @@
                 <!-- Module output channels -->
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
+                <!-- <param lpi_enable="false" /> -->
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_NLPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_NLPI" />
@@ -1045,6 +862,10 @@
                 <!-- NOTE: Customer need to replace with their own uuid and match with sound model -->
                 <param vendor_uuid="c51c508a-ee1b-11ec-8ea0-0242ac120002" />
                 <param interface_plugin_lib="customva_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <param merge_first_stage_sound_models="false" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
@@ -1060,7 +881,7 @@
                 <!-- Module output channels -->
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
+                <!-- <param lpi_enable="false" /> -->
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_CUSTOM_NS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_CUSTOM_NS" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_CUSTOM_ECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_CUSTOM_ECNS" />
@@ -1081,6 +902,10 @@
                 <name>QC_MMA</name>
                 <param vendor_uuid="018f8585-3890-7419-b0f3-e5b6ec961d9c" />
                 <param interface_plugin_lib="sva_plugin.so" />
+                <param mmap_enable="true" />
+                <param mmap_buffer_duration="5000" />
+                <!-- 5ms duration of data -->
+                <param mmap_frame_length="5" />
                 <!-- Profile specific data which the algorithm can support -->
                 <param capture_keyword="2000" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->
@@ -1090,7 +915,7 @@
                 <!-- Module output channels -->
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
-                <!--param lpi_enable="false" /-->
+                <!-- <param lpi_enable="false" /> -->
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
@@ -1114,35 +939,6 @@
                         <param channel_count="1" />
                         <param proc_frame_size="120" /> <!-- Processing frame size(in ms) -->
                     </arm_ss_module_params>
-                </sound_model_info>
-            </stream_config>
-            <!-- History buffer capture usecase -->
-            <stream_config>
-                <name>QC_HIST_CAP</name>
-                <param vendor_uuid="1b9cabd9-4eb9-4012-9766-2ce6597a9658" />
-                <param interface_plugin_lib="sva_plugin.so" />
-                <!-- batch size (in ms) for BATCHING buffer mode -->
-                <param batch_size_in_ms="5000" />
-                <param capture_keyword="10000" /> <!-- Default history buffer length -->
-                <!-- Module output media format -->
-                <param sample_rate="16000" />
-                <param bit_width="16" />
-                <param out_channels="1" />
-                <!-- NOTE: HIST_CAP usecase is typically running with ASR concurrency -->
-                <!-- supposed to use same capture profile as ASR due to shared dam and device pp -->
-                <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
-                    <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                    <high_performance_and_charging capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
-                </operating_modes>
-                <sound_model_info>
-                    <first_stage_module_params>
-                        <param module_type="HIST_CAP" />
-                        <param buffering_mode_ids="0xC0000008, 0x08001B87" />
-                        <param trigger_detection_ids="0xC0000008, 0x08001B7E" />
-                        <param buffering_config_ids="0xC0000008, 0x08001044" />
-                        <param engine_reset_ids="0xC0000008, 0x08001051" />
-                    </first_stage_module_params>
                 </sound_model_info>
             </stream_config>
         </vui_platform_info>

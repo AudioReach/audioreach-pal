@@ -3220,11 +3220,12 @@ int ResourceManager::checkandEnableECForRXStream_l(std::shared_ptr<Device> rx_de
             continue;
         }
         mResourceManagerMutex.unlock();
-        /* Use setECRef_l (lock-free) to avoid deadlock with reader thread.
-         * StreamPCM::read() holds mStreamMutex while blocked on DSP data.
-         * setECRef() would try to acquire the same mutex -> deadlock.
-         * setECRef_l skips the mutex lock and is safe here since
-         * mResourceManagerMutex is managed by the caller. */
+        /* Use setECRef_l (lock-free) to avoid potential deadlock.
+         * The Tx stream may hold mStreamMutex (e.g. during an active read
+         * or any other stream operation). setECRef() acquires the same
+         * mutex and would deadlock. setECRef_l skips the mutex acquisition
+         * and is safe here since mResourceManagerMutex is held by the
+         * caller, preventing concurrent EC setup calls. */
         status = tx_stream->setECRef_l(rx_dev, ec_on);
         mResourceManagerMutex.lock();
         if (status != 0 && ec_on) {

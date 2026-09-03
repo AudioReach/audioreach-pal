@@ -255,7 +255,7 @@
     <!-- These are actual sound device specific mixer settings -->
     <path name="amic2">
         <ctl name="TX DEC0 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX0" value="ADC1" />
+        <ctl name="TX SMIC MUX0" value="SWR_MIC1" />
         <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
         <ctl name="TX1 MODE" value="ADC_NORMAL" />
         <ctl name="ADC2 Volume" value="20" />

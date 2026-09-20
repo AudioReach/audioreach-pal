@@ -1175,7 +1175,7 @@
         <!-- IN Handset_VA_MIC DevicePPs -->
         <devicepp id="PAL_DEVICE_IN_HANDSET_VA_MIC">
             <keys_and_values StreamType="PAL_STREAM_ACD,PAL_STREAM_VOICE_UI,PAL_STREAM_SENSOR_PCM_DATA"
-                DevicePPType="SINGLE_MIC_16KHZ_16BIT_FFECNS,DUAL_MIC_16KHZ_16BIT_FFECNS,TRI_MIC_16KHZ_16BIT_FFECNS,QUAD_MIC_16KHZ_16BIT_FFECNS">
+                DevicePPType="SINGLE_MIC_16KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS,DUAL_MIC_16KHZ_16BIT_FFECNS,DUAL_MIC_48KHZ_16BIT_FFECNS,TRI_MIC_16KHZ_16BIT_FFECNS,QUAD_MIC_16KHZ_16BIT_FFECNS">
                 <!-- DEVICETX - HANDSETMIC_VA -->
                 <graph_kv key="0xA3000000" value="0xA3000006"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_FLUENCE_FFECNS -->
@@ -1210,7 +1210,7 @@
                 <graph_kv key="0xAD000000" value="0xAD00001B"/>
             </keys_and_values>
             <keys_and_values StreamType="PAL_STREAM_VOICE_UI"
-                DevicePPType="SINGLE_MIC_16KHZ_16BIT_RAW_NLPI,DUAL_MIC_16KHZ_16BIT_RAW_NLPI">
+                DevicePPType="SINGLE_MIC_16KHZ_16BIT_RAW_NLPI,DUAL_MIC_16KHZ_16BIT_RAW_NLPI,SINGLE_MIC_48KHZ_16BIT_RAW_NLPI,DUAL_MIC_48KHZ_16BIT_RAW_NLPI">
                 <!-- DEVICETX - HANDSETMIC_VA -->
                 <graph_kv key="0xA3000000" value="0xA3000006"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_RAW_NLPI -->
@@ -1222,10 +1222,10 @@
                 <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
         </devicepp>
-        <!-- IN Headset VA MIC  DevicePPs -->
+        <!-- IN Headset VA MIC DevicePPs -->
         <devicepp id="PAL_DEVICE_IN_HEADSET_VA_MIC">
             <keys_and_values StreamType="PAL_STREAM_ACD,PAL_STREAM_VOICE_UI,PAL_STREAM_SENSOR_PCM_DATA"
-                DevicePPType="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFECNS">
+                DevicePPType="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFECNS,SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS">
                 <!-- DEVICETX - HEADSETMIC_VA -->
                 <graph_kv key="0xA3000000" value="0xA3000007"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_FLUENCE_FFECNS -->

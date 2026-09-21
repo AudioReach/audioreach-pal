@@ -69,8 +69,12 @@
 #include "PalCommon.h"
 #include "gsl_intf.h"
 
+#ifndef PAL_CONFIG_DIR
+#define PAL_CONFIG_DIR "/etc"
+#endif
+
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-#define USECASE_XML_FILE "/etc/usecaseKvManager.xml"
+#define USECASE_XML_FILE PAL_CONFIG_DIR "/usecaseKvManager.xml"
 #else
 #define USECASE_XML_FILE "/vendor/etc/usecaseKvManager.xml"
 #endif

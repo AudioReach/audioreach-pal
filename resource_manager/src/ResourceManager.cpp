@@ -44,6 +44,7 @@
 #include <iostream>
 #include <fstream>
 #include <sys/ioctl.h>
+#include <limits.h>
 #include "ResourceManager.h"
 #include "Session.h"
 #include "Device.h"
@@ -74,7 +75,7 @@
 #define XML_PATH_EXTN_MAX_SIZE 80
 #define XML_FILE_DELIMITER "_"
 #define XML_FILE_EXT ".xml"
-#define XML_PATH_MAX_LENGTH 100
+#define XML_PATH_MAX_LENGTH PATH_MAX
 #define HW_INFO_ARRAY_MAX_SIZE 32
 
 #define VBAT_BCL_SUFFIX "-vbat"
@@ -104,6 +105,10 @@
 
 #define MIXER_XML_BASE_STRING_NAME "mixer_paths"
 #define RMNGR_XMLFILE_BASE_STRING_NAME "resourcemanager"
+
+#ifndef PAL_DATA_DIR
+#define PAL_DATA_DIR "/etc"
+#endif
 
 #define MAX_RETRY_CNT 20
 #define LOWLATENCY_PCM_DEVICE 15
@@ -9643,8 +9648,8 @@ void ResourceManager::getVendorConfigPath (char* config_file_path, int path_size
    if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
 #endif
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-       /* Audio configs are stored in /etc */
-       snprintf(config_file_path, path_size, "%s", "/etc");
+       /* Audio configs are stored in PAL_DATA_DIR */
+       snprintf(config_file_path, path_size, "%s", PAL_DATA_DIR);
 #else
        /* Audio configs are stored in /vendor/etc */
        snprintf(config_file_path, path_size, "%s", "/vendor/etc");

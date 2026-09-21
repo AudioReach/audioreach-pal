@@ -51,6 +51,7 @@ libsession_ar_la_CPPFLAGS += -std=c++14
 libsession_ar_la_LDFLAGS   = -shared -avoid-version
 libsession_ar_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_ar_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
+libsession_ar_la_CPPFLAGS += -DPAL_CONFIG_DIR=\"@PAL_CONFIG_DIR@\"
 libsession_ar_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if USE_SYSLOG

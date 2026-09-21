@@ -14,12 +14,13 @@ customva_intf_sources = $(top_srcdir)/customva_intf/src/CustomVA.cpp
 
 library_includedir = $(includedir)/customva_intf
 
-lib_LTLIBRARIES     = libcustomva_intf.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libcustomva_intf.la
 libcustomva_intf_la_SOURCES   = $(customva_intf_sources)
 libcustomva_intf_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libcustomva_intf_la_CPPFLAGS := $(AM_CPPFLAGS)
 libcustomva_intf_la_CPPFLAGS += -std=c++14
-libcustomva_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@
+libcustomva_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@ -Wl,-rpath,'$$ORIGIN'
 libcustomva_intf_la_CPPFLAGS += @GLIB_CFLAGS@
 if WITH_GLIB
 libcustomva_intf_la_CPPFLAGS += -include glib.h

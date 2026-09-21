@@ -13,12 +13,13 @@ hotword_intf_sources = $(top_srcdir)/hotword_intf/src/HotwordVA.cpp
 
 library_includedir = $(includedir)/hotword_intf
 
-lib_LTLIBRARIES     = libhotword_intf.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libhotword_intf.la
 libhotword_intf_la_SOURCES   = $(hotword_intf_sources)
 libhotword_intf_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libhotword_intf_la_CPPFLAGS := $(AM_CPPFLAGS)
 libhotword_intf_la_CPPFLAGS += -std=c++14
-libhotword_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@
+libhotword_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@ -Wl,-rpath,'$$ORIGIN'
 libhotword_intf_la_CPPFLAGS += @GLIB_CFLAGS@
 if WITH_GLIB
 libhotword_intf_la_CPPFLAGS += -include glib.h

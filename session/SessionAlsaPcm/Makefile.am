@@ -40,14 +40,15 @@ endif
 
 library_includedir = $(includedir)/session_pcm
 
-lib_LTLIBRARIES     = libsession_pcm.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_pcm.la
 libsession_pcm_la_SOURCES   = $(session_pcm_sources)
 libsession_pcm_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libsession_pcm_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libsession_pcm_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_pcm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_pcm_la_CPPFLAGS += -std=c++14
-libsession_pcm_la_LDFLAGS   = -shared -avoid-version
+libsession_pcm_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_pcm_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DAUDIO_FEATURE_STATS_UNSUPPORTED
 libsession_pcm_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_pcm_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

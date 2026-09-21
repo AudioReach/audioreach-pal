@@ -40,13 +40,14 @@ stream_commonproxy_sources = ./src/StreamCommonProxy.cpp
 
 library_includedir = $(includedir)/stream_commonproxy
 
-lib_LTLIBRARIES     = libstream_commonproxy.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_commonproxy.la
 libstream_commonproxy_la_SOURCES   = $(stream_commonproxy_sources)
 libstream_commonproxy_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
 libstream_commonproxy_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstream_commonproxy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_commonproxy_la_CPPFLAGS += -std=c++14
-libstream_commonproxy_la_LDFLAGS   = -shared -avoid-version
+libstream_commonproxy_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_commonproxy_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstream_commonproxy_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_commonproxy_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

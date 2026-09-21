@@ -40,13 +40,14 @@ endif
 
 library_includedir = $(includedir)/stream_pcm
 
-lib_LTLIBRARIES     = libstream_pcm.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_pcm.la
 libstream_pcm_la_SOURCES   = $(stream_pcm_sources)
 libstream_pcm_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libstream_pcm_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstream_pcm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_pcm_la_CPPFLAGS += -std=c++14
-libstream_pcm_la_LDFLAGS   = -shared -avoid-version
+libstream_pcm_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_pcm_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libstream_pcm_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_pcm_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

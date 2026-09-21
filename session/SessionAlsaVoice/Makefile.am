@@ -41,14 +41,15 @@ endif
 
 library_includedir = $(includedir)/session_voice
 
-lib_LTLIBRARIES     = libsession_voice.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_voice.la
 libsession_voice_la_SOURCES   = $(session_voice_sources)
 libsession_voice_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libsession_voice_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libsession_voice_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_voice_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_voice_la_CPPFLAGS += -std=c++14
-libsession_voice_la_LDFLAGS   = -shared -avoid-version
+libsession_voice_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_voice_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
 libsession_voice_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"

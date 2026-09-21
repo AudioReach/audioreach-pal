@@ -42,13 +42,14 @@ endif
 
 library_includedir = $(includedir)/session_ar
 
-lib_LTLIBRARIES     = libsession_ar.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_ar.la
 libsession_ar_la_SOURCES   = $(session_ar_sources)
 libsession_ar_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress -lar-gsl
 libsession_ar_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libsession_ar_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_ar_la_CPPFLAGS += -std=c++14
-libsession_ar_la_LDFLAGS   = -shared -avoid-version
+libsession_ar_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_ar_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_ar_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_ar_la_CPPFLAGS += -DPAL_CONFIG_DIR=\"@PAL_CONFIG_DIR@\"

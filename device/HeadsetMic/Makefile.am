@@ -41,13 +41,14 @@ endif
 
 library_includedir = $(includedir)/dev_headset_mic
 
-lib_LTLIBRARIES     = libdev_headset_mic.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_headset_mic.la
 libdev_headset_mic_la_SOURCES   = $(dev_headset_mic_sources)
 libdev_headset_mic_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_headset_mic_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_headset_mic_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_headset_mic_la_CPPFLAGS += -std=c++14
-libdev_headset_mic_la_LDFLAGS   = -shared -avoid-version
+libdev_headset_mic_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libdev_headset_mic_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
 libdev_headset_mic_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"

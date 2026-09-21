@@ -40,14 +40,15 @@ endif
 
 library_includedir = $(includedir)/session_agm
 
-lib_LTLIBRARIES     = libsession_agm.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_agm.la
 libsession_agm_la_SOURCES   = $(session_agm_sources)
 libsession_agm_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libsession_agm_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libsession_agm_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_agm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_agm_la_CPPFLAGS += -std=c++14
-libsession_agm_la_LDFLAGS   = -shared -avoid-version
+libsession_agm_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_agm_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_agm_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_agm_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)

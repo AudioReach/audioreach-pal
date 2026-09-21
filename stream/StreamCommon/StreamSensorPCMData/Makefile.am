@@ -38,13 +38,14 @@ streamsensorpcmdata_headers_sources = $(top_srcdir)/stream/StreamCommon/StreamSe
 endif
 library_includedir = $(includedir)/streamsensorpcmdata_headers
 
-lib_LTLIBRARIES     = libstreamsensorpcmdata_headers.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstreamsensorpcmdata_headers.la
 libstreamsensorpcmdata_headers_la_SOURCES   = $(streamsensorpcmdata_headers_sources)
 libstreamsensorpcmdata_headers_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
 libstreamsensorpcmdata_headers_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstreamsensorpcmdata_headers_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstreamsensorpcmdata_headers_la_CPPFLAGS += -std=c++14
-libstreamsensorpcmdata_headers_la_LDFLAGS   = -shared -avoid-version
+libstreamsensorpcmdata_headers_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstreamsensorpcmdata_headers_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstreamsensorpcmdata_headers_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstreamsensorpcmdata_headers_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

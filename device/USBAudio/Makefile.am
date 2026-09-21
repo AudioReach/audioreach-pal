@@ -41,14 +41,15 @@ endif
 
 library_includedir = $(includedir)/dev_usb
 
-lib_LTLIBRARIES     = libdev_usb.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_usb.la
 libdev_usb_la_SOURCES   = $(dev_usb_sources)
 libdev_usb_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_usb_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_usb_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_usb_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_usb_la_CPPFLAGS += -std=c++14
-libdev_usb_la_LDFLAGS   = -shared -avoid-version
+libdev_usb_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 
 libdev_usb_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 

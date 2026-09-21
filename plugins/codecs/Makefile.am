@@ -3,7 +3,8 @@ pkgconfig_DATA = codecs.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 library_includedir = $(includedir)/codecs
-lib_LTLIBRARIES     = libbt_bundle.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libbt_bundle.la
 
 bt_bundle_sources = \
               bt_base.c \
@@ -12,7 +13,7 @@ bt_bundle_sources = \
 libbt_bundle_la_CPPFLAGS = -I $(top_srcdir)/plugins/codecs/inc
 libbt_bundle_la_SOURCES   = $(bt_bundle_sources)
 libbt_bundle_la_LIBADD    = @GLIB_LIBS@ -lexpat -ldl
-libbt_bundle_la_LDFLAGS = -shared -avoid-version
+libbt_bundle_la_LDFLAGS = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libbt_bundle_la_CPPFLAGS += @GLIB_CFLAGS@ @SPF_CFLAGS@ -include glib.h
 libbt_bundle_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libbt_bundle_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
@@ -27,7 +28,7 @@ if USE_SYSLOG
 libbt_bundle_la_CPPFLAGS += -DPAL_USE_SYSLOG
 endif
 
-lib_LTLIBRARIES     += libbt_ble.la
+pluginlib_LTLIBRARIES += libbt_ble.la
 
 bt_ble_sources = \
               bt_base.c \
@@ -36,7 +37,7 @@ bt_ble_sources = \
 libbt_ble_la_CPPFLAGS = -I $(top_srcdir)/plugins/codecs/inc
 libbt_ble_la_SOURCES   = $(bt_ble_sources)
 libbt_ble_la_LIBADD    = @GLIB_LIBS@ -lexpat -ldl
-libbt_ble_la_LDFLAGS = -shared -avoid-version
+libbt_ble_la_LDFLAGS = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libbt_ble_la_CPPFLAGS += @GLIB_CFLAGS@ @SPF_CFLAGS@ -include glib.h
 libbt_ble_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libbt_ble_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
@@ -51,7 +52,7 @@ else
 libbt_ble_la_CPPFLAGS += -DPAL_USE_SYSLOG  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
-lib_LTLIBRARIES     += libbt_aptx.la
+pluginlib_LTLIBRARIES += libbt_aptx.la
 
 bt_aptx_sources = \
               bt_base.c \
@@ -60,7 +61,7 @@ bt_aptx_sources = \
 libbt_aptx_la_CPPFLAGS = -I $(top_srcdir)/plugins/codecs/inc
 libbt_aptx_la_SOURCES   = $(bt_aptx_sources)
 libbt_aptx_la_LIBADD    = @GLIB_LIBS@ -lexpat -ldl
-libbt_aptx_la_LDFLAGS = -shared -avoid-version
+libbt_aptx_la_LDFLAGS = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libbt_aptx_la_CPPFLAGS += @GLIB_CFLAGS@ @SPF_CFLAGS@ -include glib.h
 libbt_aptx_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libbt_aptx_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

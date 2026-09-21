@@ -1,5 +1,5 @@
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = pal.pc
+pkgconfig_DATA = audioreach-pal.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 

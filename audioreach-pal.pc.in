@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: pal
-Description: pal library
+Name: audioreach-pal
+Description: AudioReach PAL library
 Version: @LT_VERSION@
 Libs: -L${libdir} -laudioreach-pal
 Cflags: -I${includedir}/audioreach-pal

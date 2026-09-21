@@ -144,7 +144,7 @@ AC_CONFIG_SUBDIRS([
 ])
 
 AC_CONFIG_FILES([ Makefile \
-pal.pc \
+audioreach-pal.pc \
 stream/Makefile \
 session/Makefile \
 device/Makefile \

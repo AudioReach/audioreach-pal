@@ -82,7 +82,7 @@ endif
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CPPFLAGS += -DCONFIG_GSL
 
-library_includedir = $(includedir)/pal
+library_includedir = $(includedir)/audioreach-pal
 lib_LTLIBRARIES     = libaudioreach-pal.la
 libaudioreach_pal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT

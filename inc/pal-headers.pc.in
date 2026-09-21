@@ -7,4 +7,4 @@ Name: mm-audio-headers
 Description: Common mm-audio-headers for Audio-Reach
 Version: @VERSION@
 Libs: -L${libdir}
-Cflags: -I${includedir}/pal
+Cflags: -I${includedir}/audioreach-pal

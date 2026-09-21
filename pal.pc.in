@@ -7,4 +7,4 @@ Name: pal
 Description: pal library
 Version: @LT_VERSION@
 Libs: -L${libdir} -laudioreach-pal
-Cflags: -I${includedir}/pal
+Cflags: -I${includedir}/audioreach-pal

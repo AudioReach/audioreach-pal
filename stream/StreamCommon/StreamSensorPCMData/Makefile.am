@@ -38,13 +38,14 @@ streamsensorpcmdata_sources = $(top_srcdir)/stream/StreamCommon/StreamSensorPCMD
 endif
 library_includedir = $(includedir)/streamsensorpcmdata_headers
 
-lib_LTLIBRARIES     = libstream_sensorpcmdata.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_sensorpcmdata.la
 libstream_sensorpcmdata_la_SOURCES   = $(streamsensorpcmdata_sources)
 libstream_sensorpcmdata_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
 libstream_sensorpcmdata_la_LIBADD    += -L${abs_top_builddir}/.libs -laudioreach-pal
 libstream_sensorpcmdata_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_sensorpcmdata_la_CPPFLAGS += -std=c++14
-libstream_sensorpcmdata_la_LDFLAGS   = -shared -avoid-version
+libstream_sensorpcmdata_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_sensorpcmdata_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstream_sensorpcmdata_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_sensorpcmdata_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

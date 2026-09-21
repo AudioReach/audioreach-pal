@@ -49,7 +49,7 @@ lib_LTLIBRARIES     = libdev_bt.la
 libdev_bt_la_SOURCES   = $(dev_bt_sources)
 libdev_bt_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_bt_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
-libdev_bt_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_bt_la_LIBADD   += -L${abs_top_builddir}/.libs -laudioreach-pal
 libdev_bt_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_bt_la_CPPFLAGS += -std=c++17
 libdev_bt_la_LDFLAGS   = -shared -avoid-version

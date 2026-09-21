@@ -35,7 +35,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
     liblx-osal \
-    libar-pal \
+    libaudioreach-pal \
     libexpat \
     libsession_ar
 

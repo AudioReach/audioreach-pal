@@ -43,7 +43,7 @@ library_includedir = $(includedir)/stream_nontunnel
 lib_LTLIBRARIES     = libstream_nontunnel.la
 libstream_nontunnel_la_SOURCES   = $(stream_nontunnel_sources)
 libstream_nontunnel_la_LIBADD    = @GLIB_LIBS@ -lexpat -lar-gsl
-libstream_nontunnel_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_nontunnel_la_LIBADD    += -L${abs_top_builddir}/.libs -laudioreach-pal
 libstream_nontunnel_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_nontunnel_la_CPPFLAGS += -std=c++14
 libstream_nontunnel_la_LDFLAGS   = -shared -avoid-version

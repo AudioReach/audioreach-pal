@@ -35,7 +35,7 @@ libsession_pcm_config_la_LDFLAGS   = -shared -avoid-version
 libsession_pcm_config_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_pcm_config_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_pcm_config_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
-libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/.libs -laudioreach-pal
 libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/session/SessionAlsaPcm/.libs -lsession_pcm
 libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_pcm_config_la_LIBADD   += ${abs_top_builddir}/plugins/configs/qcom/mobile/default/ConfigSessionUtils/.libs/libsession_utils_config.la

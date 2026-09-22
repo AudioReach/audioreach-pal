@@ -86,11 +86,11 @@ library_includedir = $(includedir)/audioreach-pal
 lib_LTLIBRARIES     = libaudioreach-pal.la
 libaudioreach_pal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT
-libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress -lagmclientwrapper
+libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal @AGM_LIBS@ -lexpat -ltinycompress -lagmclientwrapper
 libaudioreach_pal_la_LIBADD   += -lar-gsl
 libaudioreach_pal_la_CPPFLAGS  = -DFEATURE_IPQ_OPENWRT
 else
-libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress
+libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal @AGM_LIBS@ -lexpat -ltinycompress
 libaudioreach_pal_la_CPPFLAGS  =  -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 if IS_SDXLEMUR

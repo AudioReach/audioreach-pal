@@ -158,7 +158,9 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/Kaanapali/mixer_paths_Kaanapali_MTP.xml \
                       ./configs/qcom/IoT/Kaanapali/resourcemanager_Kaanapali_MTP.xml \
                       ./configs/qcom/IoT/NORD/mixer_paths_NORD_RIDE_SX.xml \
-                      ./configs/qcom/IoT/NORD/resourcemanager_NORD_RIDE_SX.xml
+                      ./configs/qcom/IoT/NORD/resourcemanager_NORD_RIDE_SX.xml \
+                      ./configs/qcom/IoT/Hawi/mixer_paths_Hawi_MTP.xml \
+                      ./configs/qcom/IoT/Hawi/resourcemanager_Hawi_MTP.xml
 
 
 # install essential xml files under /etc
@@ -195,6 +197,8 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Kaanapali_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_NORD_RIDE_SX.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_NORD_RIDE_SX.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Hawi_MTP.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Hawi_MTP.xml
 endif
 
 if COMPILE_ADSPRPCD

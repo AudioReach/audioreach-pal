@@ -42,13 +42,14 @@ endif
 
 library_includedir = $(includedir)/dev_headphone
 
-lib_LTLIBRARIES     = libdev_headphone.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_headphone.la
 libdev_headphone_la_SOURCES   = $(dev_headphone_sources)
 libdev_headphone_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_headphone_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_headphone_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_headphone_la_CPPFLAGS += -std=c++14
-libdev_headphone_la_LDFLAGS   = -shared -avoid-version
+libdev_headphone_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libdev_headphone_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
 libdev_headphone_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"

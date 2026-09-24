@@ -42,14 +42,15 @@ endif
 
 library_includedir = $(includedir)/dev_ec_ref
 
-lib_LTLIBRARIES     = libdev_ec_ref.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_ec_ref.la
 libdev_ec_ref_la_SOURCES   = $(dev_ec_ref_sources)
 libdev_ec_ref_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_ec_ref_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_ec_ref_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_ec_ref_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_ec_ref_la_CPPFLAGS += -std=c++14
-libdev_ec_ref_la_LDFLAGS   = -shared -avoid-version
+libdev_ec_ref_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 
 libdev_ec_ref_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 

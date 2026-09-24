@@ -40,13 +40,14 @@ endif
 
 library_includedir = $(includedir)/dev_fm
 
-lib_LTLIBRARIES     = libdev_fm.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_fm.la
 libdev_fm_la_SOURCES   = $(dev_fm_sources)
 libdev_fm_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_fm_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_fm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_fm_la_CPPFLAGS += -std=c++14
-libdev_fm_la_LDFLAGS   = -shared -avoid-version
+libdev_fm_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 
 libdev_fm_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 

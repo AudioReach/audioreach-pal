@@ -44,14 +44,15 @@ endif
 
 library_includedir = $(includedir)/stream_asr
 
-lib_LTLIBRARIES     = libstream_asr.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_asr.la
 libstream_asr_la_SOURCES   = $(stream_asr_sources)
 libstream_asr_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libstream_asr_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstream_asr_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libstream_asr_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_asr_la_CPPFLAGS += -std=c++14
-libstream_asr_la_LDFLAGS   = -shared -avoid-version
+libstream_asr_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_asr_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libstream_asr_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 

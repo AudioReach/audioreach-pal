@@ -41,14 +41,15 @@ stream_haptics_sources = $(top_srcdir)/stream/StreamHaptic/src/StreamHaptics.cpp
 endif
 library_includedir = $(includedir)/stream_haptics
 
-lib_LTLIBRARIES     = libstream_haptics.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_haptics.la
 libstream_haptics_la_SOURCES   = $(stream_haptics_sources)
 libstream_haptics_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/stream/StreamPCM/.libs -lstream_pcm
 libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstream_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_haptics_la_CPPFLAGS += -std=c++14
-libstream_haptics_la_LDFLAGS   = -shared -avoid-version
+libstream_haptics_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstream_haptics_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_haptics_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

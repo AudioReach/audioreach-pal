@@ -20,13 +20,14 @@ stream_acdb_sources = ./src/StreamACDB.cpp
 
 library_includedir = $(includedir)/stream_acdb
 
-lib_LTLIBRARIES     = libstream_acdb.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_acdb.la
 libstream_acdb_la_SOURCES   = $(stream_acdb_sources)
 libstream_acdb_la_LIBADD    = @GLIB_LIBS@ -llog -lcutils -lexpat -lar-gsl
 libstream_acdb_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libstream_acdb_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_acdb_la_CPPFLAGS += -std=c++14
-libstream_acdb_la_LDFLAGS   = -shared -avoid-version
+libstream_acdb_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_acdb_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libstream_acdb_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_acdb_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

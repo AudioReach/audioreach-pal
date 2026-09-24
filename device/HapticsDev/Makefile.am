@@ -46,14 +46,15 @@ endif
 
 library_includedir = $(includedir)/dev_haptics
 
-lib_LTLIBRARIES     = libdev_haptics.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_haptics.la
 libdev_haptics_la_SOURCES   = $(dev_haptics_sources)
 libdev_haptics_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_haptics_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_haptics_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_haptics_la_CPPFLAGS += -std=c++14
-libdev_haptics_la_LDFLAGS   = -shared -avoid-version
+libdev_haptics_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libdev_haptics_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 
 libdev_haptics_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"

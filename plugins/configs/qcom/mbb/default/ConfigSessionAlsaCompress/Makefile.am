@@ -24,12 +24,13 @@ AM_CPPFLAGS += -I ${top_srcdir}/plugins/vui_interface/api/vui-interface
 session_compress_config_sources = ./src/ConfigSessionAlsaCompress.cpp
 
 library_includedir = $(includedir)/session_compress_config
-lib_LTLIBRARIES     = libsession_compress_config.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_compress_config.la
 libsession_compress_config_la_SOURCES   = $(session_compress_config_sources)
 libsession_compress_config_la_LIBADD    = @GLIB_LIBS@ -llog -lexpat -ltinyalsa -ltinycompress
 libsession_compress_config_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_compress_config_la_CPPFLAGS += -std=c++14
-libsession_compress_config_la_LDFLAGS   = -shared -avoid-version
+libsession_compress_config_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_compress_config_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libsession_compress_config_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_compress_config_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

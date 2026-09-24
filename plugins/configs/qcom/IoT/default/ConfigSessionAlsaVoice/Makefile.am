@@ -27,12 +27,13 @@ AM_CPPFLAGS += @AROUTE_CFLAGS@
 session_voice_config_sources = ./src/ConfigSessionAlsaVoice.cpp
 
 library_includedir = $(includedir)/session_voice_config
-lib_LTLIBRARIES     = libsession_voice_config.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsession_voice_config.la
 libsession_voice_config_la_SOURCES   = $(session_voice_config_sources)
 libsession_voice_config_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa
 libsession_voice_config_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_voice_config_la_CPPFLAGS += -std=c++14
-libsession_voice_config_la_LDFLAGS   = -shared -avoid-version
+libsession_voice_config_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libsession_voice_config_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h  -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 libsession_voice_config_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_voice_config_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

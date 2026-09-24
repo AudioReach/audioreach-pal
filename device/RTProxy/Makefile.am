@@ -42,14 +42,15 @@ endif
 
 library_includedir = $(includedir)/dev_proxy
 
-lib_LTLIBRARIES     = libdev_proxy.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libdev_proxy.la
 libdev_proxy_la_SOURCES   = $(dev_proxy_sources)
 libdev_proxy_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_proxy_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libdev_proxy_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
 libdev_proxy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_proxy_la_CPPFLAGS += -std=c++14
-libdev_proxy_la_LDFLAGS   = -shared -avoid-version
+libdev_proxy_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libdev_proxy_la_CPPFLAGS += @GLIB_CFLAGS@   -include glib.h
 
 libdev_proxy_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"

@@ -27,8 +27,9 @@ AM_CPPFLAGS += -I $(top_srcdir)/utils/inc/
 
 c_sources := $(top_srcdir)/sva_intf/src/SVAInterface.cpp
 
-lib_LTLIBRARIES =  libsva_intf.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libsva_intf.la
 libsva_intf_la_SOURCES = $(c_sources)
 libsva_intf_la_CPPFLAGS = $(AM_CPPFLAGS)
-libsva_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@
+libsva_intf_la_LDFLAGS  = -shared -version-number @LT_VERSION_NUMBER@ -Wl,-rpath,'$$ORIGIN'
 libsva_intf_la_LIBADD = -lar-osal @GLIB_LIBS@ $(top_builddir)/utils/libvuiinterface_utils.la

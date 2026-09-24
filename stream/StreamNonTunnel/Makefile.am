@@ -40,13 +40,14 @@ endif
 
 library_includedir = $(includedir)/stream_nontunnel
 
-lib_LTLIBRARIES     = libstream_nontunnel.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_nontunnel.la
 libstream_nontunnel_la_SOURCES   = $(stream_nontunnel_sources)
 libstream_nontunnel_la_LIBADD    = @GLIB_LIBS@ -lexpat -lar-gsl
 libstream_nontunnel_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
 libstream_nontunnel_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_nontunnel_la_CPPFLAGS += -std=c++14
-libstream_nontunnel_la_LDFLAGS   = -shared -avoid-version
+libstream_nontunnel_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_nontunnel_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstream_nontunnel_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_nontunnel_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

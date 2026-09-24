@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
+
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are
+* met:
+*     * Redistributions of source code must retain the above copyright
+*       notice, this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above
+*       copyright notice, this list of conditions and the following
+*       disclaimer in the documentation and/or other materials provided
+*       with the distribution.
+*     * Neither the name of The Linux Foundation nor the names of its
+*       contributors may be used to endorse or promote products derived
+*       from this software without specific prior written permission.
+
+* THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+* BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+* BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+* OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+* IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+* Changes from Qualcomm Technologies, Inc. are provided under the following license:
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<mixer>
+    <!-- Initial settings: VA capture macro (digital mic capture via internal VA CODEC DMA macro) -->
+    <ctl name="VA_AIF1_CAP Mixer DEC0" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC1" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC2" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC3" value="0" />
+    <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+    <ctl name="VA DMIC MUX0" value="ZERO" />
+    <ctl name="VA DMIC MUX1" value="ZERO" />
+    <ctl name="VA DMIC MUX2" value="ZERO" />
+    <ctl name="VA DMIC MUX3" value="ZERO" />
+    <ctl name="VA SMIC MUX0" value="ZERO" />
+    <ctl name="VA_DEC0 Volume" value="100" />
+    <ctl name="VA_DEC1 Volume" value="100" />
+    <ctl name="VA_DEC2 Volume" value="100" />
+    <ctl name="VA_DEC3 Volume" value="100" />
+
+    <!-- Initial settings: analog headset-mic capture path (on-chip WCD codec, independent of external speaker amp) -->
+    <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+    <ctl name="TX SMIC MUX0" value="ZERO" />
+    <ctl name="TX_AIF1_CAP Mixer DEC0" value="0" />
+    <ctl name="ADC2 MUX" value="INP2" />
+    <ctl name="ADC2_MIXER Switch" value="0" />
+    <ctl name="TX_DEC0 Volume" value="80" />
+    <ctl name="ADC2 Volume" value="20" />
+
+    <!-- Initial settings: on-chip WCD headphone codec (wired HP jack, independent of external speaker amp) -->
+    <ctl name="RX_MACRO RX0 MUX" value="ZERO" />
+    <ctl name="RX_MACRO RX1 MUX" value="ZERO" />
+    <ctl name="RX INT0_1 MIX1 INP0" value="ZERO" />
+    <ctl name="RX INT1_1 MIX1 INP0" value="ZERO" />
+    <ctl name="RX INT0 DEM MUX" value="NORMAL_DSM_OUT" />
+    <ctl name="RX INT1 DEM MUX" value="NORMAL_DSM_OUT" />
+    <ctl name="RX_COMP1 Switch" value="0" />
+    <ctl name="RX_COMP2 Switch" value="0" />
+    <ctl name="HPHL_COMP Switch" value="0" />
+    <ctl name="HPHR_COMP Switch" value="0" />
+    <ctl name="HPHL_RDAC Switch" value="0" />
+    <ctl name="HPHR_RDAC Switch" value="0" />
+    <ctl name="RX_RX0 Digital Volume" value="84" />
+    <ctl name="RX_RX1 Digital Volume" value="84" />
+    <ctl name="HPHL Volume" value="20" />
+    <ctl name="HPHR Volume" value="20" />
+    <ctl name="RX_HPH_PWR_MODE" value="ULP" />
+    <ctl name="RX HPH Mode" value="CLS_H_ULP" />
+
+    <!-- Initial settings: front-end <-> back-end DAPM routing -->
+    <ctl name="SECONDARY_TDM_RX_0 Audio Mixer MultiMedia1" value="0" />
+    <ctl name="MultiMedia3 Mixer VA_CODEC_DMA_TX_0" value="0" />
+
+    <!-- Speaker playback: off-chip smart amp via Secondary TDM RX -->
+    <path name="speaker">
+        <ctl name="SECONDARY_TDM_RX_0 Audio Mixer MultiMedia1" value="1" />
+        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="Usage Mode" value="3" />
+        <ctl name="Speaker Volume" value="72" />
+    </path>
+
+    <!-- Handset (earpiece) playback: shares the same off-chip smart amp as speaker.
+         No separate earpiece driver on this board; kept distinct only so PAL's
+         handset-routed usecases (e.g. voice call) resolve to a valid device. -->
+    <path name="handset">
+        <path name="speaker" />
+    </path>
+
+    <!-- VA mic capture: single DMIC0 via internal VA CODEC DMA macro -->
+    <path name="va-mic-mono">
+        <ctl name="MultiMedia3 Mixer VA_CODEC_DMA_TX_0" value="1" />
+        <ctl name="VA DMIC MUX0" value="DMIC0" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="va-mic">
+        <path name="va-mic-mono" />
+    </path>
+
+    <path name="dmic0">
+        <path name="va-mic-mono" />
+    </path>
+
+    <path name="handset-mic">
+        <path name="dmic0" />
+    </path>
+
+    <path name="speaker-mic">
+        <path name="dmic0" />
+    </path>
+
+    <!-- Wired headphone/headset playback: on-chip WCD codec class-H path -->
+    <path name="headphones">
+        <ctl name="RX_HPH PWR Mode" value="LOHIFI" />
+        <ctl name="RX HPH Mode" value="CLS_H_ULP" />
+        <ctl name="RX_MACRO RX0 MUX" value="AIF1_PB" />
+        <ctl name="RX_MACRO RX1 MUX" value="AIF1_PB" />
+        <ctl name="RX INT0_1 MIX1 INP0" value="RX0" />
+        <ctl name="RX INT1_1 MIX1 INP0" value="RX1" />
+        <ctl name="RX INT0 DEM MUX" value="CLSH_DSM_OUT" />
+        <ctl name="RX INT1 DEM MUX" value="CLSH_DSM_OUT" />
+        <ctl name="RX_COMP1 Switch" value="1" />
+        <ctl name="RX_COMP2 Switch" value="1" />
+        <ctl name="RX_RX0 Digital Volume" value="50" />
+        <ctl name="RX_RX1 Digital Volume" value="50" />
+        <ctl name="HPHL_RDAC Switch" value="1" />
+        <ctl name="HPHR_RDAC Switch" value="1" />
+        <ctl name="HPHR_COMP Switch" value="1" />
+        <ctl name="HPHL_COMP Switch" value="1" />
+        <ctl name="HPHL Switch" value="1" />
+        <ctl name="HPHR Switch" value="1" />
+        <ctl name="HPHR Volume" value="20" />
+        <ctl name="HPHL Volume" value="20" />
+    </path>
+
+    <path name="line">
+        <path name="headphones" />
+    </path>
+
+    <!-- Wired headset mic: analog mic via on-chip WCD codec -->
+    <path name="amic2">
+        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX0" value="ADC1" />
+        <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="ADC2 MUX" value="INP2" />
+        <ctl name="ADC2_MIXER Switch" value="1" />
+        <ctl name="TX_DEC0 Volume" value="80" />
+        <ctl name="ADC2 Volume" value="20" />
+    </path>
+
+    <path name="headset-mic">
+        <path name="amic2" />
+    </path>
+
+    <!-- Wired headset/handset VA mic: analog mic via internal VA CODEC DMA macro -->
+    <path name="headset-va-mic">
+        <ctl name="VA DEC0 MUX" value="SWR_MIC" />
+        <ctl name="VA SMIC MUX0" value="ADC1" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="ADC2 MUX" value="INP2" />
+        <ctl name="ADC2_MIXER Switch" value="1" />
+        <ctl name="VA_DEC0 Volume" value="80" />
+        <ctl name="ADC2 Volume" value="20" />
+    </path>
+
+    <!-- BT SCO / BLE / BLE broadcast: pure AFE proxy backends, no local codec mixer ctl needed -->
+    <path name="bt-sco">
+    </path>
+
+    <path name="bt-sco-mic">
+    </path>
+
+    <path name="bt-ble">
+    </path>
+
+    <path name="bt-a2dp">
+    </path>
+
+    <path name="bt-a2dp-mic">
+    </path>
+
+    <!-- Display-port / HDMI: pure AFE backend, no local codec mixer ctl needed -->
+    <path name="display-port">
+    </path>
+
+</mixer>

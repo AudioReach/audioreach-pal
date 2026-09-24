@@ -28,6 +28,9 @@
     <ctl name="HPHL_RDAC Switch" value="0" />
     <ctl name="HPHR_RDAC Switch" value="0" />
     <ctl name="AUX_RDAC Switch" value="0" />
+    <ctl name="Headphone Left Switch" value="0" />
+    <ctl name="Headphone Right Switch" value="0" />
+    <ctl name="Headphone Switch" value="0" />
     <ctl name="RX_FIR Filter" value="OFF" />
     <ctl name="RX_EAR Mode" value="OFF" />
 

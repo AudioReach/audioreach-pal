@@ -81,6 +81,9 @@ pal_sources = $(top_srcdir)/stream/src/Stream.cpp \
 endif
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CPPFLAGS += -DCONFIG_GSL
+AM_CPPFLAGS += -DPAL_PLUGIN_DIR=\"@PAL_PLUGIN_DIR@\"
+AM_CPPFLAGS += -DPAL_DATA_DIR=\"@PAL_DATA_DIR@\"
+AM_CPPFLAGS += -DPAL_CONFIG_DIR=\"@PAL_CONFIG_DIR@\"
 
 library_includedir = $(includedir)/pal
 lib_LTLIBRARIES     = libpal.la

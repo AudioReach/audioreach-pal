@@ -81,6 +81,7 @@ AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 
 # Checks for libraries
 PKG_CHECK_MODULES([AGM], [agm])
+AC_SUBST([AGM_LIBS])
 AC_SUBST([AGM_CFLAGS])
 
 PKG_CHECK_MODULES([SPF], [spf])
@@ -144,7 +145,7 @@ AC_CONFIG_SUBDIRS([
 ])
 
 AC_CONFIG_FILES([ Makefile \
-pal.pc \
+audioreach-pal.pc \
 stream/Makefile \
 session/Makefile \
 device/Makefile \

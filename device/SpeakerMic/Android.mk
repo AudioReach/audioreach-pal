@@ -38,7 +38,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
     liblx-osal \
-    libar-pal \
+    libaudioreach-pal \
     libexpat
 
  ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)

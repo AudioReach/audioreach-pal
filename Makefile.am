@@ -1,5 +1,5 @@
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = pal.pc
+pkgconfig_DATA = audioreach-pal.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 
@@ -82,56 +82,56 @@ endif
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CPPFLAGS += -DCONFIG_GSL
 
-library_includedir = $(includedir)/pal
-lib_LTLIBRARIES     = libpal.la
-libpal_la_SOURCES   = $(pal_sources)
+library_includedir = $(includedir)/audioreach-pal
+lib_LTLIBRARIES     = libaudioreach-pal.la
+libaudioreach_pal_la_SOURCES   = $(pal_sources)
 if BUILDSYSTEM_OPENWRT
-libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress -lagmclientwrapper
-libpal_la_LIBADD   += -lar-gsl
-libpal_la_CPPFLAGS  = -DFEATURE_IPQ_OPENWRT
+libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal @AGM_LIBS@ -lexpat -ltinycompress -lagmclientwrapper
+libaudioreach_pal_la_LIBADD   += -lar-gsl
+libaudioreach_pal_la_CPPFLAGS  = -DFEATURE_IPQ_OPENWRT
 else
-libpal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal -lexpat -ltinycompress
-libpal_la_CPPFLAGS  =  -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libaudioreach_pal_la_LIBADD    = $(GLIB_LIBS) -ltinyalsa -laudioroute -lar-osal @AGM_LIBS@ -lexpat -ltinycompress
+libaudioreach_pal_la_CPPFLAGS  =  -DPAL_USE_SYSLOG -DLINUX_ENABLED -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 if IS_SDXLEMUR
-libpal_la_LIBADD    += -lagmclientwrapper
+libaudioreach_pal_la_LIBADD    += -lagmclientwrapper
 endif
 if IS_SA525M
-libpal_la_LIBADD    += -lagmclientwrapper
+libaudioreach_pal_la_LIBADD    += -lagmclientwrapper
 endif
-libpal_la_CPPFLAGS += $(AM_CPPFLAGS)
-libpal_la_CPPFLAGS += -std=c++14
-libpal_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
-libpal_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
-libpal_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
+libaudioreach_pal_la_CPPFLAGS += $(AM_CPPFLAGS)
+libaudioreach_pal_la_CPPFLAGS += -std=c++14
+libaudioreach_pal_la_LDFLAGS   = -shared -version-number @LT_VERSION_NUMBER@
+libaudioreach_pal_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
+libaudioreach_pal_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 
 if USE_SYSLOG
-libpal_la_CPPFLAGS += -DPAL_USE_SYSLOG
+libaudioreach_pal_la_CPPFLAGS += -DPAL_USE_SYSLOG
 endif
 
 if USE_G_STR_FUNC
-libpal_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
+libaudioreach_pal_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
 
 if BUILDSYSTEM_OPENWRT
-libpal_la_LIBADD += -lglib-2.0 -llog
+libaudioreach_pal_la_LIBADD += -lglib-2.0 -llog
 endif
 if COMPILE_COMPRESS
-libpal_la_CPPFLAGS += -DSND_COMPRESS_DEC_HDR
+libaudioreach_pal_la_CPPFLAGS += -DSND_COMPRESS_DEC_HDR
 endif
-libpal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs
-libpal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.la
+libaudioreach_pal_la_LIBADD   += -L${abs_top_builddir}/plugins/vui_interface/.libs
+libaudioreach_pal_la_LIBADD   += ${abs_top_builddir}/plugins/PluginManager/.libs/libplugin_manager.la
 
 if CUTILS_SUPPORTED
-libpal_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
-libpal_la_LIBADD += -lcutils
+libaudioreach_pal_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
+libaudioreach_pal_la_LIBADD += -lcutils
 endif
 
 if BUILDSYSTEM_OPENWRT
 # config files for OPENWRT
 else
 
-libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
+libaudioreach_pal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/qcs615/mixer_paths_TALOS_EVK.xml \
                       ./configs/qcom/IoT/qcs615/resourcemanager_TALOS_EVK.xml \
                       ./configs/qcom/IoT/qcs8300/mixer_paths_MONACO_EVK.xml \
@@ -163,7 +163,7 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
 
 # install essential xml files under /etc
 root_etcdir      = "/etc"
-root_etc_SCRIPTS = $(libpal_la_list)
+root_etc_SCRIPTS = $(libaudioreach_pal_la_list)
 install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_MONACO_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MONACO_EVK.xml

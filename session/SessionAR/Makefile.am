@@ -45,7 +45,7 @@ library_includedir = $(includedir)/session_ar
 lib_LTLIBRARIES     = libsession_ar.la
 libsession_ar_la_SOURCES   = $(session_ar_sources)
 libsession_ar_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress -lar-gsl
-libsession_ar_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libsession_ar_la_LIBADD   += -L${abs_top_builddir}/.libs -laudioreach-pal
 libsession_ar_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_ar_la_CPPFLAGS += -std=c++14
 libsession_ar_la_LDFLAGS   = -shared -avoid-version

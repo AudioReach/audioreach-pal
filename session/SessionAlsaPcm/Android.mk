@@ -37,7 +37,7 @@ LOCAL_HEADER_LIBRARIES := \
 LOCAL_SHARED_LIBRARIES := \
     liblog \
     liblx-osal \
-    libar-pal \
+    libaudioreach-pal \
     libexpat \
     libagmclient \
     libsession_ar

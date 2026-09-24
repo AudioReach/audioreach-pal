@@ -36,7 +36,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
     liblx-osal \
-    libar-pal \
+    libaudioreach-pal \
     libexpat
 
 ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)

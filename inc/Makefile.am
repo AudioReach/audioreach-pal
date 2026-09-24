@@ -7,5 +7,5 @@ h_sources = ${top_srcdir}/PalDefs.h \
             ${top_srcdir}/PalMappings.h \
             ${top_srcdir}/PalARDefs.h
 
-library_includedir = $(includedir)/pal
+library_includedir = $(includedir)/audioreach-pal
 library_include_HEADERS = $(h_sources)

@@ -52,7 +52,7 @@
 * Now:
 * auto param_payload = VALUE_OR_RETURN(allocate<pal_param_payload>(sizeof(pal_param_payload)));
 * allocate will allocate unique_ptr as per type pal_param_payload
-* VALUE_OR_RETRUN will return the unique_ptr if allocation is succesfull
+* VALUE_OR_RETRUN will return the unique_ptr if allocation is successful
 * otherwise it will exit.
 * custom deletor will take to deallocate memory using free when scope is cleared.
 * @param size size to be allocated for type T

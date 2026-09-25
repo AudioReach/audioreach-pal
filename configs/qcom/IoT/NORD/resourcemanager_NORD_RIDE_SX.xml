@@ -35,6 +35,14 @@
         <param key="max_sessions" value="128"/>
         <param key="skip_stream_restart" value="1"/>
     </config_params>
+    <config_max_sessions>
+        <stream name="PAL_STREAM_LOW_LATENCY" max_size="8" />
+        <stream name="PAL_STREAM_DEEP_BUFFER" max_size="3" />
+        <stream name="PAL_STREAM_GENERIC" max_size="2" />
+        <stream name="PAL_STREAM_RAW" max_size="1" />
+        <stream name="PAL_STREAM_PCM_OFFLOAD" max_size="2" />
+        <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" max_size="8" />
+    </config_max_sessions>
     <config_voice>
         <vsid>0xB3000000</vsid>
         <mode_map>

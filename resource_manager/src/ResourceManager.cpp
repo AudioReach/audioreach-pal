@@ -80,8 +80,11 @@
 #define VBAT_BCL_SUFFIX "-vbat"
 #define SPKR_PROT_SUFFIX "-prot"
 
+#ifndef PAL_CONFIG_DIR
+#define PAL_CONFIG_DIR "/etc"
+#endif
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-#define SNDPARSER "/etc/card-defs.xml"
+#define SNDPARSER PAL_CONFIG_DIR "/card-defs.xml"
 #define SNDPARSER_NATIVE "/etc/card-defs-native.xml"
 #else
 #define SNDPARSER "/vendor/etc/card-defs.xml"

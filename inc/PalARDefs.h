@@ -43,7 +43,7 @@
 #define PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO "PAL_CUSTOM_PARAM_AR_TAG_MODULE_INFO"
 
  /*
-  * Description: used to set custom configurations to specifed modules
+  * Description: used to set custom configurations to specified modules
   * Payload For this custom param string is apm_module_param_data_t
  */
 #define PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG "PAL_CUSTOM_PARAM_AR_TAG_MODULE_CONFIG"

@@ -36,7 +36,7 @@ void PerfLock::acquire_l() {
         sHandle = sAcquirePerfLock(0, 0, kPerfLockOpts.data(), kPerfLockOptsSize);
         if (sHandle > 0) {
             sIsAcquired = true;
-            PAL_VERBOSE(LOG_TAG, "succesful perf_lock_acq for %s", mCaller.c_str());
+            PAL_VERBOSE(LOG_TAG, "successful perf_lock_acq for %s", mCaller.c_str());
         } else {
             PAL_VERBOSE(LOG_TAG, "failed perf_lock_acq for %s", mCaller.c_str());
         }
@@ -48,7 +48,7 @@ void PerfLock::release_l() {
     if (sHandle > 0 && sReleasePerfLock != nullptr && (sPerfLockCounter == 0)) {
         sReleasePerfLock(sHandle);
         sIsAcquired = false;
-        PAL_VERBOSE(LOG_TAG, "succesful perf_lock_rel for %s", mCaller.c_str());
+        PAL_VERBOSE(LOG_TAG, "successful perf_lock_rel for %s", mCaller.c_str());
     } else {
         PAL_VERBOSE(LOG_TAG, "failed perf_lock_rel for %s", mCaller.c_str());
     }

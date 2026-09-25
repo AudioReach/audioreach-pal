@@ -110,7 +110,7 @@ int32_t setup_usecase_ultrasound()
          fprintf(stdout, "Error:Failed to open UPD stream\n");
          goto exit;
      }
-     fprintf(stdout, "Stream Opened succesfully\n");
+     fprintf(stdout, "Stream Opened successfully\n");
 
      param_payload = (pal_param_payload *) calloc (1,
                                  sizeof(pal_param_payload) +

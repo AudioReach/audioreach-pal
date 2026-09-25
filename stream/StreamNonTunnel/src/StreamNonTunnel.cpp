@@ -603,7 +603,7 @@ int32_t StreamNonTunnel::ssrDownHandler()
     mStreamMutex.lock();
     /* In NonTunnelMode once SSR happens, that session is not reusuable
      * Hence set the ssr to true and return all subsequent calls with
-     * -ENETRESET, untill the client sets up a new session.
+     * -ENETRESET, until the client sets up a new session.
      *
      */
     PAL_DBG(LOG_TAG, "Enter. session handle - %pK currentState State %d",

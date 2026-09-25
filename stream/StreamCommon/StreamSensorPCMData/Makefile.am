@@ -34,32 +34,32 @@ AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 
-streamsensorpcmdata_headers_sources = $(top_srcdir)/stream/StreamCommon/StreamSensorPCMData/src/StreamSensorPCMData.cpp
+streamsensorpcmdata_sources = $(top_srcdir)/stream/StreamCommon/StreamSensorPCMData/src/StreamSensorPCMData.cpp
 endif
 library_includedir = $(includedir)/streamsensorpcmdata_headers
 
-lib_LTLIBRARIES     = libstreamsensorpcmdata_headers.la
-libstreamsensorpcmdata_headers_la_SOURCES   = $(streamsensorpcmdata_headers_sources)
-libstreamsensorpcmdata_headers_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
-libstreamsensorpcmdata_headers_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
-libstreamsensorpcmdata_headers_la_CPPFLAGS := $(AM_CPPFLAGS)
-libstreamsensorpcmdata_headers_la_CPPFLAGS += -std=c++14
-libstreamsensorpcmdata_headers_la_LDFLAGS   = -shared -avoid-version
-libstreamsensorpcmdata_headers_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
-libstreamsensorpcmdata_headers_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
-libstreamsensorpcmdata_headers_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
+lib_LTLIBRARIES     = libstream_sensorpcmdata.la
+libstream_sensorpcmdata_la_SOURCES   = $(streamsensorpcmdata_sources)
+libstream_sensorpcmdata_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
+libstream_sensorpcmdata_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_sensorpcmdata_la_CPPFLAGS := $(AM_CPPFLAGS)
+libstream_sensorpcmdata_la_CPPFLAGS += -std=c++14
+libstream_sensorpcmdata_la_LDFLAGS   = -shared -avoid-version
+libstream_sensorpcmdata_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
+libstream_sensorpcmdata_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
+libstream_sensorpcmdata_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
 if BUILDSYSTEM_OPENWRT
-libstreamsensorpcmdata_headers_la_LIBADD += -lglib-2.0 -llog
+libstream_sensorpcmdata_la_LIBADD += -lglib-2.0 -llog
 else
-libstreamsensorpcmdata_headers_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED  -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
+libstream_sensorpcmdata_la_CPPFLAGS += -DPAL_USE_SYSLOG -DLINUX_ENABLED  -DATRACE_UNSUPPORTED -DPAL_MEMLOG_UNSUPPORTED  -DCARD_STATE_UNSUPPORTED -DPAL_SIGNAL_HANDLER_UNSUPPORTED -DA2DP_SINK_SUPPORTED -DVUI_DMGR_AUDIO_UNSUPPORTED -DAUDIO_FEATURE_STATS_UNSUPPORTED
 endif
 
 if CUTILS_SUPPORTED
-libstreamsensorpcmdata_headers_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
-libstreamsensorpcmdata_headers_la_LIBADD += -lcutils
+libstream_sensorpcmdata_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
+libstream_sensorpcmdata_la_LIBADD += -lcutils
 endif
 
 if USE_G_STR_FUNC
-libstreamsensorpcmdata_headers_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
+libstream_sensorpcmdata_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

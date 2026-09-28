@@ -45,7 +45,7 @@ lib_LTLIBRARIES     = libdev_display.la
 libdev_display_la_SOURCES   = $(dev_display_sources)
 libdev_display_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_display_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
-libdev_display_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_display_la_LIBADD   += -L${abs_top_builddir}/.libs -laudioreach-pal
 libdev_display_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_display_la_CPPFLAGS += -std=c++14
 libdev_display_la_LDFLAGS   = -shared -avoid-version

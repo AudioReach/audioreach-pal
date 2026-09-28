@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: mm-audio-headers
-Description: Common mm-audio-headers for Audio-Reach
-Version: @VERSION@
-Libs: -L${libdir}
+Name: audioreach-pal
+Description: AudioReach PAL library
+Version: @LT_VERSION@
+Libs: -L${libdir} -laudioreach-pal
 Cflags: -I${includedir}/audioreach-pal

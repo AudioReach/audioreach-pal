@@ -23,6 +23,28 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 
+AC_ARG_WITH([pal-plugin-dir],
+    AS_HELP_STRING([--with-pal-plugin-dir=DIR],
+        [install and load PAL plugins from DIR [default=${libdir}]]),
+    [PAL_PLUGIN_DIR="$withval"],
+    [PAL_PLUGIN_DIR="${libdir}"])
+
+AC_ARG_WITH([pal-config-dir],
+    AS_HELP_STRING([--with-pal-config-dir=DIR],
+        [install PAL configuration files in DIR [default=/etc]]),
+    [PAL_CONFIG_DIR="$withval"],
+    [PAL_CONFIG_DIR="/etc"])
+
+AC_ARG_WITH([pal-data-dir],
+    AS_HELP_STRING([--with-pal-data-dir=DIR],
+        [install PAL data files in DIR [default=/etc]]),
+    [PAL_DATA_DIR="$withval"],
+    [PAL_DATA_DIR="/etc"])
+
+AC_SUBST([PAL_PLUGIN_DIR])
+AC_SUBST([PAL_CONFIG_DIR])
+AC_SUBST([PAL_DATA_DIR])
+
 m4_define([LT_MAJOR], [1])
 m4_define([LT_MINOR], [0])
 m4_define([LT_PATCH], [1])
@@ -81,6 +103,7 @@ AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 
 # Checks for libraries
 PKG_CHECK_MODULES([AGM], [agm])
+AC_SUBST([AGM_LIBS])
 AC_SUBST([AGM_CFLAGS])
 
 PKG_CHECK_MODULES([SPF], [spf])
@@ -152,7 +175,7 @@ AC_CONFIG_SUBDIRS([
 ])
 
 AC_CONFIG_FILES([ Makefile \
-pal.pc \
+audioreach-pal.pc \
 stream/Makefile \
 session/Makefile \
 device/Makefile \

@@ -47,13 +47,14 @@ endif
 
 library_includedir = $(includedir)/stream_calltranslation
 
-lib_LTLIBRARIES     = libstream_calltranslation.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_calltranslation.la
 libstream_calltranslation_la_SOURCES   = $(stream_calltranslation_sources)
 libstream_calltranslation_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
 libstream_calltranslation_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libstream_calltranslation_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_calltranslation_la_CPPFLAGS += -std=c++14
-libstream_calltranslation_la_LDFLAGS   = -shared -avoid-version
+libstream_calltranslation_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_calltranslation_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libstream_calltranslation_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_calltranslation_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

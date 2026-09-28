@@ -47,14 +47,15 @@ endif
 
 library_includedir = $(includedir)/stream_ultrasound
 
-lib_LTLIBRARIES     = libstream_ultrasound.la
+pluginlibdir = @PAL_PLUGIN_DIR@
+pluginlib_LTLIBRARIES = libstream_ultrasound.la
 libstream_ultrasound_la_SOURCES   = $(stream_ultrasound_sources)
 libstream_ultrasound_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
 libstream_ultrasound_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libstream_ultrasound_la_LIBADD    += -L${abs_top_builddir}/session/SessionAlsaPcm/.libs -lsession_pcm
 libstream_ultrasound_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_ultrasound_la_CPPFLAGS += -std=c++14
-libstream_ultrasound_la_LDFLAGS   = -shared -avoid-version
+libstream_ultrasound_la_LDFLAGS   = -shared -avoid-version -Wl,-rpath,'$$ORIGIN'
 libstream_ultrasound_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h -DLINUX_ENABLED
 libstream_ultrasound_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libstream_ultrasound_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED

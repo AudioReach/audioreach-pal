@@ -10,6 +10,7 @@
 #include <dlfcn.h>
 #include "Device.h"
 #include <bt_intf.h>
+#include "PluginUtils.h"
 
 #define CLOCK_SRC_DEFAULT 1
 
@@ -1984,7 +1985,7 @@ std::string getBtCodecLib(uint32_t codecFormat, std::string codecType)
 
     iter = btCodecMap.find(std::make_pair(codecFormat, codecType));
     if (iter != btCodecMap.end()) {
-        return iter->second;
+        return getPalPluginPath(iter->second);
     }
 
     return std::string();

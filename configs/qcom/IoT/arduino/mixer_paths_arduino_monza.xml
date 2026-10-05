@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause
+* -->
+
+<mixer>
+    <!-- These are the initial mixer settings -->
+    <ctl name="Left Speaker Mixer Left DAC Switch" value="1" />
+    <ctl name="Right Speaker Mixer Right DAC Switch" value="1" />
+    <ctl name="Headphone Left Switch" value="0" />
+    <ctl name="Headphone Right Switch" value="0" />
+    <ctl name="Digital EQ 3 Band Switch" value="0" />
+    <ctl name="Digital EQ 5 Band Switch" value="0" />
+    <ctl name="Digital EQ 7 Band Switch" value="0" />
+    <ctl name="Biquad Switch" value="0" />
+    <ctl name="Filter Mode" value="Music" />
+    <ctl name="ADC Oversampling Rate" value="0" />
+    <ctl name="DMIC Mux" value="DMIC" />
+    <ctl name="MIC2 Mux" value="IN34" />
+    <ctl name="Right ADC Mixer MIC2 Switch" value="1" />
+    <ctl name="Left ADC Mixer MIC2 Switch" value="1" />
+    <ctl name="MIC2 Volume" value="20" />
+    <ctl name="Headset Mic Switch" value="0" />
+    <ctl name="Int Mic Switch" value="1" />
+    <ctl name="ADCR Boost Volume" value="4" />
+    <ctl name="ADCL Boost Volume" value="4" />
+    <ctl name="ADCR Volume" value="11" />
+    <ctl name="ADCL Volume" value="11" />
+    <ctl name="Speaker Left Mixer Volume" value="2" />
+    <ctl name="Speaker Right Mixer Volume" value="2" />
+    <ctl name="Record Path DC Blocking" value="1" />
+    <ctl name="Playback Path DC Blocking" value="1" />
+    <ctl name="Speaker Left Switch" value="1" />
+    <ctl name="Speaker Right Switch" value="1" />
+    <ctl name="Speaker Switch" value="1" />
+
+    <path name="speaker">
+    </path>
+
+    <path name="speaker-mic">
+        <ctl name="Int Mic Switch" value="1" />
+        <ctl name="DMIC Mux" value="DMIC" />
+        <ctl name="Record Path DC Blocking" value="0" />
+    </path>
+
+    <path name="headphones">
+        <ctl name="Speaker Switch" value="0" />
+        <ctl name="Headphone Left Switch" value="1" />
+        <ctl name="Headphone Right Switch" value="1" />
+        <ctl name="Headphone Switch" value="1" />
+        <ctl name="Headphone Volume" value="31" />
+        <ctl name="SDIN Mode" value="1" />
+    </path>
+
+    <path name="headset-mic">
+        <ctl name="Int Mic Switch" value="0" />
+        <ctl name="DMIC Mux" value="ADC" />
+        <ctl name="SDOUT Mode" value="1" />
+        <ctl name="DMIC34 DC Blocking" value="1" />
+        <ctl name="Headset Mic Switch" value="1" />
+    </path>
+
+</mixer>

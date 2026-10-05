@@ -132,6 +132,8 @@ if BUILDSYSTEM_OPENWRT
 else
 
 libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
+                      ./configs/qcom/IoT/arduino/mixer_paths_arduino_monza.xml \
+                      ./configs/qcom/IoT/arduino/resourcemanager_arduino_monza.xml \
                       ./configs/qcom/IoT/qcs615/mixer_paths_TALOS_EVK.xml \
                       ./configs/qcom/IoT/qcs615/resourcemanager_TALOS_EVK.xml \
                       ./configs/qcom/IoT/qcs8300/mixer_paths_MONACO_EVK.xml \
@@ -172,8 +174,12 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/usecaseKvManager.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_QCS6490_RB3Gen2.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_QCS6490_RB3Gen2.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_arduino_monza.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_arduino_monza.xml
 	ln -sf mixer_paths_QCS6490_RB3Gen2.xml $(DESTDIR)$(root_etcdir)/mixer_paths_QCM6490_IDP.xml
 	ln -sf resourcemanager_QCS6490_RB3Gen2.xml $(DESTDIR)$(root_etcdir)/resourcemanager_QCM6490_IDP.xml
+	ln -sf mixer_paths_arduino_monza.xml $(DESTDIR)$(root_etcdir)/mixer_paths_monaco_gertrude.xml
+	ln -sf resourcemanager_arduino_monza.xml $(DESTDIR)$(root_etcdir)/resourcemanager_monaco_gertrude.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_LEMANS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_shikra_cqs_evk.xml

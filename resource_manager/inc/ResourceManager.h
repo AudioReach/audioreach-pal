@@ -322,6 +322,7 @@ struct pal_device_info {
      uint32_t bit_width;
      pal_audio_fmt_t bitFormatSupported;
      bool is32BitSupported;
+     int pcmId;
 };
 
 struct vsid_modepair {
@@ -469,6 +470,7 @@ struct deviceIn {
     pal_audio_fmt_t bitFormatSupported;
     bool ec_enable;
     bool is32BitSupported;
+    int pcm_id;
 };
 
 class ResourceManager

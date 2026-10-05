@@ -36,7 +36,11 @@
 #include "SessionAlsaVoice.h"
 /*include all devices*/
 #include "Bluetooth.h"
+#ifdef ENABLE_UPSTREAM_SUPPORT
+#include "DisplayPortUpstream.h"
+#else
 #include "DisplayPort.h"
+#endif
 #include "DummyDev.h"
 #include "ECRefDevice.h"
 #include "ExtEC.h"

@@ -2,6 +2,12 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = dev_display.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
+if ENABLE_UPSTREAM_SUPPORT
+displayport_src = $(top_srcdir)/device/DisplayPort/src/DisplayPortUpstream.cpp
+else
+displayport_src = $(top_srcdir)/device/DisplayPort/src/DisplayPort.cpp
+endif
+
 if BUILDSYSTEM_OPENWRT
 AM_CPPFLAGS := -I $(top_srcdir)/device/DisplayPort/inc
 AM_CPPFLAGS += -I $(top_srcdir)/inc
@@ -16,7 +22,7 @@ AM_CPPFLAGS += -I $(top_srcdir)/resource_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/context_manager/inc
 AM_CPPFLAGS += -I $(top_srcdir)/plugins/vui_interface/api/vui-interface
 
-dev_display_sources = ./src/DisplayPort.cpp
+dev_display_sources = $(displayport_src)
 else
 AM_CPPFLAGS := -I $(top_srcdir)/device/DisplayPort/inc
 AM_CPPFLAGS += -I $(top_srcdir)/inc
@@ -35,9 +41,12 @@ AM_CPPFLAGS += @SPF_CFLAGS@
 AM_CPPFLAGS += @AROUTE_CFLAGS@
 AM_CPPFLAGS += @KVH2XML_CFLAGS@
 
-dev_display_sources = $(top_srcdir)/device/DisplayPort/src/DisplayPort.cpp
+dev_display_sources = $(displayport_src)
 endif
 
+if ENABLE_UPSTREAM_SUPPORT
+AM_CPPFLAGS += -DENABLE_UPSTREAM_SUPPORT
+endif
 
 library_includedir = $(includedir)/dev_display
 

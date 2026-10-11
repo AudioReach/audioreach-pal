@@ -49,6 +49,7 @@
 #include "MemLogBuilder.h"
 #endif
 #include "STUtils.h"
+#include "PluginUtils.h"
 
 // TODO: find another way to print debug logs by default
 #define ST_DBG_LOGS
@@ -4240,7 +4241,8 @@ int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_pa
                 break;
             }
 
-            plugin->handle = dlopen(config->intf_plugin_lib.c_str(), RTLD_NOW);
+            plugin->handle = dlopen(getPalPluginPath(config->intf_plugin_lib).c_str(),
+                                    RTLD_NOW);
             if (!plugin->handle) {
                 status = -ENOMEM;
                 free(plugin);

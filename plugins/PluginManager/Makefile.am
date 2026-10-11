@@ -47,6 +47,8 @@ libplugin_manager_la_LDFLAGS   = --disable-shared -avoid-version
 libplugin_manager_la_CPPFLAGS += @GLIB_CFLAGS@  -include glib.h
 libplugin_manager_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libplugin_manager_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
+libplugin_manager_la_CPPFLAGS += -DPAL_PLUGIN_DIR=\"@PAL_PLUGIN_DIR@\"
+libplugin_manager_la_CPPFLAGS += -DPAL_CONFIG_DIR=\"@PAL_CONFIG_DIR@\"
 
 
 if USE_SYSLOG

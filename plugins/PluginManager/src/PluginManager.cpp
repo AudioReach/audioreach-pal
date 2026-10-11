@@ -10,7 +10,9 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <limits.h>
 #include "PalCommon.h"
+#include "PluginUtils.h"
 #ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/properties.h>
 #endif
@@ -22,9 +24,14 @@ std::vector<pm_item_t> PluginManager::registeredDevices = {};
 std::vector<pm_item_t> PluginManager::registeredControls = {};
 std::vector<pm_item_t> PluginManager::registeredConfigs = {};
 
-#define XML_PATH_MAX_LENGTH 100
+#define XML_PATH_MAX_LENGTH PATH_MAX
 #define PLUGIN_MANAGER_FILENAME "plugin_manager.xml"
-#define VENDOR_CONFIG_PATH_MAX_LENGTH 128
+#define VENDOR_CONFIG_PATH_MAX_LENGTH PATH_MAX
+
+#ifndef PAL_CONFIG_DIR
+#define PAL_CONFIG_DIR "/etc"
+#endif
+
 char pimngr_xml_file[XML_PATH_MAX_LENGTH] = {0};
 char pimngr_vendor_config_path[VENDOR_CONFIG_PATH_MAX_LENGTH] = {0};
 
@@ -171,9 +178,10 @@ int32_t PluginManager::openPlugin(pal_plugin_manager_t type, std::string keyName
             if (key == keyName) {
                 /*if lib has not been opened yet open it*/
                 if(!item.refCount){
+                    const std::string pluginPath = getPalPluginPath(item.libName);
                     try {
                         PAL_DBG(LOG_TAG, "Opening lib %s", item.libName.c_str());
-                        item.handle = dlopen(item.libName.c_str(), RTLD_LAZY);
+                        item.handle = dlopen(pluginPath.c_str(), RTLD_LAZY);
                         if (item.handle) {
                             item.plugin = (dlsym(item.handle, item.entryFunction.c_str()));
                             if (!item.plugin) {
@@ -302,8 +310,8 @@ void PluginManager::getVendorConfigPath (char* config_file_path, int path_size)
     }
 #endif
 #if defined(FEATURE_IPQ_OPENWRT) || defined(LINUX_ENABLED)
-        /* Audio configs are stored in /etc */
-        snprintf(config_file_path, path_size, "%s", "/etc");
+        /* Audio configs are stored in PAL_CONFIG_DIR */
+        snprintf(config_file_path, path_size, "%s", PAL_CONFIG_DIR);
 #endif
 }
 
@@ -391,4 +399,3 @@ std::shared_ptr<PluginManager> PluginManager::getInstance()
     return instance;
 
 }
-

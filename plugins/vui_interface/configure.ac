@@ -30,6 +30,13 @@ PKG_PROG_PKG_CONFIG
 AC_PROG_RANLIB
 AM_PROG_AR
 
+AC_ARG_WITH([pal-plugin-dir],
+    AS_HELP_STRING([--with-pal-plugin-dir=DIR],
+        [install PAL plugins in DIR [default=${libdir}]]),
+    [PAL_PLUGIN_DIR="$withval"],
+    [PAL_PLUGIN_DIR="${libdir}"])
+AC_SUBST([PAL_PLUGIN_DIR])
+
 m4_define([LT_MAJOR], [1])
 m4_define([LT_MINOR], [0])
 m4_define([LT_PATCH], [0])
@@ -85,4 +92,3 @@ AC_CONFIG_FILES([
         ])
 
 AC_OUTPUT
-

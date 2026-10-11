@@ -52,6 +52,7 @@
 #include <stdio.h>
 #include <queue>
 #include <deque>
+#include <limits.h>
 #include <unordered_map>
 #include <amdb_api.h>
 #include "PalCommon.h"
@@ -72,7 +73,7 @@ typedef enum {
 #define audio_mixer mixer
 #define MAX_SND_CARD 10
 #define DUMMY_SND_CARD MAX_SND_CARD
-#define VENDOR_CONFIG_PATH_MAX_LENGTH 128
+#define VENDOR_CONFIG_PATH_MAX_LENGTH PATH_MAX
 #define VOLUME_TOLERANCE 0.000001
 #define AUDIO_PARAMETER_KEY_NATIVE_AUDIO "audio.nat.codec.enabled"
 #define AUDIO_PARAMETER_KEY_NATIVE_AUDIO_MODE "native_audio_mode"

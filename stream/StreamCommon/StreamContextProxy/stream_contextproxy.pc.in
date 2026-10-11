@@ -1,6 +1,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-libdir=@libdir@
+libdir=@PAL_PLUGIN_DIR@
 includedir=@includedir@
 
 Name: stream_contextproxy

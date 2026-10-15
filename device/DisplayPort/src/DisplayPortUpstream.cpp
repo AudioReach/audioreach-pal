@@ -168,7 +168,8 @@ std::shared_ptr<Device> DisplayPort::getObject(pal_device_id_t id)
 DisplayPort::DisplayPort(struct pal_device *device, std::shared_ptr<ResourceManager> Rm) :
 Device(device, Rm)
 {
-
+    dp_controller = DP_CONTROLLER;
+    dp_stream = DP_STREAM;
 }
 
 int DisplayPort::getDeviceChannelAllocation(int num_channels)
@@ -317,7 +318,7 @@ int DisplayPort::init(pal_param_device_connection_t device_conn)
     }
     else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL ||
         device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
-        dp_controller = DP_CONTROLLER;
+        dp_controller = dp_config->pcmId ? dp_config->pcmId : DP_CONTROLLER;
         dp_stream = DP_STREAM;
         extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
     }

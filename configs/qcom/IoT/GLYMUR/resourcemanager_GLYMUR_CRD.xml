@@ -441,6 +441,9 @@
             <channels>2</channels>
             <snd_device_name>display-port</snd_device_name>
             <fractional_sr>1</fractional_sr>
+            <pcm_id>1</pcm_id>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HDMI</id>
@@ -449,6 +452,9 @@
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
             <snd_device_name>display-port</snd_device_name>
+            <pcm_id>1</pcm_id>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
         </out-device>
     </device_profile>
     <in_streams>

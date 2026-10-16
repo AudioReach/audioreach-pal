@@ -925,6 +925,7 @@ struct pal_param_context_list {
 struct pal_param_disp_port_config_params {
     int controller;
     int stream;
+    int pcmId;
 };
 
 struct pal_usb_device_address {
@@ -983,6 +984,7 @@ struct pal_device {
     char sndDevName[DEVICE_NAME_MAX_SIZE];
     pal_device_custom_config_t custom_config; /**<  Optional */
     pal_address_type_t addressV1;
+    int pcm_id;
 };
 
 

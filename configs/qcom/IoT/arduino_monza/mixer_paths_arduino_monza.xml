@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<mixer>
+    <!-- Initial mixer settings (mirrors ALSA common EnableSequence) -->
+
+    <!-- DAC mixer connections: always route L/R DAC to speaker mixer -->
+    <ctl name="Left Speaker Mixer Left DAC Switch" value="1" />
+    <ctl name="Right Speaker Mixer Right DAC Switch" value="1" />
+
+    <!-- Codec-wide DSP settings -->
+    <ctl name="Digital EQ 3 Band Switch" value="0" />
+    <ctl name="Digital EQ 5 Band Switch" value="0" />
+    <ctl name="Digital EQ 7 Band Switch" value="0" />
+    <ctl name="Biquad Switch" value="0" />
+    <ctl name="Filter Mode" value="Music" />
+    <ctl name="ADC Oversampling Rate" value="0" />
+
+    <!-- Default input routing: internal DMIC via MIC2 (IN34), MIC1 to internal (IN56) -->
+    <ctl name="DMIC Mux" value="DMIC" />
+    <ctl name="MIC2 Mux" value="IN34" />
+    <ctl name="MIC2 Volume" value="10" />
+    <ctl name="MIC2 Boost Volume" value="0" />
+    <ctl name="MIC1 Mux" value="IN56" />
+    <ctl name="MIC1 Volume" value="20" />
+
+    <!-- ADC gain -->
+    <ctl name="ADCR Boost Volume" value="4" />
+    <ctl name="ADCL Boost Volume" value="4" />
+    <ctl name="ADCR Volume" value="11" />
+    <ctl name="ADCL Volume" value="11" />
+
+    <!-- Default output volumes -->
+    <ctl name="Headphone Volume" value="10" />
+    <ctl name="Speaker Volume" value="10" />
+    <ctl name="Speaker Left Mixer Volume" value="2" />
+    <ctl name="Speaker Right Mixer Volume" value="2" />
+
+    <!-- DC blocking -->
+    <ctl name="Playback Path DC Blocking" value="1" />
+    <ctl name="Record Path DC Blocking" value="0" />
+
+    <!-- All output switches off (safe reset state) -->
+    <ctl name="Speaker Left Switch" value="0" />
+    <ctl name="Speaker Right Switch" value="0" />
+    <ctl name="Speaker Switch" value="0" />
+    <ctl name="Receiver Left Switch" value="0" />
+    <ctl name="Receiver Right Switch" value="0" />
+    <ctl name="Receiver Switch" value="0" />
+    <ctl name="Headphone Left Switch" value="0" />
+    <ctl name="Headphone Right Switch" value="0" />
+    <ctl name="Headphone Switch" value="0" />
+
+    <!-- All input switches off (safe reset state) -->
+    <ctl name="Left ADC Mixer MIC1 Switch" value="0" />
+    <ctl name="Right ADC Mixer MIC1 Switch" value="0" />
+    <ctl name="Left ADC Mixer MIC2 Switch" value="0" />
+    <ctl name="Right ADC Mixer MIC2 Switch" value="0" />
+    <ctl name="Headset Mic12 Switch" value="0" />
+    <ctl name="Headset Mic56 Switch" value="0" />
+
+    <!-- Device-specific paths (mirrors ALSA per-device EnableSequence) -->
+
+    <!-- Earpiece / internal speaker -->
+    <path name="ear-out">
+        <!-- Enable internal mic via MIC1 (IN56, already set in initial state) -->
+        <ctl name="Left ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Right ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Record Path DC Blocking" value="1" />
+        <!-- Enable speaker output -->
+        <ctl name="Speaker Left Switch" value="1" />
+        <ctl name="Speaker Right Switch" value="1" />
+        <ctl name="Speaker Switch" value="1" />
+    </path>
+
+    <!-- Headphone output (with internal mic active) -->
+    <path name="headphone-out">
+        <!-- Enable internal mic via MIC1 (IN56, already set in initial state) -->
+        <ctl name="Left ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Right ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Record Path DC Blocking" value="1" />
+        <!-- Enable headphone output -->
+        <ctl name="Headphone Left Switch" value="1" />
+        <ctl name="Headphone Right Switch" value="1" />
+        <ctl name="Headphone Switch" value="1" />
+        <ctl name="Headphone Volume" value="31" />
+    </path>
+
+    <!-- Analog line output via receiver amplifier -->
+    <path name="line-out">
+        <!-- Receiver DAC mixer connections (separate from speaker mixer) -->
+        <ctl name="Left Receiver Mixer Left DAC Switch" value="1" />
+        <ctl name="Right Receiver Mixer Right DAC Switch" value="1" />
+        <ctl name="LINMOD Mux" value="Left and Right" />
+        <!-- Enable internal mic via MIC1 (IN56, already set in initial state) -->
+        <ctl name="Left ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Right ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Record Path DC Blocking" value="1" />
+        <!-- Enable receiver output -->
+        <ctl name="Receiver Left Mixer Volume" value="2" />
+        <ctl name="Receiver Right Mixer Volume" value="2" />
+        <ctl name="Receiver Left Switch" value="1" />
+        <ctl name="Receiver Right Switch" value="1" />
+        <ctl name="Receiver Switch" value="1" />
+        <ctl name="Receiver Volume" value="20" />
+    </path>
+
+    <!-- Headset microphone (wired, via 3.5 mm jack MIC1 IN12) -->
+    <path name="headphone-mic">
+        <ctl name="Left Speaker Mixer Left DAC Switch" value="1" />
+        <ctl name="Right Speaker Mixer Right DAC Switch" value="1" />
+        <ctl name="Headphone Left Switch" value="0" />
+        <ctl name="Headphone Right Switch" value="0" />
+        <ctl name="MIC1 Volume" value="20" />
+        <!-- Switch from DMIC to ADC mode and route to headset jack -->
+        <ctl name="DMIC Mux" value="ADC" />
+        <ctl name="MIC1 Mux" value="IN12" />
+        <ctl name="Left ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Right ADC Mixer MIC1 Switch" value="1" />
+        <ctl name="Headset Mic12 Switch" value="1" />
+        <ctl name="Record Path DC Blocking" value="1" />
+    </path>
+
+</mixer>

@@ -75,6 +75,9 @@
 #include <agm/agm_api.h>
 #include "SessionAR.h"
 
+#include <algorithm>
+#include <dirent.h>
+#include <errno.h>
 #include<fstream>
 #include<sstream>
 
@@ -114,6 +117,46 @@ std::string getDefaultSpkrTempCtrl(uint8_t spkr_pos)
         default:
             return std::string(SPKR_RIGHT_WSA_TEMP);
     }
+}
+
+bool SpeakerProtection::isWsaHwmonName(const std::string &name)
+{
+    return name == "wsa883x" ||
+           name == "wsa884x" ||
+           name == "wsa885x";
+}
+
+int SpeakerProtection::readStringFromFile(const std::string &path,
+                                          std::string &value)
+{
+    std::ifstream file(path.c_str());
+    if (!file.is_open())
+        return -(errno ? errno : ENOENT);
+
+    std::getline(file, value);
+    if (file.fail() && !file.eof())
+        return -EINVAL;
+
+    while (!value.empty() &&
+           (value.back() == '\n' || value.back() == '\r' ||
+            value.back() == ' ' || value.back() == '\t')) {
+        value.pop_back();
+    }
+
+    return 0;
+}
+
+int SpeakerProtection::readIntFromFile(const std::string &path, int &value)
+{
+    std::ifstream file(path.c_str());
+    if (!file.is_open())
+        return -(errno ? errno : ENOENT);
+
+    file >> value;
+    if (file.fail())
+        return -EINVAL;
+
+    return 0;
 }
 
 int SpeakerProtection::updateVICustomPayload(void *payload, size_t size)
@@ -222,8 +265,11 @@ void SpeakerProtection::handleSPCallback (uint64_t hdl __unused, uint32_t event_
             else {
                 callback_data->num_ch = param_data->num_ch;
                 calibrationCallbackStatus = CALIBRATION_STATUS_SUCCESS;
-                for (int i = 0; i < param_data->num_ch; i++)
+                for (int i = 0; i < param_data->num_ch; i++) {
                     callback_data->cali_param[i].r0_cali_q24 = param_data->cali_param[i].r0_cali_q24;
+                    PAL_DBG(LOG_TAG, "Resistance value for channel %d: %d (Q24), %.6f ohms",
+                        i, callback_data->cali_param[i].r0_cali_q24, (double)callback_data->cali_param[i].r0_cali_q24 / (1 << 24));
+                }
             }
             mDspCallbackRcvd = true;
             cv.notify_all();
@@ -406,16 +452,90 @@ exit:
   */
 void SpeakerProtection::getSpeakerTemperatureList()
 {
+    DIR *dir = NULL;
+    struct dirent *entry = NULL;
+    std::vector<std::string> hwmonPaths;
     int i = 0;
-    int value;
+    int value = 0;
+    int count = 0;
+    int ret = 0;
+
     PAL_DBG(LOG_TAG, "Enter Speaker Get Temperature List");
 
-    for(i = 0; i < numberOfChannels; i++) {
-         value = getSpeakerTemperature(i);
-         PAL_DBG(LOG_TAG, "Temperature %d ", value);
-         spkerTempList[i] = value;
+    dir = opendir("/sys/class/hwmon");
+    if (!dir) {
+        ret = -(errno ? errno : ENOENT);
+        PAL_DBG(LOG_TAG,
+                "Failed to open /sys/class/hwmon, ret %d, using mixer controls",
+                ret);
+        goto mixer_fallback;
     }
+
+    while ((entry = readdir(dir)) != NULL) {
+        std::string entryName = entry->d_name;
+
+        if (entryName.find("hwmon") != 0)
+            continue;
+
+        hwmonPaths.push_back("/sys/class/hwmon/" + entryName);
+    }
+
+    closedir(dir);
+    dir = NULL;
+
+    std::sort(hwmonPaths.begin(), hwmonPaths.end());
+
+    for (const auto &hwmonPath : hwmonPaths) {
+        std::string name;
+        int tempMilliC = 0;
+
+        ret = readStringFromFile(hwmonPath + "/name", name);
+        if (ret)
+            continue;
+
+        if (!isWsaHwmonName(name))
+            continue;
+
+        ret = readIntFromFile(hwmonPath + "/temp1_input", tempMilliC);
+        if (ret) {
+            PAL_ERR(LOG_TAG, "Failed to read %s/temp1_input, ret %d",
+                    hwmonPath.c_str(), ret);
+            goto mixer_fallback;
+        }
+
+        if (count >= numberOfChannels) {
+            PAL_ERR(LOG_TAG, "Found more WSA hwmon entries than channels");
+            goto mixer_fallback;
+        }
+
+        spkerTempList[count] = tempMilliC / 1000;
+        PAL_DBG(LOG_TAG, "Speaker temp[%d] from %s name %s: %d C",
+                count, hwmonPath.c_str(), name.c_str(), spkerTempList[count]);
+        count++;
+
+        if (count == numberOfChannels)
+            break;
+    }
+
+    if (count != numberOfChannels) {
+        PAL_DBG(LOG_TAG,
+                "Expected %d WSA hwmon temps, found %d, using mixer controls",
+                numberOfChannels, count);
+        goto mixer_fallback;
+    }
+
     PAL_DBG(LOG_TAG, "Exit Speaker Get Temperature List");
+    return;
+
+mixer_fallback:
+    for (i = 0; i < numberOfChannels; i++) {
+        value = getSpeakerTemperature(i);
+        PAL_DBG(LOG_TAG, "Temperature %d ", value);
+        spkerTempList[i] = value;
+    }
+
+    PAL_DBG(LOG_TAG, "Exit Speaker Get Temperature List");
+    return;
 }
 
 void SpeakerProtection::spkrCalibrationThread()

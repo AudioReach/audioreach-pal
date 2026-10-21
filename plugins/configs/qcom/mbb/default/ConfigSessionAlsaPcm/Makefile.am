@@ -33,7 +33,7 @@ libsession_pcm_config_la_CPPFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat
 libsession_pcm_config_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_pcm_config_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
-libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/.libs -laudioreach-pal
 libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/session/SessionAlsaPcm/.libs -lsession_pcm
 libsession_pcm_config_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_pcm_config_la_LIBADD   += ${abs_top_builddir}/plugins/configs/qcom/mbb/default/ConfigSessionUtils/.libs/libsession_utils_config.la

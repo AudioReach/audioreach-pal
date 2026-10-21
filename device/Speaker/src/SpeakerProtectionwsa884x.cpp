@@ -650,7 +650,18 @@ err_pcm_open :
     if (calibrationCallbackStatus == CALIBRATION_STATUS_SUCCESS && dspEventReceived) {
 retry:
         PAL_DBG(LOG_TAG, "Getting temperature of speakers");
-        getSpeakerTemperatureList();
+        status = getSpeakerTemperatureList();
+        if (status) {
+            PAL_ERR(LOG_TAG, "Failed to read speaker temperatures, ret %d",
+                    status);
+            spkrCalibrateWait();
+            if (retryCount < MAX_RETRY) {
+                retryCount++;
+                goto retry;
+            }
+            else
+                goto free_fe;
+        }
 
         for (i = 0; i < numberOfChannels; i++) {
             if ((spkerTempList[i] != -EINVAL) &&

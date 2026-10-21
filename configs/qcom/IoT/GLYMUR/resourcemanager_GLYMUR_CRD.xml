@@ -399,7 +399,7 @@
             <channels>4</channels>
             <samplerate>48000</samplerate>
             <snd_device_name>speaker</snd_device_name>
-            <speaker_protection_enabled>1</speaker_protection_enabled>
+            <speaker_protection_enabled>0</speaker_protection_enabled>
             <wsa_used>2</wsa_used>
             <sp_op_mode>5</sp_op_mode>
             <fractional_sr>0</fractional_sr>

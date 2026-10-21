@@ -41,7 +41,7 @@
         <param key="max_sessions" value="128"/>
         <param key="max_nonTunnel_sessions" value="4"/>
         <param key="logging_level" value ="3" />
-        <param key="context_manager_enable" value ="false" />
+        <param key="context_manager_enable" value ="true" />
         <param key="upd_dedicated_be" value ="true" />
         <param key="upd_duty_cycle_enable" value="false" />
         <param key="dual_mono" value ="false" />
@@ -56,6 +56,7 @@
         <stream name="PAL_STREAM_RAW" max_size="1" />
         <stream name="PAL_STREAM_PCM_OFFLOAD" max_size="2" />
         <stream name="PAL_STREAM_ULTRA_LOW_LATENCY" max_size="8" />
+        <stream name="PAL_STREAM_CONTEXT_PROXY" max_size="8" />
     </config_max_sessions>
     <config_volume>
         <use_volume_set_param>0</use_volume_set_param>
@@ -68,6 +69,9 @@
         <codec codec_format="CODEC_TYPE_AAC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
         <codec codec_format="CODEC_TYPE_SBC" codec_type="enc|dec" codec_library="lib_bt_bundle.so" />
     </bt_codecs>
+    <sleep_monitor_vote_streams>
+        <avoid_vote_stream_type>PAL_STREAM_CONTEXT_PROXY</avoid_vote_stream_type>
+    </sleep_monitor_vote_streams>
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>

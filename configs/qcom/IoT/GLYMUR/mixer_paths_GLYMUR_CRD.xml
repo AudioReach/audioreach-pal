@@ -315,28 +315,28 @@
         <ctl name="WooferLeft BOOST Switch" value="1" />
         <ctl name="WooferLeft DAC Switch" value="1" />
         <ctl name="WooferLeft PBR Switch" value="1" />
-        <ctl name="WooferLeft VISENSE Switch" value="0" />
+        <ctl name="WooferLeft VISENSE Switch" value="1" />
         <ctl name="WooferLeft WSA MODE" value="0" />
         <ctl name="WooferLeft PA Volume" value="12" />
         <ctl name="TweeterLeft COMP Switch" value="1" />
         <ctl name="TweeterLeft BOOST Switch" value="1" />
         <ctl name="TweeterLeft DAC Switch" value="1" />
         <ctl name="TweeterLeft PBR Switch" value="1" />
-        <ctl name="TweeterLeft VISENSE Switch" value="0" />
+        <ctl name="TweeterLeft VISENSE Switch" value="1" />
         <ctl name="TweeterLeft WSA MODE" value="0" />
         <ctl name="TweeterLeft PA Volume" value="12" />
         <ctl name="WooferRight COMP Switch" value="1" />
         <ctl name="WooferRight BOOST Switch" value="1" />
         <ctl name="WooferRight DAC Switch" value="1" />
         <ctl name="WooferRight PBR Switch" value="1" />
-        <ctl name="WooferRight VISENSE Switch" value="0" />
+        <ctl name="WooferRight VISENSE Switch" value="1" />
         <ctl name="WooferRight WSA MODE" value="0" />
         <ctl name="WooferRight PA Volume" value="12" />
         <ctl name="TweeterRight COMP Switch" value="1" />
         <ctl name="TweeterRight BOOST Switch" value="1" />
         <ctl name="TweeterRight DAC Switch" value="1" />
         <ctl name="TweeterRight PBR Switch" value="1" />
-        <ctl name="TweeterRight VISENSE Switch" value="0" />
+        <ctl name="TweeterRight VISENSE Switch" value="1" />
         <ctl name="TweeterRight WSA MODE" value="0" />
         <ctl name="TweeterRight PA Volume" value="12" />
     </path>
@@ -407,10 +407,10 @@
     </path>
 
     <path name="vi-feedback">
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
-        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
-        <ctl name="WSA_RX0 Digital Volume" value="84" />
-        <ctl name="WSA_RX1 Digital Volume" value="84" />
+        <ctl name="WSA WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <ctl name="WSA2 WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA2 WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
     </path>
 
     <path name="vi-feedback-mono-1">

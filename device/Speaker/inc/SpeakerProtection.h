@@ -233,7 +233,7 @@ public:
     virtual int spkrStartCalibration() {return 0;};
     void speakerProtectionInit();
     void speakerProtectionDeinit();
-    void getSpeakerTemperatureList();
+    int getSpeakerTemperatureList();
     static void spkrProtSetSpkrStatus(bool enable);
     static int setConfig(int type, int tag, int tagValue, int devId, const char *aif);
     bool isSpeakerInUse(unsigned long *sec);

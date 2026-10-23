@@ -2195,6 +2195,7 @@ void ResourceManager::getDeviceInfo(pal_device_id_t deviceId, pal_stream_type_t 
             devinfo->sndDevName_overwrite = false;
             devinfo->bit_width_overwrite = false;
             devinfo->fractionalSRSupported = deviceInfo[i].fractionalSRSupported;
+            devinfo->pcmId = deviceInfo[i].pcm_id;
 
             if ((type >= PAL_STREAM_LOW_LATENCY) && (type < PAL_STREAM_MAX))
                 devinfo->priority = streamPriorityLUT.at(type);
@@ -2518,7 +2519,7 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
 
     /* set snd device name */
     strlcpy(deviceattr->sndDevName, devinfo.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
-
+    deviceattr->pcm_id = devinfo.pcmId;
     /*set channels*/
     if (devinfo.channels == 0 || devinfo.channels > devinfo.max_channels) {
         PAL_ERR(LOG_TAG, "Invalid num channels[%d], max channels[%d] failed to create stream",
@@ -8050,6 +8051,9 @@ int ResourceManager::handleDeviceConnectionChange(pal_param_device_connection_t 
             conn_device.addressV1 = deviceAddress;
             dev = Device::getInstance(&conn_device, rm);
             if (dev) {
+                dAttr.id = conn_device.id;
+                status = getDeviceConfig(&dAttr, NULL);
+                connection_state.device_config.dp_config.pcmId = dAttr.pcm_id;
                 status = addPlugInDevice(dev, connection_state);
                 if (!status) {
                     PAL_DBG(LOG_TAG, "Mark device %d as available", device_id);
@@ -9027,6 +9031,9 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
         } else if (!strcmp(tag_name, "ec_enable")) {
             size = deviceInfo.size() - 1;
             deviceInfo[size].ec_enable = atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "pcm_id")) {
+            size = deviceInfo.size() - 1;
+            deviceInfo[size].pcm_id = atoi(data->data_buf);
         }
     } else if (data->tag == TAG_USECASE) {
         if (!strcmp(tag_name, "name")) {

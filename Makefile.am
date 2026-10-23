@@ -157,8 +157,8 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/MAHUA/resourcemanager_MAHUA_CRD.xml \
                       ./configs/qcom/IoT/Kaanapali/mixer_paths_Kaanapali_MTP.xml \
                       ./configs/qcom/IoT/Kaanapali/resourcemanager_Kaanapali_MTP.xml \
-                      ./configs/qcom/IoT/NORD/mixer_paths_NORD_RIDE_SX.xml \
-                      ./configs/qcom/IoT/NORD/resourcemanager_NORD_RIDE_SX.xml \
+                      ./configs/qcom/IoT/NORD/mixer_paths_NORD_RIDE.xml \
+                      ./configs/qcom/IoT/NORD/resourcemanager_NORD_RIDE.xml \
                       ./configs/qcom/IoT/HAWI/mixer_paths_HAWI_MTP.xml \
                       ./configs/qcom/IoT/HAWI/resourcemanager_HAWI_MTP.xml
 
@@ -195,8 +195,8 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MAHUA_CRD.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_Kaanapali_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_Kaanapali_MTP.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_NORD_RIDE_SX.xml
-	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_NORD_RIDE_SX.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_NORD_RIDE.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_NORD_RIDE.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_HAWI_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_HAWI_MTP.xml
 endif

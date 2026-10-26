@@ -71,7 +71,7 @@
     <device_profile>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>1</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
@@ -99,7 +99,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_SPEAKER_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>1</max_channels>
             <samplerate>48000</samplerate>
             <channels>1</channels>
@@ -204,7 +204,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
@@ -221,7 +221,7 @@
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_HEADSET_VA_MIC</id>
-            <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>headset-va-mic</snd_device_name>
@@ -247,7 +247,7 @@
         </in-device>
         <out-device>
             <id>PAL_DEVICE_NONE</id>
-            <back_end_name>SECONDARY_TDM_RX_0</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>none</snd_device_name>
@@ -256,7 +256,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>SECONDARY_TDM_RX_0</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>4</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -266,7 +266,7 @@
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
             <ext_ec_ref_enabled>0</ext_ec_ref_enabled>
             <cps_mode>2	</cps_mode>
-            <vbat_enabled>1</vbat_enabled>
+            <vbat_enabled>0</vbat_enabled>
             <!--specify the supported bit format on speaker end point -->
             <!--this should be in the form of pal_audio_fmt_id-->
             <!--e.g <supported_bit_format >PAL_AUDIO_FMT_PCM_S24_LE</supported_bit_format>-->
@@ -294,7 +294,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>SECONDARY_TDM_RX_0</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->

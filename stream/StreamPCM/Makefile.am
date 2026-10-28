@@ -43,7 +43,7 @@ library_includedir = $(includedir)/stream_pcm
 lib_LTLIBRARIES     = libstream_pcm.la
 libstream_pcm_la_SOURCES   = $(stream_pcm_sources)
 libstream_pcm_la_LIBADD    = @GLIB_LIBS@ -lexpat
-libstream_pcm_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_pcm_la_LIBADD    += -L${abs_top_builddir}/.libs -laudioreach-pal
 libstream_pcm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_pcm_la_CPPFLAGS += -std=c++14
 libstream_pcm_la_LDFLAGS   = -shared -avoid-version

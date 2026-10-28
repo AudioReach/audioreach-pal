@@ -52,7 +52,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblx-osal \
     libexpat \
-    libar-pal \
+    libaudioreach-pal \
     libsession_pcm
 
 ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)

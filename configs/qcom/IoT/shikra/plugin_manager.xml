@@ -51,6 +51,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <!--Display-->
         <device name="PAL_DEVICE_OUT_AUX_DIGITAL" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
         <device name="PAL_DEVICE_OUT_HDMI" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
+        <device name="PAL_DEVICE_OUT_AUX_DIGITAL_1" lib="libdev_display.so" entryFunction="CreateDisplayDevice"/>
     </devices>
     <configs>
         <!--pcm_config-->

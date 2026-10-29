@@ -167,6 +167,18 @@
                 <name>PAL_STREAM_ULTRASOUND</name>
             </usecase>
         </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_AUX_DIGITAL</id>
+            <back_end_name>DISPLAY_PORT-RX</back_end_name>
+            <max_channels>32</max_channels>
+            <channels>2</channels>
+            <snd_device_name>display-port</snd_device_name>
+            <fractional_sr>1</fractional_sr>
+            <usecase>
+                <name>PAL_STREAM_VOICE_CALL</name>
+                <priority>1</priority>
+            </usecase>
+        </out-device>
     </device_profile>
     <in_streams>
         <in_stream>

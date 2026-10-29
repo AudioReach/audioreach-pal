@@ -372,10 +372,17 @@
             </keys_and_values>
         </device>
         <!-- AUX Device -->
-        <device id="PAL_DEVICE_OUT_AUX_DIGITAL,PAL_DEVICE_OUT_AUX_DIGITAL_1,PAL_DEVICE_OUT_HDMI">
+        <device id="PAL_DEVICE_OUT_AUX_DIGITAL,PAL_DEVICE_OUT_AUX_DIGITAL_1">
+            <keys_and_values>
+                <!-- DEVICERX - DP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000013"/>
+            </keys_and_values>
+        </device>
+        <!-- HDMI_Rx Device -->
+        <device id="PAL_DEVICE_OUT_HDMI">
             <keys_and_values>
                 <!-- DEVICERX - HDMI_RX -->
-                <graph_kv key="0xA2000000" value="0xA2000006"/>
+                <graph_kv key="0xA2000000" value="0xA2000010"/>
             </keys_and_values>
         </device>
         <!-- wired USB Device-->
@@ -959,17 +966,32 @@
                 <graph_kv key="0xAC000000" value="0xAC000004"/>
             </keys_and_values>
         </devicepp>
-        <!-- OUT HDMI and AUX Digital DevicePPs -->
-        <devicepp id="PAL_DEVICE_OUT_HDMI,PAL_DEVICE_OUT_AUX_DIGITAL,PAL_DEVICE_OUT_AUX_DIGITAL_1">
+        <!-- AUX Digital DevicePPs -->
+        <devicepp id="PAL_DEVICE_OUT_AUX_DIGITAL,PAL_DEVICE_OUT_AUX_DIGITAL_1">
+            <keys_and_values StreamType="PAL_STREAM_DEEP_BUFFER,PAL_STREAM_PCM_OFFLOAD,PAL_STREAM_COMPRESSED,PAL_STREAM_LOW_LATENCY,PAL_STREAM_GENERIC">
+                <!-- DEVICERX - DP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000013"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_AUDIO_MBDRC -->
+                <graph_kv key="0xAC000000" value="0xAC000002"/>
+            </keys_and_values>
+            <keys_and_values StreamType="PAL_STREAM_RAW">
+                <!-- DEVICERX - DP_RX -->
+                <graph_kv key="0xA2000000" value="0xA2000013"/>
+                <!-- DEVICEPP_RX - DEVICEPP_RX_DEFAULT -->
+                <graph_kv key="0xAC000000" value="0xAC000001"/>
+            </keys_and_values>
+        </devicepp>
+        <!-- OUT HDMI DevicePPs -->
+        <devicepp id="PAL_DEVICE_OUT_HDMI">
             <keys_and_values StreamType="PAL_STREAM_DEEP_BUFFER,PAL_STREAM_PCM_OFFLOAD,PAL_STREAM_COMPRESSED,PAL_STREAM_LOW_LATENCY,PAL_STREAM_GENERIC">
                 <!-- DEVICERX - HDMI_RX -->
-                <graph_kv key="0xA2000000" value="0xA2000006"/>
+                <graph_kv key="0xA2000000" value="0xA2000010"/>
                 <!-- DEVICEPP_RX - DEVICEPP_RX_AUDIO_MBDRC -->
                 <graph_kv key="0xAC000000" value="0xAC000002"/>
             </keys_and_values>
             <keys_and_values StreamType="PAL_STREAM_RAW">
                 <!-- DEVICERX - HDMI_RX -->
-                <graph_kv key="0xA2000000" value="0xA2000006"/>
+                <graph_kv key="0xA2000000" value="0xA2000010"/>
                 <!-- DEVICEPP_RX - DEVICEPP_RX_DEFAULT -->
                 <graph_kv key="0xAC000000" value="0xAC000001"/>
             </keys_and_values>

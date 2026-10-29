@@ -131,6 +131,8 @@ public:
     virtual int sendMsg(pal_cshm_id_t memID, uint32_t offset, uint32_t length,
                         uint32_t destID, uint32_t flags, Stream* s) {return -EINVAL;};
     virtual int addRemoveEffect(Stream *s, pal_audio_effect_t effect, bool enable) {return 0;}/*newly added;*/
+    virtual int getParamWithTag(Stream *s, int tagId, uint32_t param_id, void **payload) { return -ENOSYS; }
+    virtual int setParamWithTag(Stream *streamHandle, int tagId, uint32_t param_id, void *payload) { return -ENOSYS; }
     typedef struct eventPayload {
         uint32_t eventId;
         void *payload;

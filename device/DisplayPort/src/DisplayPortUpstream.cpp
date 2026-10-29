@@ -279,6 +279,19 @@ int DisplayPort::configureDpEndpoint()
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", DEVICE_HW_ENDPOINT_RX, status);
         goto exit;
     }
+    /* Derive controller/stream from the device id here so the DSP payload is
+     * correct even when start() is reached without init() having run (e.g. the
+     * PipeWire pw-play path). Mirrors the mapping in init(). */
+    if (deviceAttr.id == PAL_DEVICE_OUT_HDMI) {
+        dp_controller = HDMI_CONTROLLER;
+        dp_stream = HDMI_STREAM;
+    } else if (deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL) {
+        dp_controller = DP_CONTROLLER;
+        dp_stream = DP_STREAM;
+    } else if (deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        dp_controller = DP1_CONTROLLER;
+        dp_stream = DP1_STREAM;
+    }
     cfg.channel_allocation = getDeviceChannelAllocation(deviceAttr.config.ch_info.channels);
     cfg.mst_idx = dp_stream;
     cfg.dptx_idx = dp_controller;

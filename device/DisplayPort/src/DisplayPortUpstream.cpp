@@ -315,17 +315,17 @@ int DisplayPort::init(pal_param_device_connection_t device_conn)
     if (device_conn.id == PAL_DEVICE_OUT_HDMI) {
         dp_controller = HDMI_CONTROLLER;
         dp_stream = HDMI_STREAM;
-        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_HDMI;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_HDMI;
     }
     else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         dp_controller = DP_CONTROLLER;
         dp_stream = DP_STREAM;
-        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_DP;
     }
     else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
         dp_controller = DP1_CONTROLLER;
         dp_stream = DP1_STREAM;
-        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_DP;
     }
     PAL_DBG(LOG_TAG," DP contr: %d  stream: %d", dp_controller, dp_stream);
     cacheEld(mixer, dp_controller, dp_stream, dp_config->pcmId);
@@ -365,7 +365,7 @@ int DisplayPort::getEldInfo(struct audio_mixer *mixer, int controller, int strea
     struct mixer_ctl *ctl = NULL;
     char mixerCtlName[MIXER_PATH_MAX_LENGTH] = {0};
 
-    state = &extDisp[controller][stream];
+    state = &extDisp[controller % MAX_CONTROLLERS][stream % MAX_STREAMS_PER_CONTROLLER];
     if (state->valid) {
         /* use cached eld */
         return 0;
@@ -433,7 +433,7 @@ int32_t DisplayPort::isSampleRateSupported(uint32_t sampleRate)
     PAL_DBG(LOG_TAG, "sampleRate %d", sampleRate);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -462,7 +462,7 @@ int32_t DisplayPort::isChannelSupported(uint32_t numChannels)
     PAL_DBG(LOG_TAG, "numChannels %u", numChannels);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -496,7 +496,7 @@ int32_t DisplayPort::isBitWidthSupported(uint32_t bitWidth)
         return rc;
     }
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -523,7 +523,7 @@ int32_t DisplayPort::checkAndUpdateBitWidth(uint32_t *bitWidth)
     PAL_DBG(LOG_TAG, "bitWidth %u", *bitWidth);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -1552,7 +1552,7 @@ bool DisplayPort::isSupportedSR(eldAudioInfo* info, int sr)
     int i = 0;
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1577,7 +1577,7 @@ int DisplayPort::getMaxChannel()
     int max_channel = 2;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1626,7 +1626,7 @@ int DisplayPort::getHighestSupportedSR()
     struct extDispState *state = NULL;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1661,7 +1661,7 @@ int DisplayPort::getHighestSupportedBps()
     struct extDispState *state = NULL;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;

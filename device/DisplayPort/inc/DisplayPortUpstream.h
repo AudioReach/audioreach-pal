@@ -107,6 +107,7 @@ protected:
     int configureDpEndpoint();
     static std::shared_ptr<Device> dpObj;
     static std::shared_ptr<Device> hdmiObj;
+    static std::shared_ptr<Device> dp1Obj;
     DisplayPort(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
 public:
     int start();

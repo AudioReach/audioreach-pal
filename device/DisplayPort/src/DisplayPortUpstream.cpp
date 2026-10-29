@@ -33,6 +33,7 @@
  */
 
 #define LOG_TAG "PAL: DisplayPort"
+#include <cstdlib>
 #include "DisplayPortUpstream.h"
 #include "SessionAlsaUtils.h"
 #include "ResourceManager.h"
@@ -124,6 +125,7 @@ static struct extDispState {
 
 std::shared_ptr<Device> DisplayPort::dpObj = nullptr;
 std::shared_ptr<Device> DisplayPort::hdmiObj = nullptr;
+std::shared_ptr<Device> DisplayPort::dp1Obj = nullptr;
 
 std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
@@ -139,24 +141,33 @@ std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
             hdmiObj = sp;
         }
         return hdmiObj;
-    } else if ((device->id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-      (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1)) {
+    } else if (device->id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         if (!dpObj) {
             std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
             dpObj = sp;
         }
         return dpObj;
+    } else if (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (!dp1Obj) {
+            std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
+            dp1Obj = sp;
+        }
+        return dp1Obj;
     }
     return NULL;
 }
 
 std::shared_ptr<Device> DisplayPort::getObject(pal_device_id_t id)
 {
-    if ((id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-        (id == PAL_DEVICE_OUT_AUX_DIGITAL_1)) {
+    if (id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         if (dpObj) {
             if (dpObj->getSndDeviceId() == id)
                 return dpObj;
+        }
+    } else if (id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (dp1Obj) {
+            if (dp1Obj->getSndDeviceId() == id)
+                return dp1Obj;
         }
     } else if (id == PAL_DEVICE_OUT_HDMI) {
         if (hdmiObj) {
@@ -295,6 +306,7 @@ int DisplayPort::configureDpEndpoint()
     cfg.channel_allocation = getDeviceChannelAllocation(deviceAttr.config.ch_info.channels);
     cfg.mst_idx = dp_stream;
     cfg.dptx_idx = dp_controller;
+    PAL_INFO(LOG_TAG, "configureDeviceCustomPayload: dptx_idx=%d mst_idx=%d", cfg.dptx_idx, cfg.mst_idx);
     builder->payloadDpAudioConfig(&payload, &payloadSize, miid, &cfg);
     if (payloadSize) {
         status = updateCustomPayload(payload, payloadSize);

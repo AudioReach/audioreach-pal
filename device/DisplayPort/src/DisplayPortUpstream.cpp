@@ -79,6 +79,8 @@ enum eld_versions {
 #define HDMI_STREAM         0
 #define DP_CONTROLLER       0
 #define DP_STREAM           0
+#define DP1_CONTROLLER      1
+#define DP1_STREAM          0
 #define ELD_FIXED_BYTES     20
 #define ELD_MAX_MNL         16
 
@@ -315,10 +317,14 @@ int DisplayPort::init(pal_param_device_connection_t device_conn)
         dp_stream = HDMI_STREAM;
         extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_HDMI;
     }
-    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL ||
-        device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         dp_controller = DP_CONTROLLER;
         dp_stream = DP_STREAM;
+        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
+    }
+    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        dp_controller = DP1_CONTROLLER;
+        dp_stream = DP1_STREAM;
         extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
     }
     PAL_DBG(LOG_TAG," DP contr: %d  stream: %d", dp_controller, dp_stream);

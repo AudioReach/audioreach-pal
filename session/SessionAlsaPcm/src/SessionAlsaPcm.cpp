@@ -3114,7 +3114,6 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
     }
 
     ptr = (uint8_t *)payloadData + sizeof(struct apm_module_param_data_t);
-
     config = (uint8_t *)calloc(1, configSize);
     if (!config) {
         PAL_ERR(LOG_TAG, "Failed to allocate memory for config");
@@ -3123,7 +3122,6 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
     }
 
     ar_mem_cpy(config, configSize, ptr, configSize);
-
     *payload = (void *)config;
     config = nullptr; /* caller owns the memory, don't free on success */
 
@@ -3131,8 +3129,6 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
 exit:
     builder->freeCustomPayload(&payloadData, &payloadSize);
     PAL_DBG(LOG_TAG, "Exit. status %d", status);
-    if (config)
-        free(config);
     return status;
 }
 

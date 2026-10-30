@@ -124,6 +124,12 @@
             <usecase>
                 <name>PAL_STREAM_DEEP_BUFFER</name>
                 <ec_enable>1</ec_enable>
+            </usecase>
+            <usecase>
+                <name>PAL_STREAM_RAW</name>
+                <channels>1</channels>
+                <snd_device_name>speaker-mic</snd_device_name>
+            </usecase>
             <usecase>
                 <name>PAL_STREAM_COMPRESSED</name>
                 <ec_enable>1</ec_enable>
@@ -138,7 +144,6 @@
             <ec_rx_device>
                 <id>PAL_DEVICE_OUT_SPEAKER</id>
             </ec_rx_device>
-            </usecase>
         </in-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>

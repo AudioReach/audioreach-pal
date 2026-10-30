@@ -3056,6 +3056,39 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
                           PARAM_ID_NMT_OUTPUT, configSize);
             break;
         }
+        case PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP:
+        {
+            pal_param_payload *out = NULL;
+            payloadSize = sizeof(struct apm_module_param_data_t) +
+                          sizeof(pal_fnn_plus_doa_estimate_monitor_param_with_ts_t) +
+                          (TOTAL_DEGREES * sizeof(int16_t) * 2) * TOTAL_AXIS;
+            if (payloadSize % 8 != 0)
+                payloadSize += (8 - payloadSize % 8);
+            configSize = payloadSize - sizeof(struct apm_module_param_data_t);
+            builder->payloadGetParam(s, &payloadData, &payloadSize, miid,
+                          PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP, configSize);
+            status = mixer_ctl_set_array(ctl, payloadData, payloadSize);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Set custom config failed, status = %d", status);
+                goto exit;
+            }
+            status = mixer_ctl_get_array(ctl, payloadData, payloadSize);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Get custom config failed, status = %d", status);
+                goto exit;
+            }
+            out = (pal_param_payload *)calloc(1, sizeof(pal_param_payload) + configSize);
+            if (!out) {
+                PAL_ERR(LOG_TAG, "Failed to allocate memory for DOA payload");
+                status = -ENOMEM;
+                goto exit;
+            }
+            out->payload_size = configSize;
+            ptr = (uint8_t *)payloadData + sizeof(struct apm_module_param_data_t);
+            ar_mem_cpy(out->payload, configSize, ptr, configSize);
+            *payload = (void *)out;
+            goto exit;
+        }
         default:
             status = EINVAL;
             PAL_ERR(LOG_TAG, "Unsupported param id %u status %d", param_id, status);
@@ -3090,6 +3123,7 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
 
     ar_mem_cpy(config, configSize, ptr, configSize);
     *payload = (void *)config;
+    config = nullptr; /* caller owns the memory, don't free on success */
 
 
 exit:

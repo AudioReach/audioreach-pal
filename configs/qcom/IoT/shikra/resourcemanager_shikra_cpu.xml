@@ -127,7 +127,7 @@
             <back_end_name>PCM_RT_PROXY-TX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <snd_device_name>headset-mic</snd_device_name>
+            <snd_device_name>headset-va-mic</snd_device_name>
             <ec_enable>0</ec_enable>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -150,7 +150,7 @@
         </in-device>
         <out-device>
             <id>PAL_DEVICE_NONE</id>
-            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <back_end_name>PCM_RT_PROXY-RX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <snd_device_name>none</snd_device_name>

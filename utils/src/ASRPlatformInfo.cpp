@@ -37,6 +37,7 @@
 
 #define LOG_TAG "PAL: ASRPlatformInfo"
 
+static struct pal_asr_config default_asr_config = {0};
 
 void ASRCommonConfig::HandleStartTag(const std::string& tag, const char** attribs)
 {
@@ -108,31 +109,31 @@ void ASRDefaultConfig::HandleStartTag(const std::string& tag, const char** attri
 
     if (tag == "param") {
         if (key == "input_language_code") {
-            asr_config_.input_language_code = std::stoi(value);
+            default_asr_config.input_language_code = std::stoi(value);
         } else if (key == "output_language_code") {
-            asr_config_.output_language_code = std::stoi(value);
+            default_asr_config.output_language_code = std::stoi(value);
         } else if (key == "enable_language_detection") {
-            asr_config_.enable_language_detection = (value == "true");
+            default_asr_config.enable_language_detection = (value == "true");
         } else if (key == "enable_translation") {
-            asr_config_.enable_translation = (value == "true");
+            default_asr_config.enable_translation = (value == "true");
         } else if (key == "enable_continuous_mode") {
-            asr_config_.enable_continuous_mode = (value == "true");
+            default_asr_config.enable_continuous_mode = (value == "true");
         } else if (key == "enable_partial_transcription") {
-            asr_config_.enable_partial_transcription = (value == "true");
+            default_asr_config.enable_partial_transcription = (value == "true");
         } else if (key == "enable_logger_mode") {
-            asr_config_.enable_logger_mode = (value == "true");
+            default_asr_config.enable_logger_mode = (value == "true");
         } else if (key == "enable_timestamp") {
-            asr_config_.enable_timestamp = (value == "true");
+            default_asr_config.enable_timestamp = (value == "true");
         } else if (key == "enable_speaker_diarization") {
-            asr_config_.enable_speaker_diarization = (value == "true");
+            default_asr_config.enable_speaker_diarization = (value == "true");
         } else if (key == "threshold") {
-            asr_config_.threshold = std::stoi(value);
+            default_asr_config.threshold = std::stoi(value);
         } else if (key == "timeout_duration") {
-            asr_config_.timeout_duration = std::stoi(value);
+            default_asr_config.timeout_duration = std::stoi(value);
         } else if (key == "silence_detection_duration") {
-            asr_config_.silence_detection_duration = std::stoi(value);
+            default_asr_config.silence_detection_duration = std::stoi(value);
         } else if (key == "outputBufferMode") {
-            asr_config_.outputBufferMode = (value == "true");
+            default_asr_config.outputBufferMode = (value == "true");
         } else {
             PAL_ERR(LOG_TAG, "Invalid attribute %s", key.c_str());
         }
@@ -148,7 +149,6 @@ void ASRDefaultConfig::HandleEndTag(struct xml_userdata *data, const std::string
 
 ASRDefaultConfig::ASRDefaultConfig()
 {
-    memset(&asr_config_, 0, sizeof(asr_config_));
 }
 
 int32_t ASRDefaultConfig::GetDefaultASRConfig(struct pal_asr_config *config)
@@ -158,7 +158,7 @@ int32_t ASRDefaultConfig::GetDefaultASRConfig(struct pal_asr_config *config)
         return -EINVAL;
     }
 
-    memcpy(config, &asr_config_, sizeof(asr_config_));
+    memcpy(config, &default_asr_config, sizeof(default_asr_config));
 
     return 0;
 }
@@ -268,8 +268,8 @@ void ASRStreamConfig::HandleEndTag(struct xml_userdata *data, const std::string&
 std::shared_ptr<ASRPlatformInfo> ASRPlatformInfo::me_ = nullptr;
 
 ASRStreamConfig::ASRStreamConfig() :
-    curr_child_(nullptr),
-    lpi_enable_(true)
+    lpi_enable_(true),
+    curr_child_(nullptr)
 {
     for (int i = 0; i < ASR_MAX_PARAM_IDS; i++) {
         module_tag_ids_[i] = 0;

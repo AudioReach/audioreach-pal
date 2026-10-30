@@ -189,6 +189,10 @@ int32_t getDeviceFunc(void** func, std::string name) {
             PAL_VERBOSE(LOG_TAG, "speaker feedback device CPS");
             *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerDevice;
             break;
+        case PAL_DEVICE_IN_CPS2_FEEDBACK:
+            PAL_VERBOSE(LOG_TAG, "speaker feedback device CPS2");
+            *reinterpret_cast<DeviceCreate*>(func) = &CreateSpeakerDevice;
+            break;
         case PAL_DEVICE_OUT_WIRED_HEADSET:
         case PAL_DEVICE_OUT_WIRED_HEADPHONE:
             PAL_VERBOSE(LOG_TAG, "headphone device");

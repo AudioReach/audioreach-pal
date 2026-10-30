@@ -92,6 +92,11 @@
 
 #define PARAM_ID_MODULE_ENABLE            0x08001026
 
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#define PARAM_ID_FFECNS_VOICECUE 0x08001BB2
+#define PARAM_ID_FLUENCE_NN_VOICECUE 0x08001AD3
+#endif
+
 /* ID of the Master Gain parameter used by MODULE_ID_VOL_CTRL. */
 #define PARAM_ID_VOL_CTRL_MASTER_GAIN 0x08001035
 /* ID of the channel mixer coeff for MODULE_ID_MFC */
@@ -3237,6 +3242,12 @@ int PayloadBuilder::populateStreamKV(Stream* s,
                 "bit_perfect"));
             PAL_INFO(LOG_TAG, "BitPerfect Playback, hence select PCM_IMMUTABLE KV");
         }
+    } else if (sattr->type == PAL_STREAM_DEEP_BUFFER &&
+              (sattr->flags & PAL_STREAM_FLAG_MMAP_MASK)) {
+        filled_selector_pairs.push_back(
+            std::make_pair(CUSTOM_CONFIG_SEL,
+            "deep_buffer_mmap"));
+        PAL_INFO(LOG_TAG, "Deep buffer playback in mmap mode");
     }
 
     retrieveKVs(filled_selector_pairs ,sattr->type, all_streams, keyVector);
@@ -3850,15 +3861,23 @@ int PayloadBuilder::populateCalKeyVector(Stream *s, std::vector <std::pair<int,i
                 goto exit;
             }
             if (dAttr.id == PAL_DEVICE_OUT_SPEAKER) {
-                if (dAttr.config.ch_info.channels > 1) {
-                    PAL_DBG(LOG_TAG, "Multi channel speaker");
-                    ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, LEFT_RIGHT));
-                }
-                else {
-                    PAL_DBG(LOG_TAG, "Mono channel speaker");
-                    ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, RIGHT_MONO));
-                }
-                break;
+                switch (dAttr.config.ch_info.channels) {
+                    case 1:
+                        PAL_DBG(LOG_TAG, "Mono channel speaker");
+                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, RIGHT_MONO));
+                        break;
+                    case 2:
+                        PAL_DBG(LOG_TAG, "Stereo channel speaker");
+                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, LEFT_RIGHT));
+                        break;
+                    case 4:
+                        PAL_DBG(LOG_TAG, "QUAD channel speaker");
+                        ckv.push_back(std::make_pair(SPK_PRO_DEV_MAP, LEFT_RIGHT_QUAD));
+                        break;
+                    default:
+                        PAL_DBG(LOG_TAG, "Unsupport number of channels %d", dAttr.config.ch_info.channels);
+		}
+		break;
             }
         }
         break;
@@ -5803,3 +5822,54 @@ void PayloadBuilder::payloadVoiceNsRxConfigEnableDisable(uint8_t** payload, size
     PAL_DBG(LOG_TAG, "customPayload address %p and size %zu", payloadInfo,
             *size);
 }
+
+#ifndef UVVOICECUE_FEATURES_DISABLED
+void PayloadBuilder::payloadUvVoiceCueData(uint8_t** payload, size_t* size,
+        uint32_t miid, void *cueData, uint32_t usecaseMask)
+{
+    struct apm_module_param_data_t* header = NULL;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0;
+    pal_param_payload *palPayload = (pal_param_payload *)cueData;
+
+    payloadSize = sizeof(struct apm_module_param_data_t) + palPayload->payload_size;
+    padBytes = PAL_PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        PAL_ERR(LOG_TAG, "payloadInfo malloc failed %s", strerror(errno));
+        return;
+    }
+    header = (struct apm_module_param_data_t *)payloadInfo;
+    header->module_instance_id = miid;
+
+    switch (usecaseMask) {
+        case UV_FLUENCE_TELEPHONY_BIT:
+        case UV_FLUENCE_VOIP_BIT:
+            header->param_id = PARAM_ID_FLUENCE_NN_VOICECUE;
+            break;
+        case UV_FLUENCE_AUDIO_BIT:
+        case UV_FLUENCE_SVA_BIT:
+            header->param_id = PARAM_ID_FFECNS_VOICECUE;
+            break;
+        default:
+            PAL_ERR(LOG_TAG, "Invalid UV usecaseMask 0x%x", usecaseMask);
+            free(payloadInfo);
+            return;
+    }
+
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    PAL_DBG(LOG_TAG, "header params \n IID:%x param_id:%x error_code:%d param_size:%d",
+                      header->module_instance_id, header->param_id,
+                      header->error_code, header->param_size);
+
+    uint8_t *dataPayload = (uint8_t *)(payloadInfo + sizeof(struct apm_module_param_data_t));
+    memcpy(dataPayload, palPayload->payload, palPayload->payload_size);
+
+    *size = payloadSize + padBytes;
+    *payload = payloadInfo;
+    PAL_DBG(LOG_TAG, "customPayload address %pK and size %zu", payloadInfo,
+                *size);
+}
+#endif

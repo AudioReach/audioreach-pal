@@ -138,7 +138,7 @@ protected:
     int setEffectParameters(Stream *s, effect_pal_payload_t *effectPayload);
 public:
     SessionAR();
-    static void handleSoftPauseCallBack(uint64_t hdl, uint32_t event_id, void *data, uint32_t event_size);
+    static void handleSessionCallback(uint64_t hdl, uint32_t event_id, void *data, uint32_t event_size);
     int HDRConfigKeyToDevOrientation(const char* hdr_custom_key);
     void setPmQosMixerCtl(pmQosVote vote);
     virtual int32_t getParameters(Stream *s, uint32_t param_id, void **payload) override;

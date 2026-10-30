@@ -75,6 +75,10 @@ libdev_speaker_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
 libdev_speaker_la_LIBADD += -lcutils
 endif
 
+if ENABLE_UPSTREAM_KERNEL
+libdev_speaker_la_CPPFLAGS += -DENABLE_UPSTREAM_KERNEL
+endif
+
 if USE_G_STR_FUNC
 libdev_speaker_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

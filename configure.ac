@@ -76,6 +76,13 @@ AC_ARG_WITH([cutils],
      [with_cutils=$withval],
      [with_cutils=no])
 AM_CONDITIONAL([CUTILS_SUPPORTED], [test "x${with_cutils}" = "xyes"])
+AC_ARG_ENABLE([upstream-kernel],
+    AS_HELP_STRING([--enable-upstream-kernel],
+        [Enable upstream Linux kernel specific audio paths]),
+    [enable_upstream_kernel=$enableval],
+    [enable_upstream_kernel=no])
+AM_CONDITIONAL([ENABLE_UPSTREAM_KERNEL],
+    [test "x${enable_upstream_kernel}" = "xyes"])
 AM_CONDITIONAL([IS_SDXLEMUR], [test x$IS_SDXLEMUR_TARGET = xtrue])
 AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 

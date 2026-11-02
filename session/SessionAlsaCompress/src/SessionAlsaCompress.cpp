@@ -481,6 +481,30 @@ void SessionAlsaCompress::getSndCodecParam(struct snd_codec &codec, struct pal_s
             codec.ch_out = codec.ch_in;
             codec.sample_rate = config->sample_rate;
             codec.bit_rate = config->bit_width;
+            switch (config->aud_fmt_id) {
+                case PAL_AUDIO_FMT_AAC:
+                    codec.format = SND_AUDIOSTREAMFORMAT_RAW;
+                    break;
+                case PAL_AUDIO_FMT_AAC_ADTS:
+                    codec.format = SND_AUDIOSTREAMFORMAT_MP4ADTS;
+                    if (codec.options.generic.reserved[0] == 0)
+                        codec.options.generic.reserved[0] = 2;
+                    break;
+                case PAL_AUDIO_FMT_AAC_ADIF:
+                    codec.format = SND_AUDIOSTREAMFORMAT_ADIF;
+                    break;
+                case PAL_AUDIO_FMT_AAC_LATM:
+                    codec.format = SND_AUDIOSTREAMFORMAT_MP4LATM;
+                    break;
+                default:
+                    break;
+            }
+            PAL_DBG(LOG_TAG,
+                    "playback codec fmt=%x id=%d stream_format=%d "
+                    "aac_object_type=%d rate=%d channels=%d",
+                    config->aud_fmt_id, codec.id, codec.format,
+                    codec.options.generic.reserved[0], codec.sample_rate,
+                    codec.ch_in);
             break;
 
         case PAL_AUDIO_INPUT:
@@ -754,6 +778,8 @@ void SessionAlsaCompress::offloadThreadLoop(SessionAlsaCompress* compressObj)
 
 SessionAlsaCompress::SessionAlsaCompress(std::shared_ptr<ResourceManager> Rm)
 {
+    memset(&codec, 0, sizeof(codec));
+
     rm = Rm;
     builder = new PayloadBuilder();
 

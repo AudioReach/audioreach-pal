@@ -491,6 +491,12 @@
     <path name="display-port1">
     </path>
 
+    <path name="display-port-1">
+    </path>
+
+    <path name="hdmi-port">
+    </path>
+
     <path name="bt-sco">
     </path>
 

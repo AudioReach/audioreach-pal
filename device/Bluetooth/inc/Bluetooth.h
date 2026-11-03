@@ -296,9 +296,11 @@ protected:
     static std::shared_ptr<Device> sObjTx;
     static std::shared_ptr<Device> sObjHfpRx;
     static std::shared_ptr<Device> sObjHfpTx;
-    BtSco(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
+    BtSco(struct pal_device* device, std::shared_ptr<ResourceManager> Rm,
+          const bool isActAsHFPDevice = false);
     bool mIsScoOn = false;
     bool mIsHfpOn = false;
+    bool mIsActAsHFPDevice = false;
     static bool sIsWbSpeechEnabled;
     static int  sSwbSpeechMode;
     static bool sIsSwbLc3Enabled;

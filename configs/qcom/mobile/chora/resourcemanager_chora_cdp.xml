@@ -2031,6 +2031,9 @@
                 <param out_channels="1" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
                 <!--param lpi_enable="false" /-->
+                <!-- Indicate whether Any Motion Detection is supported. -->
+                <!-- Used only when TILT_TO_WAKE/INTENT_TO_SPEAK not supported -->
+                <param enable_amd="true" />
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />

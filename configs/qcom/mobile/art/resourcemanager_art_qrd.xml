@@ -235,6 +235,9 @@
                 <name>PAL_STREAM_VOIP_TX</name>
                 <priority>2</priority>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -261,6 +264,9 @@
                 <custom-config key="quad-mic">
                     <channels>4</channels>
                     <snd_device_name>quad-mic</snd_device_name>
+                </custom-config>
+                <custom-config key="voicecue">
+                    <sidetone_mode>OFF</sidetone_mode>
                 </custom-config>
             </usecase>
             <usecase>
@@ -362,6 +368,9 @@
                 <name>PAL_STREAM_VOIP_TX</name>
                 <priority>2</priority>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -392,6 +401,9 @@
                 <custom-config key="quad-mic-cascade">
                     <channels>4</channels>
                     <snd_device_name>quad-mic</snd_device_name>
+                </custom-config>
+                <custom-config key="voicecue">
+                    <sidetone_mode>OFF</sidetone_mode>
                 </custom-config>
             </usecase>
             <usecase>
@@ -452,6 +464,9 @@
                 <samplerate>48000</samplerate>
                 <bit_width>16</bit_width>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -463,6 +478,9 @@
                 <custom-config key="nn-sm">
                     <channels>1</channels>
                     <snd_device_name>headset-mic</snd_device_name>
+                </custom-config>
+                <custom-config key="voicecue">
+                    <sidetone_mode>OFF</sidetone_mode>
                 </custom-config>
             </usecase>
             <usecase>
@@ -554,6 +572,9 @@
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -579,6 +600,9 @@
                 <priority>1</priority>
                 <sidetone_mode>HW</sidetone_mode>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <sidetone_mode>OFF</sidetone_mode>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_ULTRA_LOW_LATENCY</name>
@@ -1852,7 +1876,7 @@
                 <!-- Output buffer size for speaker diarization in bytes -->
                 <param sdz_output_buffer_size="102400" />
                 <!-- Whether life logger is enabled -->
-                <param enable_life_logger="false"/>
+                <param enable_life_logger="true"/>
                 <!-- ASR input DAM buffer size for life logger usecase -->
                 <!-- Valid only when it is set to non-zero value -->
                 <!-- Config from ASPS is used when this is set to 0 -->
@@ -1864,7 +1888,7 @@
                 <param output_language_code="0"/>
                 <param enable_language_detection="false"/>
                 <param enable_translation="false"/>
-                <param enable_continuous_mode="false"/>
+                <param enable_continuous_mode="true"/>
                 <param enable_partial_transcription="false"/>
                 <param enable_logger_mode="false"/>
                 <param enable_timestamp="true"/>

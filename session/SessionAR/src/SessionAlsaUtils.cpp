@@ -48,6 +48,10 @@
 #include <sound/asound.h>
 #include "gsl_intf.h"
 
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
+
 static constexpr const char* const COMPRESS_SND_DEV_NAME_PREFIX = "COMPRESS";
 static constexpr const char* const PCM_SND_DEV_NAME_PREFIX = "PCM";
 static constexpr const char* const PCM_SND_VOICE_DEV_NAME_PREFIX = "VOICEMMODE";
@@ -279,13 +283,16 @@ error:
 }
 
 bool SessionAlsaUtils::isMmapUsecase(struct pal_stream_attributes &sAttr)
-{
-    return ((sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) &&
-            ((sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK)
-                        ||(sAttr.flags & PAL_STREAM_FLAG_MMAP_NO_IRQ_MASK))
-            );
+ {
+    bool isUllWithMmap = (sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) &&
+                         ((sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK) ||
+                          (sAttr.flags & PAL_STREAM_FLAG_MMAP_NO_IRQ_MASK));
 
-}
+    bool isDeepBufferWithMmap = (sAttr.type == PAL_STREAM_DEEP_BUFFER) &&
+                         (sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK);
+
+    return isUllWithMmap || isDeepBufferWithMmap;
+ }
 
 struct mixer_ctl *SessionAlsaUtils::getStaticMixerControl(struct mixer *am, std::string name)
 {
@@ -2792,3 +2799,47 @@ exit:
     PAL_DBG(LOG_TAG,"Exit ret: %d", status);
     return status;
 }
+
+#ifndef UVVOICECUE_FEATURES_DISABLED
+int SessionAlsaUtils::checkAndSetUvVoiceCue(Stream *s, struct mixer *mixer, int device, uint32_t miid, const std::shared_ptr<ResourceManager>& rm, PayloadBuilder* builder, uint32_t usecaseMask)
+{
+    int status = 0;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+
+    PAL_DBG(LOG_TAG, "%s: Enter", __func__);
+    if(getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0) {
+        size_t byteSize = sizeof(pal_param_payload) + getVoiceCueDataSize();
+        std::unique_ptr<uint8_t[]> bytes = std::make_unique<uint8_t[]>(byteSize);
+        pal_param_payload *palParamPayload = reinterpret_cast<pal_param_payload*>(bytes.get());
+        palParamPayload->payload_size = getVoiceCueDataSize();
+        memcpy(palParamPayload->payload, getVoiceCueDataPtr(), getVoiceCueDataSize());
+
+        PAL_DBG(LOG_TAG,"%s: setting cached voice cue", __func__);
+        builder->payloadUvVoiceCueData(&payload, &payloadSize, miid, palParamPayload, usecaseMask);
+        if (payload && payloadSize) {
+            status = builder->updateCustomPayload(payload, payloadSize);
+            builder->freeCustomPayload(&payload, &payloadSize);
+            if (status != 0)
+                PAL_ERR(LOG_TAG,"updateCustomPayload Failed\n");
+        }
+        if (status != 0) {
+            PAL_ERR(LOG_TAG,"Configuring blob data for UV Voice Call failed with status %d", status);
+            goto exit;
+        }
+        builder->getCustomPayload(&payload, &payloadSize);
+        status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                     payload, payloadSize);
+        builder->freeCustomPayload();
+        if (status != 0) {
+            PAL_ERR(LOG_TAG,"setMixerParameter failed");
+            goto exit;
+        }
+    } else {
+        PAL_DBG(LOG_TAG,"%s: voice cue is not set", __func__);
+    }
+exit:
+    PAL_DBG(LOG_TAG, "%s: Exit", __func__);
+    return status;
+}
+#endif

@@ -137,7 +137,7 @@
             <back_end_name>CODEC_DMA-QAIF-TX-0</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
-            <snd_device_name>headset-mic</snd_device_name>
+            <snd_device_name>headset-va-mic</snd_device_name>
             <ec_enable>0</ec_enable>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -212,7 +212,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SPEAKER</id>
-            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
@@ -256,7 +256,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HANDSET</id>
-            <back_end_name>QAIF-QAIF_AUD-RX-1</back_end_name>
+            <back_end_name>QAIF-QAIF_AUD-RX-2</back_end_name>
             <max_channels>2</max_channels>
             <channels>1</channels>
             <!-- To enable external EC reference the flag extec_ref_enabled must be added as 1 -->
@@ -268,7 +268,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADPHONE</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>
@@ -276,7 +276,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_WIRED_HEADSET</id>
-            <back_end_name>CODEC_DMA-QAIF-RX-2</back_end_name>
+            <back_end_name>CODEC_DMA-QAIF-RX-1</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <fractional_sr>1</fractional_sr>

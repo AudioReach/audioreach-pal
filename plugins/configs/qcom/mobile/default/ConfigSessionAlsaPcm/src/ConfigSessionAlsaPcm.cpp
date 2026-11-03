@@ -75,6 +75,10 @@
 #include "ConfigSessionAlsaPcm.h"
 #include "ConfigSessionUtils.h"
 
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
+
 // ASR handlecb def supports
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
@@ -83,6 +87,8 @@
 #include <sys/stat.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
 #include <time.h>
+#include "sh_mem_pull_push_mode_api.h"
+#include "history_buffer_api.h"
 
 /*interface implementation*/
 extern "C" int pcmPluginConfig(Stream* stream, plugin_config_name_t config,
@@ -150,19 +156,21 @@ uint32_t getMiid(SessionAlsaPcm* session, uint64_t eventId, mixer* mxr,
         case EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER:
             tagId = SHMEM_ENDPOINT;
             break;
-        case EVENT_ID_ACD_DETECTION_EVENT :
+        case EVENT_ID_ACD_DETECTION_EVENT:
             tagId = CONTEXT_DETECTION_ENGINE;
             break;
-        case EVENT_ID_ASR_OUTPUT :
+        case EVENT_ID_ASR_OUTPUT:
+        case EVENT_ID_ASR_OUTPUT_V2:
             tagId = TAG_MODULE_ASR;
             break;
         case EVENT_ID_SDZ_OUTPUT:
+        case EVENT_ID_SDZ_OUTPUT_V2:
             tagId = TAG_MODULE_SDZ;
             break;
         case EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK:
             tagId = SHMEM_ENDPOINT;
             break;
-        default :
+        default:
             PAL_ERR(LOG_TAG, "Event id %x not handled!!!", eventId);
     }
 
@@ -244,6 +252,9 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     int payload_size = 0;
     uint32_t tag = 0;
     std::vector<uint32_t> MIIDs;
+    #ifndef UVVOICECUE_FEATURES_DISABLED
+    uint32_t currentValues;
+    #endif
 
     PAL_DBG(LOG_TAG, "Enter");
     memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
@@ -281,6 +292,81 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
         handleEventRegistration(session, 1, mxr, txAifBackEnds, pcmDevIds);
+    } else if (sAttr.type == PAL_STREAM_DEEP_BUFFER &&
+      (sAttr.flags & PAL_STREAM_FLAG_MMAP_MASK)) {
+        struct agm_event_reg_cfg *watermark_event_cfg = nullptr;
+        struct event_cfg_sh_mem_pull_push_mode_watermark_t *watermark_payload = nullptr;
+        struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *levels = nullptr;
+        size_t in_buf_size = 0, in_buf_count = 0, out_buf_size = 0, out_buf_count = 0;
+        uint32_t period_size = 0;
+        uint32_t period_count = 0;
+        constexpr uint32_t kWatermarkNumLevels = 10;
+        size_t watermark_payload_size = 0;
+
+         /* Total shared buffer with DSP = period_size * period_count.
+         * Register watermark at 10 equal levels
+         */
+        s->getBufInfo(&in_buf_size, &in_buf_count, &out_buf_size, &out_buf_count);
+        period_size = static_cast<uint32_t>(out_buf_size);
+        period_count = static_cast<uint32_t>(out_buf_count);
+        const uint32_t watermarkStepBytes =
+            (period_size * period_count) / kWatermarkNumLevels;
+
+        watermark_payload_size = sizeof(uint32_t) +
+        (kWatermarkNumLevels * sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t));
+
+        watermark_payload = (struct event_cfg_sh_mem_pull_push_mode_watermark_t *)calloc(1, watermark_payload_size);
+        if (!watermark_payload) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for watermark payload");
+            status = -ENOMEM;
+            goto exit;
+        }
+
+        watermark_payload->num_water_mark_levels = kWatermarkNumLevels;
+        levels = (struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *)
+            ((uint8_t *)watermark_payload + sizeof(uint32_t));
+
+        for (uint32_t i = 0; i < kWatermarkNumLevels; ++i) {
+            levels[i].watermark_level_bytes = (i + 1) * watermarkStepBytes;
+            PAL_DBG(LOG_TAG, "watermark registered at byte %d",levels[i].watermark_level_bytes);
+        }
+
+        tagId = SHMEM_ENDPOINT;
+        if (miid == 0 && tagId != 0) {
+            status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                rxAifBackEnds[0].second.data(), tagId, &miid);
+            if (status) {
+                PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", tagId, status);
+                free(watermark_payload);
+                goto exit;
+            }
+        }
+
+        payload_size = sizeof(struct agm_event_reg_cfg) + watermark_payload_size;
+        watermark_event_cfg = (struct agm_event_reg_cfg *)calloc(1, payload_size);
+        if (!watermark_event_cfg) {
+            PAL_ERR(LOG_TAG, "Failed to allocate memory for watermark event config");
+            status = -ENOMEM;
+            free(watermark_payload);
+            goto exit;
+        }
+
+        watermark_event_cfg->event_config_payload_size = watermark_payload_size;
+        watermark_event_cfg->is_register = 1;
+        watermark_event_cfg->event_id = EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK;
+        watermark_event_cfg->module_instance_id = miid;
+
+        memcpy(watermark_event_cfg->event_config_payload,
+               watermark_payload,
+               watermark_payload_size);
+
+        SessionAlsaUtils::registerMixerEvent(mxr, pcmDevIds.at(0),
+                                            (void *)watermark_event_cfg, payload_size);
+
+        free(watermark_event_cfg);
+        free(watermark_payload);
+        miid = 0;
+        tagId = 0;
     } else if (sAttr.type == PAL_STREAM_ULTRASOUND && session->getRegisterForEvents()) {
         payload_size = sizeof(struct agm_event_reg_cfg);
         std::vector<int> pcmDevTxIds;
@@ -518,6 +604,26 @@ configure_pspfmfc:
                     PAL_ERR(LOG_TAG, "build MFC payload failed");
                 }
             }
+            #ifndef UVVOICECUE_FEATURES_DISABLED
+                if (sAttr.type == PAL_STREAM_VOIP_TX) {
+                    currentValues = getUvMaskUseCaseValues();
+                    if ((currentValues & UV_FLUENCE_VOIP_BIT) &&
+                       (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
+                       status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                               txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
+                       if (status != 0) {
+                           PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                       } else {
+                           PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
+                           status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_VOIP_BIT);
+                           if (0 != status) {
+                               PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+                           }
+                           goto exit;
+                       }
+                    }
+                }
+            #endif
 set_mixer:
             builder->getCustomPayload(&payload, &payloadSize);
             status = SessionAlsaUtils::setMixerParameter(mxr, pcmDevIds.at(0),
@@ -593,6 +699,22 @@ set_mixer:
             SessionAlsaUtils::setMixerParameter(mxr,
                 pcmDevIds.at(0), payload, payloadSize);
             builder->freeCustomPayload();
+        #ifndef UVVOICECUE_FEATURES_DISABLED
+            currentValues = getUvMaskUseCaseValues();
+            if ((currentValues & UV_FLUENCE_SVA_BIT) &&
+                (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
+                status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0), txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                } else {
+                    PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
+                    status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_SVA_BIT);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+                    }
+                }
+            }
+        #endif
         } else if (sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
             status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
                                                 txAifBackEnds[0].second.data(),
@@ -697,6 +819,23 @@ set_mixer:
                     status = 0;
                 }
             }
+        #ifndef UVVOICECUE_FEATURES_DISABLED
+            currentValues = getUvMaskUseCaseValues();
+            if ((currentValues & UV_FLUENCE_AUDIO_BIT) &&
+                (getVoiceCueDataPtr() != nullptr && getVoiceCueDataSize() > 0)) {
+                status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                        txAifBackEnds[0].second.data(), TAG_UVCALL_VOICECUE, &miid);
+                if (status != 0) {
+                    PAL_ERR(LOG_TAG,"getModuleInstanceId failed\n");
+                } else {
+                    PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d\n", miid, pcmDevIds.at(0));
+                    status = SessionAlsaUtils::checkAndSetUvVoiceCue(s, mxr, pcmDevIds.at(0), miid, rm, builder, UV_FLUENCE_AUDIO_BIT);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+                    }
+                }
+            }
+        #endif
         }
         if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
             status = configureCallTranslationModules(s, builder, mxr, session, rm);

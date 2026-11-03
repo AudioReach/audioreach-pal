@@ -143,7 +143,7 @@ int32_t voiceuiDmgrRestartUseCases(vui_dmgr_param_restart_usecases_t *uc_info)
         getMatchingStreams(activeStreams, streams, uc_info->usecases[i].vendor_uuid);
     }
     // Reuse SSR mechanism for stream teardown and bring up.
-    PAL_INFO(LOG_TAG, "restart %d streams", streams.size());
+    PAL_INFO(LOG_TAG, "restart %zu streams", streams.size());
     for (auto &s : streams) {
         s->getStreamType(&type);
         status = s->ssrDownHandler();
@@ -1386,8 +1386,8 @@ int setSTParameter(uint32_t param_id, void *param_payload,
                     if (std::find(onResourceAvailCbList.begin(), onResourceAvailCbList.end(), cb) ==
                         onResourceAvailCbList.end()) {
                         onResourceAvailCbList.push_back(cb);
-                        PAL_VERBOSE(LOG_TAG, "setParameter onResourceAvailCb %pk"
-                                    " onResourceAvailCookie %pk", resources_avail->callback,
+                        PAL_VERBOSE(LOG_TAG, "setParameter onResourceAvailCb %p"
+                                    " onResourceAvailCookie %lu", resources_avail->callback,
                                     resources_avail->cookie);
                     } else {
                         PAL_DBG(LOG_TAG, "Resource available callback is already registered");

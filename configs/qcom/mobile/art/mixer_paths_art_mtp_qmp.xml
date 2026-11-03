@@ -1222,7 +1222,14 @@
     </path>
 
     <path name="ultrasound-mic">
-        <path name="qmp3"/>
+        <ctl name="TX_SWR_DMIC Enable" value="1" />
+        <ctl name="TX DEC4 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX4" value="SWR_MIC0" />
+        <ctl name="TX_AIF2_CAP Mixer DEC4" value="1" />
+        <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
+        <ctl name="TX WSA MUX4" value="NO_WSA"/>
+        <ctl name="TX PORT SEL MUX4" value="PORT0"/>
+        <path name="qmp3-normal" />
     </path>
 
     <path name="speaker-hdk">

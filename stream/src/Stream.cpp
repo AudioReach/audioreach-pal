@@ -52,12 +52,7 @@ std::mutex Stream::mBaseStreamMutex;
 std::mutex Stream::pauseMutex;
 
 Stream::Stream() {
-    rm = ResourceManager::getInstance();
-    if (PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
-        PAL_ERR(LOG_TAG, "Error:Sound card offline/standby, can not create stream");
-        usleep(SSR_RECOVERY);
-        throw std::runtime_error("Sound card offline/standby");
-    }
+
 }
 
  Stream::~Stream(){
@@ -112,6 +107,13 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
     }
     PAL_VERBOSE(LOG_TAG,"get RM instance success and noOfDevices %d \n", noOfDevices);
 
+    /* check sound card status */
+    if (PAL_CARD_STATUS_DOWN(rm->getSoundCardState())) {
+        PAL_ERR(LOG_TAG, "Error:Sound card offline/standby, can not create stream");
+        usleep(SSR_RECOVERY);
+        goto exit;
+    }
+
     palDevsAttr = (pal_device *)calloc(noOfDevices, sizeof(struct pal_device));
     if (!palDevsAttr) {
         PAL_ERR(LOG_TAG, "palDevsAttr not created");
@@ -163,7 +165,7 @@ Stream* Stream::create(struct pal_stream_attributes *sAttr, struct pal_device *d
             rm->isBtDevice(palDevsAttr[count].id)) {
             palDevsAttr[count].address = dAttr[i].address;
         }
-        PAL_VERBOSE(LOG_TAG, "count: %d, i: %d, length of dAttr custom_config: %d", count, i, strlen(dAttr[i].custom_config.custom_key));
+        PAL_VERBOSE(LOG_TAG, "count: %d, i: %d, length of dAttr custom_config: %zu", count, i, strlen(dAttr[i].custom_config.custom_key));
         if (strlen(dAttr[i].custom_config.custom_key)) {
             strlcpy(palDevsAttr[count].custom_config.custom_key, dAttr[i].custom_config.custom_key, PAL_MAX_CUSTOM_KEY_SIZE);
             PAL_DBG(LOG_TAG, "found custom key %s", dAttr[i].custom_config.custom_key);

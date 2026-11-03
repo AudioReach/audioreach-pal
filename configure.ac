@@ -150,6 +150,17 @@ AC_CONFIG_SUBDIRS([
         inc
         plugins/vui_interface/api/vui-interface
 ])
+AC_ARG_WITH([UvVoiceCueFeature],
+    AS_HELP_STRING([use UvVoiceCueFeature (default is no)]),
+    [with_UvVoiceCueFeature=$withval],
+    [with_UvVoiceCueFeature=no])
+AM_CONDITIONAL([COMPILE_UVVOICECUE_FEATURES], [test "x${with_UvVoiceCueFeature}" = "xyes"])
+
+AS_IF([test "x${with_UvVoiceCueFeature}" = "xno"],
+    [UVVOICECUE_FEATURE_FLAGS="-DUVVOICECUE_FEATURES_DISABLED"],
+    [UVVOICECUE_FEATURE_FLAGS=""])
+
+AC_SUBST([UVVOICECUE_FEATURE_FLAGS])
 
 AC_CONFIG_FILES([ Makefile \
 pal.pc \
@@ -257,11 +268,5 @@ plugins/PluginManager/Makefile \
 plugins/PluginManager/plugin_manager.pc \
 plugins/codecs/Makefile \
 plugins/codecs/codecs.pc ])
-
-AC_ARG_WITH([adsprpcd],
-    AS_HELP_STRING([compile adsprpcd (default is no)]),
-    [with_adsprpcd=$withval],
-    [with_adsprpcd=no])
-AM_CONDITIONAL([COMPILE_ADSPRPCD], [test "x${with_adsprpcd}" = "xyes"])
 
 AC_OUTPUT

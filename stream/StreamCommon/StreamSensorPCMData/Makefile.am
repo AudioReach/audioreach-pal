@@ -41,7 +41,7 @@ library_includedir = $(includedir)/streamsensorpcmdata_headers
 lib_LTLIBRARIES     = libstream_sensorpcmdata.la
 libstream_sensorpcmdata_la_SOURCES   = $(streamsensorpcmdata_sources)
 libstream_sensorpcmdata_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
-libstream_sensorpcmdata_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_sensorpcmdata_la_LIBADD    += -L${abs_top_builddir}/.libs -laudioreach-pal
 libstream_sensorpcmdata_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_sensorpcmdata_la_CPPFLAGS += -std=c++14
 libstream_sensorpcmdata_la_LDFLAGS   = -shared -avoid-version

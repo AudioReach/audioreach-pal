@@ -29,7 +29,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libfmq \
-    libar-pal \
+    libaudioreach-pal \
     vendor.qti.hardware.pal-V1-ndk
 
 LOCAL_HEADER_LIBRARIES := \

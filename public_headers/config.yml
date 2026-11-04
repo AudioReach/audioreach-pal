@@ -11,4 +11,4 @@ branches:
           - session/inc/Session.h
           - stream/inc/Stream.h
 abi_checks:
-  - path: build/usr/lib/libpal.so
+  - path: build/usr/lib/libaudioreach-pal.so

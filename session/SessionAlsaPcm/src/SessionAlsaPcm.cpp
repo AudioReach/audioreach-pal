@@ -52,6 +52,7 @@
 #include "asr_module_calibration_api.h"
 #include "sdz_api.h"
 #include "nmt_module_calibration_api.h"
+#include "fnn_plus_calibration_api_fvxv.h"
 #include <errno.h>
 #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
 
@@ -3060,7 +3061,7 @@ int SessionAlsaPcm::getParamWithTag(Stream *s __unused, int tagId, uint32_t para
         {
             pal_param_payload *out = NULL;
             payloadSize = sizeof(struct apm_module_param_data_t) +
-                          sizeof(pal_fnn_plus_doa_estimate_monitor_param_with_ts_t) +
+                          sizeof(fnn_plus_doa_estimate_monitor_param_with_ts_t) +
                           (TOTAL_DEGREES * sizeof(int16_t) * 2) * TOTAL_AXIS;
             if (payloadSize % 8 != 0)
                 payloadSize += (8 - payloadSize % 8);

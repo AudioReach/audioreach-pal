@@ -36,6 +36,7 @@
 
 #include "StreamPCM.h"
 #include "Session.h"
+#include "SessionAlsaPcm.h"
 #include "kvh2xml.h"
 #include "ResourceManager.h"
 #include "Device.h"
@@ -1107,7 +1108,11 @@ int32_t StreamPCM::getParameters(uint32_t param_id, void ** payload)
         }
         case PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP:
         {
-            status = session->getParamWithTag(this, DEVICE_FLUENCE, param_id, payload);
+            SessionAlsaPcm *sessionAlsa = dynamic_cast<SessionAlsaPcm *>(session);
+            if (sessionAlsa)
+                status = sessionAlsa->getParamWithTag(this, TAG_ECNS, param_id, payload);
+            else
+                status = -ENOSYS;
             break;
         }
         default:

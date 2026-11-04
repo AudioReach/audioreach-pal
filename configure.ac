@@ -7,7 +7,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
 # Initialize the pal package version 1.0.0
-AC_INIT([pal],1.0.3)
+AC_INIT([pal],2.0.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
@@ -23,9 +23,9 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 
-m4_define([LT_MAJOR], [1])
+m4_define([LT_MAJOR], [2])
 m4_define([LT_MINOR], [0])
-m4_define([LT_PATCH], [3])
+m4_define([LT_PATCH], [0])
 
 AC_SUBST([LT_VERSION], LT_MAJOR.LT_MINOR.LT_PATCH)
 AC_SUBST([LT_VERSION_NUMBER], LT_MAJOR:LT_MINOR:LT_PATCH)
@@ -40,6 +40,16 @@ AC_ARG_WITH([basemachine],
 
 AC_MSG_RESULT([$machine_selected])
 AC_SUBST([MACHINE_ENABLED],[$machine_selected])
+
+AC_ARG_ENABLE([upstream-support],
+        [  --enable-upstream-support  Enable upstream support],
+        [case "${enableval}" in
+           yes) upstream_support=true ;;
+           no)  upstream_support=false ;;
+        *) AC_MSG_ERROR([bad value ${enableval} for --enable-upstream-support]) ;;
+        esac],[upstream_support=false])
+
+AM_CONDITIONAL([ENABLE_UPSTREAM_SUPPORT], [test x$upstream_support = xtrue -o x$all = xtrue])
 
 AC_ARG_WITH([openwrt],
     AS_HELP_STRING([use openwrt (default is no)]),

@@ -75,6 +75,10 @@ libdev_speaker_la_CPPFLAGS += -DPAL_CUTILS_SUPPORTED
 libdev_speaker_la_LIBADD += -lcutils
 endif
 
+if ENABLE_SPKR_PROT_RX_FIRST
+libdev_speaker_la_CPPFLAGS += -DENABLE_SPKR_PROT_RX_FIRST
+endif
+
 if USE_G_STR_FUNC
 libdev_speaker_la_CPPFLAGS +=-Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

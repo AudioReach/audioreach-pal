@@ -68,6 +68,14 @@
 
 #ifdef PAL_CUTILS_SUPPORTED
 #include <cutils/str_parms.h>
+#else
+#include <map>
+#include <string>
+#include <sstream>
+#include <new>
+#include <cstring>
+#include <cstdlib>
+#include <errno.h>
 #endif
 
 
@@ -515,14 +523,71 @@ deregisterPeripheralCBFnPtr ResourceManager::mDeregisterPeripheralCb = nullptr;
 #endif
 //TODO:Needs to define below APIs so that functionality won't break
 #ifndef PAL_CUTILS_SUPPORTED
-int str_parms_get_str(struct str_parms *str_parms, const char *key,
-                      char *out_val, int len){return 0;}
-char *str_parms_to_str(struct str_parms *str_parms){return NULL;}
-int str_parms_add_str(struct str_parms *str_parms, const char *key,
-                      const char *value){return 0;}
-struct str_parms *str_parms_create(void){return NULL;}
-void str_parms_del(struct str_parms *str_parms, const char *key){return;}
-void str_parms_destroy(struct str_parms *str_parms){return;}
+struct str_parms {
+    std::map<std::string, std::string> map;
+};
+
+struct str_parms *str_parms_create(void)
+{
+    return new (std::nothrow) str_parms();
+}
+
+int str_parms_add_str(struct str_parms *p, const char *key, const char *value)
+{
+    if (!p || !key || !value)
+        return -EINVAL;
+
+    p->map[key] = value;
+    return 0;
+}
+
+int str_parms_get_str(struct str_parms *p, const char *key,
+                      char *out_val, int len)
+{
+    if (!p || !key || !out_val || len <= 0)
+        return -EINVAL;
+
+    auto it = p->map.find(key);
+    if (it == p->map.end())
+        return -ENOENT;
+
+    strncpy(out_val, it->second.c_str(), len - 1);
+    out_val[len - 1] = '\0';
+    return (int)it->second.size();
+}
+
+void str_parms_del(struct str_parms *p, const char *key)
+{
+    if (p && key)
+        p->map.erase(key);
+}
+
+char *str_parms_to_str(struct str_parms *p)
+{
+    if (!p || p->map.empty())
+        return NULL;
+
+    std::ostringstream oss;
+    bool first = true;
+    for (auto &kv : p->map) {
+        if (!first)
+            oss << ';';
+        oss << kv.first << '=' << kv.second;
+        first = false;
+    }
+
+    std::string s = oss.str();
+    char *out = (char*)malloc(s.size() + 1);
+    if (out)
+        memcpy(out, s.c_str(), s.size() + 1);
+
+    return out;
+}
+
+void str_parms_destroy(struct str_parms *p)
+{
+    delete p;
+}
 
 #endif
 

@@ -75,6 +75,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <string>
 #include<vector>
 #include "apm_api.h"
 
@@ -221,6 +222,9 @@ protected :
     size_t viCustomPayloadSize;
 
 private :
+    static bool isWsaHwmonName(const std::string &name);
+    static int readStringFromFile(const std::string &path, std::string &value);
+    static int readIntFromFile(const std::string &path, int &value);
 
 public:
     static std::thread mCalThread;

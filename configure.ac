@@ -86,6 +86,13 @@ AC_ARG_WITH([cutils],
      [with_cutils=$withval],
      [with_cutils=no])
 AM_CONDITIONAL([CUTILS_SUPPORTED], [test "x${with_cutils}" = "xyes"])
+AC_ARG_ENABLE([spkr-prot-rx-first],
+    AS_HELP_STRING([--enable-spkr-prot-rx-first],
+        [Enable speaker protection RX-first calibration path]),
+    [enable_spkr_prot_rx_first=$enableval],
+    [enable_spkr_prot_rx_first=no])
+AM_CONDITIONAL([ENABLE_SPKR_PROT_RX_FIRST],
+    [test "x${enable_spkr_prot_rx_first}" = "xyes"])
 AM_CONDITIONAL([IS_SDXLEMUR], [test x$IS_SDXLEMUR_TARGET = xtrue])
 AM_CONDITIONAL([IS_SA525M], [test x$IS_SA525M_TARGET = xtrue])
 

@@ -36,6 +36,7 @@
 
 #include "StreamPCM.h"
 #include "Session.h"
+#include "SessionAlsaPcm.h"
 #include "kvh2xml.h"
 #include "ResourceManager.h"
 #include "Device.h"
@@ -1094,6 +1095,7 @@ int32_t StreamPCM::getDeviceMute(pal_stream_direction_t dir, bool *state)
 int32_t StreamPCM::getParameters(uint32_t param_id, void ** payload)
 {
     pal_param_payload *param_payload = nullptr;
+    int32_t status = 0;
     PAL_DBG(LOG_TAG, "Enter.");
 
     switch(param_id) {
@@ -1104,15 +1106,24 @@ int32_t StreamPCM::getParameters(uint32_t param_id, void ** payload)
             getDeviceMute(deviceMutePayload->dir, &(deviceMutePayload->mute));
             break;
         }
+        case PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP:
+        {
+            SessionAlsaPcm *sessionAlsa = dynamic_cast<SessionAlsaPcm *>(session);
+            if (sessionAlsa)
+                status = sessionAlsa->getParamWithTag(this, TAG_ECNS, param_id, payload);
+            else
+                status = -ENOSYS;
+            break;
+        }
         default:
             PAL_INFO(LOG_TAG, "Not supported for param id %u", param_id);
             break;
     }
 
-    return 0;
+    return status;
 }
 
-int32_t  StreamPCM::setParameters(uint32_t param_id, void *payload)
+int32_t StreamPCM::setParameters(uint32_t param_id, void *payload)
 {
     int32_t status = 0;
     int32_t setConfigStatus = 0;

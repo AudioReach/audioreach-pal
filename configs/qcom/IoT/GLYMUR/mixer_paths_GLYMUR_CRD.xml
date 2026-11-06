@@ -473,6 +473,10 @@
         <ctl name="HPHR Volume" value="20" />
         <ctl name="CLSH Switch" value="1" />
         <ctl name="LO Switch" value="1" />
+        <ctl name="OT 43 Switch" value="1" />
+        <ctl name="OT 45 Switch" value="1" />
+        <ctl name="FU 6 Channel Switch" value="1" />
+        <ctl name="FU 6 Channel Volume" value="30000" />
     </path>
     <path name="line">
         <path name="headphones" />

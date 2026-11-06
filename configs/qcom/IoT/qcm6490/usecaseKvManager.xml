@@ -181,8 +181,6 @@
                 <graph_kv key="0xB1000000" value="0xB1000003"/>
                 <!-- INSTANCE - INSTANCE_1 -->
                 <graph_kv key="0xAB000000" value="0x1"/>
-                <!-- DEVICE - SPEAKER_MIC -->
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
             <keys_and_values VUIModuleType="GMM" Instance="2">
                 <!-- STREAM_CONFIG - STREAM_CFG_VUI_GMM -->
@@ -191,8 +189,6 @@
                 <graph_kv key="0xB1000000" value="0xB1000003"/>
                 <!-- INSTANCE - INSTANCE_2 -->
                 <graph_kv key="0xAB000000" value="0x2"/>
-                <!-- DEVICE - SPEAKER_MIC -->
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
             <keys_and_values VUIModuleType="PDK" Instance="1">
                 <!-- STREAM_CONFIG - STREAM_CFG_VUI_PDK -->
@@ -201,7 +197,6 @@
                 <graph_kv key="0xB1000000" value="0xB1000003"/>
                 <!-- INSTANCE - INSTANCE_1 -->
                 <graph_kv key="0xAB000000" value="0x1"/>
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
             <keys_and_values VUIModuleType="PDK" Instance="2">
                  <!-- STREAM_CONFIG - STREAM_CFG_VUI_PDK -->
@@ -210,7 +205,6 @@
                  <graph_kv key="0xB1000000" value="0xB1000003"/>
                  <!-- INSTANCE - INSTANCE_2 -->
                  <graph_kv key="0xAB000000" value="0x2"/>
-                 <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
             <keys_and_values VUIModuleType="PDK" Instance="3">
                 <!-- STREAM_CONFIG - STREAM_CFG_VUI_PDK -->
@@ -219,7 +213,6 @@
                 <graph_kv key="0xB1000000" value="0xB1000003"/>
                 <!-- INSTANCE - INSTANCE_3 -->
                 <graph_kv key="0xAB000000" value="0x3"/>
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
             </keys_and_values>
             <keys_and_values VUIModuleType="HOTWORD" Instance="1">
                 <!-- STREAM_CONFIG - STREAM_CFG_VUI_HW -->
@@ -450,8 +443,8 @@
         <!-- In Handset VA MIC Device -->
         <device id="PAL_DEVICE_IN_HANDSET_VA_MIC">
             <keys_and_values>
-                <!-- DEVICETX - HANDSETMIC_VA -->
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
+                <!-- DEVICETX - SPEAKER_MIC--->
+                <graph_kv key="0xA3000000" value="0xA3000001"/>
             </keys_and_values>
         </device>
         <!-- In Headset VA MIC Device -->
@@ -1084,6 +1077,13 @@
         </devicepp>
         <!-- IN Speaker MIC DevicePPs -->
         <devicepp id="PAL_DEVICE_IN_SPEAKER_MIC">
+            <keys_and_values StreamType="PAL_STREAM_VOICE_UI"
+                DevicePPType="SINGLE_MIC_48KHZ_16BIT_FFECNS,SINGLE_MIC_16KHZ_16BIT_FFECNS,DUAL_MIC_48KHZ_16BIT_FFECNS,TRI_MIC_48KHZ_16BIT_FFECNS,QUAD_MIC_48KHZ_16BIT_FFECNS">
+                <!-- DEVICETX - SPEAKER_MIC -->
+                <graph_kv key="0xA3000000" value="0xA3000001"/>
+                <!-- DEVICEPP_TX - DEVICEPP_TX_FLUENCE_FFECNS -->
+                <graph_kv key="0xAD000000" value="0xAD000001"/>
+            </keys_and_values>
             <keys_and_values StreamType="PAL_STREAM_VOICE_RECOGNITION">
                 <!-- DEVICETX - SPEAKER_MIC -->
                 <graph_kv key="0xA3000000" value="0xA3000001"/>
@@ -1197,9 +1197,9 @@
         <!-- IN Handset_VA_MIC DevicePPs -->
         <devicepp id="PAL_DEVICE_IN_HANDSET_VA_MIC">
             <keys_and_values StreamType="PAL_STREAM_ACD,PAL_STREAM_VOICE_UI,PAL_STREAM_SENSOR_PCM_DATA"
-                DevicePPType="SINGLE_MIC_16KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS,DUAL_MIC_16KHZ_16BIT_FFECNS,DUAL_MIC_48KHZ_16BIT_FFECNS,TRI_MIC_16KHZ_16BIT_FFECNS,QUAD_MIC_16KHZ_16BIT_FFECNS">
-                <!-- DEVICETX - HANDSETMIC_VA -->
-                <graph_kv key="0xA3000000" value="0xA3000006"/>
+                DevicePPType="SINGLE_MIC_16KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_FFECNS,SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS,DUAL_MIC_16KHZ_16BIT_FFECNS,DUAL_MIC_48KHZ_16BIT_FFECNS,TRI_MIC_48KHZ_16BIT_FFECNS,QUAD_MIC_48KHZ_16BIT_FFECNS">
+                <!-- DEVICETX - SPEAKERMIC_VA -->
+                <graph_kv key="0xA3000000" value="0xA3000001"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_FLUENCE_FFECNS -->
                 <graph_kv key="0xAD000000" value="0xAD000001"/>
             </keys_and_values>

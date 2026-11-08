@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
+
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are
+* met:
+*     * Redistributions of source code must retain the above copyright
+*       notice, this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above
+*       copyright notice, this list of conditions and the following
+*       disclaimer in the documentation and/or other materials provided
+*       with the distribution.
+*     * Neither the name of The Linux Foundation nor the names of its
+*       contributors may be used to endorse or promote products derived
+*       from this software without specific prior written permission.
+
+* THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+* BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+* BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+* OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+* IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+* Changes from Qualcomm Technologies, Inc. are provided under the following license:
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+* -->
+
+<mixer>
+    <!-- These are the initial mixer settings -->
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
+
+    <!-- Codec controls -->
+    <!-- WSA controls -->
+    <ctl name="WSA RX0 MUX" value="ZERO" />
+    <ctl name="WSA RX1 MUX" value="ZERO" />
+    <ctl name="WSA_RX0 INP0" value="ZERO" />
+    <ctl name="WSA_RX1 INP0" value="ZERO" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="0" />
+    <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="0" />
+    <ctl name="SpkrLeft COMP Switch" value="0" />
+    <ctl name="SpkrRight COMP Switch" value="0" />
+    <ctl name="SpkrLeft VISENSE Switch" value="0" />
+    <ctl name="SpkrRight VISENSE Switch" value="0" />
+    <ctl name="SpkrLeft CPS Switch" value="0" />
+    <ctl name="SpkrRight CPS Switch" value="0" />
+    <ctl name="SpkrLeft PBR Switch" value="0" />
+    <ctl name="SpkrRight PBR Switch" value="0" />
+    <ctl name="SpkrLeft WSA MODE" value="0" />
+    <ctl name="SpkrRight WSA MODE" value="0" />
+
+    <!-- TX Controls -->
+    <ctl name="VA_AIF1_CAP Mixer DEC0" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC1" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC2" value="0" />
+    <ctl name="VA_AIF1_CAP Mixer DEC3" value="0" />
+    <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC1 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC2 MUX" value="MSM_DMIC" />
+    <ctl name="VA DEC3 MUX" value="MSM_DMIC" />
+    <ctl name="VA DMIC MUX0" value="ZERO" />
+    <ctl name="VA DMIC MUX1" value="ZERO" />
+    <ctl name="VA DMIC MUX2" value="ZERO" />
+    <ctl name="VA DMIC MUX3" value="ZERO" />
+    <ctl name="VA_DEC0 MODE" value="ADC_DEFAULT" />
+
+    <!-- Volume controls -->
+    <ctl name="WSA_RX0 Digital Volume" value="74" />
+    <ctl name="WSA_RX1 Digital Volume" value="74" />
+
+    <ctl name="VA_DEC0 Volume" value="84" />
+    <ctl name="VA_DEC1 Volume" value="84" />
+    <ctl name="VA_DEC2 Volume" value="84" />
+    <ctl name="VA_DEC3 Volume" value="84" />
+
+    <!-- Compander controls -->
+    <ctl name="WSA_COMP1 Switch" value="0" />
+    <ctl name="WSA_COMP2 Switch" value="0" />
+
+    <!-- vbat related data -->
+    <ctl name="WSA_Softclip0 Enable" value="0" />
+    <ctl name="WSA_Softclip1 Enable" value="0" />
+
+    <!-- Codec controls end -->
+
+    <!-- These are actual sound device specific mixer settings -->
+
+    <path name="dmic0">
+        <ctl name="VA DEC0 MUX" value="VA_DMIC" />
+        <ctl name="VA DMIC MUX0" value="DMIC0" />
+        <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="VA_DEC0 Volume" value="100" />
+    </path>
+
+    <path name="dmic1">
+        <ctl name="VA DEC1 MUX" value="VA_DMIC" />
+        <ctl name="VA DMIC MUX1" value="DMIC1" />
+        <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+        <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="dmic2">
+        <ctl name="VA DEC2 MUX" value="VA_DMIC" />
+        <ctl name="VA DMIC MUX2" value="DMIC2" />
+        <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+        <ctl name="VA_DEC2 Volume" value="100" />
+    </path>
+
+    <path name="dmic3">
+        <ctl name="VA DEC3 MUX" value="VA_DMIC" />
+        <ctl name="VA DMIC MUX3" value="DMIC3" />
+        <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+        <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="speaker">
+        <ctl name="WSA RX0 MUX" value="AIF1_PB" />
+        <ctl name="WSA RX1 MUX" value="AIF1_PB" />
+        <ctl name="WSA_RX0 INP0" value="RX0" />
+        <ctl name="WSA_RX1 INP0" value="RX1" />
+        <ctl name="WSA_COMP1 Switch" value="1" />
+        <ctl name="WSA_COMP2 Switch" value="1" />
+        <ctl name="SpkrLeft WSA MODE" value="0" />
+        <ctl name="SpkrLeft COMP Switch" value="1" />
+        <ctl name="SpkrLeft BOOST Switch" value="1" />
+        <ctl name="SpkrLeft DAC Switch" value="1" />
+        <ctl name="SpkrLeft VISENSE Switch" value="0" />
+        <ctl name="SpkrRight WSA MODE" value="0" />
+        <ctl name="SpkrRight COMP Switch" value="1" />
+        <ctl name="SpkrRight BOOST Switch" value="1" />
+        <ctl name="SpkrRight DAC Switch" value="1" />
+        <ctl name="SpkrRight VISENSE Switch" value="0" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+    <path name="speaker-prot">
+        <path name="speaker" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+    <path name="play-fm">
+    </path>
+
+    <path name="speaker-mic">
+        <path name="dmic0" />
+    </path>
+
+    <path name="vi-feedback">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+        <ctl name="WSA_RX0 Digital Volume" value="84" />
+        <ctl name="WSA_RX1 Digital Volume" value="84" />
+    </path>
+
+    <path name="vi-feedback-mono-1">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_1" value="1" />
+    </path>
+
+    <path name="vi-feedback-mono-2">
+        <ctl name="WSA_AIF_VI Mixer WSA_SPKR_VI_2" value="1" />
+    </path>
+
+    <path name="handset-mic">
+        <path name="dmic0" />
+    </path>
+
+    <path name="usb-headphones">
+    </path>
+
+    <path name="display-port">
+    </path>
+
+    <path name="display-port1">
+    </path>
+
+    <path name="bt-sco">
+    </path>
+
+    <path name="bt-sco-mic">
+    </path>
+
+    <path name="usb-headset-mic">
+    </path>
+
+    <path name="va-mic-mono">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA DEC0 MUX" value="MSM_DMIC" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+    </path>
+
+    <path name="va-mic-dmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX1" value="DMIC1" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-tmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX2" value="DMIC2" />
+       <ctl name="VA DMIC MUX3" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic-qmic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX1" value="DMIC1" />
+       <ctl name="VA DMIC MUX2" value="DMIC2" />
+       <ctl name="VA DMIC MUX3" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <path name="va-mic">
+       <path name="va-mic-mono" />
+    </path>
+
+    <!-- Dual MIC devices -->
+    <path name="handset-dmic-endfire">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX1" value="DMIC1" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+
+    <path name="speaker-dmic-endfire">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC1" />
+       <ctl name="VA DMIC MUX1" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+    </path>
+    <!-- Tri MIC devices -->
+
+    <path name="three-mic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX2" value="DMIC2" />
+       <ctl name="VA DMIC MUX3" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+    <!-- Quad MIC devices -->
+
+    <path name="quad-mic">
+       <ctl name="VA_AIF1_CAP Mixer DEC0" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC1" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC2" value="1" />
+       <ctl name="VA_AIF1_CAP Mixer DEC3" value="1" />
+       <ctl name="VA DMIC MUX0" value="DMIC0" />
+       <ctl name="VA DMIC MUX1" value="DMIC1" />
+       <ctl name="VA DMIC MUX2" value="DMIC2" />
+       <ctl name="VA DMIC MUX3" value="DMIC3" />
+       <ctl name="VA_DEC0 Volume" value="100" />
+       <ctl name="VA_DEC1 Volume" value="100" />
+       <ctl name="VA_DEC2 Volume" value="100" />
+       <ctl name="VA_DEC3 Volume" value="100" />
+    </path>
+
+</mixer>

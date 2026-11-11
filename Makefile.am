@@ -134,6 +134,8 @@ else
 libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/qcs615/mixer_paths_TALOS_EVK.xml \
                       ./configs/qcom/IoT/qcs615/resourcemanager_TALOS_EVK.xml \
+                      ./configs/qcom/IoT/qcs615/mixer_paths_TALOS_LYRA.xml \
+                      ./configs/qcom/IoT/qcs615/resourcemanager_TALOS_LYRA.xml \
                       ./configs/qcom/IoT/qcs8300/mixer_paths_MONACO_EVK.xml \
                       ./configs/qcom/IoT/qcs8300/resourcemanager_MONACO_EVK.xml \
                       ./configs/qcom/IoT/qcs6490/mixer_paths_QCS6490_RB3Gen2.xml \
@@ -173,6 +175,10 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MONACO_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_TALOS_EVK.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_TALOS_EVK.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_TALOS_LYRA.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_TALOS_LYRA.xml
+	ln -sf mixer_paths_TALOS_LYRA.xml $(DESTDIR)$(root_etcdir)/mixer_paths_qcs615_snd_card.xml
+	ln -sf resourcemanager_TALOS_LYRA.xml $(DESTDIR)$(root_etcdir)/resourcemanager_qcs615_snd_card.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/usecaseKvManager.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_QCS6490_RB3Gen2.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_QCS6490_RB3Gen2.xml

@@ -101,12 +101,13 @@ extern "C" void CreateDisplayDevice(struct pal_device *device,
 
 class DisplayPort : public Device
 {
-    uint32_t dp_controller;
-    uint32_t dp_stream;
+    uint32_t dp_controller = 0;
+    uint32_t dp_stream = 0;
 protected:
     int configureDpEndpoint();
     static std::shared_ptr<Device> dpObj;
     static std::shared_ptr<Device> hdmiObj;
+    static std::shared_ptr<Device> dp1Obj;
     DisplayPort(struct pal_device *device, std::shared_ptr<ResourceManager> Rm);
 public:
     int start();

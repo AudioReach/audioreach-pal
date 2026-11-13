@@ -33,6 +33,7 @@
  */
 
 #define LOG_TAG "PAL: DisplayPort"
+#include <cstdlib>
 #include "DisplayPortUpstream.h"
 #include "SessionAlsaUtils.h"
 #include "ResourceManager.h"
@@ -79,6 +80,8 @@ enum eld_versions {
 #define HDMI_STREAM         0
 #define DP_CONTROLLER       0
 #define DP_STREAM           0
+#define DP1_CONTROLLER      1
+#define DP1_STREAM          0
 #define ELD_FIXED_BYTES     20
 #define ELD_MAX_MNL         16
 
@@ -122,6 +125,7 @@ static struct extDispState {
 
 std::shared_ptr<Device> DisplayPort::dpObj = nullptr;
 std::shared_ptr<Device> DisplayPort::hdmiObj = nullptr;
+std::shared_ptr<Device> DisplayPort::dp1Obj = nullptr;
 
 std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
                                              std::shared_ptr<ResourceManager> Rm)
@@ -137,24 +141,33 @@ std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
             hdmiObj = sp;
         }
         return hdmiObj;
-    } else if ((device->id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-      (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1)) {
+    } else if (device->id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         if (!dpObj) {
             std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
             dpObj = sp;
         }
         return dpObj;
+    } else if (device->id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (!dp1Obj) {
+            std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
+            dp1Obj = sp;
+        }
+        return dp1Obj;
     }
     return NULL;
 }
 
 std::shared_ptr<Device> DisplayPort::getObject(pal_device_id_t id)
 {
-    if ((id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
-        (id == PAL_DEVICE_OUT_AUX_DIGITAL_1)) {
+    if (id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         if (dpObj) {
             if (dpObj->getSndDeviceId() == id)
                 return dpObj;
+        }
+    } else if (id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        if (dp1Obj) {
+            if (dp1Obj->getSndDeviceId() == id)
+                return dp1Obj;
         }
     } else if (id == PAL_DEVICE_OUT_HDMI) {
         if (hdmiObj) {
@@ -277,9 +290,23 @@ int DisplayPort::configureDpEndpoint()
         PAL_ERR(LOG_TAG, "Failed to get tag info %x, status = %d", DEVICE_HW_ENDPOINT_RX, status);
         goto exit;
     }
+    /* Derive controller/stream from the device id here so the DSP payload is
+     * correct even when start() is reached without init() having run (e.g. the
+     * PipeWire pw-play path). Mirrors the mapping in init(). */
+    if (deviceAttr.id == PAL_DEVICE_OUT_HDMI) {
+        dp_controller = HDMI_CONTROLLER;
+        dp_stream = HDMI_STREAM;
+    } else if (deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL) {
+        dp_controller = DP_CONTROLLER;
+        dp_stream = DP_STREAM;
+    } else if (deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        dp_controller = DP1_CONTROLLER;
+        dp_stream = DP1_STREAM;
+    }
     cfg.channel_allocation = getDeviceChannelAllocation(deviceAttr.config.ch_info.channels);
     cfg.mst_idx = dp_stream;
     cfg.dptx_idx = dp_controller;
+    PAL_INFO(LOG_TAG, "configureDeviceCustomPayload: dptx_idx=%d mst_idx=%d", cfg.dptx_idx, cfg.mst_idx);
     builder->payloadDpAudioConfig(&payload, &payloadSize, miid, &cfg);
     if (payloadSize) {
         status = updateCustomPayload(payload, payloadSize);
@@ -313,13 +340,17 @@ int DisplayPort::init(pal_param_device_connection_t device_conn)
     if (device_conn.id == PAL_DEVICE_OUT_HDMI) {
         dp_controller = HDMI_CONTROLLER;
         dp_stream = HDMI_STREAM;
-        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_HDMI;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_HDMI;
     }
-    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL ||
-        device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL) {
         dp_controller = DP_CONTROLLER;
         dp_stream = DP_STREAM;
-        extDisp[dp_controller][dp_stream].type = EXT_DISPLAY_TYPE_DP;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_DP;
+    }
+    else if (device_conn.id == PAL_DEVICE_OUT_AUX_DIGITAL_1) {
+        dp_controller = DP1_CONTROLLER;
+        dp_stream = DP1_STREAM;
+        extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER].type = EXT_DISPLAY_TYPE_DP;
     }
     PAL_DBG(LOG_TAG," DP contr: %d  stream: %d", dp_controller, dp_stream);
     cacheEld(mixer, dp_controller, dp_stream, dp_config->pcmId);
@@ -359,7 +390,7 @@ int DisplayPort::getEldInfo(struct audio_mixer *mixer, int controller, int strea
     struct mixer_ctl *ctl = NULL;
     char mixerCtlName[MIXER_PATH_MAX_LENGTH] = {0};
 
-    state = &extDisp[controller][stream];
+    state = &extDisp[controller % MAX_CONTROLLERS][stream % MAX_STREAMS_PER_CONTROLLER];
     if (state->valid) {
         /* use cached eld */
         return 0;
@@ -427,7 +458,7 @@ int32_t DisplayPort::isSampleRateSupported(uint32_t sampleRate)
     PAL_DBG(LOG_TAG, "sampleRate %d", sampleRate);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -456,7 +487,7 @@ int32_t DisplayPort::isChannelSupported(uint32_t numChannels)
     PAL_DBG(LOG_TAG, "numChannels %u", numChannels);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -490,7 +521,7 @@ int32_t DisplayPort::isBitWidthSupported(uint32_t bitWidth)
         return rc;
     }
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -517,7 +548,7 @@ int32_t DisplayPort::checkAndUpdateBitWidth(uint32_t *bitWidth)
     PAL_DBG(LOG_TAG, "bitWidth %u", *bitWidth);
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (!(state && state->eldInfo)) {
         rc = -EINVAL;
         PAL_ERR(LOG_TAG, "ELD not available");
@@ -1546,7 +1577,7 @@ bool DisplayPort::isSupportedSR(eldAudioInfo* info, int sr)
     int i = 0;
     struct extDispState *state = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1571,7 +1602,7 @@ int DisplayPort::getMaxChannel()
     int max_channel = 2;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1620,7 +1651,7 @@ int DisplayPort::getHighestSupportedSR()
     struct extDispState *state = NULL;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;
@@ -1655,7 +1686,7 @@ int DisplayPort::getHighestSupportedBps()
     struct extDispState *state = NULL;
     eldAudioInfo *info = NULL;
 
-    state = &extDisp[dp_controller][dp_stream];
+    state = &extDisp[dp_controller % MAX_CONTROLLERS][dp_stream % MAX_STREAMS_PER_CONTROLLER];
     if (state && state->eldInfo)
     {
         info = (eldAudioInfo*) state->eldInfo;

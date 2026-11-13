@@ -162,7 +162,9 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/HAWI/mixer_paths_HAWI_MTP.xml \
                       ./configs/qcom/IoT/HAWI/resourcemanager_HAWI_MTP.xml \
                       ./configs/qcom/IoT/arduino_monza/mixer_paths_arduino_monza.xml \
-                      ./configs/qcom/IoT/arduino_monza/resourcemanager_arduino_monza.xml
+                      ./configs/qcom/IoT/arduino_monza/resourcemanager_arduino_monza.xml \
+                      ./configs/qcom/IoT/eliza/mixer_paths_eliza_cqs_evk.xml \
+                      ./configs/qcom/IoT/eliza/resourcemanager_eliza_cqs_evk.xml
 
 
 # install essential xml files under /etc
@@ -205,6 +207,8 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_arduino_monza.xml
 	ln -sf mixer_paths_arduino_monza.xml $(DESTDIR)$(root_etcdir)/mixer_paths_monaco_gertrude.xml
 	ln -sf resourcemanager_arduino_monza.xml $(DESTDIR)$(root_etcdir)/resourcemanager_monaco_gertrude.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_eliza_cqs_evk.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_eliza_cqs_evk.xml
 endif
 
 if COMPILE_ADSPRPCD

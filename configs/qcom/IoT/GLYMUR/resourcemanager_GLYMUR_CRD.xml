@@ -304,7 +304,7 @@
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_VA_MIC</id>
             <back_end_name>CODEC_DMA-LPAIF_VA-TX-0</back_end_name>
-            <max_channels>2</max_channels>
+            <max_channels>4</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
             <bit_width>16</bit_width>
@@ -727,6 +727,20 @@
                 <param snd_name="va-mic-dmic" />
                 <param ec_ref="false" />
             </capture_profile>
+            <capture_profile name="TRI_MIC_16KHZ_16BIT_RAW_LPI">
+                <param sample_rate="16000" />
+                <param channels="3" />
+                <param bit_width="16" />
+                <param snd_name="va-mic-tmic-lpi" />
+                <param ec_ref="false" />
+            </capture_profile>
+            <capture_profile name="QUAD_MIC_16KHZ_16BIT_RAW_LPI">
+                <param sample_rate="16000" />
+                <param channels="4" />
+                <param bit_width="16" />
+                <param snd_name="va-mic-qmic-lpi" />
+                <param ec_ref="false" />
+            </capture_profile>
             <capture_profile name="DUAL_MIC_16KHZ_16BIT_FFNS">
                 <param sample_rate="16000" />
                 <param channels="2" />
@@ -755,6 +769,13 @@
                 <param snd_name="va-mic-dmic" />
                 <param ec_ref="true" />
             </capture_profile>
+            <capture_profile name="DUAL_MIC_48KHZ_16BIT_FFECNS">
+                <param sample_rate="48000" />
+                <param channels="2" />
+                <param bit_width="16" />
+                <param snd_name="va-mic-dmic" />
+                <param ec_ref="true" />
+            </capture_profile>
             <capture_profile name="TRI_MIC_16KHZ_16BIT_FFECNS">
                 <param sample_rate="16000" />
                 <param channels="3" />
@@ -762,8 +783,22 @@
                 <param snd_name="va-mic-tmic" />
                 <param ec_ref="true" />
             </capture_profile>
+            <capture_profile name="TRI_MIC_48KHZ_16BIT_FFECNS">
+                <param sample_rate="48000" />
+                <param channels="3" />
+                <param bit_width="16" />
+                <param snd_name="va-mic-tmic" />
+                <param ec_ref="true" />
+            </capture_profile>
             <capture_profile name="QUAD_MIC_16KHZ_16BIT_FFECNS">
                 <param sample_rate="16000" />
+                <param channels="4" />
+                <param bit_width="16" />
+                <param snd_name="va-mic-qmic" />
+                <param ec_ref="true" />
+            </capture_profile>
+            <capture_profile name="QUAD_MIC_48KHZ_16BIT_FFECNS">
+                <param sample_rate="48000" />
                 <param channels="4" />
                 <param bit_width="16" />
                 <param snd_name="va-mic-qmic" />

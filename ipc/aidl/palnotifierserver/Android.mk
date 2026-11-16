@@ -29,7 +29,7 @@ LOCAL_SHARED_LIBRARIES := \
     libbase \
     libcutils \
     libutils \
-    libar-pal \
+    libaudioreach-pal \
     vendor.qti.hardware.pal-V1-ndk \
     vendor.qti.hardware.paleventnotifier-V3-ndk
 

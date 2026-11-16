@@ -79,7 +79,7 @@
 
     <!-- Speaker playback: off-chip smart amp via Secondary TDM RX -->
     <path name="speaker">
-        <ctl name="Rx Slot Mask" value="3" />
+        <ctl name="Rx Slot Mask" value="1" />
         <ctl name="Usage Mode" value="3" />
         <ctl name="Speaker Volume" value="72" />
     </path>
@@ -126,14 +126,17 @@
         <ctl name="RX INT1 DEM MUX" value="CLSH_DSM_OUT" />
         <ctl name="RX_COMP1 Switch" value="1" />
         <ctl name="RX_COMP2 Switch" value="1" />
-        <ctl name="RX_RX0 Digital Volume" value="50" />
-        <ctl name="RX_RX1 Digital Volume" value="50" />
+        <ctl name="RX_RX0 Digital Volume" value="84" />
+        <ctl name="RX_RX1 Digital Volume" value="84" />
+        <ctl name="ADC1 Volume" value="12" />
+        <ctl name="ADC2 Volume" value="12" />
         <ctl name="HPHL_RDAC Switch" value="1" />
         <ctl name="HPHR_RDAC Switch" value="1" />
         <ctl name="HPHR_COMP Switch" value="1" />
         <ctl name="HPHL_COMP Switch" value="1" />
         <ctl name="HPHL Switch" value="1" />
         <ctl name="HPHR Switch" value="1" />
+        <ctl name="CLSH Switch" value="1" />
         <ctl name="HPHR Volume" value="20" />
         <ctl name="HPHL Volume" value="20" />
     </path>
@@ -145,12 +148,16 @@
     <!-- Wired headset mic: analog mic via on-chip WCD codec -->
     <path name="amic2">
         <ctl name="TX DEC0 MUX" value="SWR_MIC" />
-        <ctl name="TX SMIC MUX0" value="ADC1" />
+        <ctl name="TX SMIC MUX0" value="SWR_MIC1" />
         <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
-        <ctl name="ADC2 MUX" value="INP2" />
+        <ctl name="ADC2 MUX" value="CH2_AMIC2" />
         <ctl name="ADC2_MIXER Switch" value="1" />
+        <ctl name="ADC2 Switch" value="1" />
+        <ctl name="TX1 MODE" value="ADC_LP" />
+        <ctl name="TX PORT SEL MUX0" value="PORT1" />
+        <ctl name="TX WSA MUX0" value="NO_WSA" />
         <ctl name="TX_DEC0 Volume" value="80" />
-        <ctl name="ADC2 Volume" value="20" />
+        <ctl name="ADC2 Volume" value="10" />
     </path>
 
     <path name="headset-mic">

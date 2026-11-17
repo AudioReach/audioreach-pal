@@ -473,13 +473,21 @@
         <ctl name="HPHR Volume" value="20" />
         <ctl name="CLSH Switch" value="1" />
         <ctl name="LO Switch" value="1" />
+        <ctl name="OT 43 Switch" value="1" />
+        <ctl name="OT 45 Switch" value="1" />
+        <ctl name="FU 6 Channel Switch" value="1" />
+        <ctl name="FU 6 Channel Volume" value="30000" />
     </path>
     <path name="line">
         <path name="headphones" />
     </path>
 
     <path name="headset-mic">
-        <path name="amic2" />
+        <ctl name="TX DEC0 MUX" value="SWR_MIC" />
+        <ctl name="TX SMIC MUX0" value="SWR_MIC0" />
+        <ctl name="TX_AIF1_CAP Mixer DEC0" value="1" />
+        <ctl name="DEC0 MODE" value="ADC_DEFAULT" />
+        <ctl name="TX_DEC0 Volume" value="84" />
     </path>
 
     <path name="usb-headphones">

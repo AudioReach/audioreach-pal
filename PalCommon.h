@@ -132,3 +132,5 @@ extern uint32_t pal_log_lvl;
               static_cast<long long>(duration));                                            \
         return result;                                                                      \
     }())
+
+/* CI test: trigger the ABI check, do not merge */

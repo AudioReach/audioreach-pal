@@ -13,9 +13,12 @@ if [ ! -d "${GITHUB_WORKSPACE}/install" ]; then
     echo "SDK_NAME environment variable is not set. Fetching from JSON."
     if curl -fsSL -o target_image.json "${url}"; then
         SDK=$(jq -r 'to_entries[0].value.SDK_name' target_image.json)
+        # Targets pinned to another meta-audioreach branch (e.g. the 6.18
+        # kernel builds from wrynose) publish their SDK under that branch
+        SDK_BRANCH=$(jq -r 'to_entries[0].value.Meta_audioreach_branch // "master"' target_image.json)
         if [ -n "$SDK" ] && [ "$SDK" != "null" ]; then
             export SDK_NAME="$SDK"
-            echo "SDK_NAME set to ${SDK_NAME}"
+            echo "SDK_NAME set to ${SDK_NAME} (branch ${SDK_BRANCH})"
         else
             echo "Error: SDK_name not found in JSON." >&2
             exit 3
@@ -24,7 +27,18 @@ if [ ! -d "${GITHUB_WORKSPACE}/install" ]; then
         echo "Failed to fetch target_image.json from $url" >&2
         exit 1
     fi
-    if aws s3 cp s3://qli-prd-audior-gh-artifacts/AudioReach/meta-audioreach/post_merge_build/${SDK_NAME} "${GITHUB_WORKSPACE}"; then
+    # Each post-merge run uploads under post_merge_build/<branch>/<run>/,
+    # so pick the most recent copy of the SDK for the branch
+    s3_bucket="qli-prd-audior-gh-artifacts"
+    s3_prefix="AudioReach/meta-audioreach/post_merge_build/${SDK_BRANCH}/"
+    sdk_key=$(aws s3 ls "s3://${s3_bucket}/${s3_prefix}" --recursive \
+        | awk -v name="/${SDK_NAME}\$" '$4 ~ name' | sort | tail -n 1 | awk '{print $4}' || true)
+    if [ -z "${sdk_key}" ]; then
+        echo "No ${SDK_NAME} found under s3://${s3_bucket}/${s3_prefix}" >&2
+        exit 1
+    fi
+    echo "Using SDK s3://${s3_bucket}/${sdk_key}"
+    if aws s3 cp "s3://${s3_bucket}/${sdk_key}" "${GITHUB_WORKSPACE}/${SDK_NAME}"; then
         echo "SDK downloaded successfully."
         chmod 777 "${GITHUB_WORKSPACE}/${SDK_NAME}"
     else

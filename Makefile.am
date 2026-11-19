@@ -161,6 +161,8 @@ libpal_la_list      = ./configs/qcom/IoT/qcm6490/usecaseKvManager.xml \
                       ./configs/qcom/IoT/NORD/resourcemanager_NORD_RIDE.xml \
                       ./configs/qcom/IoT/HAWI/mixer_paths_HAWI_MTP.xml \
                       ./configs/qcom/IoT/HAWI/resourcemanager_HAWI_MTP.xml \
+                      ./configs/qcom/IoT/MAILI/mixer_paths_MAILI_MTP.xml \
+                      ./configs/qcom/IoT/MAILI/resourcemanager_MAILI_MTP.xml \
                       ./configs/qcom/IoT/arduino_monza/mixer_paths_arduino_monza.xml \
                       ./configs/qcom/IoT/arduino_monza/resourcemanager_arduino_monza.xml
 
@@ -201,6 +203,8 @@ install-data-hook:
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_NORD_RIDE.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_HAWI_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_HAWI_MTP.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_MAILI_MTP.xml
+	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_MAILI_MTP.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/mixer_paths_arduino_monza.xml
 	chmod  go+r $(DESTDIR)$(root_etcdir)/resourcemanager_arduino_monza.xml
 	ln -sf mixer_paths_arduino_monza.xml $(DESTDIR)$(root_etcdir)/mixer_paths_monaco_gertrude.xml

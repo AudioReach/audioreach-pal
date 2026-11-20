@@ -2,7 +2,7 @@ name: Qualcomm Preflight Checks
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ master, ci-sdk-fix ]
   push:
     branches: [ master ]
   workflow_dispatch:

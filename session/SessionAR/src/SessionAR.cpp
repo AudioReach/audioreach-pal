@@ -725,7 +725,7 @@ int SessionAR::HDRConfigKeyToDevOrientation(const char* hdr_custom_key)
     return ORIENTATION_0;
 }
 
-int32_t SessionAR::getParameters(Stream *s __unused, uint32_t param_id, void **payload)
+int32_t SessionAR::getParameters(Stream *s, uint32_t param_id, void **payload)
 {
     int32_t status = 0;
 
@@ -741,6 +741,10 @@ int32_t SessionAR::getParameters(Stream *s __unused, uint32_t param_id, void **p
         }
         case PAL_PARAM_ID_DIRECTION_OF_ARRIVAL:
             status = this->getParamWithTag(nullptr, TAG_ECNS, param_id, payload);
+            break;
+        case PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP:
+            status = this->getParamWithTag(s, TAG_ECNS, param_id, payload);
+            break;
         default:
             PAL_ERR(LOG_TAG, "Error:Unsupported param id %u", param_id);
             status = -EINVAL;

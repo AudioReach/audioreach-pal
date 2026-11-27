@@ -1,0 +1,87 @@
+name: Debian/Ubuntu package build
+
+on:
+  pull_request:
+    branches: [master, ci]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pkg-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deb-build:
+    name: Build .deb (${{ matrix.distro }})
+    runs-on: ubuntu-24.04-arm        # native arm64 runner (has Docker); packages are built for arm64
+    strategy:
+      fail-fast: false               # one distro failing does not cancel the other
+      matrix:
+        include:
+          - distro: trixie           # Debian 13
+            pkg_branch: qli/debian/trixie
+          - distro: resolute         # Ubuntu
+            pkg_branch: qli/debian/resolute
+
+    steps:
+      - name: Checkout source (this PR)
+        uses: actions/checkout@v4
+        with:
+          path: audioreach-pal
+
+      - name: Checkout packaging repo (${{ matrix.pkg_branch }})
+        uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/pkg-audioreach-pal
+          ref: ${{ matrix.pkg_branch }}
+          path: pkg-audioreach-pal
+
+      - name: Checkout docker-pkg-build
+        uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/docker-pkg-build
+          path: docker-pkg-build
+
+      - name: Copy debian/ into the source tree
+        run: |
+          rm -rf audioreach-pal/debian
+          cp -r pkg-audioreach-pal/debian audioreach-pal/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build-tool requirements (if any)
+        run: |
+          if [ -f docker-pkg-build/requirements.txt ]; then
+            pip install -r docker-pkg-build/requirements.txt
+          fi
+
+      - name: Build packages for ${{ matrix.distro }}
+        run: |
+          python3 docker-pkg-build/docker_deb_build.py \
+            --distro "${{ matrix.distro }}" \
+            --source-dir "${{ github.workspace }}/audioreach-pal" \
+            --output-dir "${{ github.workspace }}/debout-${{ matrix.distro }}" \
+            --no-update-check \
+            --skip-gbp
+
+      - name: List built packages and check architecture
+        run: |
+          ls -la "debout-${{ matrix.distro }}"
+          for f in debout-${{ matrix.distro }}/*.deb; do
+            echo "$f: $(dpkg-deb -f "$f" Architecture)"
+          done
+
+      - name: Upload .deb artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-${{ matrix.distro }}
+          path: debout-${{ matrix.distro }}/
+          if-no-files-found: error
+          retention-days: 14

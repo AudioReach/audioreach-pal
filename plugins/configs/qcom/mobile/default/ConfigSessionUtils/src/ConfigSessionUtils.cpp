@@ -58,6 +58,9 @@
 #include "SessionAlsaPcm.h"
 #include "SessionAlsaUtils.h"
 #include "ConfigSessionUtils.h"
+#ifndef UVVOICECUE_FEATURES_DISABLED
+#include "UvVoiceCueUtils.h"
+#endif
 #include "apm_api.h"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -260,6 +263,13 @@ int reconfigCommon(Stream* streamHandle, void* pluginPayload)
         PAL_ERR(LOG_TAG, "setMixerParameter failed");
         goto exit;
     }
+    #ifndef UVVOICECUE_FEATURES_DISABLED
+    status = pcmPostReconfigSetUvVoiceCue(streamHandle, sess, mixerHandle, pcmDevIds);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "pcm post reconfig UV cue update failed %d", status);
+        goto exit;
+    }
+    #endif
 
 exit:
     if (builder) {
@@ -802,6 +812,7 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
     switch (paramId) {
         case PAL_PARAM_ID_DEVICE_ROTATION:
         {
+            bool doDevPPMute = false;
             status = s->getStreamAttributes(&sAttr);
             if (status) {
                 PAL_ERR(LOG_TAG, "could not get stream attributes\n");
@@ -824,15 +835,37 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
             if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
                     sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
                     setConfigStatus = session->setConfig(s, MODULE, MUTE_TAG);
-            } else {
-                setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_MUTE);
+            } else if (PAL_AUDIO_OUTPUT == sAttr.direction) {
+                /* Need to check if there is a valid module available
+                 * for DEVICEPP_MUTE to avoid false negative failing
+                 * setConfig message.*/
+                status = s->getAssociatedDevices(associatedDevices);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "getAssociatedDevices Failed\n");
+                    goto exit;
+                }
+                for (int i = 0; i < associatedDevices.size(); i++) {
+                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                    if (0 != status) {
+                        PAL_ERR(LOG_TAG, "getDeviceAttributes Failed\n");
+                        break;
+                    }
+                    if ((PAL_DEVICE_OUT_SPEAKER == dAttr.id) &&
+                        (2 == dAttr.config.ch_info.channels) &&
+                        (strcmp(dAttr.custom_config.custom_key, "mspp") != 0)) {
+                        doDevPPMute = true;
+                        break;
+                    }
+                }
+                if (doDevPPMute) {
+                    setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_MUTE);
+                }
             }
             if (setConfigStatus) {
                 PAL_INFO(LOG_TAG, "DevicePP Mute failed");
             }
             //mStreamMutex.unlock(); NEED TO FIGURE OUT A WAY TO UNLOCK DURING SLEEP
             usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
-
             // mStreamMutex.lock();
             pal_param_device_rotation_t *rotation =
                                      reinterpret_cast<pal_param_device_rotation_t *>(ppld->payload);
@@ -840,12 +873,11 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
                                           builder, rxAifBackEnds);
             // mStreamMutex.unlock();
             usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
-
             // mStreamMutex.lock();
             if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                setConfigStatus = session->setConfig(s, MODULE, UNMUTE_TAG);
-            } else {
+                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                    setConfigStatus = session->setConfig(s, MODULE, UNMUTE_TAG);
+            } else if (doDevPPMute) {
                 setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_UNMUTE);
             }
             if (setConfigStatus) {
@@ -1084,6 +1116,10 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
     struct tm *timenow;
     time_t now = time(NULL);
     timenow = gmtime(&now);
+    if (timenow == nullptr) {
+        PAL_ERR(LOG_TAG, "gmtime failed");
+        return;
+    }
     PAL_INFO(LOG_TAG, "Silence Detection event raised\n");
 
     switch (event_id) {
@@ -1137,3 +1173,94 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
 
     return;
 }
+#ifndef UVVOICECUE_FEATURES_DISABLED
+int32_t pcmPostReconfigSetUvVoiceCue(Stream *streamHandle,
+                                            Session *sess,
+                                            struct mixer *mixerHandle,
+                                            const std::vector<int> &pcmDevIds)
+{
+    int32_t status = 0;
+    uint32_t miid = 0;
+    uint32_t currentValues = 0;
+    uint32_t uvBit = 0;
+    pal_stream_attributes sAttr = {};
+    SessionAlsaPcm *session = nullptr;
+    std::shared_ptr<ResourceManager> rm = nullptr;
+    std::vector<std::pair<int32_t, std::string>> txAifBackEnds;
+    PayloadBuilder *builder = nullptr;
+
+    if (!streamHandle || !sess || !mixerHandle) {
+        PAL_ERR(LOG_TAG, "Invalid input");
+        return -EINVAL;
+    }
+    if (pcmDevIds.empty()) {
+        PAL_ERR(LOG_TAG, "pcmDevIds is empty");
+        return -EINVAL;
+    }
+    if (getVoiceCueDataPtr() == nullptr || getVoiceCueDataSize() == 0) {
+        PAL_DBG(LOG_TAG, "No voice cue data present, skipping");
+        return 0;
+    }
+    status = streamHandle->getStreamAttributes(&sAttr);
+    if (status) {
+        PAL_ERR(LOG_TAG, "getStreamAttributes failed %d", status);
+        return status;
+    }
+    switch (sAttr.type) {
+    case PAL_STREAM_VOIP_TX:
+        uvBit = UV_FLUENCE_VOIP_BIT;
+        break;
+    case PAL_STREAM_VOICE_UI:
+    case PAL_STREAM_ASR:
+    case PAL_STREAM_ACD:
+        uvBit = UV_FLUENCE_SVA_BIT;
+        break;
+    case PAL_STREAM_DEEP_BUFFER:
+        uvBit = UV_FLUENCE_AUDIO_BIT;
+        break;
+    default:
+        PAL_DBG(LOG_TAG, "UV cue not needed for stream type %d", sAttr.type);
+        return 0;
+    }
+    currentValues = getUvMaskUseCaseValues();
+    if (!(currentValues & uvBit)) {
+        PAL_DBG(LOG_TAG, "UV mask not enabled for stream type %d", sAttr.type);
+        return 0;
+    }
+
+    rm = ResourceManager::getInstance();
+    session = static_cast<SessionAlsaPcm *>(sess);
+    txAifBackEnds = session->getTxBEVecRef();
+
+    if (txAifBackEnds.empty()) {
+        PAL_ERR(LOG_TAG, "txAifBackEnds is empty");
+        return -EINVAL;
+    }
+    builder = new PayloadBuilder();
+    status = SessionAlsaUtils::getModuleInstanceId(mixerHandle,
+                                                   pcmDevIds.at(0),
+                                                   txAifBackEnds[0].second.data(),
+                                                   TAG_UVCALL_VOICECUE,
+                                                   &miid);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "getModuleInstanceId failed");
+        goto exit;
+    }
+    PAL_DBG(LOG_TAG, "Setting audio cue data update to SPF for miid : %x and id = %d",
+            miid, pcmDevIds.at(0));
+    status = SessionAlsaUtils::checkAndSetUvVoiceCue(streamHandle,
+                                                     mixerHandle,
+                                                     pcmDevIds.at(0),
+                                                     miid,
+                                                     rm,
+                                                     builder,
+                                                     uvBit);
+    if (status != 0) {
+        PAL_ERR(LOG_TAG, "failed to initialize UV Voice feature with status :%d", status);
+    }
+exit:
+    if (builder)
+        delete builder;
+    return status;
+}
+#endif

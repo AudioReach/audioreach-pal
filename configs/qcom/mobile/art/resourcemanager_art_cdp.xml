@@ -28,6 +28,7 @@
         <param key="haptics_through_wsa" value ="true" />
         <param key="haptics_cshm_support" value="true"/>
         <param key="dummy_dev_enable" value ="true" />
+        <param key="spatialaudio_headtracking_enabled" value ="true" />
     </config_params>
     <config_gapless key="gapless_supported" value="1"/>
     <config_sound_dose key="sound_dose_enable" value ="false" />
@@ -206,6 +207,9 @@
                 <name>PAL_STREAM_VOIP_TX</name>
                 <priority>2</priority>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -333,6 +337,9 @@
                 <name>PAL_STREAM_VOIP_TX</name>
                 <priority>2</priority>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -422,6 +429,9 @@
                 <samplerate>48000</samplerate>
                 <bit_width>16</bit_width>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_VOICE_CALL</name>
@@ -524,6 +534,9 @@
             <usecase>
                 <name>PAL_STREAM_VOIP_TX</name>
                 <ec_enable>1</ec_enable>
+                <custom-config key="voicecue">
+                    <ec_enable>0</ec_enable>
+                </custom-config>
             </usecase>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -1823,7 +1836,7 @@
                 <!-- Output buffer size for speaker diarization in bytes -->
                 <param sdz_output_buffer_size="102400" />
                 <!-- Whether life logger is enabled -->
-                <param enable_life_logger="false"/>
+                <param enable_life_logger="true"/>
                 <!-- ASR input DAM buffer size for life logger usecase -->
                 <!-- Valid only when it is set to non-zero value -->
                 <!-- Config from ASPS is used when this is set to 0 -->
@@ -1835,14 +1848,14 @@
                 <param output_language_code="0"/>
                 <param enable_language_detection="false"/>
                 <param enable_translation="false"/>
-                <param enable_continuous_mode="false"/>
+                <param enable_continuous_mode="true"/>
                 <param enable_partial_transcription="false"/>
                 <param enable_logger_mode="false"/>
                 <param enable_timestamp="true"/>
                 <param enable_speaker_diarization="false"/>
                 <param threshold="50"/>
                 <param timeout_duration="0"/>
-                <param silence_detection_duration="5000"/>
+                <param silence_detection_duration="1000"/>
                 <param outputBufferMode="false"/>
             </default_config>
             <stream_config>
@@ -1868,6 +1881,7 @@
                     <param sdz_output_config_v2_id = "0xC0000064, 0x08001BDA" />
                     <param sdz_input_buffer_duration_v2_id = "0xC0000064, 0x08001BC7" />
                     <param sdz_force_output_v2_id = "0xC0000064, 0x08001BDB" />
+                    <param sdz_set_user_cue_id = "0xC0000064, 0x08001BA5"/>
                 </module_Info>
                 <operating_modes>
                     <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI_AAD" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
@@ -2077,15 +2091,17 @@
                 <!-- 5ms duration of data -->
                 <param mmap_frame_length="5" />
                 <!-- Profile specific data which the algorithm can support -->
-                <param capture_keyword="2000" /> <!-- Default history buffer length -->
+                <param capture_keyword="1200" /> <!-- Default history buffer length -->
                 <param client_capture_read_delay="2000" /> <!-- reserved buffer duration for rt data -->
                 <param pre_roll_duration="500" /> <!-- Default preroll duration -->
                 <param sample_rate="16000" />
                 <param bit_width="16" />
                 <!-- Module output channels -->
-                <param out_channels="1" />
+                <param out_channels="2" />
                 <!-- Uncomment param lpi_enable="false" to run usecase in NLPI by default -->
                 <!--param lpi_enable="false" /-->
+                <!-- duration of synthetic sensor event in milli second. 0 indicates no synthetic event is generated. -->
+                <param synthetic_det_duration_in_ms="0" />
                 <operating_modes>
                     <low_power capture_profile_handset="DUAL_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <high_performance capture_profile_handset="DUAL_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />
@@ -2098,8 +2114,19 @@
                         <param mode_bit_config_ids="0xC0000008, 0x08001AC5" />
                         <param wakeup_config_ids="0xC0000008, 0x08001AC7" />
                         <param buffering_config_ids="0xC0000008, 0x08001ACF" />
+                        <param synthetic_mma_det_ids="0xC0000008, 0x08001BE8" />
                         <param engine_reset_ids="0xC0000008, 0x08001AD0" />
                     </first_stage_module_params>
+                    <arm_ss_module_params>
+                        <!-- Options are "KEYWORD_DETECTION", "USER_VERIFICATION", "CUSTOM_DETECTION" -->
+                        <param sm_detection_type= "KEYWORD_DETECTION" />
+                        <param sm_id="0x400" />
+                        <param module_lib="libcapiv2mmavendor.so" />
+                        <param sample_rate="16000" />
+                        <param bit_width="16" />
+                        <param channel_count="2" />
+                        <param proc_frame_size="100" /> <!-- Processing frame size(in ms) -->
+                    </arm_ss_module_params>
                     <arm_ss_module_params>
                         <param sm_detection_type= "USER_VERIFICATION" />
                         <param sm_id="0x80" />
@@ -2141,6 +2168,7 @@
                         <param trigger_detection_ids="0xC0000008, 0x08001B7E" />
                         <param buffering_config_ids="0xC0000008, 0x08001044" />
                         <param engine_reset_ids="0xC0000008, 0x08001051" />
+                        <param sh_mem_ts_config_ids="0xC0000001, 0x08001BDF" />
                     </first_stage_module_params>
                 </sound_model_info>
             </stream_config>

@@ -45,7 +45,7 @@ library_includedir = $(includedir)/stream_contextproxy
 lib_LTLIBRARIES     = libstream_contextproxy.la
 libstream_contextproxy_la_SOURCES   = $(stream_contextproxy_sources)
 libstream_contextproxy_la_LIBADD    = @GLIB_LIBS@ -lexpat -L${abs_top_builddir}/stream/StreamCommon/.libs -lstream_common
-libstream_contextproxy_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_contextproxy_la_LIBADD    += -L${abs_top_builddir}/.libs -lar-pal
 libstream_contextproxy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_contextproxy_la_CPPFLAGS += -std=c++14
 libstream_contextproxy_la_LDFLAGS   = -shared -avoid-version

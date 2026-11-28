@@ -151,6 +151,9 @@
     <ctl name="RX_RX0 Digital Volume" value="84" />
     <ctl name="RX_RX1 Digital Volume" value="84" />
     <ctl name="RX_RX2 Digital Volume" value="84" />
+    <ctl name="RX_RX0 Mix Digital Volume" value="60" />
+    <ctl name="RX_RX1 Mix Digital Volume" value="60" />
+    <ctl name="RX_RX2 Mix Digital Volume" value="60" />
 
     <ctl name="TX_DEC0 Volume" value="122" />
     <ctl name="TX_DEC1 Volume" value="122" />
@@ -1025,7 +1028,7 @@
         <ctl name="TX SMIC MUX2" value="SWR_MIC0" />
         <ctl name="TX SMIC MUX3" value="SWR_MIC0" />
         <ctl name="TX SMIC MUX4" value="SWR_MIC1" />
-        <ctl name="DEC_GAIN_BYPASS Enable" value="0" />
+        <ctl name="DEC_GAIN_BYPASS Enable" value="1" />
         <ctl name="TX WSA MUX1" value="NO_WSA"/>
         <ctl name="TX WSA MUX2" value="NO_WSA"/>
         <ctl name="TX WSA MUX3" value="NO_WSA"/>
@@ -1053,6 +1056,10 @@
 
     <path name="quad-mic">
         <path name="speaker-qmic" />
+        <ctl name="TX_DEC1 Volume" value="84"/>
+        <ctl name="TX_DEC2 Volume" value="84"/>
+        <ctl name="TX_DEC3 Volume" value="84"/>
+        <ctl name="TX_DEC4 Volume" value="84"/>
     </path>
 
     <path name="voice-speaker-qmic-liquid">

@@ -104,6 +104,7 @@ private:
     int32_t StartSoundEngine();
     int32_t StopSoundEngine();
     int32_t StartKeywordDetection();
+    int32_t StartMMADetection();
     int32_t StartUserVerification(std::unique_lock<std::mutex> &lck);
     int32_t StartTIUserVerification();
     int32_t UpdateConfThreshold(StreamSoundTrigger *s);

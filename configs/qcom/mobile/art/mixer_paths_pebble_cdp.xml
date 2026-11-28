@@ -146,6 +146,9 @@
     <ctl name="RX_RX0 Digital Volume" value="84" />
     <ctl name="RX_RX1 Digital Volume" value="84" />
     <ctl name="RX_RX2 Digital Volume" value="84" />
+    <ctl name="RX_RX0 Mix Digital Volume" value="60" />
+    <ctl name="RX_RX1 Mix Digital Volume" value="60" />
+    <ctl name="RX_RX2 Mix Digital Volume" value="60" />
     <ctl name="HPHL Volume" value="20" />
     <ctl name="HPHR Volume" value="20" />
 
@@ -1266,6 +1269,13 @@
         <ctl name="Rx Slot Mask" value="1" />
         <ctl name="OT23 Usage Mode" value="8" />
         <ctl name="SA1 FU21 Stereo Gain Offset dB" value="66" />
+    </path>
+
+    <path name="ultrasound-dmic">
+        <ctl name="TX_AIF2_CAP Mixer DEC3" value="1" />
+        <ctl name="TX DMIC MUX3" value="DMIC2" />
+        <ctl name="TX_AIF2_CAP Mixer DEC4" value="1" />
+        <ctl name="TX DMIC MUX4" value="DMIC0" />
     </path>
 
     <path name="ultrasound-handset-wsa">

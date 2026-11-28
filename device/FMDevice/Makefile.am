@@ -43,7 +43,7 @@ library_includedir = $(includedir)/dev_fm
 lib_LTLIBRARIES     = libdev_fm.la
 libdev_fm_la_SOURCES   = $(dev_fm_sources)
 libdev_fm_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libdev_fm_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_fm_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_fm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_fm_la_CPPFLAGS += -std=c++14
 libdev_fm_la_LDFLAGS   = -shared -avoid-version

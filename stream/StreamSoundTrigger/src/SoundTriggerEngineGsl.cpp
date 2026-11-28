@@ -60,6 +60,7 @@
 
 #define TIMEOUT_FOR_EOS 100000
 #define MAX_MMAP_POSITION_QUERY_RETRY_CNT 5
+#define SHMEM_UTC_TIME_STAMP 1
 
 ST_DBG_DECLARE(static int dsp_output_cnt = 0);
 
@@ -221,7 +222,8 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
                                                          FILE* dsp_output_fd) {
     size_t size = 0;
 
-    PAL_VERBOSE(LOG_TAG, "Bytes to read and write in ring buffer is : %d", size_to_read);
+    PAL_DBG(LOG_TAG, "Bytes to read and write in ring buffer is : %d", size_to_read);
+    PAL_DBG(LOG_TAG, "Offset : %d, mmap write position : %d", offset, mmap_write_position_);
     if (offset + size_to_read <= mmap_buffer_size_) {
         size = buffer_->write((void *)((uint8_t *)mmap_buffer_.buffer + offset), size_to_read);
         if (vui_ptfm_info_->GetEnableDebugDumps()) {
@@ -234,7 +236,7 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
                              mmap_buffer_size_ - offset);
         if (vui_ptfm_info_->GetEnableDebugDumps()) {
             ST_DBG_FILE_WRITE(dsp_output_fd, (void *)((uint8_t *)mmap_buffer_.buffer + offset),
-                              size_to_read);
+                              mmap_buffer_size_ - offset);
         }
         size += buffer_->write((void *)mmap_buffer_.buffer,
                              size_to_read + offset - mmap_buffer_size_);
@@ -245,7 +247,8 @@ int32_t SoundTriggerEngineGsl::ReadMmapBufWriteToRingBuf(size_t& offset, size_t 
         offset = size_to_read + offset - mmap_buffer_size_;
     }
     mmap_write_position_ += BytesToFrames(size_to_read);
-    PAL_VERBOSE(LOG_TAG, "%d written to ring buffer", size);
+    PAL_DBG(LOG_TAG, "Bytes written to ring buffer : %d, mmap write position : %d",
+            size, mmap_write_position_);
     return 0;
 }
 
@@ -410,11 +413,17 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
         ATRACE_ASYNC_BEGIN("stEngine: lab read", (int32_t)module_type_);
 #endif
         if (mmap_buffer_size_ != 0) {
-            status = BytesToRead(s, size_to_read);
-            if (status) {
-                PAL_ERR(LOG_TAG, "Failed to get bytes to read");
-                status = -EINVAL;
-                goto exit;
+            if (batch_mode_) {
+                param.data = &size_to_read;
+                vui_intf_->GetParameter(PARAM_MMAP_BYTES_TO_READ, &param);
+                PAL_INFO(LOG_TAG, "Bytes to read : %d", size_to_read);
+            } else {
+                status = BytesToRead(s, size_to_read);
+                if (status) {
+                    PAL_ERR(LOG_TAG, "Failed to get bytes to read");
+                    status = -EINVAL;
+                    goto exit;
+                }
             }
             if (size_to_read == 0) {
                 retry_cnt++;
@@ -871,6 +880,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
     int32_t status = 0;
     vui_intf_param_t param {};
     std::shared_ptr<ResourceManager> rm = ResourceManager::getInstance();
+    bool is_session_opened = false;
 
     PAL_DBG(LOG_TAG, "Enter");
     if (!sm_data || !sm_data->data) {
@@ -895,6 +905,7 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         PAL_ERR(LOG_TAG, "Failed to open session, status = %d", status);
         goto exit;
     }
+    is_session_opened = true;
 
     /* Update interface with sound model to be added*/
     param.stream = (void *)s;
@@ -903,7 +914,6 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
     status = vui_intf_->SetParameter(PARAM_FSTAGE_SOUND_MODEL_ADD, &param);
     if (status) {
         PAL_ERR(LOG_TAG, "Failed to update engine model, status = %d", status);
-        session_->close(s);
         goto exit;
     }
 
@@ -912,8 +922,15 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to set MMA mode bit config, status = %d",
                 status);
-            session_->close(s);
             goto exit;
+        }
+        if (sm_cfg_ && sm_cfg_->GetSyntheticDetDurationInMs()) {
+            status = UpdateSessionPayload(s, SYNTHETIC_MMA_DET_CONFIG);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG,
+                    "Failed to set synthetic det config, status = %d", status);
+                goto exit;
+            }
         }
         /*
          * If mode bit is set, mma model is loaded from acdb calibration,
@@ -923,7 +940,6 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
             status = UpdateSessionPayload(s, LOAD_SOUND_MODEL);
             if (0 != status) {
                 PAL_ERR(LOG_TAG, "Failed to update session payload, status = %d", status);
-                session_->close(s);
                 goto exit;
             }
         }
@@ -931,13 +947,16 @@ int32_t SoundTriggerEngineGsl::LoadSoundModel(StreamSoundTrigger *s,
         status = UpdateSessionPayload(s, LOAD_SOUND_MODEL);
         if (0 != status) {
             PAL_ERR(LOG_TAG, "Failed to update session payload, status = %d", status);
-            session_->close(s);
             goto exit;
         }
     }
 
     UpdateState(ENG_LOADED);
+
 exit:
+    if (is_session_opened && status)
+        session_->close(s);
+
     if (!status)
         eng_streams_.push_back(s);
 
@@ -1061,13 +1080,26 @@ int32_t SoundTriggerEngineGsl::UpdateConfigsToSession(StreamSoundTrigger *s) {
     if (is_qc_wakeup_config_) {
         if (module_type_ != ST_MODULE_TYPE_HIST_CAP) {
             status = UpdateSessionPayload(s, WAKEUP_CONFIG);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to set payload for %d param, status = %d",
+                        WAKEUP_CONFIG, status);
+                goto exit;
+            }
         } else {
             status = UpdateSessionPayload(s, BUFFERING_MODE_CONFIG);
-        }
-        if (0 != status) {
-            PAL_ERR(LOG_TAG, "Failed to set VA module config, status = %d",
-                status);
-            goto exit;
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to set payload for %d param status = %d",
+                        BUFFERING_MODE_CONFIG, status);
+                goto exit;
+            }
+            if (module_type_ == ST_MODULE_TYPE_HIST_CAP) {
+                status = UpdateSessionPayload(s, HIST_CAP_ENABLE_TS);
+                if (0 != status) {
+                    PAL_ERR(LOG_TAG, "Failed to set payload for %d, status = %d",
+                        HIST_CAP_ENABLE_TS, status);
+                    goto exit;
+                }
+            }
         }
     } else if (module_tag_ids_[CUSTOM_CONFIG] && param_ids_[CUSTOM_CONFIG]) {
         status = UpdateSessionPayload(s, CUSTOM_CONFIG);
@@ -2043,6 +2075,8 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
     uint32_t detection_miid = 0;
     vui_intf_param_t intf_param {};
     uint32_t mode_bit = 0;
+    uint32_t synthetic_mma_det_duration = 0;
+    struct sh_mem_push_mode_header_cfg_t sh_mem_param {};
 
     PAL_DBG(LOG_TAG, "Enter, param : %u", param);
 
@@ -2068,7 +2102,9 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
         return -EINVAL;
     }
 
-    if (use_lpi_) {
+    if (param == HIST_CAP_ENABLE_TS) {
+        status = dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &detection_miid);
+    } else if (use_lpi_) {
         if (lpi_miid_ == 0)
             status =dynamic_cast<SessionAR*>(session_)->getMIID(nullptr, tag_id, &lpi_miid_);
         detection_miid = lpi_miid_;
@@ -2131,20 +2167,7 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 }
             }
             if (mma_mode_bit_) {
-                mode_bit = mma_mode_bit_;
-                /*
-                 * In HLOS side we need to differentiate mode bit NVD and
-                 * SPEECH to load different audio models. While in ADSP
-                 * side NVD and SPEECH are defined as same mode bit, hence
-                 * reset NVD bit and set SPEECH bit before set to ADSP.
-                 *
-                 * TODO: Remove this when mode bit defs are aligned within
-                 * HLOS and ADSP.
-                 */
-                if (mode_bit & (1 << NVD)) {
-                    mode_bit &= ~(1 << NVD);
-                    mode_bit |= (1 << SPEECH);
-                }
+                mode_bit = UpdateMMAModeBit();
                 intf_param.data = (void *)&mode_bit;
                 intf_param.size = sizeof(uint32_t);
             }
@@ -2166,6 +2189,28 @@ int32_t SoundTriggerEngineGsl::UpdateSessionPayload(StreamSoundTrigger *s, st_pa
                 return -EINVAL;
             }
             ses_param_id = PAL_PARAM_ID_BUFFERING_MODE;
+            break;
+        case SYNTHETIC_MMA_DET_CONFIG:
+            if (sm_cfg_) {
+                synthetic_mma_det_duration = sm_cfg_->GetSyntheticDetDurationInMs();
+                intf_param.data = &synthetic_mma_det_duration;
+                intf_param.size = sizeof(synthetic_mma_det_duration);
+            }
+            ses_param_id = PAL_PARAM_ID_VOICEUI_SET_PARAM;
+            break;
+        case HIST_CAP_ENABLE_TS:
+            vui_intf_->GetParameter(PARAM_HIST_BUFFER_VAD, &intf_param);
+            if (intf_param.data == nullptr) {
+                PAL_ERR(LOG_TAG, "Failed to get vad enable/disable param");
+                return -EINVAL;
+            } else if (*(uint32_t *)intf_param.data == 0) {
+                PAL_ERR(LOG_TAG, "VAD is not enabled no need to configure sh_mem module");
+                return status;
+            }
+            sh_mem_param.header_type = SHMEM_UTC_TIME_STAMP;
+            intf_param.data = (uint8_t *)&sh_mem_param;
+            intf_param.size = sizeof(struct sh_mem_push_mode_header_cfg_t);
+            ses_param_id = PAL_PARAM_ID_SH_ENABLE_TS;
             break;
         default:
             PAL_ERR(LOG_TAG, "Invalid param id %u", param);
@@ -2316,6 +2361,44 @@ bool SoundTriggerEngineGsl::UpdateGlobalDetectionStatus(bool is_active) {
     }
 
     return true;
+}
+
+uint32_t SoundTriggerEngineGsl::UpdateMMAModeBit() {
+    uint32_t mode_bit = mma_mode_bit_;
+
+    /*
+     * In HLOS side we need to differentiate mode bit NVD and
+      * SPEECH to load different audio models. While in ADSP
+     * side NVD and SPEECH are defined as same mode bit, hence
+     * reset NVD bit and set SPEECH bit before set to ADSP.
+     *
+     * TODO: Remove this when mode bit defs are aligned within
+     * HLOS and ADSP.
+     */
+    if (mode_bit & (1U << NVD)) {
+        mode_bit &= ~(1U << NVD);
+        mode_bit |= (1U << SPEECH);
+    }
+    /*
+     * Platforms not supporting TILT_TO_WAKE/INTENT2SPEAK_ACCEL
+     * need to replace sensor modality with Any Motion Detect(AMD)
+     */
+    if (sm_cfg_ && sm_cfg_->GetEnableAMD()) {
+        if (mode_bit & (1U << TILT_TO_WAKE)) {
+            mode_bit &= ~(1U << TILT_TO_WAKE);
+            mode_bit |= (1U << AMD);
+        }
+        if (mode_bit & (1U << INTENT2SPEAK_ACCEL)) {
+            mode_bit &= ~(1U << INTENT2SPEAK_ACCEL);
+            mode_bit |= (1U << AMD);
+        }
+    }
+
+    if (sm_cfg_ && sm_cfg_->GetSyntheticDetDurationInMs()) {
+        mode_bit |= (1U << SYNTHETIC_MODALITY_DETECTIONS_FEATURE);
+    }
+
+    return mode_bit;
 }
 
 int32_t SoundTriggerEngineGsl::ForceRecognition(StreamSoundTrigger *s) {

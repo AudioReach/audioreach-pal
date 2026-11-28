@@ -47,7 +47,7 @@ library_includedir = $(includedir)/stream_asr
 lib_LTLIBRARIES     = libstream_asr.la
 libstream_asr_la_SOURCES   = $(stream_asr_sources)
 libstream_asr_la_LIBADD    = @GLIB_LIBS@ -lexpat
-libstream_asr_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_asr_la_LIBADD    += -L${abs_top_builddir}/.libs -lar-pal
 libstream_asr_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libstream_asr_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_asr_la_CPPFLAGS += -std=c++14

@@ -46,7 +46,7 @@ lib_LTLIBRARIES     = libdev_proxy.la
 libdev_proxy_la_SOURCES   = $(dev_proxy_sources)
 libdev_proxy_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_proxy_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
-libdev_proxy_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_proxy_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_proxy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_proxy_la_CPPFLAGS += -std=c++14
 libdev_proxy_la_LDFLAGS   = -shared -avoid-version

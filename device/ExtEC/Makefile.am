@@ -44,7 +44,7 @@ library_includedir = $(includedir)/dev_ext_ec
 lib_LTLIBRARIES     = libdev_ext_ec.la
 libdev_ext_ec_la_SOURCES   = $(dev_ext_ec_sources)
 libdev_ext_ec_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libdev_ext_ec_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libdev_ext_ec_la_LIBADD    += -L${abs_top_builddir}/.libs -lar-pal
 libdev_ext_ec_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_ext_ec_la_CPPFLAGS += -std=c++14
 libdev_ext_ec_la_LDFLAGS   = -shared -avoid-version

@@ -74,10 +74,12 @@ ASREngine::ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg)
     exitThread = false;
     loggerModeEnabled = false;
     timestampEnabled = false;
+    sdzUvEnabled = false;
     outputBufSize = 0;
     ecRefCount = 0;
     devDisconnectCount = 0;
     numOutput = 0;
+    userCuePayloadSize = 0;
     rxEcDev = nullptr;
     asrInfo = nullptr;
     smCfg = smCfg;
@@ -86,6 +88,7 @@ ASREngine::ASREngine(StreamASR *s, std::shared_ptr<ASRStreamConfig> smCfg)
     speechCfg = nullptr;
     outputCfg = nullptr;
     sdzOutputCfg = nullptr;
+    userCuePayload = nullptr;
     outputCfgSize = 0;
     sdzOutputCfgSize = 0;
 
@@ -383,6 +386,9 @@ int32_t ASREngine::UpdateSDZConfiguration(StreamASR *s)
             event_id, (void *)ev_reg_payload, ev_reg_size);
     }
 
+    if (sdzUvEnabled && userCuePayload && userCuePayloadSize) {
+        param_id_list.push_back(SDZ_SET_USER_CUE);
+    }
     for (auto iter: param_id_list) {
         status = setParameters(s, iter);
         if (status) {
@@ -496,11 +502,13 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
     tagId = moduleTagIds[pid];
     paramId = paramIds[pid];
 
-    status = dynamic_cast<SessionAR*>(session)->getMIID(nullptr, tagId, &miid);
-    if (status != 0) {
-        PAL_ERR(LOG_TAG, "Failed to get instance id for tag %x, status = %d",
-                tagId, status);
-        goto exit;
+    if (tagId && paramId) {
+        status = dynamic_cast<SessionAR*>(session)->getMIID(nullptr, tagId, &miid);
+        if (status != 0) {
+            PAL_ERR(LOG_TAG, "Failed to get instance id for tag %x, status = %d",
+                    tagId, status);
+            goto exit;
+        }
     }
 
     switch (pid) {
@@ -608,7 +616,7 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
         }
         case SDZ_FORCE_OUTPUT : {
             param_id_sdz_force_output_t *param = (param_id_sdz_force_output_t *)
-                                calloc(1, sizeof(param_id_sdz_force_output_t));
+                                 calloc(1, sizeof(param_id_sdz_force_output_t));
             if (param == nullptr) {
                 PAL_ERR(LOG_TAG, "Failed to allocate memory for SDZ force output config!!!");
                 goto exit;
@@ -730,14 +738,36 @@ int32_t ASREngine::setParameters(StreamASR *s, asr_param_id_type_t pid, void *pa
             sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
             break;
         }
-        case SDZ_ENABLE : {
+        case SDZ_ENABLE: {
             param.enable = 1;
             data = (uint8_t *)&param;
             dataSize = sizeof(param_id_module_enable_t);
             sesParamId = PAL_PARAM_ID_SDZ_ENABLE;
             break;
         }
-        default : {
+        case SDZ_SET_USER_CUE: {
+            if (!userCuePayload || userCuePayloadSize == 0) {
+                PAL_ERR(LOG_TAG, "No valid user cue to be set");
+                goto exit;
+            }
+            data = (uint8_t *)userCuePayload;
+            dataSize = userCuePayloadSize;
+            sesParamId = PAL_PARAM_ID_SDZ_SET_PARAM;
+            break;
+        }
+        case SDZ_USER_CUE_ENABLE: {
+            if (!paramPayload) {
+                PAL_ERR(LOG_TAG, "Invalid param payload");
+                status = -EINVAL;
+                goto exit;
+            }
+            userCuePayload = (param_id_sdz_voice_profile_t *)paramPayload;
+            userCuePayloadSize = userCuePayload->voiceprint_size +
+                sizeof(param_id_sdz_voice_profile_t);
+            sdzUvEnabled = true;
+            goto exit;
+        }
+        default: {
             PAL_ERR(LOG_TAG, "Unexpected param ID is sent, not implemented yet");
         }
     }
@@ -878,6 +908,7 @@ int32_t ASREngine::StopEngine(StreamASR *s)
         engState = ASR_ENG_IDLE;
         loggerModeEnabled = false;
         timestampEnabled = false;
+        sdzUvEnabled = false;
     }
 
 exit:
@@ -1084,7 +1115,6 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
     PAL_DBG(LOG_TAG, "Enter.");
 
     int32_t status = 0;
-    bool overlapDetected = true;
     void *payload = nullptr;
     uint8_t *temp = nullptr;
     uint32_t numSpeakers = 0;
@@ -1099,6 +1129,8 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
     sdz_speaker_info_t *eventSpeakerInfo = nullptr;
     sdz_speaker_segment_t *eventSpeakerSegment = nullptr;
     pal_sdz_event *sdzEventPayload = nullptr;
+    struct sdz_speaker_info *sdzSpeakerInfo = nullptr;
+    struct sdz_output *sdzOutput = nullptr;
     eventPayload eventToStream;
     StreamASR *sAsr = nullptr;
     uint32_t paramId = 0;
@@ -1170,6 +1202,11 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
                                         (uint64_t)eventSpeakerSegment->time_stamp_start_lsw);
                 speakerInfo.end_ts = ((uint64_t)eventSpeakerSegment->time_stamp_end_msw << 32 |
                                         (uint64_t)eventSpeakerSegment->time_stamp_end_lsw);
+                speakerInfo.diarization_score = eventSpeakerSegment->diarization_score;
+                speakerInfo.identification_score = eventSpeakerSegment->identification_score;
+                memcpy(speakerInfo.speaker_name, eventSpeakerSegment->speaker_name, SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE);
+                memcpy(speakerInfo.speaker_uuid, eventSpeakerSegment->speaker_uuid, SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE);
+                speakerInfo.speaker_is_owner = eventSpeakerSegment->speaker_is_owner;
                 speakerInfoVector.push_back(speakerInfo);
                 eventSpeakerSegment++;
                 temp = (uint8_t *)eventSpeakerSegment;
@@ -1221,15 +1258,28 @@ void ASREngine::ParseSdzEventAndNotifyStream(void* eventData) {
 
     sdzEventPayload = (pal_sdz_event *)eventToStream.payload;
     sdzEventPayload->num_outputs = sdzOutputVector.size();
+    temp = (uint8_t *)sdzEventPayload;
     for (int i = 0; i < sdzEventPayload->num_outputs; i++) {
-        sdzEventPayload->output[i].overlap_detected = sdzOverlapNumSpeakerVector[i].first;
-        sdzEventPayload->output[i].num_speakers = sdzOverlapNumSpeakerVector[i].second;
-
-        for (int j = 0; j < sdzEventPayload->output[i].num_speakers; j++) {
-            sdzEventPayload->output[i].speakers_list[j].speaker_id = sdzOutputVector[i][j].speaker_id;
-            sdzEventPayload->output[i].speakers_list[j].start_ts = sdzOutputVector[i][j].start_ts;
-            sdzEventPayload->output[i].speakers_list[j].end_ts = sdzOutputVector[i][j].end_ts;
+        sdzOutput = (struct sdz_output *)temp;
+        sdzOutput->overlap_detected = sdzOverlapNumSpeakerVector[i].first;
+        sdzOutput->num_speakers = sdzOverlapNumSpeakerVector[i].second;
+        for (int j = 0; j < sdzOutput->num_speakers; j++) {
+            sdzSpeakerInfo = &sdzOutput->speakers_list[j];
+            sdzSpeakerInfo->speaker_id = sdzOutputVector[i][j].speaker_id;
+            sdzSpeakerInfo->start_ts = sdzOutputVector[i][j].start_ts;
+            sdzSpeakerInfo->end_ts = sdzOutputVector[i][j].end_ts;
+            if (sAsr->GetClientId() == SDZ_CLIENT_HLOS) {
+                sdzSpeakerInfo->diarization_score = sdzOutputVector[i][j].diarization_score;
+                sdzSpeakerInfo->identification_score = sdzOutputVector[i][j].identification_score;
+                memcpy(sdzSpeakerInfo->speaker_name, sdzOutputVector[i][j].speaker_name,
+                    SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE);
+                memcpy(sdzSpeakerInfo->speaker_uuid, sdzOutputVector[i][j].speaker_uuid,
+                    SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE);
+                sdzSpeakerInfo->speaker_is_owner = sdzOutputVector[i][j].speaker_is_owner;
+            }
         }
+        temp += sizeof(struct sdz_output) +
+            sdzOutput->num_speakers * sizeof(struct sdz_speaker_info);
     }
     sdzOutputVector.clear();
     sdzOverlapNumSpeakerVector.clear();
@@ -1285,8 +1335,11 @@ void ASREngine::EventProcessingThread(ASREngine *engine)
             if (event.first == EVENT_ID_SDZ_OUTPUT ||
                 event.first == EVENT_ID_SDZ_OUTPUT_V2) {
                 engine->ParseSdzEventAndNotifyStream(event.second);
-            } else {
+            } else if (event.first == EVENT_ID_ASR_OUTPUT ||
+                       event.first == EVENT_ID_ASR_OUTPUT_V2) {
                 engine->ParseEventAndNotifyStream(event.second);
+            } else {
+                PAL_ERR(LOG_TAG, "Invalid event raised from SPF");
             }
         }
     }

@@ -637,6 +637,7 @@ typedef enum {
     PAL_STREAM_FLAG_EXTERN_MEM      = 0x10, /**< Shared memory buffers allocated by client*/
     PAL_STREAM_FLAG_SRCM_INBAND     = 0x20, /**< MediaFormat change event inband with data buffers*/
     PAL_STREAM_FLAG_EOF             = 0x40, /**< MediaFormat change event inband with data buffers*/
+    PAL_STREAM_FLAG_OFFLOAD         = 0x1 << 7, /* Stream Data is offloaded to DSP */
 } pal_stream_flags_t;
 
 #define PAL_STREAM_FLAG_NON_BLOCKING_MASK 0x2
@@ -907,6 +908,13 @@ typedef enum {
     PAL_PARAM_ID_MULTI_CLIENT_SDZ_OUTPUT = 108,
     PAL_PARAM_ID_VOICE_NS_RX_CFG = 109,
     PAL_PARAM_ID_FNN_PLUS_DOA_ESTIMATE_MONITOR_WITH_TIMESTAMP = 110,
+    PAL_PARAM_ID_UV_VOICE_CUE_ENABLE = 111,
+    PAL_PARAM_ID_UV_VOICE_CUE_DATA_BYTE = 112,
+    PAL_PARAM_ID_SDZ_SET_USER_CUE = 113,
+    PAL_PARAM_ID_SDZ_USER_CUE_ENABLE = 114,
+    PAL_PARAM_ID_SDZ_USER_CUE_DISABLE = 115,
+    PAL_PARAM_ID_VOICEUI_SET_PARAM = 116,
+    PAL_PARAM_ID_SH_ENABLE_TS = 117,
 } pal_param_id_type_t;
 
 /** HDMI/DP */
@@ -1548,14 +1556,35 @@ struct call_translation_config {
     bool enable;
     pal_call_translation_direction call_translation_dir;        /** Direction for the call_translation usecase */
     struct pal_tts_config tts_module_config;        /** TTS module config */
-    struct pal_nmt_config nmt_module_config;	    /** NMT module config */
+    struct pal_nmt_config nmt_module_config;        /** NMT module config */
     struct pal_asr_config asr_module_config;        /** ASR module config */
 };
+
+enum {
+    UV_FLUENCE_TELEPHONY_BIT = 0x1,       // (1 << 0) = 1   -> voice
+    UV_FLUENCE_AUDIO_BIT     = 0x1 << 1,  // (1 << 1) = 2   -> audio
+    UV_FLUENCE_VOIP_BIT      = 0x1 << 2,  // (1 << 2) = 4   -> voip
+    UV_FLUENCE_SVA_BIT       = 0x1 << 3,  // (1 << 3) = 8   -> sva
+
+    // Union of all defined bits
+    UV_FLUENCE_BIT_ALL       = UV_FLUENCE_TELEPHONY_BIT |
+                               UV_FLUENCE_AUDIO_BIT |
+                               UV_FLUENCE_VOIP_BIT |
+                               UV_FLUENCE_SVA_BIT,
+};
+
+typedef struct uv_fluence_config {
+    uint32_t usecase_mask;    /**< Bit mask indicating which use case(s) are to be updated. */
+    size_t param_size;        /**< Size of voice cue payload in bytes. */
+    uint8_t *voice_cue_param; /**< Pointer to voice cue payload. */
+} uv_fluence_config_t;
 
 #define MAX_TRANSCRIPTION_CHAR_SIZE 1024
 #define MAX_JSON_CHAR_SIZE 4096
 #define MAX_NUM_WORDS 200
 #define MAX_WORD_LENGTH 28
+#define SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE 64
+#define SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE 40
 
 typedef enum {
     PLAIN_TEXT = 0,
@@ -1621,6 +1650,11 @@ struct sdz_speaker_info {
     uint32_t speaker_id;
     uint64_t start_ts;
     uint64_t end_ts;
+    float diarization_score;
+    float identification_score;
+    char speaker_name[SDZ_SPEAKER_INFO_SPEAKER_NAME_SIZE];
+    char speaker_uuid[SDZ_SPEAKER_INFO_SPEAKER_UUID_SIZE];
+    uint32_t speaker_is_owner;
 };
 
 /** Output payload for speaker diarization */

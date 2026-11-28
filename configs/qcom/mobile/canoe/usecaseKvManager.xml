@@ -83,6 +83,13 @@
         <!-- Spatial audio stream -->
         <stream type="PAL_STREAM_SPATIAL_AUDIO">
             <keys_and_values Direction="RX" Instance="1">
+                <!-- use deepbuffer stream only for SW spatial audio, as no difference b/w deep vs sw spatial -->
+                <!-- STREAMRX - PCM_DEEP_BUFFER  -->
+                <graph_kv key="0xA1000000" value="0xA1000001"/>
+                <!-- INSTANCE - INSTANCE_1 -->
+                <graph_kv key="0xAB000000" value="0x1"/>
+            </keys_and_values>
+            <keys_and_values Direction="RX" Instance="1" CustomConfig="spatial_audio_offload">
                 <!-- STREAMRX - SPATIAL_AUDIO_PLAYBACK  -->
                 <graph_kv key="0xA1000000" value="0xA1000018"/>
                 <!-- INSTANCE - INSTANCE_1 -->
@@ -1810,7 +1817,7 @@
                 <graph_kv key="0xAD000000" value="0xAD00001B"/>
             </keys_and_values>
             <keys_and_values StreamType="PAL_STREAM_VOICE_UI"
-                DevicePPType="SINGLE_MIC_48KHZ_16BIT_HEADSET_RAW_NLPI">
+                DevicePPType="SINGLE_MIC_48KHZ_16BIT_HEADSET_RAW_NLPI,SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_NLPI">
                 <!-- DEVICETX - HEADSETMIC_VA -->
                 <graph_kv key="0xA3000000" value="0xA3000007"/>
                 <!-- DEVICEPP_TX - DEVICEPP_TX_RAW_NLPI -->

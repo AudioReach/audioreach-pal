@@ -1439,6 +1439,13 @@ int32_t StreamSoundTrigger::LoadSoundModel(
     }
     mInstanceID = rm->getStreamInstanceID(this);
 
+    if (model_type_ == ST_MODULE_TYPE_HIST_CAP) {
+        status = vui_intf_->GetParameter(PARAM_HIST_BUFFER_VAD, &param_model);
+        if (!status && param_model.data != nullptr && *(uint32_t *)param_model.data) {
+            mStreamPPSelector = "HIST_CAP_VAD";
+        }
+    }
+
     param_model.data = (void *)&model_list;
     status = vui_intf_->GetParameter(PARAM_SOUND_MODEL_LIST, &param_model);
     for (int i = 0; i < model_list.sm_list.size(); i++) {
@@ -1458,7 +1465,8 @@ int32_t StreamSoundTrigger::LoadSoundModel(
         if (sm_data->type == ST_SM_ID_SVA_F_STAGE_GMM) {
             gsl_engine_ = engine;
         } else {
-            if (sm_data->type & ST_SM_ID_SVA_S_STAGE_KWD) {
+            if (sm_data->type & ST_SM_ID_SVA_S_STAGE_KWD ||
+                sm_data->type & ST_SM_ID_SVA_S_STAGE_MMA) {
                 notification_state_ |= KEYWORD_DETECTION_SUCCESS;
             } else if (sm_data->type == ST_SM_ID_SVA_S_STAGE_USER ||
                        sm_data->type == ST_SM_ID_SVA_S_STAGE_CTIUV) {
@@ -1936,11 +1944,11 @@ int32_t StreamSoundTrigger::notifyClient(uint32_t detection) {
     vui_intf_param_t param {};
 
     if (detection == PAL_RECOGNITION_STATUS_ABORT) {
-        if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
+        if (sound_model_type_ == PAL_SOUND_MODEL_TYPE_KEYPHRASE) {
             phrase_rec_event = (struct pal_st_phrase_recognition_event*)calloc(1,
                 sizeof(struct pal_st_phrase_recognition_event));
             rec_event = (struct pal_st_recognition_event *)phrase_rec_event;
-        } else if (sm_config_ && sm_config_->type == PAL_SOUND_MODEL_TYPE_GENERIC) {
+        } else if (sound_model_type_ == PAL_SOUND_MODEL_TYPE_GENERIC) {
             rec_event = (struct pal_st_recognition_event *)calloc(1,
                 sizeof(struct pal_st_recognition_event));
         }
@@ -3636,7 +3644,8 @@ int32_t StreamSoundTrigger::StBuffering::ProcessEvent(
 
                 for (auto& eng : st_stream_.engines_) {
                     if ((data->det_type_ == USER_VERIFICATION_REJECT &&
-                         eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_KWD) ||
+                         eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_KWD ||
+                         eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_MMA) ||
                         (data->det_type_ == KEYWORD_DETECTION_REJECT &&
                          (eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_USER ||
                           eng->GetEngineId() & ST_SM_ID_SVA_S_STAGE_CTIUV))) {

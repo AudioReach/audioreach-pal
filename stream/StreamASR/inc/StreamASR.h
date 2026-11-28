@@ -79,6 +79,8 @@ enum {
     ASR_EV_EC_REF,
     ASR_EV_INTERNAL_PAUSE,
     ASR_EV_INTERNAL_RESUME,
+    SDZ_EV_SET_USER_CUE,
+    SDZ_EV_USER_CUE_ENABLE,
 };
 
 struct eventPayload {
@@ -171,9 +173,9 @@ class StreamASR : public Stream {
     param_id_asr_output_config_t* GetOutputConfig() { return outputConfig; }
     param_id_asr_input_threshold_t* GetInputBufConfig() { return inputConfig; }
     bool ConfigSupportLPI() override;
+    asr_client_id_t GetClientId() { return client_id_; }
     param_id_sdz_output_config_t* GetSdzOutputConfig() { return sdzOutputConfig; }
     param_id_sdz_input_threshold_t* GetSdzInputBufferConfig() { return sdzInputConfig; }
-    asr_client_id_t GetClientId() { return client_id_; }
 
  private:
     class ASREventData {
@@ -214,6 +216,12 @@ class StreamASR : public Stream {
      public:
         ASRUnloadEventConfig() : ASREventConfig(ASR_EV_UNLOAD_SOUND_MODEL) {}
         ~ASRUnloadEventConfig() {}
+    };
+
+    class ASRUserCueEnableConfig : public ASREventConfig {
+     public:
+        ASRUserCueEnableConfig() : ASREventConfig(SDZ_EV_USER_CUE_ENABLE){}
+        ~ASRUserCueEnableConfig(){}
     };
 
     class ASRSpeechCfgEventData : public ASREventData {
@@ -425,8 +433,9 @@ class StreamASR : public Stream {
                                   uint32_t *eventSize);
 
     bool is_client_model_used_;
-    int32_t storeModelToFile(int32_t fd, uint32_t size);
-    int32_t deleteModelFile();
+    int32_t storeModelToFile(int32_t fd, std::string path, uint32_t size);
+    int32_t deleteModelFile(std::string path);
+    int32_t writeToFile(std::string path, void *mapAddr, size_t size);
     /* Currently model is not loaded from HLOS, hence using this hardcoded UUID,
      * Later when loading is supported, we need to remove it from here, and
      * get it from model, to check which sm_config it supports to
@@ -443,6 +452,7 @@ class StreamASR : public Stream {
     bool deviceOpened;
     bool enableSpeakerDiarization;
     bool enableEc;
+    bool userCueEnabled;
     uint64_t cookie;
     std::map<uint32_t, ASRState*> asrStates;
     struct pal_asr_config *palRecConfig;
@@ -452,6 +462,7 @@ class StreamASR : public Stream {
     param_id_sdz_output_config_t *sdzOutputConfig;
     param_id_sdz_input_threshold_t *sdzInputConfig;
     pal_stream_callback callback;
+    param_id_sdz_voice_profile_t *userCue;
     std::shared_ptr<Device> ecDev;
 
     ASRState *asrIdle;

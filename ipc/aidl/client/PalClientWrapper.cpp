@@ -415,7 +415,8 @@ int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_
     if (memPayload) {
         PalParamPayloadShmem payload;
         memcpy(memPayload, param_payload->payload, param_payload->payload_size);
-        payload.fd = ScopedFileDescriptor(sharedFd);
+        int parcelFd = dup(sharedFd);
+        payload.fd = ScopedFileDescriptor(parcelFd);
         payload.payloadSize = param_payload->payload_size;
         auto aidlStreamHandle = convertLegacyHandleToAidlHandle(stream_handle);
         status = statusTFromBinderStatus(

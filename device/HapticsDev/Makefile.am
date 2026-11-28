@@ -50,7 +50,7 @@ lib_LTLIBRARIES     = libdev_haptics.la
 libdev_haptics_la_SOURCES   = $(dev_haptics_sources)
 libdev_haptics_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
 libdev_haptics_la_LIBADD    += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
-libdev_haptics_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_haptics_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_haptics_la_CPPFLAGS += -std=c++14
 libdev_haptics_la_LDFLAGS   = -shared -avoid-version

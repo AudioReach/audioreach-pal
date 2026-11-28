@@ -45,7 +45,7 @@ lib_LTLIBRARIES     = libstream_haptics.la
 libstream_haptics_la_SOURCES   = $(stream_haptics_sources)
 libstream_haptics_la_LIBADD    = @GLIB_LIBS@ -lexpat
 libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/stream/StreamPCM/.libs -lstream_pcm
-libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/.libs -lpal
+libstream_haptics_la_LIBADD    += -L${abs_top_builddir}/.libs -lar-pal
 libstream_haptics_la_CPPFLAGS := $(AM_CPPFLAGS)
 libstream_haptics_la_CPPFLAGS += -std=c++14
 libstream_haptics_la_LDFLAGS   = -shared -avoid-version

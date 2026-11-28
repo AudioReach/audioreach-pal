@@ -122,6 +122,7 @@ protected:
     struct modifier_kv *mModifiers;
     uint32_t mNoOfModifiers;
     std::string mStreamSelector;
+    std::string mStreamPPSelector;
     std::string mDevPPSelector;
     size_t inBufSize = BUF_SIZE_CAPTURE;
     size_t outBufSize = BUF_SIZE_PLAYBACK;
@@ -210,6 +211,7 @@ public:
     virtual vote_type_t getVoteType() { return AVOID_VOTE; };
     int32_t getStreamAttributes(struct pal_stream_attributes *sattr);
     const std::string& getStreamSelector() const;
+    const std::string& getStreamPPSelector() const;
     const std::string& getDevicePPSelector() const;
     int32_t getStreamType(pal_stream_type_t* streamType);
     int32_t getStreamDirection(pal_stream_direction_t *dir);

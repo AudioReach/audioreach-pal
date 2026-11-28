@@ -57,6 +57,8 @@ typedef enum asr_param_id_type {
     SDZ_OUTPUT_CONFIG_V2,
     SDZ_INPUT_BUF_DURATION_V2,
     SDZ_FORCE_OUTPUT_V2,
+    SDZ_SET_USER_CUE,
+    SDZ_USER_CUE_ENABLE,
     ASR_MAX_PARAM_IDS
 } asr_param_id_type_t;
 
@@ -97,9 +99,6 @@ public:
     void HandleEndTag(struct xml_userdata *data, const std::string& tag);
 
     int32_t GetDefaultASRConfig(struct pal_asr_config *config);
-
-private:
-    struct pal_asr_config asr_config_;
 };
 
 class ASRStreamConfig : public SoundTriggerXml

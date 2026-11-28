@@ -142,6 +142,7 @@ class SoundTriggerEngineGsl : public SoundTriggerEngine {
     std::vector<StreamSoundTrigger *> GetBufferingStreams();
     void DetachStream(StreamSoundTrigger *s, bool erase_engine);
     bool UpdateGlobalDetectionStatus(bool is_active);
+    uint32_t UpdateMMAModeBit();
 
     Session *session_;
     PayloadBuilder *builder_;

@@ -45,13 +45,14 @@ library_includedir = $(includedir)/session_ar
 lib_LTLIBRARIES     = libsession_ar.la
 libsession_ar_la_SOURCES   = $(session_ar_sources)
 libsession_ar_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress @GSL_LIBS@
-libsession_ar_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libsession_ar_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libsession_ar_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_ar_la_CPPFLAGS += -std=c++14
 libsession_ar_la_LDFLAGS   = -shared -avoid-version
 libsession_ar_la_CPPFLAGS += @GLIB_CFLAGS@ -include glib.h
 libsession_ar_la_CPPFLAGS += -DACD_SM_FILEPATH=\"/etc/models/acd/\"
 libsession_ar_la_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
+libsession_ar_la_CPPFLAGS += @UVVOICECUE_FEATURE_FLAGS@
 
 if USE_SYSLOG
 libsession_ar_la_CPPFLAGS += -DPAL_USE_SYSLOG

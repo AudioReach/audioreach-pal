@@ -46,7 +46,7 @@ library_includedir = $(includedir)/dev_dummy
 lib_LTLIBRARIES     = libdev_dummy.la
 libdev_dummy_la_SOURCES   = $(dev_dummy_sources)
 libdev_dummy_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libdev_dummy_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libdev_dummy_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libdev_dummy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libdev_dummy_la_CPPFLAGS += -std=c++14
 libdev_dummy_la_LDFLAGS   = -shared -avoid-version

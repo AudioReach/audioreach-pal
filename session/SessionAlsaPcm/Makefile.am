@@ -43,7 +43,7 @@ library_includedir = $(includedir)/session_pcm
 lib_LTLIBRARIES     = libsession_pcm.la
 libsession_pcm_la_SOURCES   = $(session_pcm_sources)
 libsession_pcm_la_LIBADD    = @GLIB_LIBS@ -lexpat -ltinyalsa -ltinycompress
-libsession_pcm_la_LIBADD   += -L${abs_top_builddir}/.libs -lpal
+libsession_pcm_la_LIBADD   += -L${abs_top_builddir}/.libs -lar-pal
 libsession_pcm_la_LIBADD   += -L${abs_top_builddir}/session/SessionAR/.libs -lsession_ar
 libsession_pcm_la_CPPFLAGS := $(AM_CPPFLAGS)
 libsession_pcm_la_CPPFLAGS += -std=c++14

@@ -101,6 +101,7 @@ typedef enum {
     ST_SM_ID_SVA_S_STAGE_CTIUV = 0x0080,
     ST_SM_ID_SVA_END          = 0x00F0,
     ST_SM_ID_CUSTOM_START     = 0x0100,
+    ST_SM_ID_SVA_S_STAGE_MMA  = 0x0400,
     ST_SM_ID_CUSTOM_END       = 0xF000,
 } listen_model_indicator_enum;
 
@@ -392,6 +393,8 @@ typedef enum st_param_id_type {
     MMA_MODE_BIT_CONFIG,
     TRIGGER_DETECTION_CONFIG,
     BUFFERING_MODE_CONFIG,
+    SYNTHETIC_MMA_DET_CONFIG,
+    HIST_CAP_ENABLE_TS,
     MAX_PARAM_IDS
 } st_param_id_type_t;
 
@@ -433,6 +436,9 @@ typedef enum mma_mode_bit_type {
     CAMERA_FACE = 4,
     CAMERA_GAZE = 5,
     ONOFFBODY_DETECTION = 6,
+    AMD = 7,
+    /* bit 8-30 are reserved */
+    SYNTHETIC_MODALITY_DETECTIONS_FEATURE = 31,
 } mma_mode_bit_type_t;
 
 typedef struct tiuv_threshold_config {
@@ -489,6 +495,30 @@ struct detection_event_info
     uint32_t detection_timestamp_msw;
     uint32_t ftrt_data_length_in_us;
 };
+
+typedef struct mma2_detection_config_t {
+    int32_t sig_level_1;
+    int32_t sig_level_2;
+    int32_t corr_level_1;
+    int32_t corr_level_2;
+    int32_t corr_level_3;
+    int32_t corr_level_4;
+    int32_t filt_level_1;
+    int32_t filt_level_2;
+    int32_t filt_level_3;
+    int32_t filt_level_4;
+    int32_t lvd_level_1;
+    int32_t lvd_level_2;
+    int32_t nvd_level_1;
+    int32_t nvd_level_2;
+    int32_t reserved1;
+    int32_t reserved2;
+} mma2_detection_config_t;
+
+typedef struct mma2_detection_res {
+    uint32_t detection_status;
+    mma2_detection_config_t *det_config;
+} mma2_detection_res_t;
 
 #define IS_MODULE_TYPE_PDK(type) (type == ST_MODULE_TYPE_PDK5 || type == ST_MODULE_TYPE_PDK6 \
                                   || type == ST_MODULE_TYPE_MFCN)

@@ -169,11 +169,11 @@ int SessionAlsaPcm::open(Stream * s)
         goto exit;
     }
 
-    // Register for Soft pause events
+    // Register for events
     if (sAttr.direction == PAL_AUDIO_OUTPUT &&
         sAttr.type != PAL_STREAM_HAPTICS &&
         sAttr.type != PAL_STREAM_CALL_TRANSLATION)
-        registerCallBack(handleSoftPauseCallBack, (uint64_t)s);
+        registerCallBack(handleSessionCallback, (uint64_t)s);
 
     // enable dual mono
     if (rm->IsDualMonoEnabled() == true) {
@@ -1538,7 +1538,6 @@ int SessionAlsaPcm::close(Stream * s)
                 sAttr.type == PAL_STREAM_SENSOR_PCM_DATA)
                 ldir = TX_HOSTLESS;
 
-            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_OUTPUT:
@@ -1609,7 +1608,6 @@ int SessionAlsaPcm::close(Stream * s)
                 (sAttr.type == PAL_STREAM_SENSOR_PCM_RENDERER))
                 ldir = RX_HOSTLESS;
 
-            freeFrontEndIds(sAttr, ldir);
             pcm = NULL;
             break;
         case PAL_AUDIO_INPUT | PAL_AUDIO_OUTPUT:
@@ -1659,23 +1657,17 @@ int SessionAlsaPcm::close(Stream * s)
                PAL_ERR(LOG_TAG, "pcm_close - tx failed %d", status);
             }
 
-            if (pcmDevRxIds.size())
-                freeFrontEndIds(sAttr, RX_HOSTLESS);
-            if (pcmDevTxIds.size())
-                freeFrontEndIds(sAttr, TX_HOSTLESS);
             pcmRx = NULL;
             pcmTx = NULL;
             break;
     }
-    frontEndIdAllocated = false;
-    mState = SESSION_IDLE;
 
     if (sAttr.type == PAL_STREAM_VOICE_UI ||
         sAttr.type == PAL_STREAM_ACD ||
         sAttr.type == PAL_STREAM_ASR ||
         sAttr.type == PAL_STREAM_CONTEXT_PROXY ||
         sAttr.type == PAL_STREAM_ULTRASOUND ||
-        sAttr.type ==PAL_STREAM_CALL_TRANSLATION ||
+        sAttr.type == PAL_STREAM_CALL_TRANSLATION ||
         (sAttr.type == PAL_STREAM_HAPTICS &&
         sAttr.info.opt_stream_info.haptics_type == PAL_STREAM_HAPTICS_TOUCH)) {
         switch (sAttr.type) {
@@ -1699,6 +1691,18 @@ int SessionAlsaPcm::close(Stream * s)
             PAL_ERR(LOG_TAG, "Failed to deregister callback to rm");
         }
     }
+
+    if (sAttr.direction == PAL_AUDIO_INPUT ||
+        sAttr.direction == PAL_AUDIO_OUTPUT) {
+        freeFrontEndIds(sAttr, ldir);
+    } else {
+        if (pcmDevRxIds.size())
+            freeFrontEndIds(sAttr, RX_HOSTLESS);
+        if (pcmDevTxIds.size())
+            freeFrontEndIds(sAttr, TX_HOSTLESS);
+    }
+    frontEndIdAllocated = false;
+    mState = SESSION_IDLE;
 
     builder->freeCustomPayload();
     if (eventPayloadList.size() > 0)
@@ -2196,6 +2200,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
         case PAL_PARAM_ID_FORCE_RECOGNITION:
         case PAL_PARAM_ID_BUFFERING_MODE:
         case PAL_PARAM_ID_NMT_OUTPUT:
+        case PAL_PARAM_ID_VOICEUI_SET_PARAM:
+        case PAL_PARAM_ID_SH_ENABLE_TS:
         {
             struct apm_module_param_data_t* header =
                 (struct apm_module_param_data_t *)payload;
@@ -2211,7 +2217,7 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                 sdzMiid = header->module_instance_id;
             } else if (param_id == PAL_PARAM_ID_NMT_OUTPUT) {
                 nmtMiid = header->module_instance_id;
-            } else {
+            } else if (param_id != PAL_PARAM_ID_SH_ENABLE_TS) {
                 svaMiid = header->module_instance_id;
             }
             paramData = (uint8_t *)payload;
@@ -2547,6 +2553,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                         if (status)
                             PAL_ERR(LOG_TAG, "setMixerParam for haptics PCM Failed\n");
                     }
+                    if (paramData)
+                        builder->freeCustomPayload(&paramData, &paramSize);
                 }
                 builder->payloadHapticsDevPConfig(&paramData, &paramSize,
                            miid, PARAM_ID_HAPTICS_WAVE_DESIGNER_CFG_V2,(void *)hpCnfg);
@@ -2556,6 +2564,8 @@ int SessionAlsaPcm::setParamWithTag(Stream *streamHandle, int tagId, uint32_t pa
                     if (status)
                        PAL_ERR(LOG_TAG, "setMixerParam failed for haptics Wave\n");
                 }
+                if (paramData)
+                    builder->freeCustomPayload(&paramData, &paramSize);
             }
             free(hpCnfg->buffer_ptr);
             hpCnfg->buffer_ptr = NULL;
@@ -2728,7 +2738,31 @@ skip_ultrasound_gain:
             status = 0;
             goto exit;
         }
+        case PAL_PARAM_ID_TIMESTRETCH_PARAMS:
+        {
+            pal_param_payload* param_payload = (pal_param_payload*)payload;
+            pal_param_playback_rate_t* playbackRate =
+                    (pal_param_playback_rate_t*)(param_payload->payload);
+            PAL_DBG(LOG_TAG, "speed %f, pitch %f", playbackRate->speed, playbackRate->pitch);
+            status = SessionAlsaUtils::getModuleInstanceId(
+                    mixer, device, rxAifBackEnds[0].second.data(), TAG_MODULE_TSM, &miid);
 
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "Failed to get tag TAG_MODULE_TSM for playback rate, status = %d",
+                        status);
+                status = 0;
+                goto exit;
+            }
+
+            builder->payloadPlaybackRateParametersConfig(&paramData, &paramSize, miid,
+                                                         playbackRate);
+            if (paramSize) {
+                status = SessionAlsaUtils::setMixerParameter(mixer, device, paramData, paramSize);
+                PAL_INFO(LOG_TAG, "mixer set playbackRate parameters status=%d", status);
+                builder->freeCustomPayload(&paramData, &paramSize);
+            }
+            break;
+        }
         default:
             status = -EINVAL;
             PAL_ERR(LOG_TAG, "Unsupported param id %u status %d", param_id, status);
@@ -3358,7 +3392,11 @@ int SessionAlsaPcm::getTagsWithModuleInfo(custom_payload_uc_info_t* uc_info,
 
     }
 
-    if (uc_info->direction == PAL_AUDIO_INPUT) {
+    if (uc_info->pal_stream_type == PAL_STREAM_SENSOR_PCM_RENDERER){
+        status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
+                                                         rxAifBackEnds[0].second.data(), payload);
+    } else if (uc_info->direction == PAL_AUDIO_INPUT ||
+               uc_info->direction == PAL_AUDIO_INPUT_OUTPUT ) {
         status = SessionAlsaUtils::getTagsWithModuleInfo(mixer, DeviceId,
                                                          txAifBackEnds[0].second.data(), payload);
     } else if (uc_info->direction == PAL_AUDIO_OUTPUT) {
@@ -4020,6 +4058,58 @@ int32_t SessionAlsaPcm::enableDisableWnrModule(Stream *s)
         status = SessionAlsaUtils::setMixerParameter(mixer, device,
                                                     payload, payloadSize);
         PAL_INFO(LOG_TAG, "mixer set wnr module status=%d", status);
+    }
+
+exit:
+    if (payload) {
+        builder->freeCustomPayload(&payload, &payloadSize);
+    }
+    PAL_DBG(LOG_TAG, "%s: Exit", __func__);
+    return status;
+}
+
+int32_t SessionAlsaPcm::enableDisableSpatialAudioModule(Stream *s, bool enable)
+{
+    int status = 0;
+    std::vector<std::shared_ptr<Device>> associatedDevices;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
+    uint32_t miid = 0;
+    int device = 0;
+
+    PAL_DBG(LOG_TAG, "%s: Enter", __func__);
+    status = s->getAssociatedDevices(associatedDevices);
+    if ((0 != status) || (associatedDevices.size() == 0)) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "getAssociatedDevices fails or empty associated devices");
+        goto exit;
+    }
+
+    rm->getBackEndNames(associatedDevices, rxAifBackEnds, txAifBackEnds);
+    if (rxAifBackEnds.empty()) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "no backend specified for this stream");
+        goto exit;
+    }
+
+    if (pcmDevIds.size() > 0) {
+        device = pcmDevIds.at(0);
+        status = SessionAlsaUtils::getModuleInstanceId(mixer, device,
+                                                    rxAifBackEnds[0].second.data(),
+                                                    MODULE_SPATIAL_AUDIO, &miid);
+        if (status != 0) {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG,"getModule-spatialMod failed status: %d at line %d", status, __LINE__);
+            goto exit;
+        }
+    }
+    // calling payloadWNRModuleEnableDisable here by passing spatial audio module id
+    // make payloadWNRModuleEnableDisable generic as it can take miid and enable/disable
+    builder->payloadWNRModuleEnableDisable(&payload, &payloadSize, miid, enable);
+    if (payload && payloadSize) {
+        status = SessionAlsaUtils::setMixerParameter(mixer, device,
+                                                    payload, payloadSize);
+        PAL_INFO(LOG_TAG, "mixer set spatial audio module status=%d", status);
     }
 
 exit:

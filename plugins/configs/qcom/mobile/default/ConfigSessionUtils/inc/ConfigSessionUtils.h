@@ -37,4 +37,10 @@ int disableSilenceDetection(const std::shared_ptr<ResourceManager> rm,
 /* Forward Declaration for Silence Detection Callback */
 void handleSilenceDetectionCb(uint64_t hdl __unused,
                 uint32_t event_id, void *event_data, uint32_t event_size);
+#ifndef UVVOICECUE_FEATURES_DISABLED
+int32_t pcmPostReconfigSetUvVoiceCue(Stream *streamHandle,
+                                     Session *sess,
+                                     struct mixer *mixerHandle,
+                                     const std::vector<int> &pcmDevIds);
+#endif
 #endif

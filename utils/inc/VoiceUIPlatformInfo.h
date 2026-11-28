@@ -150,6 +150,8 @@ public:
     uint32_t GetBatchSizeInMs() const { return batch_size_in_ms_; }
     bool IsClientHandleSSR() const { return client_handling_ssr_; }
     bool GetEnableLPILabEC(st_module_type_t type);
+    bool GetEnableAMD() const { return enable_amd_; }
+    uint32_t GetSyntheticDetDurationInMs() const { return synthetic_det_duration_in_ms_; }
 
 private:
     std::string name_;
@@ -182,6 +184,8 @@ private:
     std::map<UUID, std::shared_ptr<VUIFirstStageConfig>> vui_uuid_1st_stage_cfg_list_;
     std::vector<uint32_t> ext_det_prop_list_;
     bool client_handling_ssr_;
+    bool enable_amd_;
+    uint32_t synthetic_det_duration_in_ms_;
 };
 
 class VoiceUIPlatformInfo : public SoundTriggerPlatformInfo
